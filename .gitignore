@@ -1,0 +1,32 @@
+# ignore list
+/.venv/
+/brandlogo/
+/deltabest/
+/dist/
+/dist/TinyPedal/
+/settings/
+/trackmap/
+/tracknotes/
+/pacenotes/
+/carsetups/
+
+__pycache__/
+
+# pipenv stuff
+Pipfile
+Pipfile.lock
+
+# pylint stuff
+pylintrc
+
+# local config file
+*.json
+*.csv
+*.fuel
+
+# random file
+test*.py
+*.7z
+*.zip
+*.log
+*.db
