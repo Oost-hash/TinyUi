@@ -1,4 +1,19 @@
 --------------------------------------------------------------------------------
+Version 0.4.0 (2026-03-06)
+--------------------------------------------------------------------------------
+Changed:
+- refractored main, _commen, _option, app, about, config, log_info, menu and
+notification too use new adapter layer
+
+Added:
+- adapter/api layer for constants. Too keep code changes minimal when
+Tiny Pedals updates or changes in any shape or form.
+
+Todo:
+- expand adapter/api layer too be more broad
+- address import hell futher
+
+--------------------------------------------------------------------------------
 Version 0.3.0 (2026-03-06)
 --------------------------------------------------------------------------------
 
