@@ -2,30 +2,35 @@
 """
 TinyUi py2exe build script
 
-Gebaseerd op TinyPedal's freeze_py2exe.py.
-Strategie: kopieer tinyui/ naar tinypedal/, maak entry point,
-en bouw vanuit tinypedal/ directory (net als TinyPedal zelf).
+Based on TinyPedal's freeze_py2exe.py.
+Strategy: copy tinyui/ into tinypedal/, create entry point,
+and build from the tinypedal/ directory (same as TinyPedal itself).
+
+Produces two outputs:
+  dist/TinyUi/        - full build with TinyPedal data folders
+  dist/TinyUi-minimal/ - drop-in build for existing TinyPedal installs
 """
 
 import os
 import shutil
 import sys
-from glob import glob
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent
+TINYUI_SRC = PROJECT_ROOT / "tinyui"
 
-# --- Stap 1: Prep - kopieer tinyui module en maak entry point ---
+# Data folders to include in the full build (removed in minimal)
+DATA_FOLDERS = [
+    "brandlogo",
+    "carsetups",
+    "deltabest",
+    "pacenotes",
+    "trackmap",
+    "tracknotes",
+    "settings",
+]
 
-tinyui_src = PROJECT_ROOT / "tinyui"
-tinyui_dst = PROJECT_ROOT / "tinypedal" / "tinyui"
-
-if tinyui_dst.exists():
-    shutil.rmtree(tinyui_dst)
-shutil.copytree(tinyui_src, tinyui_dst)
-print("-> tinyui/ gekopieerd naar tinypedal/tinyui/")
-
-# Entry point: volgt TinyPedal's run.py patroon (sys.argv[0], niet __file__)
+# Entry point: follows TinyPedal's run.py pattern (sys.argv[0], not __file__)
 ENTRY_POINT = """\
 import os
 import sys
@@ -35,36 +40,6 @@ os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
 from tinyui.main import run
 sys.exit(run())
 """
-
-entry_point_path = PROJECT_ROOT / "tinypedal" / "run_tinyui.py"
-entry_point_path.write_text(ENTRY_POINT)
-print("-> run_tinyui.py gemaakt")
-
-# --- Stap 2: Wissel naar tinypedal/ en importeer (net als TinyPedal doet) ---
-
-os.chdir(PROJECT_ROOT / "tinypedal")
-sys.path.insert(0, str(PROJECT_ROOT / "tinypedal"))
-sys.path.insert(0, str(PROJECT_ROOT))
-
-from py2exe import freeze
-
-from tinypedal import version_check
-from tinypedal.const_app import PLATFORM
-from tinyui.const_tinyui import APP_NAME, AUTHOR, VERSION
-
-# --- Stap 3: Build configuratie (identiek aan TinyPedal) ---
-
-PYTHON_PATH = sys.exec_prefix
-DIST_FOLDER = str(PROJECT_ROOT / "dist")
-APP_NAME_DIST = f"{DIST_FOLDER}/{APP_NAME}"
-
-EXECUTABLE_SETTING = [
-    {
-        "script": "run_tinyui.py",
-        "icon_resources": [(1, "images/icon.ico")],
-        "dest_base": APP_NAME.lower(),
-    }
-]
 
 EXCLUDE_MODULES = [
     "difflib",
@@ -94,113 +69,256 @@ DOCUMENT_FILES = [
     "docs/contributors.md",
 ]
 
-LICENSES_FILES = glob("docs/licenses/*")
-
-QT_PLATFORMS = [
-    f"{PYTHON_PATH}/Lib/site-packages/PySide2/plugins/platforms/qwindows.dll",
+THEME_FILES = [
+    str(p) for p in (PROJECT_ROOT / "tinyui" / "themes").glob("*.json")
 ]
 
-QT_MEDIASERVICE = [
-    f"{PYTHON_PATH}/Lib/site-packages/PySide2/plugins/mediaservice/dsengine.dll",
-    f"{PYTHON_PATH}/Lib/site-packages/PySide2/plugins/mediaservice/wmfengine.dll",
-]
 
-BUILD_DATA_FILES = [
-    ("", ["LICENSE.txt", "README.md"]),
-    ("docs", DOCUMENT_FILES),
-    ("docs/licenses", LICENSES_FILES),
-    ("images", IMAGE_FILES),
-    ("platforms", QT_PLATFORMS),
-    ("mediaservice", QT_MEDIASERVICE),
-]
+def discover_tinyui_modules():
+    """Auto-discover all tinyui Python modules from the filesystem."""
+    modules = []
+    for py_file in TINYUI_SRC.rglob("*.py"):
+        rel = py_file.relative_to(PROJECT_ROOT)
+        if rel.stem == "__init__":
+            module = str(rel.parent).replace(os.sep, ".")
+        else:
+            module = str(rel.with_suffix("")).replace(os.sep, ".")
+        modules.append(module)
+    modules.sort()
+    return modules
 
-INCLUDE_MODULES = [
-    "tinypedal.module_info",
-    "tinypedal.hotkey_control",
-    "tinypedal.hotkey.command",
-    "tinypedal.userfile.consumption_history",
-    "tinypedal.userfile.driver_stats",
-    "tinypedal.userfile.heatmap",
-    "tinypedal.userfile.track_map",
-    "tinypedal.userfile.track_notes",
-]
 
-BUILD_OPTIONS = {
-    "dist_dir": APP_NAME_DIST,
-    "includes": INCLUDE_MODULES,
-    "excludes": EXCLUDE_MODULES,
-    "optimize": 2,
-    "compressed": 1,
-}
+def detect_pyside():
+    """Detect installed PySide version and return (package_name, site_path)."""
+    python_path = Path(sys.exec_prefix)
+    site_packages = python_path / "Lib" / "site-packages"
+    for name in ("PySide6", "PySide2"):
+        pyside_path = site_packages / name
+        if pyside_path.exists():
+            return name, pyside_path
+    sys.exit("ERROR: No PySide2 or PySide6 installation found")
 
-BUILD_VERSION = {
-    "version": VERSION.split("-")[0] if "-" in VERSION else VERSION,
-    "description": APP_NAME,
-    "copyright": f"Copyright (C) 2025 {AUTHOR}",
-    "product_name": APP_NAME,
-    "product_version": VERSION,
-}
 
-# --- Stap 4: Build ---
+def build():
+    """Run the full build process."""
+    pyside_name, pyside_path = detect_pyside()
 
-print(f"\nBuilding {APP_NAME} v{VERSION}...")
-print(f"Platform: {PLATFORM.SYSTEM}")
-print(f"Python:   {version_check.python()}")
-print(f"Qt:       {version_check.qt()}")
-print(f"PySide:   {version_check.pyside()}")
+    # -- Step 1: Copy tinyui module into tinypedal/ and create entry point --
 
-os.makedirs(DIST_FOLDER, exist_ok=True)
-if os.path.exists(APP_NAME_DIST):
-    shutil.rmtree(APP_NAME_DIST)
+    tinyui_dst = PROJECT_ROOT / "tinypedal" / "tinyui"
+    entry_point_path = PROJECT_ROOT / "tinypedal" / "run_tinyui.py"
 
-freeze(
-    version_info=BUILD_VERSION,
-    windows=EXECUTABLE_SETTING,
-    options=BUILD_OPTIONS,
-    data_files=BUILD_DATA_FILES,
-    zipfile="lib/library.zip",
-)
+    if tinyui_dst.exists():
+        shutil.rmtree(tinyui_dst)
+    shutil.copytree(TINYUI_SRC, tinyui_dst)
+    print("-> tinyui/ copied to tinypedal/tinyui/")
 
-print("\n-> py2exe freeze klaar")
+    entry_point_path.write_text(ENTRY_POINT)
+    print("-> run_tinyui.py created")
 
-# --- Stap 5: PySide2 runtime DLLs kopiëren ---
-# py2exe pakt de .pyd en Qt5*.dll maar mist de MSVC/OpenGL runtime DLLs
-# die PySide2 meelevert in zijn eigen folder.
+    # -- Step 2: Switch to tinypedal/ and import (same as TinyPedal does) --
 
-print("\nPySide2 runtime DLLs kopiëren...")
-pyside2_path = Path(PYTHON_PATH) / "Lib" / "site-packages" / "PySide2"
-lib_dir = Path(APP_NAME_DIST) / "lib"
+    os.chdir(PROJECT_ROOT / "tinypedal")
+    sys.path.insert(0, str(PROJECT_ROOT / "tinypedal"))
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-for dll in pyside2_path.glob("*.dll"):
-    dst = lib_dir / dll.name
-    if not dst.exists():
-        shutil.copy2(dll, dst)
-        print(f"  + {dll.name}")
+    from glob import glob as globfiles
 
-# --- Stap 6: Data folders ---
+    from py2exe import freeze
+    from tinypedal.const_app import PLATFORM
 
-print("\nData folders toevoegen...")
-dist_app_path = Path(APP_NAME_DIST)
+    from tinypedal import version_check
+    from tinyui.const_tinyui import APP_NAME, AUTHOR, VERSION
 
-for folder in ["brandlogo", "carsetups", "deltabest", "pacenotes",
-               "trackmap", "tracknotes", "settings"]:
-    src = PROJECT_ROOT / folder
-    dst = dist_app_path / folder
-    if src.exists():
-        shutil.copytree(src, dst, dirs_exist_ok=True)
-        print(f"  + {folder}/")
-    else:
-        dst.mkdir(exist_ok=True)
-        print(f"  + {folder}/ (leeg)")
+    # -- Step 3: Build configuration --
 
-# --- Stap 7: Cleanup ---
+    python_path = sys.exec_prefix
+    dist_folder = str(PROJECT_ROOT / "dist")
+    app_name_dist = f"{dist_folder}/{APP_NAME}"
 
-print("\nCleanup...")
-if tinyui_dst.exists():
-    shutil.rmtree(tinyui_dst)
-if entry_point_path.exists():
-    entry_point_path.unlink()
+    executable_setting = [
+        {
+            "script": "run_tinyui.py",
+            "icon_resources": [(1, "images/icon.ico")],
+            "dest_base": APP_NAME.lower(),
+        }
+    ]
 
-print(f"\n{'=' * 50}")
-print(f"RELEASE: dist/{APP_NAME}/")
-print(f"{'=' * 50}")
+    licenses_files = globfiles("docs/licenses/*")
+
+    qt_platforms = [
+        f"{python_path}/Lib/site-packages/{pyside_name}/plugins/platforms/qwindows.dll",
+    ]
+
+    qt_mediaservice = [
+        f"{python_path}/Lib/site-packages/{pyside_name}/plugins/mediaservice/dsengine.dll",
+        f"{python_path}/Lib/site-packages/{pyside_name}/plugins/mediaservice/wmfengine.dll",
+    ]
+
+    # Tinypedal modules that py2exe doesn't pick up automatically
+    tinypedal_includes = [
+        "tinypedal.module_info",
+        "tinypedal.hotkey_control",
+        "tinypedal.hotkey.command",
+        "tinypedal.userfile.consumption_history",
+        "tinypedal.userfile.driver_stats",
+        "tinypedal.userfile.heatmap",
+        "tinypedal.userfile.track_map",
+        "tinypedal.userfile.track_notes",
+    ]
+
+    tinyui_modules = discover_tinyui_modules()
+    print(f"-> Discovered {len(tinyui_modules)} tinyui modules")
+
+    include_modules = tinypedal_includes + tinyui_modules
+
+    build_data_files = [
+        ("", ["LICENSE.txt", "README.md"]),
+        ("docs", DOCUMENT_FILES),
+        ("docs/licenses", licenses_files),
+        ("images", IMAGE_FILES),
+        ("tinyui/themes", THEME_FILES),
+        ("platforms", qt_platforms),
+        ("mediaservice", qt_mediaservice),
+    ]
+
+    build_options = {
+        "dist_dir": app_name_dist,
+        "includes": include_modules,
+        "excludes": EXCLUDE_MODULES,
+        "optimize": 2,
+        "compressed": 1,
+    }
+
+    build_version = {
+        "version": VERSION.split("-")[0] if "-" in VERSION else VERSION,
+        "description": APP_NAME,
+        "copyright": f"Copyright (C) 2025 {AUTHOR}",
+        "product_name": APP_NAME,
+        "product_version": VERSION,
+    }
+
+    # -- Step 4: Build --
+
+    print(f"\nBuilding {APP_NAME} v{VERSION}...")
+    print(f"Platform: {PLATFORM.SYSTEM}")
+    print(f"Python:   {version_check.python()}")
+    print(f"Qt:       {version_check.qt()}")
+    print(f"PySide:   {version_check.pyside()} ({pyside_name})")
+
+    os.makedirs(dist_folder, exist_ok=True)
+    if os.path.exists(app_name_dist):
+        shutil.rmtree(app_name_dist)
+
+    freeze(
+        version_info=build_version,
+        windows=executable_setting,
+        options=build_options,
+        data_files=build_data_files,
+        zipfile="lib/library.zip",
+    )
+
+    print("\n-> py2exe freeze complete")
+
+    # -- Step 5: Copy PySide runtime DLLs --
+
+    print(f"\nCopying {pyside_name} runtime DLLs...")
+    lib_dir = Path(app_name_dist) / "lib"
+
+    for dll in pyside_path.glob("*.dll"):
+        dst = lib_dir / dll.name
+        if not dst.exists():
+            shutil.copy2(dll, dst)
+            print(f"  + {dll.name}")
+
+    # -- Step 6: Data folders (full build) --
+
+    print("\nAdding data folders...")
+    dist_app_path = Path(app_name_dist)
+
+    for folder in DATA_FOLDERS:
+        src = PROJECT_ROOT / folder
+        dst = dist_app_path / folder
+        if src.exists():
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+            print(f"  + {folder}/")
+        else:
+            dst.mkdir(exist_ok=True)
+            print(f"  + {folder}/ (empty)")
+
+    # -- Step 7: Cleanup temp files --
+
+    print("\nCleanup...")
+    if tinyui_dst.exists():
+        shutil.rmtree(tinyui_dst)
+    if entry_point_path.exists():
+        entry_point_path.unlink()
+
+    print(f"\n{'=' * 50}")
+    print(f"RELEASE: dist/{APP_NAME}/")
+    print(f"{'=' * 50}")
+
+    # -- Step 8: Minimal drop-in build --
+    # Structure mirrors TinyPedal so files merge cleanly when dropped in.
+    # TinyUi-specific files go under tinyui/ to avoid overwriting TinyPedal's.
+
+    print("\n--- Minimal drop-in build ---")
+
+    minimal_name = f"{APP_NAME}-minimal"
+    minimal_path = PROJECT_ROOT / "dist" / minimal_name
+
+    if minimal_path.exists():
+        shutil.rmtree(minimal_path)
+
+    shutil.copytree(app_name_dist, minimal_path)
+    print(f"-> Build copied to {minimal_name}/")
+
+    # Remove everything TinyPedal already provides
+    remove_folders = DATA_FOLDERS + ["images", "docs", "platforms", "mediaservice"]
+    removed = []
+    for folder in remove_folders:
+        folder_path = minimal_path / folder
+        if folder_path.exists():
+            shutil.rmtree(folder_path)
+            removed.append(folder)
+
+    # Remove root LICENSE/README (TinyPedal has its own)
+    for root_file in ("LICENSE.txt", "README.md"):
+        file_path = minimal_path / root_file
+        if file_path.exists():
+            file_path.unlink()
+            removed.append(root_file)
+
+    if removed:
+        print(f"  - Removed: {', '.join(removed)}")
+
+    # Add TinyUi-specific docs under tinyui/ so they don't clash
+    tinyui_dir = minimal_path / "tinyui"
+    tinyui_dir.mkdir(exist_ok=True)
+
+    # Copy TinyUi docs
+    tinyui_docs_dir = tinyui_dir / "docs"
+    tinyui_docs_dir.mkdir(exist_ok=True)
+    for doc in DOCUMENT_FILES:
+        src = PROJECT_ROOT / "tinypedal" / doc
+        if src.exists():
+            shutil.copy2(src, tinyui_docs_dir / src.name)
+    print(f"  + tinyui/docs/")
+
+    # Copy TinyUi license and readme
+    for root_file in ("LICENSE.txt", "README.md"):
+        src = PROJECT_ROOT / root_file
+        if src.exists():
+            shutil.copy2(src, tinyui_dir / root_file)
+    print(f"  + tinyui/LICENSE.txt, README.md")
+
+    remaining = sorted(f.name for f in minimal_path.iterdir())
+    print(f"  = Contents: {', '.join(remaining)}")
+
+    print(f"\n{'=' * 50}")
+    print(f"MINIMAL: dist/{minimal_name}/")
+    print(f"{'=' * 50}")
+
+
+if __name__ == "__main__":
+    build()
