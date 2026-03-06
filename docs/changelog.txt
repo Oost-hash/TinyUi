@@ -17,6 +17,10 @@ Changed:
   hotkey, async_request, realtime_state, log_handler, main, update) to
   use backend adapters
 - TinyUi now uses its own icon for window and tray
+- Backend adapter layer now auto-generated from manifest.json
+    - Delete and regenerate adapter files on every run.py execution
+    - Supports aliasing (e.g., APP_NAME as TP_APP_NAME)
+    - No manual file editing needed when TinyPedal structure changes
 
 Added:
 - Backend adapter layer for constants to keep code changes minimal when
@@ -32,9 +36,14 @@ Added:
 - Exported TinyUi icon as PNG and ICO from SVG source
 - Non-invasive drop-in build: uses separate tinyui_lib/ to avoid overwriting
   TinyPedal's lib/. Uninstall by removing tinyui.exe, tinyui_lib/ and tinyui/
+- manifest.json: single source of truth for all TinyPedal imports
+- generate_adapters.py: code generator for backend adapter layer
+    - Preserves __init__.py, generate_adapters.py, manifest.json
+    - Generates 8 adapter files (constants, controls, data, formatter,
+      misc, regex, settings, validator)
 
 Todo:
-- Address import coupling further
+- Add generator too build_release.py also exlucde generator from production. 
 
 --------------------------------------------------------------------------------
 Version 0.3.0 (2026-03-06)
