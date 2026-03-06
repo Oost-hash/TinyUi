@@ -286,8 +286,7 @@ def run():
 
     from PySide2.QtCore import QCoreApplication, QLocale
     from PySide2.QtGui import QFont, QGuiApplication, QPixmapCache
-    from tinypedal.log_handler import set_logging_level
-    from tinypedal.main import set_environment, unset_environment
+    from tinyui.backend.misc import set_logging_level, set_environment, unset_environment
     from tinyui.backend.settings import cfg as _cfg_local
 
     # 1. Setup environment

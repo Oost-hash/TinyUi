@@ -43,10 +43,10 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinypedal import realtime_state
+from tinyui.backend.misc import realtime_state
 from tinyui.backend.controls import api, app_signal, mctrl
 from tinyui.backend.constants import FileFilter
-from tinypedal.module_info import minfo
+from tinyui.backend.misc import minfo
 from tinyui.backend.settings import cfg
 from tinyui.backend.data import COLUMN_PACENOTE, set_relative_path
 from .._common import CompactButton, UIScaler

@@ -47,12 +47,12 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinypedal import calculation as calc
-from tinypedal import units
+from tinyui.backend.misc import calc
+from tinyui.backend.misc import units
 from tinyui.backend.controls import api
 from tinyui.backend.constants import FileFilter
 from tinyui.backend.formatter import laptime_string_to_seconds
-from tinypedal.module_info import ConsumptionDataSet, minfo
+from tinyui.backend.misc import ConsumptionDataSet, minfo
 from tinyui.backend.settings import cfg
 from tinyui.backend.data import load_consumption_history_file
 from .._common import BaseDialog, UIScaler

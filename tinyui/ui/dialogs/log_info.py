@@ -32,7 +32,7 @@ from PySide2.QtWidgets import (
 )
 
 from tinyui.backend.constants import FileFilter
-from tinypedal.main import log_stream
+from tinyui.backend.misc import log_stream
 from .._common import BaseDialog, CompactButton, UIScaler, singleton_dialog
 
 

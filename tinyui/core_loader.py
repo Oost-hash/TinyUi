@@ -58,7 +58,7 @@ class TinyPedalCore:
     def _init_globals(self):
         """Initialize alle TinyPedal globals - pas aangeroepen in start()"""
         from tinyui.backend.controls import api, loader, mctrl, octrl, wctrl
-        from tinypedal.update import update_checker
+        from tinyui.backend.misc import update_checker
 
         self.api = api
         self.mctrl = mctrl

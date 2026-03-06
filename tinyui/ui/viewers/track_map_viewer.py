@@ -40,7 +40,7 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinypedal import calculation as calc
+from tinyui.backend.misc import calc
 from tinyui.backend.constants import ConfigType, FileExt, FileFilter
 from tinyui.backend.settings import cfg
 from tinyui.backend.data import load_track_map_file
