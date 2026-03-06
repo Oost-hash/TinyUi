@@ -21,7 +21,6 @@ Track info editor
 """
 
 import logging
-import time
 
 from PySide2.QtCore import QPoint, Qt
 from PySide2.QtWidgets import (
@@ -36,9 +35,9 @@ from tinypedal.const_file import ConfigType
 from tinypedal.setting import cfg, copy_setting
 from tinypedal.template.setting_tracks import TRACKINFO_DEFAULT
 from .._common import (
-    BaseEditor,
     ClockTableItem,
     FloatTableItem,
+    TableEditor,
     UIScaler,
     editor_button_bar,
     setup_table,
@@ -57,7 +56,7 @@ HEADER_TRACKS = (
 logger = logging.getLogger(__name__)
 
 
-class TrackInfoEditor(BaseEditor):
+class TrackInfoEditor(TableEditor):
     """Track info editor"""
 
     def __init__(self, parent):
@@ -68,43 +67,39 @@ class TrackInfoEditor(BaseEditor):
         self.tracks_temp = copy_setting(cfg.user.tracks)
 
         # Set table
-        self.table_tracks = setup_table(
+        self.table = setup_table(
             self, HEADER_TRACKS,
             column_widths={
                 i: 8 if i <= 4 else 5
                 for i in range(1, len(HEADER_TRACKS))
             },
         )
-        self.table_tracks.cellChanged.connect(self.verify_input)
+        self.table.cellChanged.connect(self.verify_input)
 
-        self.table_tracks.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.table_tracks.customContextMenuRequested.connect(self.open_context_menu)
+        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self.open_context_menu)
 
         self.refresh_table()
         self.set_unmodified()
 
         # Set button
-        layout_button = self.set_layout_button()
+        layout_button = editor_button_bar(self, [
+            ("Add", self.add_track),
+            ("Sort", self.sort_rows),
+            ("Delete", self.delete_rows),
+            ("Reset", self.reset_setting),
+        ])
 
         # Set layout
         layout_main = QVBoxLayout()
-        layout_main.addWidget(self.table_tracks)
+        layout_main.addWidget(self.table)
         layout_main.addLayout(layout_button)
         layout_main.setContentsMargins(self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN)
         self.setLayout(layout_main)
 
-    def set_layout_button(self):
-        """Set button layout"""
-        return editor_button_bar(self, [
-            ("Add", self.add_track),
-            ("Sort", self.sort_track),
-            ("Delete", self.delete_track),
-            ("Reset", self.reset_setting),
-        ])
-
     def refresh_table(self):
         """Refresh tracks list"""
-        self.table_tracks.setRowCount(0)
+        self.table.setRowCount(0)
         row_index = 0
         for track_name, track_data in self.tracks_temp.items():
             self.add_track_entry(row_index, track_name, track_data)
@@ -112,50 +107,30 @@ class TrackInfoEditor(BaseEditor):
 
     def add_track(self):
         """Add new track"""
-        start_index = row_index = self.table_tracks.rowCount()
+        start_index = row_index = self.table.rowCount()
         # Add missing track name from active session
         track_name = api.read.session.track_name()
-        if track_name and not self.is_value_in_table(track_name, self.table_tracks):
+        if track_name and not self.is_value_in_table(track_name, self.table):
             self.add_track_entry(row_index, track_name, TRACKINFO_DEFAULT)
             row_index += 1
         # Add new name entry
         if start_index == row_index:
-            new_track_name = self.new_name_increment("New Track Name", self.table_tracks)
+            new_track_name = self.new_name_increment("New Track Name", self.table)
             self.add_track_entry(row_index, new_track_name, TRACKINFO_DEFAULT)
-            self.table_tracks.setCurrentCell(row_index, 0)
+            self.table.setCurrentCell(row_index, 0)
 
     def add_track_entry(self, row_index: int, track_name: str, track_data: dict):
         """Add new track entry to table"""
-        self.table_tracks.insertRow(row_index)
-        self.table_tracks.setItem(row_index, 0, QTableWidgetItem(track_name))
+        self.table.insertRow(row_index)
+        self.table.setItem(row_index, 0, QTableWidgetItem(track_name))
         column_index = 1
         for key, value in TRACKINFO_DEFAULT.items():
             if isinstance(value, float):
                 item = FloatTableItem(track_data.get(key, value))
             else:
                 item = ClockTableItem(track_data.get(key, value))
-            self.table_tracks.setItem(row_index, column_index, item)
+            self.table.setItem(row_index, column_index, item)
             column_index += 1
-
-    def sort_track(self):
-        """Sort tracks in ascending order"""
-        if self.table_tracks.rowCount() > 1:
-            self.table_tracks.sortItems(0)
-            self.set_modified()
-
-    def delete_track(self):
-        """Delete track entry"""
-        selected_rows = set(data.row() for data in self.table_tracks.selectedIndexes())
-        if not selected_rows:
-            QMessageBox.warning(self, "Error", "No data selected.")
-            return
-
-        if not self.confirm_operation(message="<b>Delete selected rows?</b>"):
-            return
-
-        for row_index in sorted(selected_rows, reverse=True):
-            self.table_tracks.removeRow(row_index)
-        self.set_modified()
 
     def reset_setting(self):
         """Reset setting"""
@@ -168,38 +143,29 @@ class TrackInfoEditor(BaseEditor):
             self.set_modified()
             self.refresh_table()
 
-    def applying(self):
-        """Save & apply"""
-        self.save_setting()
-
-    def saving(self):
-        """Save & close"""
-        self.save_setting()
-        self.accept()  # close
-
     def verify_input(self, row_index: int, column_index: int):
         """Verify input value"""
         self.set_modified()
-        item = self.table_tracks.item(row_index, column_index)
+        item = self.table.item(row_index, column_index)
         if column_index >= 1:
             item.validate()
 
     def open_context_menu(self, position: QPoint):
         """Open context menu"""
-        if not self.table_tracks.itemAt(position):
+        if not self.table.itemAt(position):
             return
 
         menu = QMenu()
-        if self.table_tracks.currentColumn() == 4:
+        if self.table.currentColumn() == 4:
             menu.addAction("Set from Telemetry")
         else:
             return
 
         position += QPoint(  # position correction from header
-            self.table_tracks.verticalHeader().width(),
-            self.table_tracks.horizontalHeader().height(),
+            self.table.verticalHeader().width(),
+            self.table.horizontalHeader().height(),
         )
-        selected_action = menu.exec_(self.table_tracks.mapToGlobal(position))
+        selected_action = menu.exec_(self.table.mapToGlobal(position))
         if not selected_action:
             return
 
@@ -209,7 +175,7 @@ class TrackInfoEditor(BaseEditor):
 
     def set_position_from_tele(self):
         """Set position from telemetry to selected cell"""
-        if len(self.table_tracks.selectedIndexes()) != 1:  # limit to one selected cell
+        if len(self.table.selectedIndexes()) != 1:  # limit to one selected cell
             msg_text = (
                 "Select <b>one value</b> from <b>Speed trap</b> column to set position."
             )
@@ -221,8 +187,8 @@ class TrackInfoEditor(BaseEditor):
             QMessageBox.warning(self, "Error", msg_text)
             return
 
-        row_index = self.table_tracks.currentRow()
-        track_name = self.table_tracks.item(row_index, 0).text()
+        row_index = self.table.currentRow()
+        track_name = self.table.item(row_index, 0).text()
         current_name = api.read.session.track_name()
         if track_name != current_name:
             msg_text = (
@@ -237,25 +203,20 @@ class TrackInfoEditor(BaseEditor):
             message=f"Set speed trap at position <b>{position}</b><br>for <b>{track_name}</b>?"):
             return
 
-        self.table_tracks.item(row_index, 4).setValue(position)
-        self.table_tracks.setCurrentCell(-1, -1)  # deselect to avoid mis-clicking
+        self.table.item(row_index, 4).setValue(position)
+        self.table.setCurrentCell(-1, -1)  # deselect to avoid mis-clicking
 
-    def update_tracks_temp(self):
-        """Update temporary changes to tracks temp first"""
+    def update_temp(self):
+        """Update temporary changes to tracks temp"""
         self.tracks_temp.clear()
-        for row_index in range(self.table_tracks.rowCount()):
-            track_name = self.table_tracks.item(row_index, 0).text()
+        for row_index in range(self.table.rowCount()):
+            track_name = self.table.item(row_index, 0).text()
             self.tracks_temp[track_name] = {
-                key: self.table_tracks.item(row_index, column_index).value()
+                key: self.table.item(row_index, column_index).value()
                 for column_index, key in enumerate(TRACKINFO_DEFAULT, start=1)
             }
 
-    def save_setting(self):
-        """Save setting"""
-        self.update_tracks_temp()
+    def persist(self):
+        """Persist tracks to config"""
         cfg.user.tracks = copy_setting(self.tracks_temp)
         cfg.save(0, cfg_type=ConfigType.TRACKS)
-        while cfg.is_saving:  # wait saving finish
-            time.sleep(0.01)
-        self.reloading()
-        self.set_unmodified()

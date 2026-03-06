@@ -21,10 +21,8 @@ Tyre compound editor
 """
 
 import logging
-import time
 
 from PySide2.QtWidgets import (
-    QMessageBox,
     QTableWidgetItem,
     QVBoxLayout,
 )
@@ -34,10 +32,10 @@ from tinypedal.const_file import ConfigType
 from tinypedal.setting import cfg, copy_setting
 from tinypedal.userfile.heatmap import HEATMAP_DEFAULT_TYRE, set_predefined_compound_symbol
 from .._common import (
-    combo_selector,
-    BaseEditor,
     TableBatchReplace,
+    TableEditor,
     UIScaler,
+    combo_selector,
     editor_button_bar,
     setup_table,
 )
@@ -47,7 +45,7 @@ HEADER_COMPOUNDS = "Compound name","Symbol","Heatmap name"
 logger = logging.getLogger(__name__)
 
 
-class TyreCompoundEditor(BaseEditor):
+class TyreCompoundEditor(TableEditor):
     """Tyre compound editor"""
 
     def __init__(self, parent):
@@ -58,36 +56,32 @@ class TyreCompoundEditor(BaseEditor):
         self.compounds_temp = copy_setting(cfg.user.compounds)
 
         # Set table
-        self.table_compounds = setup_table(
+        self.table = setup_table(
             self, HEADER_COMPOUNDS, column_widths={1: 6, 2: 12}
         )
-        self.table_compounds.cellChanged.connect(self.verify_input)
+        self.table.cellChanged.connect(self.verify_input)
         self.refresh_table()
         self.set_unmodified()
 
         # Set button
-        layout_button = self.set_layout_button()
-
-        # Set layout
-        layout_main = QVBoxLayout()
-        layout_main.addWidget(self.table_compounds)
-        layout_main.addLayout(layout_button)
-        layout_main.setContentsMargins(self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN)
-        self.setLayout(layout_main)
-
-    def set_layout_button(self):
-        """Set button layout"""
-        return editor_button_bar(self, [
+        layout_button = editor_button_bar(self, [
             ("Add", self.add_compound),
-            ("Sort", self.sort_compound),
-            ("Delete", self.delete_compound),
+            ("Sort", self.sort_rows),
+            ("Delete", self.delete_rows),
             ("Replace", self.open_replace_dialog),
             ("Reset", self.reset_setting),
         ])
 
+        # Set layout
+        layout_main = QVBoxLayout()
+        layout_main.addWidget(self.table)
+        layout_main.addLayout(layout_button)
+        layout_main.setContentsMargins(self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN)
+        self.setLayout(layout_main)
+
     def refresh_table(self):
         """Refresh compounds list"""
-        self.table_compounds.setRowCount(0)
+        self.table.setRowCount(0)
         row_index = 0
         for compound_name, compound_data in self.compounds_temp.items():
             self.add_compound_entry(
@@ -98,16 +92,15 @@ class TyreCompoundEditor(BaseEditor):
             )
             row_index += 1
 
-
     def open_replace_dialog(self):
         """Open replace dialog"""
         selector = {HEADER_COMPOUNDS[1]: 1}
-        _dialog = TableBatchReplace(self, selector, self.table_compounds)
+        _dialog = TableBatchReplace(self, selector, self.table)
         _dialog.open()
 
     def add_compound(self):
         """Add new compound"""
-        start_index = row_index = self.table_compounds.rowCount()
+        start_index = row_index = self.table.rowCount()
         # Add all missing vehicle name from active session
         veh_total = api.read.vehicle.total_vehicles()
         for index in range(veh_total):
@@ -119,48 +112,28 @@ class TyreCompoundEditor(BaseEditor):
                 )
             )
             for compound in compound_names:
-                if not self.is_value_in_table(compound, self.table_compounds):
+                if not self.is_value_in_table(compound, self.table):
                     self.add_compound_entry(
                         row_index,
                         compound,
                         set_predefined_compound_symbol(compound),
                     )
-                    self.table_compounds.setCurrentCell(row_index, 0)
+                    self.table.setCurrentCell(row_index, 0)
                     row_index += 1
         # Add new name entry
         if start_index == row_index:
-            new_compound_name = self.new_name_increment("New Compound Name", self.table_compounds)
+            new_compound_name = self.new_name_increment("New Compound Name", self.table)
             self.add_compound_entry(row_index, new_compound_name, "?")
-            self.table_compounds.setCurrentCell(row_index, 0)
+            self.table.setCurrentCell(row_index, 0)
 
     def add_compound_entry(
         self, row_index: int, compound_name: str, symbol_name: str,
         heatmap_name: str = HEATMAP_DEFAULT_TYRE):
         """Add new compound entry to table"""
-        self.table_compounds.insertRow(row_index)
-        self.table_compounds.setItem(row_index, 0, QTableWidgetItem(compound_name))
-        self.table_compounds.setItem(row_index, 1, QTableWidgetItem(symbol_name))
-        self.table_compounds.setCellWidget(row_index, 2, combo_selector(cfg.user.heatmap.keys(), heatmap_name, self.set_modified))
-
-    def sort_compound(self):
-        """Sort compounds in ascending order"""
-        if self.table_compounds.rowCount() > 1:
-            self.table_compounds.sortItems(0)
-            self.set_modified()
-
-    def delete_compound(self):
-        """Delete compound entry"""
-        selected_rows = set(data.row() for data in self.table_compounds.selectedIndexes())
-        if not selected_rows:
-            QMessageBox.warning(self, "Error", "No data selected.")
-            return
-
-        if not self.confirm_operation(message="<b>Delete selected rows?</b>"):
-            return
-
-        for row_index in sorted(selected_rows, reverse=True):
-            self.table_compounds.removeRow(row_index)
-        self.set_modified()
+        self.table.insertRow(row_index)
+        self.table.setItem(row_index, 0, QTableWidgetItem(compound_name))
+        self.table.setItem(row_index, 1, QTableWidgetItem(symbol_name))
+        self.table.setCellWidget(row_index, 2, combo_selector(cfg.user.heatmap.keys(), heatmap_name, self.set_modified))
 
     def reset_setting(self):
         """Reset setting"""
@@ -173,19 +146,10 @@ class TyreCompoundEditor(BaseEditor):
             self.set_modified()
             self.refresh_table()
 
-    def applying(self):
-        """Save & apply"""
-        self.save_setting()
-
-    def saving(self):
-        """Save & close"""
-        self.save_setting()
-        self.accept()  # close
-
     def verify_input(self, row_index: int, column_index: int):
         """Verify input value"""
         self.set_modified()
-        item = self.table_compounds.item(row_index, column_index)
+        item = self.table.item(row_index, column_index)
         if column_index == 1:  # symbol column
             text = item.text()
             if not text:
@@ -193,24 +157,19 @@ class TyreCompoundEditor(BaseEditor):
             else:
                 item.setText(text[:1])
 
-    def update_compounds_temp(self):
-        """Update temporary changes to compounds temp first"""
+    def update_temp(self):
+        """Update temporary changes to compounds temp"""
         self.compounds_temp.clear()
-        for index in range(self.table_compounds.rowCount()):
-            compound_name = self.table_compounds.item(index, 0).text()
-            symbol_name = self.table_compounds.item(index, 1).text()
-            heatmap_name = self.table_compounds.cellWidget(index, 2).currentText()
+        for index in range(self.table.rowCount()):
+            compound_name = self.table.item(index, 0).text()
+            symbol_name = self.table.item(index, 1).text()
+            heatmap_name = self.table.cellWidget(index, 2).currentText()
             self.compounds_temp[compound_name] = {
                 "symbol": symbol_name,
                 "heatmap": heatmap_name,
             }
 
-    def save_setting(self):
-        """Save setting"""
-        self.update_compounds_temp()
+    def persist(self):
+        """Persist compounds to config"""
         cfg.user.compounds = copy_setting(self.compounds_temp)
         cfg.save(0, cfg_type=ConfigType.COMPOUNDS)
-        while cfg.is_saving:  # wait saving finish
-            time.sleep(0.01)
-        self.reloading()
-        self.set_unmodified()

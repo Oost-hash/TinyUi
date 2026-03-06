@@ -23,6 +23,7 @@ Common
 from __future__ import annotations
 
 import re
+import time
 from typing import Callable
 
 from PySide2.QtCore import QRegularExpression, Qt
@@ -51,6 +52,7 @@ from PySide2.QtWidgets import (
 )
 
 from tinypedal.const_app import APP_NAME
+from tinypedal.setting import cfg
 from tinypedal.validator import is_string_number
 from . import UIScaler
 
@@ -327,6 +329,59 @@ class BaseEditor(BaseDialog):
         if reload_widget:
             wctrl.reload()
 
+
+class TableEditor(BaseEditor):
+    """Base editor for table-based data editors.
+
+    Subclasses must set self.table to a QTableWidget and implement:
+      - refresh_table()
+      - update_temp()      — read table cells back into temp data
+      - persist()          — write temp to cfg and cfg.save(...)
+    """
+
+    def sort_rows(self, column=0):
+        """Sort table rows by column"""
+        if self.table.rowCount() > 1:
+            self.table.sortItems(column)
+            self.set_modified()
+
+    def delete_rows(self):
+        """Delete selected rows"""
+        selected_rows = set(data.row() for data in self.table.selectedIndexes())
+        if not selected_rows:
+            QMessageBox.warning(self, "Error", "No data selected.")
+            return
+        if not self.confirm_operation(message="<b>Delete selected rows?</b>"):
+            return
+        for row_index in sorted(selected_rows, reverse=True):
+            self.table.removeRow(row_index)
+        self.set_modified()
+
+    def applying(self):
+        """Save & apply"""
+        self.save_setting()
+
+    def saving(self):
+        """Save & close"""
+        self.save_setting()
+        self.accept()
+
+    def save_setting(self):
+        """Save setting: update temp, persist, wait, reload"""
+        self.update_temp()
+        self.persist()
+        while cfg.is_saving:
+            time.sleep(0.01)
+        self.reloading()
+        self.set_unmodified()
+
+    def update_temp(self):
+        """Read table cells back into temp data — override in subclass"""
+        raise NotImplementedError
+
+    def persist(self):
+        """Write temp data to cfg and save — override in subclass"""
+        raise NotImplementedError
 
 class BatchOffset(BaseDialog):
     """Batch offset"""

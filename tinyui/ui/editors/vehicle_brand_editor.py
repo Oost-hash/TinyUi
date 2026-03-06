@@ -26,7 +26,6 @@ import asyncio
 import json
 import logging
 import os
-import time
 
 from PySide2.QtWidgets import (
     QFileDialog,
@@ -42,9 +41,9 @@ from tinypedal.const_api import API_LMU_ALIAS, API_LMU_CONFIG, API_RF2_ALIAS, AP
 from tinypedal.const_file import ConfigType, FileFilter
 from tinypedal.setting import cfg, copy_setting
 from .._common import (
-    BaseEditor,
     CompactButton,
     TableBatchReplace,
+    TableEditor,
     UIScaler,
     editor_button_bar,
     setup_table,
@@ -55,7 +54,7 @@ HEADER_BRANDS = "Vehicle name","Brand name"
 logger = logging.getLogger(__name__)
 
 
-class VehicleBrandEditor(BaseEditor):
+class VehicleBrandEditor(TableEditor):
     """Vehicle brand editor"""
 
     def __init__(self, parent):
@@ -66,8 +65,8 @@ class VehicleBrandEditor(BaseEditor):
         self.brands_temp = copy_setting(cfg.user.brands)
 
         # Set table
-        self.table_brands = setup_table(self, HEADER_BRANDS)
-        self.table_brands.cellChanged.connect(self.set_modified)
+        self.table = setup_table(self, HEADER_BRANDS)
+        self.table.cellChanged.connect(self.set_modified)
         self.refresh_table()
         self.set_unmodified()
 
@@ -76,7 +75,7 @@ class VehicleBrandEditor(BaseEditor):
 
         # Set layout
         layout_main = QVBoxLayout()
-        layout_main.addWidget(self.table_brands)
+        layout_main.addWidget(self.table)
         layout_main.addLayout(layout_button)
         layout_main.setContentsMargins(self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN)
         self.setLayout(layout_main)
@@ -95,8 +94,8 @@ class VehicleBrandEditor(BaseEditor):
 
         layout_button = editor_button_bar(self, [
             ("Add", self.add_brand),
-            ("Sort", self.sort_brand),
-            ("Delete", self.delete_brand),
+            ("Sort", lambda: self.sort_rows(1)),
+            ("Delete", self.delete_rows),
             ("Replace", self.open_replace_dialog),
             ("Reset", self.reset_setting),
         ])
@@ -105,7 +104,7 @@ class VehicleBrandEditor(BaseEditor):
 
     def refresh_table(self):
         """Refresh brands list"""
-        self.table_brands.setRowCount(0)
+        self.table.setRowCount(0)
         row_index = 0
         for veh_name, brand_name in self.brands_temp.items():
             self.add_vehicle_entry(row_index, veh_name, brand_name)
@@ -195,7 +194,7 @@ class VehicleBrandEditor(BaseEditor):
         else:
             raise KeyError
 
-        self.update_brands_temp()
+        self.update_temp()
         brands_db.update(self.brands_temp)
         self.brands_temp = brands_db
         self.refresh_table()
@@ -204,50 +203,30 @@ class VehicleBrandEditor(BaseEditor):
     def open_replace_dialog(self):
         """Open replace dialog"""
         selector = {HEADER_BRANDS[1]: 1}
-        _dialog = TableBatchReplace(self, selector, self.table_brands)
+        _dialog = TableBatchReplace(self, selector, self.table)
         _dialog.open()
 
     def add_brand(self):
         """Add new brand"""
-        start_index = row_index = self.table_brands.rowCount()
+        start_index = row_index = self.table.rowCount()
         # Add all missing vehicle name from active session
         veh_total = api.read.vehicle.total_vehicles()
         for index in range(veh_total):
             veh_name = api.read.vehicle.vehicle_name(index)
-            if not self.is_value_in_table(veh_name, self.table_brands):
+            if not self.is_value_in_table(veh_name, self.table):
                 self.add_vehicle_entry(row_index, veh_name, "Unknown")
                 row_index += 1
         # Add new name entry
         if start_index == row_index:
-            new_brand_name = self.new_name_increment("New Vehicle Name", self.table_brands)
+            new_brand_name = self.new_name_increment("New Vehicle Name", self.table)
             self.add_vehicle_entry(row_index, new_brand_name, "Unknown")
-            self.table_brands.setCurrentCell(row_index, 0)
+            self.table.setCurrentCell(row_index, 0)
 
     def add_vehicle_entry(self, row_index: int, veh_name: str, brand_name: str):
         """Add new brand entry to table"""
-        self.table_brands.insertRow(row_index)
-        self.table_brands.setItem(row_index, 0, QTableWidgetItem(veh_name))
-        self.table_brands.setItem(row_index, 1, QTableWidgetItem(brand_name))
-
-    def sort_brand(self):
-        """Sort brands in ascending order"""
-        if self.table_brands.rowCount() > 1:
-            self.table_brands.sortItems(1)
-            self.set_modified()
-
-    def delete_brand(self):
-        """Delete brand entry"""
-        selected_rows = set(data.row() for data in self.table_brands.selectedIndexes())
-        if not selected_rows:
-            QMessageBox.warning(self, "Error", "No data selected.")
-            return
-
-        if not self.confirm_operation(message="<b>Delete selected rows?</b>"):
-            return
-
-        for row_index in sorted(selected_rows, reverse=True):
-            self.table_brands.removeRow(row_index)
-        self.set_modified()
+        self.table.insertRow(row_index)
+        self.table.setItem(row_index, 0, QTableWidgetItem(veh_name))
+        self.table.setItem(row_index, 1, QTableWidgetItem(brand_name))
 
     def reset_setting(self):
         """Reset setting"""
@@ -260,32 +239,18 @@ class VehicleBrandEditor(BaseEditor):
             self.set_modified()
             self.refresh_table()
 
-    def applying(self):
-        """Save & apply"""
-        self.save_setting()
-
-    def saving(self):
-        """Save & close"""
-        self.save_setting()
-        self.accept()  # close
-
-    def update_brands_temp(self):
-        """Update temporary changes to brands temp first"""
+    def update_temp(self):
+        """Update temporary changes to brands temp"""
         self.brands_temp.clear()
-        for index in range(self.table_brands.rowCount()):
-            key_name = self.table_brands.item(index, 0).text()
-            item_name = self.table_brands.item(index, 1).text()
+        for index in range(self.table.rowCount()):
+            key_name = self.table.item(index, 0).text()
+            item_name = self.table.item(index, 1).text()
             self.brands_temp[key_name] = item_name
 
-    def save_setting(self):
-        """Save setting"""
-        self.update_brands_temp()
+    def persist(self):
+        """Persist brands to config"""
         cfg.user.brands = copy_setting(self.brands_temp)
         cfg.save(0, cfg_type=ConfigType.BRANDS)
-        while cfg.is_saving:  # wait saving finish
-            time.sleep(0.01)
-        self.reloading()
-        self.set_unmodified()
 
 
 def parse_vehicle_name(vehicle):
