@@ -1,0 +1,25 @@
+{
+  "name": "Light",
+  "palette": {
+    "Window":          {"active": "#F0F0F0", "inactive": "#F0F0F0", "disabled": "#E8E8E8"},
+    "WindowText":      {"active": "#050505", "inactive": "#050505", "disabled": "#808080"},
+    "Base":            {"active": "#FFFFFF", "inactive": "#FFFFFF", "disabled": "#EEEEEE"},
+    "AlternateBase":   {"active": "#EBEBEB", "inactive": "#EBEBEB", "disabled": "#DBDBDB"},
+    "ToolTipBase":     {"active": "#FFFFFF", "inactive": "#FFFFFF", "disabled": "#FFFFFF"},
+    "ToolTipText":     {"active": "#050505", "inactive": "#050505", "disabled": "#050505"},
+    "PlaceholderText": {"active": "#050505", "inactive": "#050505", "disabled": "#050505"},
+    "Text":            {"active": "#050505", "inactive": "#050505", "disabled": "#808080"},
+    "Button":          {"active": "#F0F0F0", "inactive": "#F0F0F0", "disabled": "#F0F0F0"},
+    "ButtonText":      {"active": "#050505", "inactive": "#050505", "disabled": "#808080"},
+    "BrightText":      {"active": "#FFFFFF", "inactive": "#FFFFFF", "disabled": "#FFFFFF"},
+    "Light":           {"active": "#FFFFFF", "inactive": "#FFFFFF", "disabled": "#FFFFFF"},
+    "Midlight":        {"active": "#E3E3E3", "inactive": "#E3E3E3", "disabled": "#F7F7F7"},
+    "Dark":            {"active": "#A0A0A0", "inactive": "#A0A0A0", "disabled": "#A0A0A0"},
+    "Mid":             {"active": "#CCCCCC", "inactive": "#CCCCCC", "disabled": "#CCCCCC"},
+    "Shadow":          {"active": "#111111", "inactive": "#111111", "disabled": "#050505"},
+    "Highlight":       {"active": "#00AA44", "inactive": "#555555", "disabled": "#CCCCCC"},
+    "HighlightedText": {"active": "#FFFFFF", "inactive": "#F0F0F0", "disabled": "#555555"},
+    "Link":            {"active": "#00AA44", "inactive": "#00AA44", "disabled": "#808080"},
+    "LinkVisited":     {"active": "#FF00FF", "inactive": "#FF00FF", "disabled": "#808080"}
+  }
+}

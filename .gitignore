@@ -21,6 +21,7 @@ pylintrc
 
 # local config file
 *.json
+!tinyui/themes/*.json
 *.csv
 *.fuel
 
