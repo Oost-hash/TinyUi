@@ -223,7 +223,7 @@ def build():
         windows=executable_setting,
         options=build_options,
         data_files=build_data_files,
-        zipfile="lib/library.zip",
+        zipfile="tinyui_lib/library.zip",
     )
 
     print("\n-> py2exe freeze complete")
@@ -231,7 +231,7 @@ def build():
     # -- Step 5: Copy PySide runtime DLLs --
 
     print(f"\nCopying {pyside_name} runtime DLLs...")
-    lib_dir = Path(app_name_dist) / "lib"
+    lib_dir = Path(app_name_dist) / "tinyui_lib"
 
     for dll in pyside_path.glob("*.dll"):
         dst = lib_dir / dll.name
@@ -282,7 +282,7 @@ def build():
     print(f"-> Build copied to {minimal_name}/")
 
     # Remove everything TinyPedal already provides
-    remove_folders = DATA_FOLDERS + ["images", "docs", "platforms", "mediaservice"]
+    remove_folders = DATA_FOLDERS + ["images", "docs", "platforms", "mediaservice", "lib"]
     removed = []
     for folder in remove_folders:
         folder_path = minimal_path / folder
