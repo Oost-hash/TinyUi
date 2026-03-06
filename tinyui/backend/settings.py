@@ -1,9 +1,8 @@
 """
-Re-export TinyPedal setting objects used by TinyUi.
-
-Single source for all setting imports — if TinyPedal renames or
-reorganizes, only this file needs updating.
+Auto-generated adapter file. Do not edit manually.
+Generated from manifest.json - update there instead.
 """
+
 
 from tinypedal.setting import (
     cfg,

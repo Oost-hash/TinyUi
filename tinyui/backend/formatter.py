@@ -1,6 +1,8 @@
 """
-Re-export TinyPedal formatter functions used by TinyUi.
+Auto-generated adapter file. Do not edit manually.
+Generated from manifest.json - update there instead.
 """
+
 
 from tinypedal.formatter import (
     format_module_name,

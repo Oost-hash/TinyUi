@@ -1,6 +1,8 @@
 """
-Re-export TinyPedal regex patterns and choice constants used by TinyUi.
+Auto-generated adapter file. Do not edit manually.
+Generated from manifest.json - update there instead.
 """
+
 
 from tinypedal.regex_pattern import (
     CFG_BOOL,

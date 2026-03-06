@@ -1,6 +1,8 @@
 """
-Re-export TinyPedal validator functions used by TinyUi.
+Auto-generated adapter file. Do not edit manually.
+Generated from manifest.json - update there instead.
 """
+
 
 from tinypedal.validator import (
     image_exists,

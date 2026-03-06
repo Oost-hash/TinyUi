@@ -22,6 +22,7 @@ pylintrc
 # local config file
 *.json
 !tinyui/themes/*.json
+!tinyui/backend/*.json
 *.csv
 *.fuel
 
@@ -31,3 +32,13 @@ test*.py
 *.zip
 *.log
 *.db
+
+# Generated adapter files (auto-generated from manifest.json)
+tinyui/backend/constants.py
+tinyui/backend/controls.py
+tinyui/backend/data.py
+tinyui/backend/formatter.py
+tinyui/backend/misc.py
+tinyui/backend/regex.py
+tinyui/backend/settings.py
+tinyui/backend/validator.py

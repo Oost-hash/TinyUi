@@ -1,11 +1,9 @@
 """
-Re-export TinyPedal constants used by TinyUi.
-
-Single source for all constant imports — if TinyPedal renames or
-reorganizes, only this file needs updating.
+Auto-generated adapter file. Do not edit manually.
+Generated from manifest.json - update there instead.
 """
 
-# --- const_app ---
+
 from tinypedal.const_app import (
     APP_NAME as TP_APP_NAME,
     COPYRIGHT as TP_COPYRIGHT,
@@ -19,7 +17,6 @@ from tinypedal.const_app import (
     URL_WEBSITE,
 )
 
-# --- const_file ---
 from tinypedal.const_file import (
     ConfigType,
     FileExt,
@@ -27,14 +24,12 @@ from tinypedal.const_file import (
     ImageFile,
 )
 
-# --- const_common (only what tinyui uses) ---
 from tinypedal.const_common import (
     EMPTY_DICT,
     MAX_SECONDS,
     TEXT_NOLAPTIME,
 )
 
-# --- const_api (only what tinyui uses) ---
 from tinypedal.const_api import (
     API_LMU_ALIAS,
     API_LMU_CONFIG,

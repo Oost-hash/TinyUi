@@ -1,12 +1,13 @@
 """
-Re-export TinyPedal userfile functions and templates used by TinyUi.
-
-Single source for all data/userfile imports — if TinyPedal renames or
-reorganizes, only this file needs updating.
+Auto-generated adapter file. Do not edit manually.
+Generated from manifest.json - update there instead.
 """
 
-# --- userfile ---
-from tinypedal.userfile import set_relative_path, set_user_data_path
+
+from tinypedal.userfile import (
+    set_relative_path,
+    set_user_data_path,
+)
 
 from tinypedal.userfile.consumption_history import load_consumption_history_file
 
@@ -39,7 +40,6 @@ from tinypedal.userfile.track_notes import (
     set_notes_writer,
 )
 
-# --- templates ---
 from tinypedal.template.setting_shortcuts import (
     SHORTCUTS_GENERAL,
     SHORTCUTS_MODULE,
