@@ -23,6 +23,7 @@ Application UI, style
 import json
 import os
 import re
+import sys
 
 from PySide2.QtGui import QGuiApplication, QPalette
 from PySide2.QtWidgets import QApplication
@@ -51,10 +52,16 @@ _ROLE_MAP = {
 }
 
 
+def _themes_dir() -> str:
+    """Resolve themes directory, works both frozen (py2exe) and development."""
+    if getattr(sys, "frozen", False):
+        return os.path.join(os.path.dirname(sys.executable), "tinyui", "themes")
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "themes")
+
+
 def load_theme(name: str) -> list:
     """Load theme palette from JSON file in themes/ folder"""
-    themes_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "themes")
-    theme_path = os.path.join(themes_dir, f"{name.lower()}.json")
+    theme_path = os.path.join(_themes_dir(), f"{name.lower()}.json")
     with open(theme_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     palette_data = data["palette"]
