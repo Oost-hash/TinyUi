@@ -9,6 +9,7 @@ Changed:
 Added:
 - Table helper functions in _common.py: setup_table, editor_button_bar, combo_selector
 - TableEditor base class with shared sort/delete/save flow
+- Declarative TAB_DEFS and MENU_DEFS lists in app.py
 - Removed duplicate code from editors by using shared helpers
 
 --------------------------------------------------------------------------------

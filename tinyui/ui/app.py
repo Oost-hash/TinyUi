@@ -54,6 +54,27 @@ from .views.spectate_view import SpectateList
 
 logger = logging.getLogger(__name__)
 
+# Tab definitions: (label, factory)
+# factory is a callable(parent) -> QWidget
+TAB_DEFS = [
+    ("Widget",   lambda parent: ModuleList(parent, wctrl)),
+    ("Module",   lambda parent: ModuleList(parent, mctrl)),
+    ("Preset",   lambda parent: PresetList(parent)),
+    ("Spectate", lambda parent: SpectateList(parent)),
+    ("Pacenotes", lambda parent: PaceNotesControl(parent)),
+    ("Hotkey",   lambda parent: HotkeyList(parent)),
+]
+
+# Menu definitions: (label, class)
+MENU_DEFS = [
+    ("Overlay", OverlayMenu),
+    ("API",     APIMenu),
+    ("Config",  ConfigMenu),
+    ("Tools",   ToolsMenu),
+    ("Window",  WindowMenu),
+    ("Help",    HelpMenu),
+]
+
 
 class TabView(QWidget):
     """Tab view"""
@@ -62,27 +83,22 @@ class TabView(QWidget):
         super().__init__(parent)
         # Notify bar
         notify_bar = NotifyBar(self)
-        notify_bar.presetlocked.clicked.connect(self.select_preset_tab)
-        notify_bar.spectate.clicked.connect(self.select_spectate_tab)
-        notify_bar.pacenotes.clicked.connect(self.select_pacenotes_tab)
-        notify_bar.hotkey.clicked.connect(self.select_hotkey_tab)
 
-        # Tabs
-        widget_tab = ModuleList(self, wctrl)
-        module_tab = ModuleList(self, mctrl)
-        preset_tab = PresetList(self)
-        spectate_tab = SpectateList(self)
-        pacenotes_tab = PaceNotesControl(self)
-        hotkey_tab = HotkeyList(self)
-
+        # Build tabs from definitions
         self._tabs = QTabWidget(self)
-        self._tabs.addTab(widget_tab, "Widget")  # 0
-        self._tabs.addTab(module_tab, "Module")  # 1
-        self._tabs.addTab(preset_tab, "Preset")  # 2
-        self._tabs.addTab(spectate_tab, "Spectate")  # 3
-        self._tabs.addTab(pacenotes_tab, "Pacenotes")  # 4
-        self._tabs.addTab(hotkey_tab, "Hotkey")  # 5
+        self._tab_index = {}
+        for label, factory in TAB_DEFS:
+            tab = factory(self)
+            self._tabs.addTab(tab, label)
+            self._tab_index[label] = self._tabs.count() - 1
+            app_signal.refresh.connect(tab.refresh)
         self._tabs.currentChanged.connect(self.refresh)
+
+        # Connect notify bar buttons to tabs
+        notify_bar.presetlocked.clicked.connect(lambda: self.select_tab("Preset"))
+        notify_bar.spectate.clicked.connect(lambda: self.select_tab("Spectate"))
+        notify_bar.pacenotes.clicked.connect(lambda: self.select_tab("Pacenotes"))
+        notify_bar.hotkey.clicked.connect(lambda: self.select_tab("Hotkey"))
 
         # Main view
         layout_main = QVBoxLayout()
@@ -96,13 +112,6 @@ class TabView(QWidget):
         app_signal.updates.connect(notify_bar.updates.checking)
         app_signal.refresh.connect(notify_bar.refresh)
 
-        app_signal.refresh.connect(widget_tab.refresh)
-        app_signal.refresh.connect(module_tab.refresh)
-        app_signal.refresh.connect(preset_tab.refresh)
-        app_signal.refresh.connect(spectate_tab.refresh)
-        app_signal.refresh.connect(pacenotes_tab.refresh)
-        app_signal.refresh.connect(hotkey_tab.refresh)
-
     def refresh(self):
         """Refresh tab area"""
         # Workaround to correct tab scroll area size after height changed
@@ -111,21 +120,13 @@ class TabView(QWidget):
         self.resize(width, height - 1)
         self.resize(width, height + 1)
 
+    def select_tab(self, label: str):
+        """Select tab by label"""
+        self._tabs.setCurrentIndex(self._tab_index[label])
+
     def select_preset_tab(self):
         """Select preset tab"""
-        self._tabs.setCurrentIndex(2)
-
-    def select_spectate_tab(self):
-        """Select spectate tab"""
-        self._tabs.setCurrentIndex(3)
-
-    def select_pacenotes_tab(self):
-        """Select pace notes tab"""
-        self._tabs.setCurrentIndex(4)
-
-    def select_hotkey_tab(self):
-        """Select hotkey tab"""
-        self._tabs.setCurrentIndex(5)
+        self.select_tab("Preset")
 
 
 class StatusButtonBar(QStatusBar):
@@ -250,25 +251,13 @@ class AppWindow(QMainWindow):
         """Set menu bar"""
         logger.info("GUI: loading window menu")
         menu = self.menuBar()
-        # Overlay menu
-        menu_overlay = OverlayMenu("Overlay", self)
-        menu.addMenu(menu_overlay)
-        # API menu
-        menu_api = APIMenu("API", self)
-        menu.addMenu(menu_api)
-        self.statusBar().button_api.setMenu(menu_api)
-        # Config menu
-        menu_config = ConfigMenu("Config", self)
-        menu.addMenu(menu_config)
-        # Tools menu
-        menu_tools = ToolsMenu("Tools", self)
-        menu.addMenu(menu_tools)
-        # Window menu
-        menu_window = WindowMenu("Window", self)
-        menu.addMenu(menu_window)
-        # Help menu
-        menu_help = HelpMenu("Help", self)
-        menu.addMenu(menu_help)
+        menus = {}
+        for label, menu_class in MENU_DEFS:
+            m = menu_class(label, self)
+            menu.addMenu(m)
+            menus[label] = m
+        # Link API menu to status bar button
+        self.statusBar().button_api.setMenu(menus["API"])
 
     def set_tray_icon(self):
         """Set tray icon"""
