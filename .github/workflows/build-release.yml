@@ -1,0 +1,112 @@
+name: Build and Release TinyUi
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_build:
+        description: "Test build (no release)"
+        default: false
+        required: false
+        type: boolean
+
+jobs:
+  # Build Windows executable
+  build-windows:
+    runs-on: windows-latest
+    outputs:
+      app_ver: ${{ steps.get_ver.outputs.app_ver }}
+      sha256: ${{ steps.get_hash.outputs.hash_output }}
+
+    steps:
+      - name: Checkout TinyUi
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          architecture: "x64"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install py2exe
+
+      - name: Fetch version number
+        id: get_ver
+        shell: bash
+        run: |
+          ui_ver=$(grep -w 'VERSION' './tinyui/const_tinyui.py' | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+')
+          echo "app_ver=${ui_ver}" >> $GITHUB_OUTPUT
+          echo "TinyUi Version:" $ui_ver
+
+      - name: Build Windows executable
+        run: |
+          python freeze_py2exe.py py2exe
+
+      - name: Create release folder
+        shell: pwsh
+        run: |
+          $releaseName="TinyUi-v${{ steps.get_ver.outputs.app_ver }}"
+          New-Item -ItemType Directory -Force -Path "./release/$releaseName"
+
+          # Copy executable and dependencies
+          Copy-Item "./dist/TinyUi.exe" "./release/$releaseName/"
+          Get-ChildItem "./dist" -Filter "*.dll" | Copy-Item -Destination "./release/$releaseName/"
+          Get-ChildItem "./dist" -Filter "*.pyd" | Copy-Item -Destination "./release/$releaseName/"
+
+          # Create empty tinypedal folder with README
+          New-Item -ItemType Directory -Force -Path "./release/$releaseName/tinypedal"
+          "Plaats hier je TinyPedal download van github.com/TinyPedal/TinyPedal" | Out-File -FilePath "./release/$releaseName/tinypedal/README.txt"
+
+          # ZIP it
+          Compress-Archive -Path "./release/$releaseName/*" -DestinationPath "./release/$releaseName.zip"
+
+      - name: Check hash sum
+        id: get_hash
+        shell: bash
+        run: |
+          sha256hash=$(sha256sum ./release/TinyUi-v${{ steps.get_ver.outputs.app_ver }}.zip | awk '{print $1}')
+          echo "hash_output=${sha256hash}" >> $GITHUB_OUTPUT
+          echo $sha256hash
+
+      - name: Upload release files
+        uses: softprops/action-gh-release@v2
+        if: ${{ !inputs.test_build }}
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v${{ steps.get_ver.outputs.app_ver }}
+          files: |
+            ./release/TinyUi-v${{ steps.get_ver.outputs.app_ver }}.zip
+
+  # Generate release notes
+  release-notes:
+    runs-on: ubuntu-latest
+    needs: build-windows
+    if: ${{ !inputs.test_build }}
+
+    steps:
+      - name: Checkout TinyUi
+        uses: actions/checkout@v4
+
+      - name: Get latest changelog
+        run: |
+          # Extract first section from changelog (until second ---- line)
+          prev_line_num=$(grep -n "^----*$" "./docs/changelog.txt" | sed -n "2,2p" | sed 's/[\:\-]//g')
+          sed -n "1,$(expr $prev_line_num - 2)p" "./docs/changelog.txt" > release.txt
+
+          # Add hash
+          echo "" >> release.txt
+          echo "Hash sum" >> release.txt
+          echo "---" >> release.txt
+          echo "SHA256: ${{ needs.build-windows.outputs.sha256 }}" >> release.txt
+
+          cat release.txt
+
+      - name: Update release notes
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release.txt
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v${{ needs.build-windows.outputs.app_ver }}
