@@ -2,16 +2,22 @@
 Version 0.4.0 (2026-03-06)
 --------------------------------------------------------------------------------
 Changed:
-- refractored main, _commen, _option, app, about, config, log_info, menu and
-notification too use new adapter layer
+- Updated icon to better differentiate between TinyPedal and TinyUi
+    - Changed color to #9753ff
+    - Updated metadata in compliance with CC BY-SA 4.0
+    - Added CC BY-SA 4.0 license in images folder
+- Refactored main, _common, _option, app, about, config, log_info, menu and
+  notification to use new adapter layer
+- TinyUi now uses its own icon for window and tray
 
 Added:
-- adapter/api layer for constants. Too keep code changes minimal when
-Tiny Pedals updates or changes in any shape or form.
+- Backend adapter layer for constants to keep code changes minimal when
+  TinyPedal updates or changes
+- Exported TinyUi icon as PNG and ICO from SVG source
 
 Todo:
-- expand adapter/api layer too be more broad
-- address import hell futher
+- Expand adapter layer to cover more imports
+- Address import coupling further
 
 --------------------------------------------------------------------------------
 Version 0.3.0 (2026-03-06)
