@@ -40,11 +40,10 @@ from PySide2.QtWidgets import (
 )
 
 from tinypedal import app_signal
-from tinypedal.const_app import VERSION
-from tinypedal.const_file import ConfigType, FileExt
-from tinypedal.formatter import strip_filename_extension
+from tinyui.backend.constants import TP_VERSION, ConfigType, FileExt
+from tinyui.backend.formatter import strip_filename_extension
 from tinypedal.setting import cfg
-from tinypedal.validator import is_allowed_filename
+from tinyui.backend.validator import is_allowed_filename
 from .._common import QVAL_FILENAME, BaseDialog, UIScaler
 from .preset_transfer import PresetTransfer
 
@@ -191,7 +190,7 @@ class PresetList(QWidget):
                 "Changes to locked preset will not be saved."
             )
             if self.confirm_operation(title="Lock Preset", message=msg_text):
-                cfg.user.filelock[selected_filename] = {"version": VERSION}
+                cfg.user.filelock[selected_filename] = {"version": TP_VERSION}
                 cfg.save(cfg_type=ConfigType.FILELOCK)
         elif action == "Unlock Preset":
             msg_text = f"Unlock <b>{selected_filename}</b> preset?"

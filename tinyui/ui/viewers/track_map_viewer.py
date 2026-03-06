@@ -41,7 +41,7 @@ from PySide2.QtWidgets import (
 )
 
 from tinypedal import calculation as calc
-from tinypedal.const_file import ConfigType, FileExt, FileFilter
+from tinyui.backend.constants import ConfigType, FileExt, FileFilter
 from tinypedal.setting import cfg
 from tinypedal.userfile.track_map import load_track_map_file
 from .._common import BaseDialog, CompactButton, UIScaler

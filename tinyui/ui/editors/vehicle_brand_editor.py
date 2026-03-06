@@ -37,8 +37,10 @@ from PySide2.QtWidgets import (
 
 from tinypedal.api_control import api
 from tinypedal.async_request import get_response, set_header_get
-from tinypedal.const_api import API_LMU_ALIAS, API_LMU_CONFIG, API_RF2_ALIAS, API_RF2_CONFIG
-from tinypedal.const_file import ConfigType, FileFilter
+from tinyui.backend.constants import (
+    API_LMU_ALIAS, API_LMU_CONFIG, API_RF2_ALIAS, API_RF2_CONFIG,
+    ConfigType, FileFilter,
+)
 from tinypedal.setting import cfg, copy_setting
 from .._common import (
     CompactButton,

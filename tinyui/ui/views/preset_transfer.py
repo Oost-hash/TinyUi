@@ -38,8 +38,8 @@ from PySide2.QtWidgets import (
     QMessageBox,
 )
 
-from tinypedal import regex_pattern as rxp
-from tinypedal.formatter import format_option_name
+from tinyui.backend import regex as rxp
+from tinyui.backend.formatter import format_option_name
 from tinypedal.setting import cfg, load_setting_json_file, save_and_verify_json_file
 from .._common import (
     BaseEditor,

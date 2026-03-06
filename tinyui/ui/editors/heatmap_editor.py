@@ -31,7 +31,7 @@ from PySide2.QtWidgets import (
     QVBoxLayout,
 )
 
-from tinypedal.const_file import ConfigType
+from tinyui.backend.constants import ConfigType
 from tinypedal.setting import cfg, copy_setting
 from .._common import (
     QVAL_COLOR,

@@ -53,7 +53,7 @@ from PySide2.QtWidgets import (
 
 from tinyui.backend.constants import TP_APP_NAME
 from tinypedal.setting import cfg
-from tinypedal.validator import is_string_number
+from tinyui.backend.validator import is_string_number
 from . import UIScaler
 
 # Validator

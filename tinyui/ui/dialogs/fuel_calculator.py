@@ -50,8 +50,8 @@ from PySide2.QtWidgets import (
 from tinypedal import calculation as calc
 from tinypedal import units
 from tinypedal.api_control import api
-from tinypedal.const_file import FileFilter
-from tinypedal.formatter import laptime_string_to_seconds
+from tinyui.backend.constants import FileFilter
+from tinyui.backend.formatter import laptime_string_to_seconds
 from tinypedal.module_info import ConsumptionDataSet, minfo
 from tinypedal.setting import cfg
 from tinypedal.userfile.consumption_history import load_consumption_history_file

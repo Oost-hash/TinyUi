@@ -28,7 +28,7 @@ from PySide2.QtWidgets import (
 )
 
 from tinypedal.api_control import api
-from tinypedal.const_file import ConfigType
+from tinyui.backend.constants import ConfigType
 from tinypedal.setting import cfg, copy_setting
 from tinypedal.userfile.heatmap import HEATMAP_DEFAULT_BRAKE, set_predefined_brake_name
 from .._common import (

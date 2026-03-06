@@ -44,9 +44,9 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinypedal import regex_pattern as rxp
-from tinypedal.const_file import ConfigType
-from tinypedal.formatter import format_option_name
+from tinyui.backend import regex as rxp
+from tinyui.backend.constants import ConfigType
+from tinyui.backend.formatter import format_option_name
 from tinypedal.setting import cfg
 from .._common import (
     QVAL_COLOR,

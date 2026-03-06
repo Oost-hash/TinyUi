@@ -37,9 +37,8 @@ from PySide2.QtWidgets import (
 )
 
 from tinypedal import app_signal
-from tinypedal.const_app import PLATFORM
-from tinypedal.const_file import ConfigType
-from tinypedal.formatter import format_option_name
+from tinyui.backend.constants import PLATFORM, ConfigType
+from tinyui.backend.formatter import format_option_name
 from tinypedal.hotkey.common import (
     format_hotkey_name,
     get_key_state_function,

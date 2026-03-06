@@ -32,7 +32,7 @@ from PySide2.QtWidgets import (
     QVBoxLayout,
 )
 
-from tinypedal.formatter import format_option_name
+from tinyui.backend.formatter import format_option_name
 from .._common import BaseDialog, UIScaler
 
 
