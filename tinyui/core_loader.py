@@ -13,7 +13,7 @@ import time
 
 import psutil
 from tinyui.backend.constants import FileExt
-from tinypedal.setting import cfg
+from tinyui.backend.settings import cfg
 
 logger = logging.getLogger("TinyUi")
 

@@ -47,7 +47,7 @@ from PySide2.QtWidgets import (
 from tinyui.backend import regex as rxp
 from tinyui.backend.constants import ConfigType
 from tinyui.backend.formatter import format_option_name
-from tinypedal.setting import cfg
+from tinyui.backend.settings import cfg
 from .._common import (
     QVAL_COLOR,
     QVAL_FLOAT,

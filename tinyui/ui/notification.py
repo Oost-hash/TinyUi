@@ -32,7 +32,7 @@ from PySide2.QtWidgets import (
 )
 
 from tinyui.backend.constants import URL_RELEASE
-from tinypedal.setting import cfg
+from tinyui.backend.settings import cfg
 from tinypedal.update import update_checker
 
 

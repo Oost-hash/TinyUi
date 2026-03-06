@@ -63,7 +63,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         # LAZY IMPORTS - pas hier, NA dat QApplication en cfg bestaan
         from tinypedal.api_control import api
-        from tinypedal.setting import cfg
+        from tinyui.backend.settings import cfg
         from tinypedal import app_signal
 
         from .ui import set_style_palette, set_style_window
@@ -289,7 +289,7 @@ def run():
     from PySide2.QtGui import QFont, QGuiApplication, QPixmapCache
     from tinypedal.log_handler import set_logging_level
     from tinypedal.main import set_environment, unset_environment
-    from tinypedal.setting import cfg as _cfg_local
+    from tinyui.backend.settings import cfg as _cfg_local
 
     # 1. Setup environment
     unset_environment()

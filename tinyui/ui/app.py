@@ -40,7 +40,7 @@ from tinypedal import app_signal, loader
 from tinypedal.api_control import api
 from tinyui.backend.constants import TP_APP_NAME, TP_VERSION, ConfigType
 from tinypedal.module_control import mctrl, wctrl
-from tinypedal.setting import cfg
+from tinyui.backend.settings import cfg
 from . import set_style_palette, set_style_window
 from ._common import DialogSingleton, UIScaler
 from .menu import APIMenu, ConfigMenu, HelpMenu, OverlayMenu, ToolsMenu, WindowMenu

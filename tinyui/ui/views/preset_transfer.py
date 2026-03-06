@@ -40,7 +40,7 @@ from PySide2.QtWidgets import (
 
 from tinyui.backend import regex as rxp
 from tinyui.backend.formatter import format_option_name
-from tinypedal.setting import cfg, load_setting_json_file, save_and_verify_json_file
+from tinyui.backend.settings import cfg, load_setting_json_file, save_and_verify_json_file
 from .._common import (
     BaseEditor,
     CompactButton,

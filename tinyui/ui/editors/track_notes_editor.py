@@ -43,7 +43,7 @@ from PySide2.QtWidgets import (
 
 from tinypedal.api_control import api
 from tinyui.backend.formatter import strip_invalid_char
-from tinypedal.setting import cfg
+from tinyui.backend.settings import cfg
 from tinypedal.userfile.track_notes import (
     NOTESTYPE_PACE,
     NOTESTYPE_TRACK,

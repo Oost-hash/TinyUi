@@ -30,7 +30,7 @@ from PySide2.QtWidgets import (
 from tinypedal.api_control import api
 from tinyui.backend.constants import EMPTY_DICT, ConfigType
 from tinyui.backend.formatter import random_color_class
-from tinypedal.setting import cfg, copy_setting
+from tinyui.backend.settings import cfg, copy_setting
 from .._common import (
     QVAL_COLOR,
     TableEditor,

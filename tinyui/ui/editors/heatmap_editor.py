@@ -32,7 +32,7 @@ from PySide2.QtWidgets import (
 )
 
 from tinyui.backend.constants import ConfigType
-from tinypedal.setting import cfg, copy_setting
+from tinyui.backend.settings import cfg, copy_setting
 from .._common import (
     QVAL_COLOR,
     QVAL_HEATMAP,

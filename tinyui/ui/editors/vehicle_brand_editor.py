@@ -41,7 +41,7 @@ from tinyui.backend.constants import (
     API_LMU_ALIAS, API_LMU_CONFIG, API_RF2_ALIAS, API_RF2_CONFIG,
     ConfigType, FileFilter,
 )
-from tinypedal.setting import cfg, copy_setting
+from tinyui.backend.settings import cfg, copy_setting
 from .._common import (
     CompactButton,
     TableBatchReplace,

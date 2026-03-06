@@ -48,7 +48,7 @@ from tinypedal.api_control import api
 from tinyui.backend.constants import FileFilter
 from tinypedal.module_control import mctrl
 from tinypedal.module_info import minfo
-from tinypedal.setting import cfg
+from tinyui.backend.settings import cfg
 from tinypedal.userfile import set_relative_path
 from tinypedal.userfile.track_notes import COLUMN_PACENOTE
 from .._common import CompactButton, UIScaler

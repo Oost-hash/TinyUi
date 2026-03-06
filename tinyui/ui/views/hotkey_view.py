@@ -46,7 +46,7 @@ from tinypedal.hotkey.common import (
     set_hotkey_win,
 )
 from tinypedal.hotkey_control import kctrl
-from tinypedal.setting import cfg
+from tinyui.backend.settings import cfg
 from tinypedal.template.setting_shortcuts import (
     SHORTCUTS_GENERAL,
     SHORTCUTS_MODULE,

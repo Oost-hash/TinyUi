@@ -29,7 +29,7 @@ from PySide2.QtWidgets import (
 
 from tinypedal.api_control import api
 from tinyui.backend.constants import ConfigType
-from tinypedal.setting import cfg, copy_setting
+from tinyui.backend.settings import cfg, copy_setting
 from tinypedal.userfile.heatmap import HEATMAP_DEFAULT_TYRE, set_predefined_compound_symbol
 from .._common import (
     TableBatchReplace,

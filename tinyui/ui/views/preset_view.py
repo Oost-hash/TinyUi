@@ -42,7 +42,7 @@ from PySide2.QtWidgets import (
 from tinypedal import app_signal
 from tinyui.backend.constants import TP_VERSION, ConfigType, FileExt
 from tinyui.backend.formatter import strip_filename_extension
-from tinypedal.setting import cfg
+from tinyui.backend.settings import cfg
 from tinyui.backend.validator import is_allowed_filename
 from .._common import QVAL_FILENAME, BaseDialog, UIScaler
 from .preset_transfer import PresetTransfer

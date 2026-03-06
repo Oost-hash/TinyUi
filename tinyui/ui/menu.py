@@ -31,7 +31,7 @@ from tinyui.backend.constants import PLATFORM, URL_FAQ, URL_USER_GUIDE, ConfigTy
 from tinyui.backend.formatter import format_option_name
 from tinypedal.module_info import minfo
 from tinypedal.overlay_control import octrl
-from tinypedal.setting import cfg
+from tinyui.backend.settings import cfg
 from tinypedal.update import update_checker
 from .dialogs.about import About
 from .dialogs.config import FontConfig, UserConfig

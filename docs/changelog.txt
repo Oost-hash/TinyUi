@@ -8,11 +8,15 @@ Changed:
     - Added CC BY-SA 4.0 license in images folder
 - Refactored main, _common, _option, app, about, config, log_info, menu and
   notification to use new adapter layer
+- Rewired all formatter, validator, regex imports to use backend adapters
+- Rewired all setting imports (~22 files) to use backend adapters
 - TinyUi now uses its own icon for window and tray
 
 Added:
 - Backend adapter layer for constants to keep code changes minimal when
   TinyPedal updates or changes
+- Backend adapters for formatter, validator, and regex
+- Backend adapter for settings (cfg, copy_setting, load/save JSON)
 - Exported TinyUi icon as PNG and ICO from SVG source
 - Non-invasive drop-in build: uses separate tinyui_lib/ to avoid overwriting
   TinyPedal's lib/. Uninstall by removing tinyui.exe, tinyui_lib/ and tinyui/
