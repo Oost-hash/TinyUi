@@ -1,0 +1,31 @@
+--------------------------------------------------------------------------------
+Version 0.2.0 (2025-03-06)
+--------------------------------------------------------------------------------
+
+Added:
+- Initial release
+- Separated run.py into main.py and core_loader.py
+- GitHub Actions CI/CD pipeline
+- Theme colors loaded from JSON files (tinyui/themes/dark.json, light.json)
+- build_release.py for py2exe builds
+
+Changed:
+- run.py now chdir's to tinypedal/ so data folders stay in the submodule
+- Removed hardcoded palette functions in favor of JSON theme loading
+
+Fixed:
+- Data folders (settings/, brandlogo/, etc.) no longer pollute the project root
+
+--------------------------------------------------------------------------------
+Version 0.1.0 (2025-03-05)
+--------------------------------------------------------------------------------
+
+Added:
+- Proof of concept
+- Basic UI replacement
+
+Changed:
+- N/A
+
+Fixed:
+- N/A
