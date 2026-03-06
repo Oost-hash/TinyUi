@@ -73,6 +73,12 @@ THEME_FILES = [
     str(p) for p in (PROJECT_ROOT / "tinyui" / "themes").glob("*.json")
 ]
 
+TINYUI_IMAGE_FILES = [
+    str(p) for p in (PROJECT_ROOT / "tinyui" / "images").glob("*.png")
+] + [
+    str(p) for p in (PROJECT_ROOT / "tinyui" / "images").glob("*.ico")
+]
+
 
 def discover_tinyui_modules():
     """Auto-discover all tinyui Python modules from the filesystem."""
@@ -140,7 +146,7 @@ def build():
     executable_setting = [
         {
             "script": "run_tinyui.py",
-            "icon_resources": [(1, "images/icon.ico")],
+            "icon_resources": [(1, "tinyui/images/icon.ico")],
             "dest_base": APP_NAME.lower(),
         }
     ]
@@ -179,6 +185,7 @@ def build():
         ("docs/licenses", licenses_files),
         ("images", IMAGE_FILES),
         ("tinyui/themes", THEME_FILES),
+        ("tinyui/images", TINYUI_IMAGE_FILES),
         ("platforms", qt_platforms),
         ("mediaservice", qt_mediaservice),
     ]
