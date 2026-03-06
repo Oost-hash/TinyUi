@@ -54,7 +54,7 @@ from tinyui.backend.constants import FileFilter
 from tinyui.backend.formatter import laptime_string_to_seconds
 from tinypedal.module_info import ConsumptionDataSet, minfo
 from tinyui.backend.settings import cfg
-from tinypedal.userfile.consumption_history import load_consumption_history_file
+from tinyui.backend.data import load_consumption_history_file
 from .._common import BaseDialog, UIScaler
 
 

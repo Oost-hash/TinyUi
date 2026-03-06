@@ -38,7 +38,7 @@ from PySide2.QtWidgets import (
 )
 
 from tinyui.backend.constants import FileFilter
-from tinypedal.userfile import set_relative_path, set_user_data_path
+from tinyui.backend.data import set_relative_path, set_user_data_path
 from tinyui.backend.validator import image_exists, is_clock_format, is_hex_color, is_string_number
 
 

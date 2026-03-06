@@ -33,7 +33,7 @@ from PySide2.QtWidgets import (
 from tinyui.backend.controls import api
 from tinyui.backend.constants import ConfigType
 from tinyui.backend.settings import cfg, copy_setting
-from tinypedal.template.setting_tracks import TRACKINFO_DEFAULT
+from tinyui.backend.data import TRACKINFO_DEFAULT
 from .._common import (
     ClockTableItem,
     FloatTableItem,

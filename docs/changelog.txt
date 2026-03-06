@@ -12,6 +12,7 @@ Changed:
 - Rewired all setting imports (~22 files) to use backend adapters
 - Rewired all control imports (api, mctrl, wctrl, octrl, kctrl, app_signal,
   loader) to use backend adapters
+- Rewired all userfile and template imports to use backend adapters
 - TinyUi now uses its own icon for window and tray
 
 Added:
@@ -21,6 +22,8 @@ Added:
 - Backend adapter for settings (cfg, copy_setting, load/save JSON)
 - Backend adapter for controls (api, mctrl, wctrl, octrl, kctrl,
   app_signal, loader, ModuleControl)
+- Backend adapter for data (userfile functions, templates, driver stats,
+  heatmaps, track notes, track map, shortcuts)
 - Exported TinyUi icon as PNG and ICO from SVG source
 - Non-invasive drop-in build: uses separate tinyui_lib/ to avoid overwriting
   TinyPedal's lib/. Uninstall by removing tinyui.exe, tinyui_lib/ and tinyui/

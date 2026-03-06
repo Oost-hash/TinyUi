@@ -48,8 +48,7 @@ from tinyui.backend.controls import api, app_signal, mctrl
 from tinyui.backend.constants import FileFilter
 from tinypedal.module_info import minfo
 from tinyui.backend.settings import cfg
-from tinypedal.userfile import set_relative_path
-from tinypedal.userfile.track_notes import COLUMN_PACENOTE
+from tinyui.backend.data import COLUMN_PACENOTE, set_relative_path
 from .._common import CompactButton, UIScaler
 
 logger = logging.getLogger(__name__)

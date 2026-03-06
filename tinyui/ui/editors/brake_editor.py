@@ -30,7 +30,7 @@ from PySide2.QtWidgets import (
 from tinyui.backend.controls import api
 from tinyui.backend.constants import ConfigType
 from tinyui.backend.settings import cfg, copy_setting
-from tinypedal.userfile.heatmap import HEATMAP_DEFAULT_BRAKE, set_predefined_brake_name
+from tinyui.backend.data import HEATMAP_DEFAULT_BRAKE, set_predefined_brake_name
 from .._common import (
     FloatTableItem,
     TableEditor,
