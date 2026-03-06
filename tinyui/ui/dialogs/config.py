@@ -25,7 +25,7 @@ from __future__ import annotations
 import os
 import re
 import time
-from typing import Callable, Mapping, Sequence
+from typing import Callable, Mapping
 
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QFontDatabase

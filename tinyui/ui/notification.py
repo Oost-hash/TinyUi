@@ -31,7 +31,7 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinypedal.const_app import URL_RELEASE
+from tinyui.backend.constants import URL_RELEASE
 from tinypedal.setting import cfg
 from tinypedal.update import update_checker
 

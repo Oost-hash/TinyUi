@@ -31,7 +31,7 @@ from PySide2.QtWidgets import (
     QVBoxLayout,
 )
 
-from tinypedal.const_file import FileFilter
+from tinyui.backend.constants import FileFilter
 from tinypedal.main import log_stream
 from .._common import BaseDialog, CompactButton, UIScaler, singleton_dialog
 

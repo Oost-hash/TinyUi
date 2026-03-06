@@ -38,8 +38,7 @@ from PySide2.QtWidgets import (
 
 from tinypedal import app_signal, loader
 from tinypedal.api_control import api
-from tinypedal.const_app import APP_NAME, VERSION
-from tinypedal.const_file import ConfigType
+from tinyui.backend.constants import TP_APP_NAME, TP_VERSION, ConfigType
 from tinypedal.module_control import mctrl, wctrl
 from tinypedal.setting import cfg
 from . import set_style_palette, set_style_window
@@ -213,7 +212,7 @@ class AppWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(f"{APP_NAME} v{VERSION}")
+        self.setWindowTitle(f"{TP_APP_NAME} v{TP_VERSION}")
         self.setAttribute(Qt.WA_DeleteOnClose, True)
         self.last_style = None
 

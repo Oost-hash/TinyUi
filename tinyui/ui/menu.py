@@ -27,8 +27,7 @@ from PySide2.QtWidgets import QMenu, QMessageBox
 
 from tinypedal import app_signal, loader
 from tinypedal.api_control import api
-from tinypedal.const_app import PLATFORM, URL_FAQ, URL_USER_GUIDE
-from tinypedal.const_file import ConfigType
+from tinyui.backend.constants import PLATFORM, URL_FAQ, URL_USER_GUIDE, ConfigType
 from tinypedal.formatter import format_option_name
 from tinypedal.module_info import minfo
 from tinypedal.overlay_control import octrl

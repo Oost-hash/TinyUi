@@ -34,8 +34,10 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinypedal.const_app import APP_NAME, COPYRIGHT, DESCRIPTION, LICENSE, URL_WEBSITE, VERSION
-from tinypedal.const_file import ImageFile
+from tinyui.backend.constants import (
+    TP_APP_NAME, TP_COPYRIGHT, TP_DESCRIPTION, TP_LICENSE, TP_VERSION,
+    URL_WEBSITE, ImageFile,
+)
 from .._common import BaseDialog, UIScaler, singleton_dialog
 
 logger = logging.getLogger(__name__)
@@ -50,7 +52,7 @@ class About(BaseDialog):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.setWindowTitle(f"About {APP_NAME}")
+        self.setWindowTitle(f"About {TP_APP_NAME}")
 
         # Tab
         main_tab = self.add_tabs()
@@ -115,15 +117,15 @@ class About(BaseDialog):
         label_logo.setAlignment(Qt.AlignCenter)
 
         # Description
-        label_name = QLabel(APP_NAME)
+        label_name = QLabel(TP_APP_NAME)
         label_name.setObjectName("labelAppName")
         label_name.setAlignment(Qt.AlignCenter)
 
-        label_version = QLabel(f"Version {VERSION}")
+        label_version = QLabel(f"Version {TP_VERSION}")
         label_version.setAlignment(Qt.AlignCenter)
 
         label_desc = QLabel(
-            f"<p>{COPYRIGHT}</p><p>{DESCRIPTION}</p><p>{LICENSE}</p>"
+            f"<p>{TP_COPYRIGHT}</p><p>{TP_DESCRIPTION}</p><p>{TP_LICENSE}</p>"
             f"<p><a href={URL_WEBSITE}>{URL_WEBSITE}</a></p>"
         )
         label_desc.setAlignment(Qt.AlignCenter)

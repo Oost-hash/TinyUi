@@ -51,7 +51,7 @@ from PySide2.QtWidgets import (
     QVBoxLayout,
 )
 
-from tinypedal.const_app import APP_NAME
+from tinyui.backend.constants import TP_APP_NAME
 from tinypedal.setting import cfg
 from tinypedal.validator import is_string_number
 from . import UIScaler
@@ -227,7 +227,7 @@ class BaseDialog(QDialog):
 
     def set_utility_title(self, name: str):
         """Set utility dialog title"""
-        self.setWindowTitle(f"{name} - {APP_NAME}")
+        self.setWindowTitle(f"{name} - {TP_APP_NAME}")
 
     def confirm_operation(self, title: str = "Confirm", message: str = "") -> bool:
         """Confirm operation"""

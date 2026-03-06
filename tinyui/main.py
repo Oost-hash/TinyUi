@@ -19,9 +19,8 @@ from PySide2.QtWidgets import (
 )
 
 # Alleen imports die geen cfg nodig hebben
-from tinypedal.const_app import APP_NAME, VERSION
 from tinyui.version import __version__ as TINYUI_VERSION
-from tinypedal.const_file import ConfigType, ImageFile
+from tinyui.backend.constants import TP_APP_NAME, TP_VERSION, ConfigType, ImageFile
 
 logger = logging.getLogger("TinyUi")
 
@@ -78,7 +77,7 @@ class MainWindow(QMainWindow):
         self._WindowMenu = WindowMenu
         self._core = core
 
-        self.setWindowTitle(f"TinyUi v{TINYUI_VERSION} | {APP_NAME} v{VERSION}")
+        self.setWindowTitle(f"TinyUi v{TINYUI_VERSION} | {TP_APP_NAME} v{TP_VERSION}")
         self.setAttribute(Qt.WA_DeleteOnClose, True)
         self._last_style = None
         self._tray_icon = None
@@ -349,7 +348,7 @@ def run():
     from .core_loader import core
 
     core.start()
-    logger.info(f"TinyPedal: {VERSION}")
+    logger.info(f"TinyPedal: {TP_VERSION}")
 
     # 7. Start window
     window = MainWindow()
