@@ -35,7 +35,7 @@ from PySide2.QtWidgets import (
 from tinypedal import app_signal
 from tinypedal.api_control import api
 from tinypedal.setting import cfg
-from ._common import UIScaler
+from .._common import UIScaler
 
 logger = logging.getLogger(__name__)
 

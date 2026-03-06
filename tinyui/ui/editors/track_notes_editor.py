@@ -55,7 +55,7 @@ from tinypedal.userfile.track_notes import (
     set_notes_parser,
     set_notes_writer,
 )
-from ._common import (
+from .._common import (
     QVAL_FILENAME,
     BaseDialog,
     BaseEditor,
@@ -65,7 +65,7 @@ from ._common import (
     TableBatchReplace,
     UIScaler,
 )
-from .track_map_viewer import MapView
+from ..viewers.track_map_viewer import MapView
 
 DECIMALS = 2
 

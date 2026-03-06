@@ -44,13 +44,13 @@ from tinypedal.module_control import mctrl, wctrl
 from tinypedal.setting import cfg
 from . import set_style_palette, set_style_window
 from ._common import DialogSingleton, UIScaler
-from .hotkey_view import HotkeyList
 from .menu import APIMenu, ConfigMenu, HelpMenu, OverlayMenu, ToolsMenu, WindowMenu
-from .module_view import ModuleList
 from .notification import NotifyBar
-from .pace_notes_view import PaceNotesControl
-from .preset_view import PresetList
-from .spectate_view import SpectateList
+from .views.hotkey_view import HotkeyList
+from .views.module_view import ModuleList
+from .views.pace_notes_view import PaceNotesControl
+from .views.preset_view import PresetList
+from .views.spectate_view import SpectateList
 
 logger = logging.getLogger(__name__)
 

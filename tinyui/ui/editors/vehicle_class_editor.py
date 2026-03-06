@@ -24,10 +24,7 @@ import random
 import time
 
 from PySide2.QtWidgets import (
-    QHBoxLayout,
-    QHeaderView,
     QMessageBox,
-    QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
 )
@@ -37,13 +34,14 @@ from tinypedal.const_common import EMPTY_DICT
 from tinypedal.const_file import ConfigType
 from tinypedal.formatter import random_color_class
 from tinypedal.setting import cfg, copy_setting
-from ._common import (
+from .._common import (
     QVAL_COLOR,
     BaseEditor,
-    CompactButton,
     UIScaler,
+    editor_button_bar,
+    setup_table,
 )
-from ._option import ColorEdit
+from .._option import ColorEdit
 
 HEADER_CLASSES = "Class name","Alias name","Color"
 
@@ -59,14 +57,9 @@ class VehicleClassEditor(BaseEditor):
         self.classes_temp = copy_setting(cfg.user.classes)
 
         # Set table
-        self.table_classes = QTableWidget(self)
-        self.table_classes.setColumnCount(len(HEADER_CLASSES))
-        self.table_classes.setHorizontalHeaderLabels(HEADER_CLASSES)
-        self.table_classes.verticalHeader().setVisible(False)
-        self.table_classes.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        self.table_classes.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table_classes.horizontalHeader().setSectionResizeMode(2, QHeaderView.Fixed)
-        self.table_classes.setColumnWidth(2, UIScaler.size(7))
+        self.table_classes = setup_table(
+            self, HEADER_CLASSES, column_widths={2: 7}, show_row_header=False
+        )
         self.table_classes.cellChanged.connect(self.set_modified)
         self.refresh_table()
         self.set_unmodified()
@@ -83,37 +76,12 @@ class VehicleClassEditor(BaseEditor):
 
     def set_layout_button(self):
         """Set button layout"""
-        button_add = CompactButton("Add")
-        button_add.clicked.connect(self.add_class)
-
-        button_sort = CompactButton("Sort")
-        button_sort.clicked.connect(self.sort_class)
-
-        button_delete = CompactButton("Delete")
-        button_delete.clicked.connect(self.delete_class)
-
-        button_reset = CompactButton("Reset")
-        button_reset.clicked.connect(self.reset_setting)
-
-        button_apply = CompactButton("Apply")
-        button_apply.clicked.connect(self.applying)
-
-        button_save = CompactButton("Save")
-        button_save.clicked.connect(self.saving)
-
-        button_close = CompactButton("Close")
-        button_close.clicked.connect(self.close)
-
-        layout_button = QHBoxLayout()
-        layout_button.addWidget(button_add)
-        layout_button.addWidget(button_sort)
-        layout_button.addWidget(button_delete)
-        layout_button.addWidget(button_reset)
-        layout_button.addStretch(1)
-        layout_button.addWidget(button_apply)
-        layout_button.addWidget(button_save)
-        layout_button.addWidget(button_close)
-        return layout_button
+        return editor_button_bar(self, [
+            ("Add", self.add_class),
+            ("Sort", self.sort_class),
+            ("Delete", self.delete_class),
+            ("Reset", self.reset_setting),
+        ])
 
     def refresh_table(self):
         """Refresh class list"""

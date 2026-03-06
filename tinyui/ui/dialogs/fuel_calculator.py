@@ -55,7 +55,7 @@ from tinypedal.formatter import laptime_string_to_seconds
 from tinypedal.module_info import ConsumptionDataSet, minfo
 from tinypedal.setting import cfg
 from tinypedal.userfile.consumption_history import load_consumption_history_file
-from ._common import BaseDialog, UIScaler
+from .._common import BaseDialog, UIScaler
 
 
 def set_grid_layout(spacing: int = 2, margin: int = 4):

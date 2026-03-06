@@ -41,7 +41,7 @@ from PySide2.QtWidgets import (
 from tinypedal import regex_pattern as rxp
 from tinypedal.formatter import format_option_name
 from tinypedal.setting import cfg, load_setting_json_file, save_and_verify_json_file
-from ._common import (
+from .._common import (
     BaseEditor,
     CompactButton,
     UIScaler,

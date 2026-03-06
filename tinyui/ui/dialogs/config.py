@@ -48,7 +48,7 @@ from tinypedal import regex_pattern as rxp
 from tinypedal.const_file import ConfigType
 from tinypedal.formatter import format_option_name
 from tinypedal.setting import cfg
-from ._common import (
+from .._common import (
     QVAL_COLOR,
     QVAL_FLOAT,
     QVAL_INTEGER,
@@ -57,7 +57,7 @@ from ._common import (
     UIScaler,
     singleton_dialog,
 )
-from ._option import (
+from .._option import (
     BooleanEdit,
     ClockFormatEdit,
     ColorEdit,

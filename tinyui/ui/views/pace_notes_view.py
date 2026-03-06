@@ -51,7 +51,7 @@ from tinypedal.module_info import minfo
 from tinypedal.setting import cfg
 from tinypedal.userfile import set_relative_path
 from tinypedal.userfile.track_notes import COLUMN_PACENOTE
-from ._common import CompactButton, UIScaler
+from .._common import CompactButton, UIScaler
 
 logger = logging.getLogger(__name__)
 

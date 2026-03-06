@@ -30,11 +30,8 @@ import time
 
 from PySide2.QtWidgets import (
     QFileDialog,
-    QHBoxLayout,
-    QHeaderView,
     QMenu,
     QMessageBox,
-    QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
 )
@@ -44,11 +41,13 @@ from tinypedal.async_request import get_response, set_header_get
 from tinypedal.const_api import API_LMU_ALIAS, API_LMU_CONFIG, API_RF2_ALIAS, API_RF2_CONFIG
 from tinypedal.const_file import ConfigType, FileFilter
 from tinypedal.setting import cfg, copy_setting
-from ._common import (
+from .._common import (
     BaseEditor,
     CompactButton,
     TableBatchReplace,
     UIScaler,
+    editor_button_bar,
+    setup_table,
 )
 
 HEADER_BRANDS = "Vehicle name","Brand name"
@@ -67,11 +66,7 @@ class VehicleBrandEditor(BaseEditor):
         self.brands_temp = copy_setting(cfg.user.brands)
 
         # Set table
-        self.table_brands = QTableWidget(self)
-        self.table_brands.setColumnCount(len(HEADER_BRANDS))
-        self.table_brands.setHorizontalHeaderLabels(HEADER_BRANDS)
-        self.table_brands.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table_brands.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.table_brands = setup_table(self, HEADER_BRANDS)
         self.table_brands.cellChanged.connect(self.set_modified)
         self.refresh_table()
         self.set_unmodified()
@@ -88,61 +83,24 @@ class VehicleBrandEditor(BaseEditor):
 
     def set_layout_button(self):
         """Set button layout"""
-        # Menu
+        # Import menu button
         import_menu = QMenu(self)
+        import_menu.addAction("RF2 Rest API").triggered.connect(self.import_from_rf2)
+        import_menu.addAction("LMU Rest API (Primary)").triggered.connect(self.import_from_lmu)
+        import_menu.addAction("LMU Rest API (Alternative)").triggered.connect(self.import_from_lmu_alt)
+        import_menu.addAction("JSON file").triggered.connect(self.import_from_file)
 
-        import_rf2 = import_menu.addAction("RF2 Rest API")
-        import_rf2.triggered.connect(self.import_from_rf2)
-
-        import_lmu = import_menu.addAction("LMU Rest API (Primary)")
-        import_lmu.triggered.connect(self.import_from_lmu)
-
-        import_lmu_alt = import_menu.addAction("LMU Rest API (Alternative)")
-        import_lmu_alt.triggered.connect(self.import_from_lmu_alt)
-
-        import_json = import_menu.addAction("JSON file")
-        import_json.triggered.connect(self.import_from_file)
-
-        # Button
         button_import = CompactButton("Import from", has_menu=True)
         button_import.setMenu(import_menu)
 
-        button_add = CompactButton("Add")
-        button_add.clicked.connect(self.add_brand)
-
-        button_sort = CompactButton("Sort")
-        button_sort.clicked.connect(self.sort_brand)
-
-        button_delete = CompactButton("Delete")
-        button_delete.clicked.connect(self.delete_brand)
-
-        button_replace = CompactButton("Replace")
-        button_replace.clicked.connect(self.open_replace_dialog)
-
-        button_reset = CompactButton("Reset")
-        button_reset.clicked.connect(self.reset_setting)
-
-        button_apply = CompactButton("Apply")
-        button_apply.clicked.connect(self.applying)
-
-        button_save = CompactButton("Save")
-        button_save.clicked.connect(self.saving)
-
-        button_close = CompactButton("Close")
-        button_close.clicked.connect(self.close)
-
-        # Set layout
-        layout_button = QHBoxLayout()
-        layout_button.addWidget(button_import)
-        layout_button.addWidget(button_add)
-        layout_button.addWidget(button_sort)
-        layout_button.addWidget(button_delete)
-        layout_button.addWidget(button_replace)
-        layout_button.addWidget(button_reset)
-        layout_button.addStretch(1)
-        layout_button.addWidget(button_apply)
-        layout_button.addWidget(button_save)
-        layout_button.addWidget(button_close)
+        layout_button = editor_button_bar(self, [
+            ("Add", self.add_brand),
+            ("Sort", self.sort_brand),
+            ("Delete", self.delete_brand),
+            ("Replace", self.open_replace_dialog),
+            ("Reset", self.reset_setting),
+        ])
+        layout_button.insertWidget(0, button_import)
         return layout_button
 
     def refresh_table(self):

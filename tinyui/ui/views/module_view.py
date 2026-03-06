@@ -36,8 +36,8 @@ from tinypedal import app_signal
 from tinypedal.formatter import format_module_name
 from tinypedal.module_control import ModuleControl
 from tinypedal.setting import cfg
-from ._common import UIScaler
-from .config import UserConfig
+from .._common import UIScaler
+from ..dialogs.config import UserConfig
 
 
 class ModuleList(QWidget):

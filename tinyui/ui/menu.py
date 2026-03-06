@@ -34,19 +34,19 @@ from tinypedal.module_info import minfo
 from tinypedal.overlay_control import octrl
 from tinypedal.setting import cfg
 from tinypedal.update import update_checker
-from .about import About
-from .brake_editor import BrakeEditor
-from .config import FontConfig, UserConfig
-from .driver_stats_viewer import DriverStatsViewer
-from .fuel_calculator import FuelCalculator
-from .heatmap_editor import HeatmapEditor
-from .log_info import LogInfo
-from .track_info_editor import TrackInfoEditor
-from .track_map_viewer import TrackMapViewer
-from .track_notes_editor import TrackNotesEditor
-from .tyre_compound_editor import TyreCompoundEditor
-from .vehicle_brand_editor import VehicleBrandEditor
-from .vehicle_class_editor import VehicleClassEditor
+from .dialogs.about import About
+from .dialogs.config import FontConfig, UserConfig
+from .dialogs.fuel_calculator import FuelCalculator
+from .dialogs.log_info import LogInfo
+from .editors.brake_editor import BrakeEditor
+from .editors.heatmap_editor import HeatmapEditor
+from .editors.track_info_editor import TrackInfoEditor
+from .editors.track_notes_editor import TrackNotesEditor
+from .editors.tyre_compound_editor import TyreCompoundEditor
+from .editors.vehicle_brand_editor import VehicleBrandEditor
+from .editors.vehicle_class_editor import VehicleClassEditor
+from .viewers.driver_stats_viewer import DriverStatsViewer
+from .viewers.track_map_viewer import TrackMapViewer
 
 
 # Define menu command

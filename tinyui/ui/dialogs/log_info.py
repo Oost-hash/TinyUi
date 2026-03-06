@@ -33,7 +33,7 @@ from PySide2.QtWidgets import (
 
 from tinypedal.const_file import FileFilter
 from tinypedal.main import log_stream
-from ._common import BaseDialog, CompactButton, UIScaler, singleton_dialog
+from .._common import BaseDialog, CompactButton, UIScaler, singleton_dialog
 
 
 @singleton_dialog("log", show_error=False)

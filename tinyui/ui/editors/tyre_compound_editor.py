@@ -25,10 +25,7 @@ import time
 
 from PySide2.QtWidgets import (
     QComboBox,
-    QHBoxLayout,
-    QHeaderView,
     QMessageBox,
-    QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
 )
@@ -37,11 +34,12 @@ from tinypedal.api_control import api
 from tinypedal.const_file import ConfigType
 from tinypedal.setting import cfg, copy_setting
 from tinypedal.userfile.heatmap import HEATMAP_DEFAULT_TYRE, set_predefined_compound_symbol
-from ._common import (
+from .._common import (
     BaseEditor,
-    CompactButton,
     TableBatchReplace,
     UIScaler,
+    editor_button_bar,
+    setup_table,
 )
 
 HEADER_COMPOUNDS = "Compound name","Symbol","Heatmap name"
@@ -60,15 +58,9 @@ class TyreCompoundEditor(BaseEditor):
         self.compounds_temp = copy_setting(cfg.user.compounds)
 
         # Set table
-        self.table_compounds = QTableWidget(self)
-        self.table_compounds.setColumnCount(len(HEADER_COMPOUNDS))
-        self.table_compounds.setHorizontalHeaderLabels(HEADER_COMPOUNDS)
-        self.table_compounds.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        self.table_compounds.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table_compounds.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
-        self.table_compounds.setColumnWidth(1, UIScaler.size(6))
-        self.table_compounds.horizontalHeader().setSectionResizeMode(2, QHeaderView.Fixed)
-        self.table_compounds.setColumnWidth(2, UIScaler.size(12))
+        self.table_compounds = setup_table(
+            self, HEADER_COMPOUNDS, column_widths={1: 6, 2: 12}
+        )
         self.table_compounds.cellChanged.connect(self.verify_input)
         self.refresh_table()
         self.set_unmodified()
@@ -85,42 +77,13 @@ class TyreCompoundEditor(BaseEditor):
 
     def set_layout_button(self):
         """Set button layout"""
-        button_add = CompactButton("Add")
-        button_add.clicked.connect(self.add_compound)
-
-        button_sort = CompactButton("Sort")
-        button_sort.clicked.connect(self.sort_compound)
-
-        button_delete = CompactButton("Delete")
-        button_delete.clicked.connect(self.delete_compound)
-
-        button_replace = CompactButton("Replace")
-        button_replace.clicked.connect(self.open_replace_dialog)
-
-        button_reset = CompactButton("Reset")
-        button_reset.clicked.connect(self.reset_setting)
-
-        button_apply = CompactButton("Apply")
-        button_apply.clicked.connect(self.applying)
-
-        button_save = CompactButton("Save")
-        button_save.clicked.connect(self.saving)
-
-        button_close = CompactButton("Close")
-        button_close.clicked.connect(self.close)
-
-        # Set layout
-        layout_button = QHBoxLayout()
-        layout_button.addWidget(button_add)
-        layout_button.addWidget(button_sort)
-        layout_button.addWidget(button_delete)
-        layout_button.addWidget(button_replace)
-        layout_button.addWidget(button_reset)
-        layout_button.addStretch(1)
-        layout_button.addWidget(button_apply)
-        layout_button.addWidget(button_save)
-        layout_button.addWidget(button_close)
-        return layout_button
+        return editor_button_bar(self, [
+            ("Add", self.add_compound),
+            ("Sort", self.sort_compound),
+            ("Delete", self.delete_compound),
+            ("Replace", self.open_replace_dialog),
+            ("Reset", self.reset_setting),
+        ])
 
     def refresh_table(self):
         """Refresh compounds list"""

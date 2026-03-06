@@ -36,7 +36,7 @@ from PySide2.QtWidgets import (
 
 from tinypedal.const_app import APP_NAME, COPYRIGHT, DESCRIPTION, LICENSE, URL_WEBSITE, VERSION
 from tinypedal.const_file import ImageFile
-from ._common import BaseDialog, UIScaler, singleton_dialog
+from .._common import BaseDialog, UIScaler, singleton_dialog
 
 logger = logging.getLogger(__name__)
 

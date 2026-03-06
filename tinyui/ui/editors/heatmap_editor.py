@@ -26,16 +26,14 @@ from PySide2.QtWidgets import (
     QComboBox,
     QDialogButtonBox,
     QHBoxLayout,
-    QHeaderView,
     QLineEdit,
     QMessageBox,
-    QTableWidget,
     QVBoxLayout,
 )
 
 from tinypedal.const_file import ConfigType
 from tinypedal.setting import cfg, copy_setting
-from ._common import (
+from .._common import (
     QVAL_COLOR,
     QVAL_HEATMAP,
     BaseDialog,
@@ -44,8 +42,10 @@ from ._common import (
     CompactButton,
     FloatTableItem,
     UIScaler,
+    editor_button_bar,
+    setup_table,
 )
-from ._option import ColorEdit
+from .._option import ColorEdit
 
 HEADER_HEATMAP = "Temperature (Celsius)","Color"
 
@@ -69,20 +69,15 @@ class HeatmapEditor(BaseEditor):
         self.heatmap_list.currentIndexChanged.connect(self.select_heatmap)
 
         # Heatmap list box
-        self.table_heatmap = QTableWidget(self)
-        self.table_heatmap.setColumnCount(len(HEADER_HEATMAP))
-        self.table_heatmap.setHorizontalHeaderLabels(HEADER_HEATMAP)
-        self.table_heatmap.verticalHeader().setVisible(False)
-        self.table_heatmap.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        self.table_heatmap.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table_heatmap.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
-        self.table_heatmap.setColumnWidth(1, UIScaler.size(8))
+        self.table_heatmap = setup_table(
+            self, HEADER_HEATMAP, column_widths={1: 8}, show_row_header=False
+        )
         self.table_heatmap.cellChanged.connect(self.set_modified)
         self.table_heatmap.cellChanged.connect(self.verify_input)
         self.refresh_table()
         self.set_unmodified()
 
-        # Button
+        # Selector buttons
         button_create = CompactButton("New")
         button_create.clicked.connect(self.open_create_dialog)
 
@@ -92,49 +87,22 @@ class HeatmapEditor(BaseEditor):
         button_delete = CompactButton("Delete")
         button_delete.clicked.connect(self.delete_heatmap)
 
-        button_add = CompactButton("Add")
-        button_add.clicked.connect(self.add_temperature)
-
-        button_sort = CompactButton("Sort")
-        button_sort.clicked.connect(self.sort_temperature)
-
-        button_remove = CompactButton("Remove")
-        button_remove.clicked.connect(self.delete_temperature)
-
-        button_offset = CompactButton("Offset")
-        button_offset.clicked.connect(self.open_offset_dialog)
-
-        button_reset = CompactButton("Reset")
-        button_reset.clicked.connect(self.reset_heatmap)
-
-        button_apply = CompactButton("Apply")
-        button_apply.clicked.connect(self.applying)
-
-        button_save = CompactButton("Save")
-        button_save.clicked.connect(self.saving)
-
-        button_close = CompactButton("Close")
-        button_close.clicked.connect(self.close)
-
         # Set layout
         layout_main = QVBoxLayout()
         layout_selector = QHBoxLayout()
-        layout_button = QHBoxLayout()
 
         layout_selector.addWidget(self.heatmap_list, stretch=1)
         layout_selector.addWidget(button_create)
         layout_selector.addWidget(button_copy)
         layout_selector.addWidget(button_delete)
 
-        layout_button.addWidget(button_add)
-        layout_button.addWidget(button_sort)
-        layout_button.addWidget(button_remove)
-        layout_button.addWidget(button_offset)
-        layout_button.addWidget(button_reset)
-        layout_button.addStretch(1)
-        layout_button.addWidget(button_apply)
-        layout_button.addWidget(button_save)
-        layout_button.addWidget(button_close)
+        layout_button = editor_button_bar(self, [
+            ("Add", self.add_temperature),
+            ("Sort", self.sort_temperature),
+            ("Remove", self.delete_temperature),
+            ("Offset", self.open_offset_dialog),
+            ("Reset", self.reset_heatmap),
+        ])
 
         layout_main.addLayout(layout_selector)
         layout_main.addWidget(self.table_heatmap)

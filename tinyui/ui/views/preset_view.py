@@ -45,7 +45,7 @@ from tinypedal.const_file import ConfigType, FileExt
 from tinypedal.formatter import strip_filename_extension
 from tinypedal.setting import cfg
 from tinypedal.validator import is_allowed_filename
-from ._common import QVAL_FILENAME, BaseDialog, UIScaler
+from .._common import QVAL_FILENAME, BaseDialog, UIScaler
 from .preset_transfer import PresetTransfer
 
 

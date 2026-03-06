@@ -53,7 +53,7 @@ from tinypedal.template.setting_shortcuts import (
     SHORTCUTS_MODULE,
     SHORTCUTS_WIDGET,
 )
-from ._common import BaseDialog, UIScaler
+from .._common import BaseDialog, UIScaler
 
 
 class HotkeyList(QWidget):

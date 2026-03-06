@@ -25,10 +25,7 @@ import time
 
 from PySide2.QtWidgets import (
     QComboBox,
-    QHBoxLayout,
-    QHeaderView,
     QMessageBox,
-    QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
 )
@@ -37,12 +34,12 @@ from tinypedal.api_control import api
 from tinypedal.const_file import ConfigType
 from tinypedal.setting import cfg, copy_setting
 from tinypedal.userfile.heatmap import HEATMAP_DEFAULT_BRAKE, set_predefined_brake_name
-from ._common import (
+from .._common import (
     BaseEditor,
-    CompactButton,
     FloatTableItem,
     UIScaler,
-    #TableBatchReplace,
+    editor_button_bar,
+    setup_table,
 )
 
 HEADER_BRAKES = "Brake name","Failure (mm)","Heatmap name"
@@ -61,15 +58,9 @@ class BrakeEditor(BaseEditor):
         self.brakes_temp = copy_setting(cfg.user.brakes)
 
         # Set table
-        self.table_brakes = QTableWidget(self)
-        self.table_brakes.setColumnCount(len(HEADER_BRAKES))
-        self.table_brakes.setHorizontalHeaderLabels(HEADER_BRAKES)
-        self.table_brakes.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        self.table_brakes.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table_brakes.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
-        self.table_brakes.horizontalHeader().setSectionResizeMode(2, QHeaderView.Fixed)
-        self.table_brakes.setColumnWidth(1, UIScaler.size(8))
-        self.table_brakes.setColumnWidth(2, UIScaler.size(12))
+        self.table_brakes = setup_table(
+            self, HEADER_BRAKES, column_widths={1: 8, 2: 12}
+        )
         self.table_brakes.cellChanged.connect(self.verify_input)
         self.refresh_table()
         self.set_unmodified()
@@ -86,42 +77,12 @@ class BrakeEditor(BaseEditor):
 
     def set_layout_button(self):
         """Set button layout"""
-        button_add = CompactButton("Add")
-        button_add.clicked.connect(self.add_brake)
-
-        button_sort = CompactButton("Sort")
-        button_sort.clicked.connect(self.sort_brake)
-
-        button_delete = CompactButton("Delete")
-        button_delete.clicked.connect(self.delete_brake)
-
-        #button_replace = CompactButton("Replace")
-        #button_replace.clicked.connect(self.open_replace_dialog)
-
-        button_reset = CompactButton("Reset")
-        button_reset.clicked.connect(self.reset_setting)
-
-        button_apply = CompactButton("Apply")
-        button_apply.clicked.connect(self.applying)
-
-        button_save = CompactButton("Save")
-        button_save.clicked.connect(self.saving)
-
-        button_close = CompactButton("Close")
-        button_close.clicked.connect(self.close)
-
-        # Set layout
-        layout_button = QHBoxLayout()
-        layout_button.addWidget(button_add)
-        layout_button.addWidget(button_sort)
-        layout_button.addWidget(button_delete)
-        #layout_button.addWidget(button_replace)
-        layout_button.addWidget(button_reset)
-        layout_button.addStretch(1)
-        layout_button.addWidget(button_apply)
-        layout_button.addWidget(button_save)
-        layout_button.addWidget(button_close)
-        return layout_button
+        return editor_button_bar(self, [
+            ("Add", self.add_brake),
+            ("Sort", self.sort_brake),
+            ("Delete", self.delete_brake),
+            ("Reset", self.reset_setting),
+        ])
 
     def refresh_table(self):
         """Refresh brakes list"""

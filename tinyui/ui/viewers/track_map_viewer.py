@@ -44,8 +44,8 @@ from tinypedal import calculation as calc
 from tinypedal.const_file import ConfigType, FileExt, FileFilter
 from tinypedal.setting import cfg
 from tinypedal.userfile.track_map import load_track_map_file
-from ._common import BaseDialog, CompactButton, UIScaler
-from .config import UserConfig
+from .._common import BaseDialog, CompactButton, UIScaler
+from ..dialogs.config import UserConfig
 
 
 class TrackMapViewer(BaseDialog):

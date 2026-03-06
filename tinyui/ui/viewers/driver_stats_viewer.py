@@ -27,10 +27,8 @@ from PySide2.QtWidgets import (
     QAbstractItemView,
     QComboBox,
     QHBoxLayout,
-    QHeaderView,
     QMenu,
     QMessageBox,
-    QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
 )
@@ -47,11 +45,12 @@ from tinypedal.userfile.driver_stats import (
     save_stats_json_file,
     validate_stats_file,
 )
-from ._common import (
+from .._common import (
     BaseEditor,
     CompactButton,
     NumericTableItem,
     UIScaler,
+    setup_table,
 )
 from .track_map_viewer import TrackMapViewer
 
@@ -121,16 +120,16 @@ class DriverStatsViewer(BaseEditor):
 
         # Set table
         self.table_header_key = ["vehicle", *DriverStats.keys()]
-        self.table_stats = QTableWidget(self)
-        self.table_stats.setColumnCount(len(self.table_header_key))
+        self.table_stats = setup_table(
+            self,
+            [format_header_key(key) for key in self.table_header_key],
+            column_widths={
+                i: 5 + (i <= 6)
+                for i in range(1, len(self.table_header_key))
+            },
+            show_row_header=False,
+        )
         self.table_stats.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.table_stats.setHorizontalHeaderLabels([format_header_key(key) for key in self.table_header_key])
-        self.table_stats.verticalHeader().setVisible(False)
-        self.table_stats.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        self.table_stats.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        for column_index in range(1, len(self.table_header_key)):
-            self.table_stats.horizontalHeader().setSectionResizeMode(column_index, QHeaderView.Fixed)
-            self.table_stats.setColumnWidth(column_index, UIScaler.size(5 + (column_index <= 6)))
 
         self.table_stats.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table_stats.customContextMenuRequested.connect(self.open_context_menu)
