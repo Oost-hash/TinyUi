@@ -128,7 +128,8 @@ def build():
     from tinypedal.const_app import PLATFORM
 
     from tinypedal import version_check
-    from tinyui.const_tinyui import APP_NAME, AUTHOR, VERSION
+    from tinyui.const_tinyui import APP_NAME, AUTHOR
+    from tinyui.version import __version__ as VERSION
 
     # -- Step 3: Build configuration --
 
