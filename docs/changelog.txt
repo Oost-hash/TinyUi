@@ -12,6 +12,10 @@ Added:
 - Declarative TAB_DEFS and MENU_DEFS lists in app.py
 - Config form builder: dispatch table replaces if/elif chain in UserConfig
 - Removed duplicate code from editors by using shared helpers
+- Auto-discover tinyui modules in build_release.py
+- PySide version auto-detection in build script
+- Minimal drop-in build mode for existing TinyPedal installs
+- Frozen theme path resolution for py2exe builds
 
 --------------------------------------------------------------------------------
 Version 0.2.0 (2026-03-06)
