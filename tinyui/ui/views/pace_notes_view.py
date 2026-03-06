@@ -43,10 +43,9 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinypedal import app_signal, realtime_state
-from tinypedal.api_control import api
+from tinypedal import realtime_state
+from tinyui.backend.controls import api, app_signal, mctrl
 from tinyui.backend.constants import FileFilter
-from tinypedal.module_control import mctrl
 from tinypedal.module_info import minfo
 from tinyui.backend.settings import cfg
 from tinypedal.userfile import set_relative_path

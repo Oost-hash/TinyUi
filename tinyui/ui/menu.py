@@ -25,12 +25,11 @@ import os
 from PySide2.QtGui import QDesktopServices
 from PySide2.QtWidgets import QMenu, QMessageBox
 
-from tinypedal import app_signal, loader
-from tinypedal.api_control import api
+from tinyui.backend.controls import api, app_signal, loader
 from tinyui.backend.constants import PLATFORM, URL_FAQ, URL_USER_GUIDE, ConfigType
 from tinyui.backend.formatter import format_option_name
 from tinypedal.module_info import minfo
-from tinypedal.overlay_control import octrl
+from tinyui.backend.controls import octrl
 from tinyui.backend.settings import cfg
 from tinypedal.update import update_checker
 from .dialogs.about import About

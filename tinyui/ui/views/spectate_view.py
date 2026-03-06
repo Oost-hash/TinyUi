@@ -32,8 +32,8 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinypedal import app_signal
-from tinypedal.api_control import api
+from tinyui.backend.controls import app_signal
+from tinyui.backend.controls import api
 from tinyui.backend.settings import cfg
 from .._common import UIScaler
 

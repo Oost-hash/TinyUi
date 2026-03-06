@@ -39,7 +39,7 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinypedal import app_signal
+from tinyui.backend.controls import app_signal
 from tinyui.backend.constants import TP_VERSION, ConfigType, FileExt
 from tinyui.backend.formatter import strip_filename_extension
 from tinyui.backend.settings import cfg

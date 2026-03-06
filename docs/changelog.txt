@@ -10,6 +10,8 @@ Changed:
   notification to use new adapter layer
 - Rewired all formatter, validator, regex imports to use backend adapters
 - Rewired all setting imports (~22 files) to use backend adapters
+- Rewired all control imports (api, mctrl, wctrl, octrl, kctrl, app_signal,
+  loader) to use backend adapters
 - TinyUi now uses its own icon for window and tray
 
 Added:
@@ -17,6 +19,8 @@ Added:
   TinyPedal updates or changes
 - Backend adapters for formatter, validator, and regex
 - Backend adapter for settings (cfg, copy_setting, load/save JSON)
+- Backend adapter for controls (api, mctrl, wctrl, octrl, kctrl,
+  app_signal, loader, ModuleControl)
 - Exported TinyUi icon as PNG and ICO from SVG source
 - Non-invasive drop-in build: uses separate tinyui_lib/ to avoid overwriting
   TinyPedal's lib/. Uninstall by removing tinyui.exe, tinyui_lib/ and tinyui/

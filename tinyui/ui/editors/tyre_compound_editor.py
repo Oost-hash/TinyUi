@@ -27,7 +27,7 @@ from PySide2.QtWidgets import (
     QVBoxLayout,
 )
 
-from tinypedal.api_control import api
+from tinyui.backend.controls import api
 from tinyui.backend.constants import ConfigType
 from tinyui.backend.settings import cfg, copy_setting
 from tinypedal.userfile.heatmap import HEATMAP_DEFAULT_TYRE, set_predefined_compound_symbol

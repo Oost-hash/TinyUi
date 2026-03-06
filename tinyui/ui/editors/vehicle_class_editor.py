@@ -27,7 +27,7 @@ from PySide2.QtWidgets import (
     QVBoxLayout,
 )
 
-from tinypedal.api_control import api
+from tinyui.backend.controls import api
 from tinyui.backend.constants import EMPTY_DICT, ConfigType
 from tinyui.backend.formatter import random_color_class
 from tinyui.backend.settings import cfg, copy_setting

@@ -62,9 +62,8 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         # LAZY IMPORTS - pas hier, NA dat QApplication en cfg bestaan
-        from tinypedal.api_control import api
+        from tinyui.backend.controls import api, app_signal
         from tinyui.backend.settings import cfg
-        from tinypedal import app_signal
 
         from .ui import set_style_palette, set_style_window
         from .ui._common import DialogSingleton, UIScaler

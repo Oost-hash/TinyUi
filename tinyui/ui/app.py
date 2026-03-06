@@ -36,10 +36,8 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinypedal import app_signal, loader
-from tinypedal.api_control import api
+from tinyui.backend.controls import api, app_signal, loader, mctrl, wctrl
 from tinyui.backend.constants import TP_APP_NAME, TP_VERSION, ConfigType
-from tinypedal.module_control import mctrl, wctrl
 from tinyui.backend.settings import cfg
 from . import set_style_palette, set_style_window
 from ._common import DialogSingleton, UIScaler

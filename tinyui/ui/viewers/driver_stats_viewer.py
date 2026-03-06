@@ -35,7 +35,7 @@ from PySide2.QtWidgets import (
 
 from tinypedal import calculation as calc
 from tinypedal import units
-from tinypedal.api_control import api
+from tinyui.backend.controls import api
 from tinyui.backend.constants import MAX_SECONDS, TEXT_NOLAPTIME
 from tinyui.backend.formatter import strip_invalid_char
 from tinyui.backend.settings import cfg

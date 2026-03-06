@@ -41,7 +41,7 @@ from PySide2.QtWidgets import (
     QVBoxLayout,
 )
 
-from tinypedal.api_control import api
+from tinyui.backend.controls import api
 from tinyui.backend.formatter import strip_invalid_char
 from tinyui.backend.settings import cfg
 from tinypedal.userfile.track_notes import (

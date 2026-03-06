@@ -35,7 +35,7 @@ from PySide2.QtWidgets import (
     QVBoxLayout,
 )
 
-from tinypedal.api_control import api
+from tinyui.backend.controls import api
 from tinypedal.async_request import get_response, set_header_get
 from tinyui.backend.constants import (
     API_LMU_ALIAS, API_LMU_CONFIG, API_RF2_ALIAS, API_RF2_CONFIG,

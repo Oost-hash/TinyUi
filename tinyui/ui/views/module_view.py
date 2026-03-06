@@ -32,9 +32,9 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinypedal import app_signal
+from tinyui.backend.controls import app_signal
 from tinyui.backend.formatter import format_module_name
-from tinypedal.module_control import ModuleControl
+from tinyui.backend.controls import ModuleControl
 from tinyui.backend.settings import cfg
 from .._common import UIScaler
 from ..dialogs.config import UserConfig

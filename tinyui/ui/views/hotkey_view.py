@@ -36,7 +36,7 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinypedal import app_signal
+from tinyui.backend.controls import app_signal
 from tinyui.backend.constants import PLATFORM, ConfigType
 from tinyui.backend.formatter import format_option_name
 from tinypedal.hotkey.common import (
@@ -45,7 +45,7 @@ from tinypedal.hotkey.common import (
     refresh_keystate,
     set_hotkey_win,
 )
-from tinypedal.hotkey_control import kctrl
+from tinyui.backend.controls import kctrl
 from tinyui.backend.settings import cfg
 from tinypedal.template.setting_shortcuts import (
     SHORTCUTS_GENERAL,

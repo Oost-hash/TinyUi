@@ -322,7 +322,7 @@ class BaseEditor(BaseDialog):
     def reloading(reload_module: bool = True, reload_widget: bool = True) -> None:
         """Reloading module & widget only"""
         # Delay import
-        from tinypedal.module_control import mctrl, wctrl
+        from tinyui.backend.controls import mctrl, wctrl
 
         if reload_module:
             mctrl.reload()
