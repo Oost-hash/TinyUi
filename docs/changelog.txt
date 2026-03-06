@@ -14,6 +14,8 @@ Added:
 - Backend adapter layer for constants to keep code changes minimal when
   TinyPedal updates or changes
 - Exported TinyUi icon as PNG and ICO from SVG source
+- Non-invasive drop-in build: uses separate tinyui_lib/ to avoid overwriting
+  TinyPedal's lib/. Uninstall by removing tinyui.exe, tinyui_lib/ and tinyui/
 
 Todo:
 - Expand adapter layer to cover more imports
