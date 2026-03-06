@@ -40,6 +40,7 @@ from PySide2.QtWidgets import (
     QDoubleSpinBox,
     QGridLayout,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
     QMessageBox,
@@ -59,6 +60,50 @@ QVAL_FLOAT = QDoubleValidator(-999999.9999, 999999.9999, 6)
 QVAL_COLOR = QRegularExpressionValidator(QRegularExpression('^#[0-9a-fA-F]*'))
 QVAL_HEATMAP = QRegularExpressionValidator(QRegularExpression('[0-9a-zA-Z_]*'))
 QVAL_FILENAME = QRegularExpressionValidator(QRegularExpression('[^\\\\/:*?"<>|]*'))
+
+
+def setup_table(parent, headers, column_widths=None, show_row_header=True):
+    """Configure a QTableWidget with headers and column sizing.
+
+    column_widths: dict mapping column index to pixel width (UIScaler.size units).
+                   Unlisted columns stay Stretch.
+    """
+    table = QTableWidget(parent)
+    table.setColumnCount(len(headers))
+    table.setHorizontalHeaderLabels(headers)
+    table.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+    if not show_row_header:
+        table.verticalHeader().setVisible(False)
+    table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+    if column_widths:
+        for col, width in column_widths.items():
+            table.horizontalHeader().setSectionResizeMode(col, QHeaderView.Fixed)
+            table.setColumnWidth(col, UIScaler.size(width))
+    return table
+
+
+def editor_button_bar(editor, left_buttons=None):
+    """Build standard editor button bar.
+
+    left_buttons: list of (label, callback) for the left side.
+    Right side is always: [stretch] Apply | Save | Close
+    """
+    layout = QHBoxLayout()
+    if left_buttons:
+        for label, callback in left_buttons:
+            btn = CompactButton(label)
+            btn.clicked.connect(callback)
+            layout.addWidget(btn)
+    layout.addStretch(1)
+    for label, callback in [
+        ("Apply", editor.applying),
+        ("Save", editor.saving),
+        ("Close", editor.close),
+    ]:
+        btn = CompactButton(label)
+        btn.clicked.connect(callback)
+        layout.addWidget(btn)
+    return layout
 
 
 def singleton_dialog(dialog_type: str, show_error: bool = True):
