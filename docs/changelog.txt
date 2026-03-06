@@ -5,7 +5,10 @@ Version 0.3.0 (2026-03-06)
 Changed:
 - Reorganized tinyui/ui/ into subdirectories: editors/, viewers/, dialogs/, views/
 - Updated all internal imports to match new directory structure
-- Added table functions too _common removing code duplication from the editors
+
+Added:
+-  Table functions too _common removing code duplication from the editors
+
 --------------------------------------------------------------------------------
 Version 0.2.0 (2026-03-06)
 --------------------------------------------------------------------------------
