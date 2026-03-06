@@ -24,6 +24,29 @@ from tinyui.backend.constants import TP_APP_NAME, TP_VERSION, ConfigType, ImageF
 
 logger = logging.getLogger("TinyUi")
 
+# TinyUi icon path (relative to tinyui package)
+_TINYUI_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", "icon.png")
+
+
+def _tinyui_icon() -> str:
+    """Resolve TinyUi icon path, works both frozen and development."""
+    if getattr(sys, "frozen", False):
+        return os.path.join(os.path.dirname(sys.executable), "tinyui", "images", "icon.png")
+    return _TINYUI_ICON
+
+
+def _load_icon() -> QIcon:
+    """Load TinyUi icon with TinyPedal fallback."""
+    path = _tinyui_icon()
+    if os.path.exists(path):
+        return QIcon(path)
+    logger.warning(f"TinyUi icon not found: {path}")
+    # Fallback to TinyPedal icon
+    tp_path = os.path.join(_app_root(), ImageFile.APP_ICON)
+    if os.path.exists(tp_path):
+        return QIcon(tp_path)
+    return QIcon()
+
 
 def _app_root():
     """Geeft het root pad van de applicatie (werkt in frozen en dev mode)"""
@@ -115,24 +138,7 @@ class MainWindow(QMainWindow):
     def _setup_tray(self):
         logger.info("Loading tray icon...")
         tray_icon = QSystemTrayIcon(self)
-
-        tinypedal_root = _app_root()
-
-        icon_path = os.path.join(tinypedal_root, ImageFile.APP_ICON)
-        app_icon = QIcon(icon_path)
-
-        if app_icon.isNull() or not app_icon.availableSizes():
-            alt_path = os.path.join(tinypedal_root, "images", "icon.png")
-            if os.path.exists(alt_path):
-                app_icon = QIcon(alt_path)
-                logger.info(f"Tray icon loaded: {alt_path}")
-            else:
-                logger.warning(f"Could not load icon")
-                app_icon = QIcon.fromTheme("applications-system")
-                if app_icon.isNull():
-                    app_icon = QIcon()
-
-        tray_icon.setIcon(app_icon)
+        tray_icon.setIcon(_load_icon())
         tray_icon.setToolTip(self.windowTitle())
         tray_icon.activated.connect(self._tray_activated)
 
@@ -317,9 +323,7 @@ def run():
     app.setQuitOnLastWindowClosed(False)
     app.setApplicationName("TinyUi")
 
-    icon_path = os.path.join(_app_root(), ImageFile.APP_ICON)
-    if os.path.exists(icon_path):
-        app.setWindowIcon(QIcon(icon_path))
+    app.setWindowIcon(_load_icon())
 
     font = app.font()
     if os.getenv("PYSIDE_OVERRIDE") != "6":
