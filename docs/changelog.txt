@@ -43,7 +43,8 @@ Added:
       misc, regex, settings, validator)
 
 Todo:
-- Add generator too build_release.py also exlucde generator from production. 
+- Add generator too build_release.py also exlucde generator from production
+- Update main.py and core_loader.py restructure them too be smaller
 
 --------------------------------------------------------------------------------
 Version 0.3.0 (2026-03-06)
