@@ -24,7 +24,6 @@ import logging
 import time
 
 from PySide2.QtWidgets import (
-    QComboBox,
     QMessageBox,
     QTableWidgetItem,
     QVBoxLayout,
@@ -38,6 +37,7 @@ from .._common import (
     BaseEditor,
     FloatTableItem,
     UIScaler,
+    combo_selector,
     editor_button_bar,
     setup_table,
 )
@@ -97,14 +97,6 @@ class BrakeEditor(BaseEditor):
             )
             row_index += 1
 
-    def __add_option_combolist(self, key):
-        """Combo droplist string"""
-        combo_edit = QComboBox()
-        combo_edit.addItems(cfg.user.heatmap.keys())
-        combo_edit.setCurrentText(key)
-        combo_edit.currentTextChanged.connect(self.set_modified)
-        return combo_edit
-
     #def open_replace_dialog(self):
     #    """Open replace dialog"""
     #    selector = {HEADER_BRAKES[0]: 0}
@@ -141,7 +133,7 @@ class BrakeEditor(BaseEditor):
         self.table_brakes.insertRow(row_index)
         self.table_brakes.setItem(row_index, 0, QTableWidgetItem(class_name))
         self.table_brakes.setItem(row_index, 1, FloatTableItem(failure_thickness))
-        self.table_brakes.setCellWidget(row_index, 2, self.__add_option_combolist(heatmap_name))
+        self.table_brakes.setCellWidget(row_index, 2, combo_selector(cfg.user.heatmap.keys(), heatmap_name, self.set_modified))
 
     def sort_brake(self):
         """Sort brakes in ascending order"""

@@ -106,6 +106,21 @@ def editor_button_bar(editor, left_buttons=None):
     return layout
 
 
+def combo_selector(items, current, on_change=None):
+    """Create a QComboBox pre-filled with items and selected value.
+
+    items: iterable of string items.
+    current: initial selected text.
+    on_change: optional callback connected to currentTextChanged.
+    """
+    combo = QComboBox()
+    combo.addItems(items)
+    combo.setCurrentText(current)
+    if on_change:
+        combo.currentTextChanged.connect(on_change)
+    return combo
+
+
 def singleton_dialog(dialog_type: str, show_error: bool = True):
     """Singleton dialog decorator"""
 
