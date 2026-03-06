@@ -22,7 +22,7 @@ TinyUi replaces TinyPedal's built-in interface with a separated, customizable UI
 
 ### Requirements
 
-- Python 3.12+
+- Python 3.10
 - PySide2 5.15.x
 - psutil
 
@@ -38,21 +38,6 @@ pip install -r requirements.txt
 
 ```bash
 python run.py
-```
-
-TinyPedal needs a supported sim running (or at least its API accessible) to do anything useful. Without a sim, the app will start but most features won't have data to display.
-
-## Project structure
-
-```
-TinyUi/
-  run.py              # Entry point
-  tinyui/             # UI module
-    main.py           # Main window and app startup
-    core_loader.py    # TinyPedal core integration
-    ui/               # All dialogs, views, menus
-    themes/           # JSON theme files (dark.json, light.json)
-  tinypedal/          # TinyPedal submodule (pinned to v2.42.0)
 ```
 
 ## License
