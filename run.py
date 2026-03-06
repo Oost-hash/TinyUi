@@ -12,15 +12,21 @@
 """TinyUi - Entry point"""
 
 import os
+import subprocess
 import sys
 
 _PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
+# Generate adapter files FIRST (before any tinypedal/tinyui imports)
+_gen_script = os.path.join(_PROJECT_ROOT, "tinyui", "backend", "generate_adapters.py")
+_result = subprocess.run([sys.executable, _gen_script])
+if _result.returncode != 0:
+    sys.exit(1)
+
 # Add tinypedal submodule to path
 sys.path.insert(0, os.path.join(_PROJECT_ROOT, "tinypedal"))
 
-# chdir naar tinypedal/ zodat TinyPedal's relatieve paden (settings/, brandlogo/,
-# deltabest/, etc.) daar worden aangemaakt i.p.v. in de project root.
+# chdir naar tinypedal/ zodat TinyPedal's relatieve paden daar worden aangemaakt
 os.chdir(os.path.join(_PROJECT_ROOT, "tinypedal"))
 
 from tinyui import main
