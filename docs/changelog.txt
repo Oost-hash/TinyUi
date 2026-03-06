@@ -7,7 +7,7 @@ Changed:
 - Updated all internal imports to match new directory structure
 - Added table functions too _common removing code duplication from the editors
 --------------------------------------------------------------------------------
-Version 0.2.0 (2025-03-06)
+Version 0.2.0 (2026-03-06)
 --------------------------------------------------------------------------------
 
 Added:
@@ -25,7 +25,7 @@ Fixed:
 - Data folders (settings/, brandlogo/, etc.) no longer pollute the project root
 
 --------------------------------------------------------------------------------
-Version 0.1.0 (2025-03-05)
+Version 0.1.0 (2026-03-05)
 --------------------------------------------------------------------------------
 
 Added:
