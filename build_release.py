@@ -143,8 +143,14 @@ def build():
     # -- Step 2: Switch to tinypedal/ and import (same as TinyPedal does) --
 
     os.chdir(PROJECT_ROOT / "tinypedal")
+
+    # tinypedal/ (submodule root) must come before PROJECT_ROOT on sys.path,
+    # otherwise Python finds the tinypedal/ directory as a namespace package
+    # (no __init__.py) instead of the real tinypedal/tinypedal/ package.
+    project_root_str = str(PROJECT_ROOT)
+    sys.path[:] = [p for p in sys.path if p != project_root_str and p != "."]
     sys.path.insert(0, str(PROJECT_ROOT / "tinypedal"))
-    sys.path.insert(0, str(PROJECT_ROOT))
+    sys.path.insert(1, project_root_str)
 
     from glob import glob as globfiles
 
