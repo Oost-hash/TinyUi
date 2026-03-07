@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Generate adapter layer files from manifest.json.
-Delete and recreate every run. No caching, no watchers.
+Delete and recreate every run.
 
 Supports aliases: ["OriginalName", "AliasName"] or just "Name"
 """
