@@ -25,9 +25,13 @@
 - generate_adapters.py skips writing unchanged files, preserving __pycache__
 - Fixed status bar CSS selectors (AppWindow → MainWindow)
 
+### Note
+This preview release has been made to check if the CI/CD pipeline is working.
+If people would like, they could test it. It does not change much yet on the
+foreground, but that is to be expected halfway in the process of reworking the code.
+
 ### Todo
 - Separate rest of UI code into components
-- CI/CD pipeline
 
 ## Version 0.4.0 (2026-03-06)
 

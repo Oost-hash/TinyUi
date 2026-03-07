@@ -64,7 +64,7 @@ IMAGE_FILES = [
 ]
 
 DOCUMENT_FILES = [
-    "docs/changelog.txt",
+    "docs/changelog.md",
     "docs/customization.md",
     "docs/contributors.md",
 ]
