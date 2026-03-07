@@ -37,7 +37,7 @@ from tinyui.backend.formatter import format_module_name
 from tinyui.backend.controls import ModuleControl
 from tinyui.backend.settings import cfg
 from .._common import UIScaler
-from ..editors import UserConfig
+from ..editors.config import UserConfig
 
 
 class ModuleList(QWidget):

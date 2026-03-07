@@ -68,7 +68,7 @@ from .._option import (
     IntegerEdit,
     StringEdit,
 )
-from ..dialogs import DisplayOrder
+from ..dialogs.display_order import DisplayOrder
 
 COLUMN_LABEL = 0  # grid layout column index
 COLUMN_OPTION = 1

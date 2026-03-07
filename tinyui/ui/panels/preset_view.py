@@ -45,7 +45,7 @@ from tinyui.backend.formatter import strip_filename_extension
 from tinyui.backend.settings import cfg
 from tinyui.backend.validator import is_allowed_filename
 from .._common import QVAL_FILENAME, BaseDialog, UIScaler
-from ..editors import PresetTransfer
+from ..editors.preset_transfer import PresetTransfer
 
 
 class PresetList(QWidget):

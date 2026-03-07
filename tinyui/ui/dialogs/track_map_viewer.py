@@ -45,7 +45,7 @@ from tinyui.backend.constants import ConfigType, FileExt, FileFilter
 from tinyui.backend.settings import cfg
 from tinyui.backend.data import load_track_map_file
 from .._common import BaseDialog, CompactButton, UIScaler
-from ..editors import UserConfig
+from ..editors.config import UserConfig
 
 
 class TrackMapViewer(BaseDialog):
