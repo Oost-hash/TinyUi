@@ -37,6 +37,8 @@ from tinyui.backend.formatter import format_module_name
 from tinyui.backend.controls import ModuleControl
 from tinyui.backend.settings import cfg
 from .._common import UIScaler
+from ..components.toggle_button import ToggleButton
+from ..components.button_bar import button_bar
 
 
 class ModuleList(QWidget):
@@ -66,10 +68,10 @@ class ModuleList(QWidget):
         button_disable = QPushButton("Disable All")
         button_disable.clicked.connect(self.module_button_disable_all)
 
-        layout_button = QHBoxLayout()
-        layout_button.addWidget(button_enable)
-        layout_button.addStretch(1)
-        layout_button.addWidget(button_disable)
+        layout_button = button_bar(
+            left=[button_enable],
+            right=[button_disable],
+        )
 
         # Layout
         layout_main = QVBoxLayout()
@@ -147,9 +149,8 @@ class ModuleControlItem(QWidget):
         self.module_name = module_name
         self.module_control = module_control
 
-        self.button_toggle = QPushButton("")
+        self.button_toggle = ToggleButton("ON", "OFF")
         self.button_toggle.setObjectName("buttonToggle")
-        self.button_toggle.setCheckable(True)
         self.button_toggle.setChecked(self.is_enabled())
         # Use "clicked" to avoid trigger with "setChecked"
         self.button_toggle.clicked.connect(self.toggle_state)
@@ -182,7 +183,6 @@ class ModuleControlItem(QWidget):
 
     def update_button_text(self):
         """Update button text"""
-        self.button_toggle.setText("ON" if self.is_enabled() else "OFF")
         self._parent.refresh_label()
 
     def open_config_dialog(self):

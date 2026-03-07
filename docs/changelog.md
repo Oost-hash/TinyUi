@@ -3,6 +3,15 @@
 ## Version 0.5.0 (2026-03-07)
 
 ### Changed
+- Reorganized UI folders by behavior (panels/, dialogs/, editors/)
+- Removed viewers/ and views/ directories
+- Direct module imports, lazy cross-package imports
+- Extracted reusable components to ui/components/:
+    - SearchBar: search field with autocomplete and clear button
+    - ToggleButton: checkable button with on/off text labels
+    - button_bar(): horizontal layout with left buttons, stretch, right buttons
+    - SelectorBar: combo box with action buttons (new/copy/delete)
+    - ListHeader: select-all/none header for checkbox lists
 - Extracted tray icon to self-contained ui/tray.py component (TrayIcon)
 - Simplified main.py run(): replaced inline tray setup with TrayIcon class
 - MainWindow no longer builds or configures the tray icon

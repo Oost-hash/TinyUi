@@ -23,9 +23,7 @@ Heatmap editor
 import time
 
 from PySide2.QtWidgets import (
-    QComboBox,
     QDialogButtonBox,
-    QHBoxLayout,
     QLineEdit,
     QMessageBox,
     QVBoxLayout,
@@ -39,13 +37,13 @@ from .._common import (
     BaseDialog,
     BaseEditor,
     BatchOffset,
-    CompactButton,
     FloatTableItem,
     UIScaler,
     editor_button_bar,
     setup_table,
 )
 from .._option import ColorEdit
+from ..components.selector_bar import SelectorBar
 
 HEADER_HEATMAP = "Temperature (Celsius)","Color"
 
@@ -64,7 +62,12 @@ class HeatmapEditor(BaseEditor):
         self.selected_heatmap_dict = self.heatmap_temp[self.selected_heatmap_key]
 
         # Preset selector
-        self.heatmap_list = QComboBox()
+        self.selector_bar = SelectorBar(self, buttons=[
+            ("New", self.open_create_dialog),
+            ("Copy", self.open_copy_dialog),
+            ("Delete", self.delete_heatmap),
+        ])
+        self.heatmap_list = self.selector_bar.combo
         self.heatmap_list.addItems(self.heatmap_temp.keys())
         self.heatmap_list.currentIndexChanged.connect(self.select_heatmap)
 
@@ -77,24 +80,8 @@ class HeatmapEditor(BaseEditor):
         self.refresh_table()
         self.set_unmodified()
 
-        # Selector buttons
-        button_create = CompactButton("New")
-        button_create.clicked.connect(self.open_create_dialog)
-
-        button_copy = CompactButton("Copy")
-        button_copy.clicked.connect(self.open_copy_dialog)
-
-        button_delete = CompactButton("Delete")
-        button_delete.clicked.connect(self.delete_heatmap)
-
         # Set layout
         layout_main = QVBoxLayout()
-        layout_selector = QHBoxLayout()
-
-        layout_selector.addWidget(self.heatmap_list, stretch=1)
-        layout_selector.addWidget(button_create)
-        layout_selector.addWidget(button_copy)
-        layout_selector.addWidget(button_delete)
 
         layout_button = editor_button_bar(self, [
             ("Add", self.add_temperature),
@@ -104,7 +91,7 @@ class HeatmapEditor(BaseEditor):
             ("Reset", self.reset_heatmap),
         ])
 
-        layout_main.addLayout(layout_selector)
+        layout_main.addWidget(self.selector_bar)
         layout_main.addWidget(self.table_heatmap)
         layout_main.addLayout(layout_button)
         layout_main.setContentsMargins(self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN)

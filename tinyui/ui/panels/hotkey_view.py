@@ -36,6 +36,9 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
+from ..components.toggle_button import ToggleButton
+from ..components.button_bar import button_bar
+
 from tinyui.backend.controls import app_signal
 from tinyui.backend.constants import PLATFORM, ConfigType
 from tinyui.backend.formatter import format_option_name
@@ -72,16 +75,15 @@ class HotkeyList(QWidget):
         self.button_reset = QPushButton("Clear All")
         self.button_reset.clicked.connect(self.reset_hotkey)
 
-        self.button_toggle = QPushButton("")
-        self.button_toggle.setCheckable(True)
+        self.button_toggle = ToggleButton("Enabled", "Disabled")
         self.button_toggle.toggled.connect(self.toggle_hotkey)
 
         # Layout
         layout_main = QVBoxLayout()
-        layout_button = QHBoxLayout()
-        layout_button.addWidget(self.button_reset)
-        layout_button.addStretch(1)
-        layout_button.addWidget(self.button_toggle)
+        layout_button = button_bar(
+            left=[self.button_reset],
+            right=[self.button_toggle],
+        )
         layout_main.addWidget(self.listbox_hotkey)
         layout_main.addLayout(layout_button)
         margin = UIScaler.pixel(6)
@@ -100,7 +102,6 @@ class HotkeyList(QWidget):
     def set_enable_state(self, enabled: bool):
         """Set enable state"""
         self.button_toggle.setChecked(enabled)
-        self.button_toggle.setText("Enabled" if enabled else "Disabled")
         self.button_reset.setDisabled(not enabled)
         self.listbox_hotkey.setDisabled(not enabled)
 

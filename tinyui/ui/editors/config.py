@@ -30,12 +30,10 @@ from typing import Callable, Mapping
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QFontDatabase
 from PySide2.QtWidgets import (
-    QCompleter,
     QDialogButtonBox,
     QGridLayout,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QMessageBox,
     QPushButton,
     QScrollArea,
@@ -53,10 +51,10 @@ from .._common import (
     QVAL_FLOAT,
     QVAL_INTEGER,
     BaseDialog,
-    CompactButton,
     UIScaler,
     singleton_dialog,
 )
+from ..components.search_bar import SearchBar
 from .._option import (
     BooleanEdit,
     ClockFormatEdit,
@@ -367,20 +365,12 @@ class UserConfig(BaseDialog):
         scroll_box.setWidgetResizable(True)
 
         # Search box
-        auto_complete_search = QCompleter(option_word_set, self)
-        auto_complete_search.setCaseSensitivity(Qt.CaseInsensitive)
-
-        edit_search = QLineEdit(self)
-        edit_search.setPlaceholderText(" Type here to search options")
-        edit_search.setCompleter(auto_complete_search)
-        edit_search.textChanged.connect(self.search_options)
-
-        button_clearsearch = CompactButton("Clear")
-        button_clearsearch.clicked.connect(edit_search.clear)
-
-        layout_search = QHBoxLayout()
-        layout_search.addWidget(edit_search, stretch=1)
-        layout_search.addWidget(button_clearsearch)
+        search_bar = SearchBar(
+            self,
+            placeholder=" Type here to search options",
+            word_set=option_word_set,
+        )
+        search_bar.textChanged.connect(self.search_options)
 
         # Button
         has_display_order = (cfg_type == ConfigType.WIDGET and "Display" in option_word_set)
@@ -406,7 +396,7 @@ class UserConfig(BaseDialog):
 
         # Set layout
         layout_main = QVBoxLayout()
-        layout_main.addLayout(layout_search)
+        layout_main.addWidget(search_bar)
         layout_main.addWidget(scroll_box)
         if has_display_order:
             layout_main.addWidget(button_display_order)

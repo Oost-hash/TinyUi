@@ -50,6 +50,8 @@ from tinyui.backend.misc import minfo
 from tinyui.backend.settings import cfg
 from tinyui.backend.data import COLUMN_PACENOTE, set_relative_path
 from .._common import CompactButton, UIScaler
+from ..components.toggle_button import ToggleButton
+from ..components.button_bar import button_bar
 
 logger = logging.getLogger(__name__)
 
@@ -274,14 +276,15 @@ class PaceNotesControl(QWidget):
         self.button_apply = QPushButton("Apply")
         self.button_apply.clicked.connect(self.set_playback_setting)
 
-        self.button_toggle = QPushButton("")
-        self.button_toggle.setCheckable(True)
+        self.button_toggle = ToggleButton(
+            "  Playback Enabled  ", "  Playback Disabled  "
+        )
         self.button_toggle.clicked.connect(self.toggle_button_state)
 
-        layout_button = QHBoxLayout()
-        layout_button.addWidget(self.button_apply)
-        layout_button.addStretch(1)
-        layout_button.addWidget(self.button_toggle)
+        layout_button = button_bar(
+            left=[self.button_apply],
+            right=[self.button_toggle],
+        )
 
         # Layout
         layout_main = QVBoxLayout()
@@ -315,7 +318,6 @@ class PaceNotesControl(QWidget):
 
     def set_enable_state(self, enabled: bool):
         """Set enabled state"""
-        self.button_toggle.setText("  Playback Enabled  " if enabled else "  Playback Disabled  ")
         self.button_toggle.setChecked(enabled)
         self.button_apply.setDisabled(not enabled)
         self.frame_control.setDisabled(not enabled)

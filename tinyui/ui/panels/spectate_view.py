@@ -24,7 +24,6 @@ import logging
 
 from PySide2.QtCore import Slot
 from PySide2.QtWidgets import (
-    QHBoxLayout,
     QLabel,
     QListWidget,
     QPushButton,
@@ -36,6 +35,8 @@ from tinyui.backend.controls import app_signal
 from tinyui.backend.controls import api
 from tinyui.backend.settings import cfg
 from .._common import UIScaler
+from ..components.toggle_button import ToggleButton
+from ..components.button_bar import button_bar
 
 logger = logging.getLogger(__name__)
 
@@ -62,15 +63,13 @@ class SpectateList(QWidget):
         self.button_refresh = QPushButton("Refresh")
         self.button_refresh.clicked.connect(self.refresh)
 
-        self.button_toggle = QPushButton("")
-        self.button_toggle.setCheckable(True)
+        self.button_toggle = ToggleButton("Enabled", "Disabled")
         self.button_toggle.toggled.connect(self.toggle_spectate)
 
-        layout_button = QHBoxLayout()
-        layout_button.addWidget(self.button_spectate)
-        layout_button.addWidget(self.button_refresh)
-        layout_button.addStretch(1)
-        layout_button.addWidget(self.button_toggle)
+        layout_button = button_bar(
+            left=[self.button_spectate, self.button_refresh],
+            right=[self.button_toggle],
+        )
 
         # Layout
         layout_main = QVBoxLayout()
@@ -100,7 +99,6 @@ class SpectateList(QWidget):
     def set_enable_state(self, enabled: bool):
         """Set enable state"""
         self.button_toggle.setChecked(enabled)
-        self.button_toggle.setText("Enabled" if enabled else "Disabled")
         self.listbox_spectate.setDisabled(not enabled)
         self.button_spectate.setDisabled(not enabled)
         self.button_refresh.setDisabled(not enabled)

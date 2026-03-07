@@ -45,6 +45,7 @@ from tinyui.backend.formatter import strip_filename_extension
 from tinyui.backend.settings import cfg
 from tinyui.backend.validator import is_allowed_filename
 from .._common import QVAL_FILENAME, BaseDialog, UIScaler
+from ..components.button_bar import button_bar
 
 
 class PresetList(QWidget):
@@ -77,11 +78,10 @@ class PresetList(QWidget):
         self.listbox_preset.setContextMenuPolicy(Qt.CustomContextMenu)
         self.listbox_preset.customContextMenuRequested.connect(self.open_context_menu)
 
-        layout_button = QHBoxLayout()
-        layout_button.addWidget(button_refresh)
-        layout_button.addWidget(button_transfer)
-        layout_button.addStretch(1)
-        layout_button.addWidget(button_create)
+        layout_button = button_bar(
+            left=[button_refresh, button_transfer],
+            right=[button_create],
+        )
 
         # Layout
         layout_main = QVBoxLayout()
