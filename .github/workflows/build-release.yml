@@ -54,7 +54,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path "./release"
 
           # Rename minimal build folder and zip it
-          Rename-Item "./dist/TinyUi-minimal" "./dist/$releaseName"
+          Rename-Item "./dist/TinyUi-minimal" $releaseName
           Compress-Archive -Path "./dist/$releaseName/*" -DestinationPath "./release/$releaseName.zip"
 
       - name: Check hash sum
