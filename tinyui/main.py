@@ -26,7 +26,7 @@ from tinyui.backend.misc import set_environment, set_logging_level, unset_enviro
 from tinyui.backend.settings import cfg
 from tinyui.version import __version__ as TINYUI_VERSION
 
-from .core_loader import core
+from tinyui.backend.core_loader import core
 from .ui import set_style_palette, set_style_window
 from .ui._common import DialogSingleton, UIScaler
 from .ui.app import StatusButtonBar, TabView
