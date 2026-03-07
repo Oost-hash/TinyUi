@@ -13,7 +13,7 @@ import sys
 import psutil
 from PySide2.QtCore import QCoreApplication, QLocale, Qt
 from PySide2.QtGui import QFont, QGuiApplication, QIcon, QPixmapCache
-from PySide2.QtWidgets import QApplication, QMessageBox, QSystemTrayIcon
+from PySide2.QtWidgets import QApplication, QMessageBox
 
 from tinyui.backend.constants import TP_VERSION, ConfigType, ImageFile
 from tinyui.backend.core_loader import core
@@ -157,23 +157,12 @@ def run():
     core.start()
     logger.info(f"TinyPedal: {TP_VERSION}")
 
-    # Setup tray icon (app-level, independent of window)
-    from tinyui.ui.menu import OverlayMenu
+    from tinyui.ui.tray import TrayIcon
 
-    icon = _load_icon()
-    tray_icon = QSystemTrayIcon()
-    tray_icon.setIcon(icon)
-
-    window = MainWindow(tray_icon=tray_icon)
-
-    tray_icon.setToolTip(window.windowTitle())
-    tray_icon.activated.connect(
-        lambda reason: window.show_app()
-        if reason == QSystemTrayIcon.ActivationReason.DoubleClick
-        else None
-    )
-    tray_icon.setContextMenu(OverlayMenu("Overlay", window, True))
-    tray_icon.show()
+    window = MainWindow()
+    tray = TrayIcon(icon=_load_icon(), window=window)
+    window.set_tray(tray)
+    tray.show()
 
     window.show()
 

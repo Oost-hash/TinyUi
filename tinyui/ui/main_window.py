@@ -38,9 +38,9 @@ logger = logging.getLogger("TinyUi")
 class MainWindow(QMainWindow):
     """TinyUi main window."""
 
-    def __init__(self, tray_icon=None):
+    def __init__(self):
         super().__init__()
-        self._tray_icon = tray_icon
+        self._tray = None
         self.setWindowTitle(f"TinyUi v{TINYUI_VERSION} | {TP_APP_NAME} v{TP_VERSION}")
         self.setAttribute(Qt.WA_DeleteOnClose, True)
         self._last_style = None
@@ -184,11 +184,15 @@ class MainWindow(QMainWindow):
         except RuntimeError:
             pass
 
-        if self._tray_icon:
-            self._tray_icon.hide()
+        if self._tray:
+            self._tray.hide()
 
         core.close()
         QApplication.quit()
+
+    def set_tray(self, tray):
+        """Attach the tray icon so quit_app can hide it."""
+        self._tray = tray
 
     def closeEvent(self, event):
         if cfg.application["minimize_to_tray"]:

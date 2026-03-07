@@ -1,4 +1,15 @@
 --------------------------------------------------------------------------------
+Version 0.5.0 (2026-03-07)
+--------------------------------------------------------------------------------
+Changed:
+- Extracted tray icon to self-contained ui/tray.py component (TrayIcon)
+- Simplified main.py run(): replaced inline tray setup with TrayIcon class
+- MainWindow no longer builds or configures the tray icon
+
+Todo:
+- CI/CD pipeline
+
+--------------------------------------------------------------------------------
 Version 0.4.0 (2026-03-06)
 --------------------------------------------------------------------------------
 Changed:
@@ -48,12 +59,6 @@ Added:
 - build_release.py runs adapter generator before freeze, excludes
   generate_adapters.py and manifest.json from production builds
 
---------------------------------------------------------------------------------
-Version 0.5.0 (planned)
---------------------------------------------------------------------------------
-Todo:
-- Extract tray icon to ui/ as a standalone component
-- CI/CD pipeline
 
 --------------------------------------------------------------------------------
 Version 0.3.0 (2026-03-06)
