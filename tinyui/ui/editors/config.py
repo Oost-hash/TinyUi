@@ -68,7 +68,6 @@ from .._option import (
     IntegerEdit,
     StringEdit,
 )
-from ..dialogs.display_order import DisplayOrder
 
 COLUMN_LABEL = 0  # grid layout column index
 COLUMN_OPTION = 1
@@ -432,6 +431,7 @@ class UserConfig(BaseDialog):
         # Extract column index setting
         user_orders = {k: v for k, v in self.user_setting[self.key_name].items() if k.startswith("display_order_")}
         default_orders = {k: v for k, v in self.default_setting[self.key_name].items() if k.startswith("display_order_")}
+        from ..dialogs.display_order import DisplayOrder
         dialog = DisplayOrder(self, user_orders=user_orders, default_orders=default_orders)
         dialog.open()
 

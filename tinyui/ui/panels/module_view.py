@@ -37,7 +37,6 @@ from tinyui.backend.formatter import format_module_name
 from tinyui.backend.controls import ModuleControl
 from tinyui.backend.settings import cfg
 from .._common import UIScaler
-from ..editors.config import UserConfig
 
 
 class ModuleList(QWidget):
@@ -188,6 +187,7 @@ class ModuleControlItem(QWidget):
 
     def open_config_dialog(self):
         """Config dialog"""
+        from ..editors.config import UserConfig
         _dialog = UserConfig(
             parent=self._parent,
             key_name=self.module_name,

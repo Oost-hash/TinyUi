@@ -52,7 +52,6 @@ from .._common import (
     UIScaler,
     setup_table,
 )
-from ..dialogs.track_map_viewer import TrackMapViewer
 
 
 def parse_display_value(key: str, value: int | float) -> str | int | float:
@@ -329,6 +328,7 @@ class DriverStatsViewer(BaseEditor):
 
     def open_trackmap(self):
         """Open trackmap, make sure to strip off invalid char from key name"""
+        from ..dialogs.track_map_viewer import TrackMapViewer
         _dialog = TrackMapViewer(
             self,
             filepath=cfg.path.track_map,

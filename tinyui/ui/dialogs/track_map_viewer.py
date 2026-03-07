@@ -45,7 +45,6 @@ from tinyui.backend.constants import ConfigType, FileExt, FileFilter
 from tinyui.backend.settings import cfg
 from tinyui.backend.data import load_track_map_file
 from .._common import BaseDialog, CompactButton, UIScaler
-from ..editors.config import UserConfig
 
 
 class TrackMapViewer(BaseDialog):
@@ -332,6 +331,7 @@ class MapView(QWidget):
 
     def open_config_dialog(self):
         """Open config"""
+        from ..editors.config import UserConfig
         _dialog = UserConfig(
             parent=self,
             key_name="track_map_viewer",
