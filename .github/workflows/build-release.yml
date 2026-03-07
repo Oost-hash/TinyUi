@@ -47,23 +47,15 @@ jobs:
         run: |
           python build_release.py
 
-      - name: Create release folder
+      - name: Create release zip
         shell: pwsh
         run: |
           $releaseName="TinyUi-v${{ steps.get_ver.outputs.app_ver }}"
-          New-Item -ItemType Directory -Force -Path "./release/$releaseName"
+          New-Item -ItemType Directory -Force -Path "./release"
 
-          # Copy executable and dependencies
-          Copy-Item "./dist/TinyUi.exe" "./release/$releaseName/"
-          Get-ChildItem "./dist" -Filter "*.dll" | Copy-Item -Destination "./release/$releaseName/"
-          Get-ChildItem "./dist" -Filter "*.pyd" | Copy-Item -Destination "./release/$releaseName/"
-
-          # Create empty tinypedal folder with README
-          New-Item -ItemType Directory -Force -Path "./release/$releaseName/tinypedal"
-          "Plaats hier je TinyPedal download van github.com/TinyPedal/TinyPedal" | Out-File -FilePath "./release/$releaseName/tinypedal/README.txt"
-
-          # ZIP it
-          Compress-Archive -Path "./release/$releaseName/*" -DestinationPath "./release/$releaseName.zip"
+          # Rename minimal build folder and zip it
+          Rename-Item "./dist/TinyUi-minimal" "./dist/$releaseName"
+          Compress-Archive -Path "./dist/$releaseName/*" -DestinationPath "./release/$releaseName.zip"
 
       - name: Check hash sum
         id: get_hash
