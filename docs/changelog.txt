@@ -41,9 +41,10 @@ Added:
     - Preserves __init__.py, generate_adapters.py, manifest.json
     - Generates 8 adapter files (constants, controls, data, formatter,
       misc, regex, settings, validator)
+- build_release.py runs adapter generator before freeze, excludes
+  generate_adapters.py and manifest.json from production builds
 
 Todo:
-- Add generator too build_release.py also exlucde generator from production
 - Update main.py and core_loader.py restructure them too be smaller
 
 --------------------------------------------------------------------------------

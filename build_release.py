@@ -80,10 +80,16 @@ TINYUI_IMAGE_FILES = [
 ]
 
 
+# Files to exclude from production builds (dev-only tooling)
+EXCLUDE_FROM_BUILD = {"generate_adapters.py"}
+
+
 def discover_tinyui_modules():
     """Auto-discover all tinyui Python modules from the filesystem."""
     modules = []
     for py_file in TINYUI_SRC.rglob("*.py"):
+        if py_file.name in EXCLUDE_FROM_BUILD:
+            continue
         rel = py_file.relative_to(PROJECT_ROOT)
         if rel.stem == "__init__":
             module = str(rel.parent).replace(os.sep, ".")
@@ -117,10 +123,22 @@ def build():
     if tinyui_dst.exists():
         shutil.rmtree(tinyui_dst)
     shutil.copytree(TINYUI_SRC, tinyui_dst)
-    print("-> tinyui/ copied to tinypedal/tinyui/")
+
+    # Remove dev-only files from the build copy
+    for dev_file in ("generate_adapters.py", "manifest.json"):
+        dev_path = tinyui_dst / "backend" / dev_file
+        if dev_path.exists():
+            dev_path.unlink()
+    print("-> tinyui/ copied to tinypedal/tinyui/ (dev files excluded)")
 
     entry_point_path.write_text(ENTRY_POINT)
     print("-> run_tinyui.py created")
+
+    # -- Step 1b: Generate backend adapters from manifest --
+
+    from tinyui.backend.generate_adapters import generate
+    generate()
+    print("-> Backend adapters generated")
 
     # -- Step 2: Switch to tinypedal/ and import (same as TinyPedal does) --
 
