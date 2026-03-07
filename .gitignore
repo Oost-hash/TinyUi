@@ -26,6 +26,9 @@ pylintrc
 *.csv
 *.fuel
 
+# planning notes
+docs/planning.md
+
 # random file
 test*.py
 *.7z
