@@ -9,9 +9,11 @@ from PySide2.QtWidgets import QTabWidget, QVBoxLayout, QWidget
 
 from tinyui.backend.controls import app_signal, mctrl, wctrl
 from .notify_bar import NotifyBar
-from tinyui.ui.panels import (
-    HotkeyList, ModuleList, PaceNotesControl, PresetList, SpectateList,
-)
+from tinyui.ui.panels.hotkey_view import HotkeyList
+from tinyui.ui.panels.module_view import ModuleList
+from tinyui.ui.panels.pace_notes_view import PaceNotesControl
+from tinyui.ui.panels.preset_view import PresetList
+from tinyui.ui.panels.spectate_view import SpectateList
 
 # Tab definitions: (label, factory)
 # factory is a callable(parent) -> QWidget

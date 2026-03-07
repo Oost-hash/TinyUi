@@ -65,7 +65,7 @@ from .._common import (
     TableBatchReplace,
     UIScaler,
 )
-from ..viewers.track_map_viewer import MapView
+from ..dialogs.track_map_viewer import MapView
 
 DECIMALS = 2
 
