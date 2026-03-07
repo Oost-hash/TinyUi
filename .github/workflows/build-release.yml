@@ -43,6 +43,14 @@ jobs:
           echo "app_ver=${ui_ver}" >> $GITHUB_OUTPUT
           echo "TinyUi Version:" $ui_ver
 
+      - name: Verify submodule checkout
+        shell: bash
+        run: |
+          echo "=== tinypedal/ contents ==="
+          ls tinypedal/ | head -10
+          echo "=== tinypedal/tinypedal/ contents ==="
+          ls tinypedal/tinypedal/ | head -10
+
       - name: Build Windows executable
         run: |
           python build_release.py
