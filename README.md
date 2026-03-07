@@ -55,6 +55,6 @@ python run.py
 
 ## License
 
-GPLv3 — see [LICENSE.txt](LICENSE.txt).
+GPLv3 — see [LICENSE](LICENSE).
 
 TinyUi builds on [TinyPedal](https://github.com/TinyPedal/TinyPedal) by s-victor, which is also licensed under GPLv3.
