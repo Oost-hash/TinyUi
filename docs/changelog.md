@@ -17,6 +17,7 @@
     - Individual files: overlay, api, config, tools, window, help
     - Shared commands in _commands.py
 - Deleted app.py (dead AppWindow class) and menu.py
+- Moved UI components (tray, status bar, tab view, notify bar) to ui/components/
 
 ### Fixed
 - generate_adapters.py no longer deletes hand-written files (e.g. core_loader.py)
@@ -25,6 +26,7 @@
 - Fixed status bar CSS selectors (AppWindow → MainWindow)
 
 ### Todo
+- Separate rest of UI code into components
 - CI/CD pipeline
 
 ## Version 0.4.0 (2026-03-06)
