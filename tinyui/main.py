@@ -156,7 +156,7 @@ def run():
     logger.info(f"TinyPedal: {TP_VERSION}")
 
     from tinyui.ui.main_window import MainWindow
-    from tinyui.ui.tray import TrayIcon
+    from tinyui.ui.components.tray import TrayIcon
 
     window = MainWindow()
     tray = TrayIcon(icon=_load_icon(), window=window)
