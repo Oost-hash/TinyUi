@@ -1,18 +1,18 @@
---------------------------------------------------------------------------------
-Version 0.5.0 (2026-03-07)
---------------------------------------------------------------------------------
-Changed:
+# Changelog
+
+## Version 0.5.0 (2026-03-07)
+
+### Changed
 - Extracted tray icon to self-contained ui/tray.py component (TrayIcon)
 - Simplified main.py run(): replaced inline tray setup with TrayIcon class
 - MainWindow no longer builds or configures the tray icon
 
-Todo:
+### Todo
 - CI/CD pipeline
 
---------------------------------------------------------------------------------
-Version 0.4.0 (2026-03-06)
---------------------------------------------------------------------------------
-Changed:
+## Version 0.4.0 (2026-03-06)
+
+### Changed
 - Updated icon to better differentiate between TinyPedal and TinyUi
     - Changed color to #9753ff
     - Updated metadata in compliance with CC BY-SA 4.0
@@ -37,7 +37,7 @@ Changed:
     - Supports aliasing (e.g., APP_NAME as TP_APP_NAME)
     - No manual file editing needed when TinyPedal structure changes
 
-Added:
+### Added
 - Backend adapter layer for constants to keep code changes minimal when
   TinyPedal updates or changes
 - Backend adapters for formatter, validator, and regex
@@ -59,16 +59,13 @@ Added:
 - build_release.py runs adapter generator before freeze, excludes
   generate_adapters.py and manifest.json from production builds
 
+## Version 0.3.0 (2026-03-06)
 
---------------------------------------------------------------------------------
-Version 0.3.0 (2026-03-06)
---------------------------------------------------------------------------------
-
-Changed:
+### Changed
 - Reorganized tinyui/ui/ into subdirectories: editors/, viewers/, dialogs/, views/
 - Updated all internal imports to match new directory structure
 
-Added:
+### Added
 - Table helper functions in _common.py: setup_table, editor_button_bar, combo_selector
 - TableEditor base class with shared sort/delete/save flow
 - Declarative TAB_DEFS and MENU_DEFS lists in app.py
@@ -79,34 +76,24 @@ Added:
 - Minimal drop-in build mode for existing TinyPedal installs
 - Frozen theme path resolution for py2exe builds
 
---------------------------------------------------------------------------------
-Version 0.2.0 (2026-03-06)
---------------------------------------------------------------------------------
+## Version 0.2.0 (2026-03-06)
 
-Added:
+### Added
 - Initial release
 - Separated run.py into main.py and core_loader.py
 - GitHub Actions CI/CD pipeline
 - Theme colors loaded from JSON files (tinyui/themes/dark.json, light.json)
 - build_release.py for py2exe builds
 
-Changed:
+### Changed
 - run.py now chdir's to tinypedal/ so data folders stay in the submodule
 - Removed hardcoded palette functions in favor of JSON theme loading
 
-Fixed:
+### Fixed
 - Data folders (settings/, brandlogo/, etc.) no longer pollute the project root
 
---------------------------------------------------------------------------------
-Version 0.1.0 (2026-03-05)
---------------------------------------------------------------------------------
+## Version 0.1.0 (2026-03-05)
 
-Added:
+### Added
 - Proof of concept
 - Basic UI replacement
-
-Changed:
-- N/A
-
-Fixed:
-- N/A
