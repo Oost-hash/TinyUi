@@ -6,41 +6,14 @@
 """TinyPedal Core Loader - Laadt alleen de core, geen UI"""
 
 import logging
-import os
 import signal
 import sys
 import time
 
-import psutil
 from tinyui.backend.constants import FileExt
 from tinyui.backend.settings import cfg
 
 logger = logging.getLogger("TinyUi")
-
-
-# PID helpers voor single instance check
-def save_pid_file():
-    """Save PID naar file"""
-    with open(f"{cfg.path.config}tinyui.pid", "w", encoding="utf-8") as f:
-        pid = os.getpid()
-        create_time = psutil.Process(pid).create_time()
-        f.write(f"{pid},{create_time}")
-
-
-def is_pid_exist() -> bool:
-    """Check of TinyUi al draait"""
-    try:
-        with open(f"{cfg.path.config}tinyui.pid", "r", encoding="utf-8") as f:
-            line = f.readline().strip()
-        pid_str, create_time_str = line.split(",")
-        pid = int(pid_str)
-
-        if psutil.pid_exists(pid):
-            if str(psutil.Process(pid).create_time()) == create_time_str:
-                return True
-    except (OSError, ValueError, psutil.Error) as exc:
-        logger.debug("PID check failed: %s", exc)
-    return False
 
 
 class TinyPedalCore:
