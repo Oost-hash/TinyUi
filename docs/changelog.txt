@@ -17,9 +17,10 @@ Changed:
   hotkey, async_request, realtime_state, log_handler, main, update) to
   use backend adapters
 - TinyUi now uses its own icon for window and tray
-- Restructured main.py: flattened lazy imports to module-level, extracted
-  bootstrap helpers (_init_config, _init_logging, _init_qt,
-  _check_single_instance), moved PID logic from core_loader
+- Restructured main.py: pure bootstrap (config, logging, Qt, PID, tray)
+- Extracted MainWindow to ui/main_window.py
+- Moved core_loader.py to backend/
+- Moved tray icon setup from MainWindow to main.py
 - Backend adapter layer now auto-generated from manifest.json
     - Delete and regenerate adapter files on every run.py execution
     - Supports aliasing (e.g., APP_NAME as TP_APP_NAME)
@@ -47,8 +48,12 @@ Added:
 - build_release.py runs adapter generator before freeze, excludes
   generate_adapters.py and manifest.json from production builds
 
+--------------------------------------------------------------------------------
+Version 0.5.0 (planned)
+--------------------------------------------------------------------------------
 Todo:
-- None planned
+- Extract tray icon to ui/ as a standalone component
+- CI/CD pipeline
 
 --------------------------------------------------------------------------------
 Version 0.3.0 (2026-03-06)
