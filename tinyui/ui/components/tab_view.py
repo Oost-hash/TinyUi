@@ -9,7 +9,7 @@ from PySide2.QtWidgets import QTabWidget, QVBoxLayout, QWidget
 
 from tinyui.backend.controls import app_signal, mctrl, wctrl
 from .notify_bar import NotifyBar
-from tinyui.ui.views import (
+from tinyui.ui.panels import (
     HotkeyList, ModuleList, PaceNotesControl, PresetList, SpectateList,
 )
 

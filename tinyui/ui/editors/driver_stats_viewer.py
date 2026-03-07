@@ -52,7 +52,7 @@ from .._common import (
     UIScaler,
     setup_table,
 )
-from .track_map_viewer import TrackMapViewer
+from ..dialogs import TrackMapViewer
 
 
 def parse_display_value(key: str, value: int | float) -> str | int | float:

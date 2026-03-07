@@ -12,7 +12,7 @@ from PySide2.QtWidgets import QMenu, QMessageBox
 from tinyui.backend.controls import api, loader
 from tinyui.backend.constants import ConfigType
 from tinyui.backend.settings import cfg
-from ..dialogs import UserConfig
+from ..editors import UserConfig
 from ._commands import menu_reload_only, menu_refresh_only, menu_restart_api
 
 
