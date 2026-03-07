@@ -8,7 +8,7 @@
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QMainWindow, QSystemTrayIcon
 
-from .menu import OverlayMenu
+from .menus import OverlayMenu
 
 
 class TrayIcon(QSystemTrayIcon):

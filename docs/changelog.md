@@ -11,6 +11,12 @@
     - QSS template in window.qss with $placeholder substitution
     - Palette and stylesheet logic in themes/style.py
     - ui/__init__.py now only contains UIScaler
+- Extracted TabView from app.py to ui/tab_view.py
+- Renamed notification.py to notify_bar.py
+- Split menu.py (~730 lines) into ui/menus/ package
+    - Individual files: overlay, api, config, tools, window, help
+    - Shared commands in _commands.py
+- Deleted app.py (dead AppWindow class) and menu.py
 
 ### Fixed
 - generate_adapters.py no longer deletes hand-written files (e.g. core_loader.py)

@@ -22,16 +22,9 @@ from tinyui.version import __version__ as TINYUI_VERSION
 
 from tinyui.themes.style import set_style_palette, set_style_window
 from ._common import DialogSingleton, UIScaler
-from .app import TabView
+from .tab_view import TabView
 from .status_bar import StatusButtonBar
-from .menu import (
-    APIMenu,
-    ConfigMenu,
-    HelpMenu,
-    OverlayMenu,
-    ToolsMenu,
-    WindowMenu,
-)
+from .menus import APIMenu, ConfigMenu, HelpMenu, OverlayMenu, ToolsMenu, WindowMenu
 
 logger = logging.getLogger("TinyUi")
 
