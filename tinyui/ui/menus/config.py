@@ -12,7 +12,7 @@ from PySide2.QtWidgets import QMenu, QMessageBox
 from tinyui.backend.constants import PLATFORM, ConfigType
 from tinyui.backend.formatter import format_option_name
 from tinyui.backend.settings import cfg
-from ..dialogs.config import FontConfig, UserConfig
+from ..dialogs import FontConfig, UserConfig
 from ._commands import menu_reload_preset, menu_reload_only, menu_refresh_only
 
 

@@ -7,16 +7,12 @@
 
 from PySide2.QtWidgets import QMenu
 
-from ..dialogs.fuel_calculator import FuelCalculator
-from ..editors.brake_editor import BrakeEditor
-from ..editors.heatmap_editor import HeatmapEditor
-from ..editors.track_info_editor import TrackInfoEditor
-from ..editors.track_notes_editor import TrackNotesEditor
-from ..editors.tyre_compound_editor import TyreCompoundEditor
-from ..editors.vehicle_brand_editor import VehicleBrandEditor
-from ..editors.vehicle_class_editor import VehicleClassEditor
-from ..viewers.driver_stats_viewer import DriverStatsViewer
-from ..viewers.track_map_viewer import TrackMapViewer
+from ..dialogs import FuelCalculator
+from ..editors import (
+    BrakeEditor, HeatmapEditor, TrackInfoEditor, TrackNotesEditor,
+    TyreCompoundEditor, VehicleBrandEditor, VehicleClassEditor,
+)
+from ..viewers import DriverStatsViewer, TrackMapViewer
 
 
 class ToolsMenu(QMenu):

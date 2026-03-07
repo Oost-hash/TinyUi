@@ -10,8 +10,7 @@ from PySide2.QtWidgets import QMenu
 
 from tinyui.backend.constants import URL_FAQ, URL_USER_GUIDE
 from tinyui.backend.misc import update_checker
-from ..dialogs.about import About
-from ..dialogs.log_info import LogInfo
+from ..dialogs import About, LogInfo
 
 
 class HelpMenu(QMenu):
