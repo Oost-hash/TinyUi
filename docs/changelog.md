@@ -6,11 +6,17 @@
 - Extracted tray icon to self-contained ui/tray.py component (TrayIcon)
 - Simplified main.py run(): replaced inline tray setup with TrayIcon class
 - MainWindow no longer builds or configures the tray icon
+- Extracted StatusButtonBar from app.py to ui/status_bar.py
+- Moved theme styling from ui/__init__.py to tinyui/themes/ package
+    - QSS template in window.qss with $placeholder substitution
+    - Palette and stylesheet logic in themes/style.py
+    - ui/__init__.py now only contains UIScaler
 
 ### Fixed
 - generate_adapters.py no longer deletes hand-written files (e.g. core_loader.py)
 - Deferred UI imports in main.py to after QApplication init
 - generate_adapters.py skips writing unchanged files, preserving __pycache__
+- Fixed status bar CSS selectors (AppWindow → MainWindow)
 
 ### Todo
 - CI/CD pipeline

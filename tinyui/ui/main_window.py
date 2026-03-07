@@ -20,9 +20,10 @@ from tinyui.backend.core_loader import core
 from tinyui.backend.settings import cfg
 from tinyui.version import __version__ as TINYUI_VERSION
 
-from . import set_style_palette, set_style_window
+from tinyui.themes.style import set_style_palette, set_style_window
 from ._common import DialogSingleton, UIScaler
-from .app import StatusButtonBar, TabView
+from .app import TabView
+from .status_bar import StatusButtonBar
 from .menu import (
     APIMenu,
     ConfigMenu,
