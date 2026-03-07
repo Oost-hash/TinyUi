@@ -144,8 +144,6 @@ def _check_single_instance() -> bool:
 
 def run():
     """Main entry point."""
-    from tinyui.ui.main_window import MainWindow
-
     _init_config()
     _init_logging()
     app = _init_qt()
@@ -157,6 +155,7 @@ def run():
     core.start()
     logger.info(f"TinyPedal: {TP_VERSION}")
 
+    from tinyui.ui.main_window import MainWindow
     from tinyui.ui.tray import TrayIcon
 
     window = MainWindow()

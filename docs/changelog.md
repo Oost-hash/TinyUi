@@ -7,6 +7,11 @@
 - Simplified main.py run(): replaced inline tray setup with TrayIcon class
 - MainWindow no longer builds or configures the tray icon
 
+### Fixed
+- generate_adapters.py no longer deletes hand-written files (e.g. core_loader.py)
+- Deferred UI imports in main.py to after QApplication init
+- generate_adapters.py skips writing unchanged files, preserving __pycache__
+
 ### Todo
 - CI/CD pipeline
 
