@@ -64,7 +64,7 @@ IMAGE_FILES = [
 ]
 
 DOCUMENT_FILES = [
-    "docs/changelog.md",
+    str(PROJECT_ROOT / "docs" / "changelog.md"),
     "docs/customization.md",
     "docs/contributors.md",
 ]
