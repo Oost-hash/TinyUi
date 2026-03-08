@@ -27,10 +27,8 @@ from PySide2.QtGui import (
     QRegularExpressionValidator,
 )
 from PySide2.QtWidgets import (
-    QComboBox,
     QDialog,
     QMessageBox,
-    QPushButton,
 )
 
 from tinyui.backend.constants import TP_APP_NAME
@@ -42,21 +40,6 @@ QVAL_FLOAT = QDoubleValidator(-999999.9999, 999999.9999, 6)
 QVAL_COLOR = QRegularExpressionValidator(QRegularExpression('^#[0-9a-fA-F]*'))
 QVAL_HEATMAP = QRegularExpressionValidator(QRegularExpression('[0-9a-zA-Z_]*'))
 QVAL_FILENAME = QRegularExpressionValidator(QRegularExpression('[^\\\\/:*?"<>|]*'))
-
-
-def combo_selector(items, current, on_change=None):
-    """Create a QComboBox pre-filled with items and selected value.
-
-    items: iterable of string items.
-    current: initial selected text.
-    on_change: optional callback connected to currentTextChanged.
-    """
-    combo = QComboBox()
-    combo.addItems(items)
-    combo.setCurrentText(current)
-    if on_change:
-        combo.currentTextChanged.connect(on_change)
-    return combo
 
 
 def singleton_dialog(dialog_type: str, show_error: bool = True):
@@ -134,17 +117,6 @@ class DialogSingletonError:
 
     def exec_(self, parent=None):
         self._message(parent)
-
-
-class CompactButton(QPushButton):
-    """Compact button style"""
-
-    def __init__(self, text, parent=None, has_menu=False):
-        super().__init__(text, parent)
-        self.setFixedWidth(
-            self.fontMetrics().boundingRect(text).width()
-            + UIScaler.FONT_PIXEL_SCALED * (1 + has_menu)
-        )
 
 
 class BaseDialog(QDialog):
