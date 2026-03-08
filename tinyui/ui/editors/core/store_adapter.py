@@ -1,4 +1,7 @@
-# editors/core/store_adapter.py
+#
+#  TinyUi - Store Adapters
+#  Copyright (C) 2026 Oost-hash
+#
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Protocol

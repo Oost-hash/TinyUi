@@ -1,4 +1,7 @@
-# editors/components/data_table.py
+#
+#  TinyUi - Data Table Component
+#  Copyright (C) 2026 Oost-hash
+#
 
 from typing import Any, Callable, Dict, List, Optional, Tuple
 

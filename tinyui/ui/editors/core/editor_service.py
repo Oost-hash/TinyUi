@@ -1,4 +1,7 @@
-# editors/core/editor_service.py
+#
+#  TinyUi - Editor Service Base
+#  Copyright (C) 2026 Oost-hash
+#
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Generic, Optional, TypeVar

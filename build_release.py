@@ -69,15 +69,11 @@ DOCUMENT_FILES = [
     "docs/contributors.md",
 ]
 
-THEME_FILES = [
-    str(p) for p in (PROJECT_ROOT / "tinyui" / "themes").glob("*.json")
-]
+THEME_FILES = [str(p) for p in (PROJECT_ROOT / "tinyui" / "themes").glob("*.json")]
 
 TINYUI_IMAGE_FILES = [
     str(p) for p in (PROJECT_ROOT / "tinyui" / "images").glob("*.png")
-] + [
-    str(p) for p in (PROJECT_ROOT / "tinyui" / "images").glob("*.ico")
-]
+] + [str(p) for p in (PROJECT_ROOT / "tinyui" / "images").glob("*.ico")]
 
 
 # Files to exclude from production builds (dev-only tooling)
@@ -118,6 +114,7 @@ def build():
     # -- Step 1: Generate backend adapters before copying --
 
     from tinyui.backend.generate_adapters import generate
+
     generate()
     print("-> Backend adapters generated")
 
@@ -225,7 +222,7 @@ def build():
     build_version = {
         "version": VERSION.split("-")[0] if "-" in VERSION else VERSION,
         "description": APP_NAME,
-        "copyright": f"Copyright (C) 2025 {AUTHOR}",
+        "copyright": f"Copyright (C) 2026 {AUTHOR}",
         "product_name": APP_NAME,
         "product_version": VERSION,
     }
@@ -306,7 +303,13 @@ def build():
     print(f"-> Build copied to {minimal_name}/")
 
     # Remove everything TinyPedal already provides
-    remove_folders = DATA_FOLDERS + ["images", "docs", "platforms", "mediaservice", "lib"]
+    remove_folders = DATA_FOLDERS + [
+        "images",
+        "docs",
+        "platforms",
+        "mediaservice",
+        "lib",
+    ]
     removed = []
     for folder in remove_folders:
         folder_path = minimal_path / folder

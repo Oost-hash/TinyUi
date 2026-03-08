@@ -1,6 +1,6 @@
 #
 #  TinyUi - Core Loader for TinyPedal
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 
 """TinyPedal Core Loader - Laadt alleen de core, geen UI"""

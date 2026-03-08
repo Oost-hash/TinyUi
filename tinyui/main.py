@@ -1,6 +1,6 @@
 #
 #  TinyUi - Application Entry Point
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 
 """TinyUi bootstrap — config, logging, Qt init, single instance, start."""
@@ -24,13 +24,17 @@ from tinyui.version import __version__ as TINYUI_VERSION
 logger = logging.getLogger("TinyUi")
 
 # TinyUi icon path (relative to tinyui package)
-_TINYUI_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images", "icon.png")
+_TINYUI_ICON = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "images", "icon.png"
+)
 
 
 def _tinyui_icon() -> str:
     """Resolve TinyUi icon path, works both frozen and development."""
     if getattr(sys, "frozen", False):
-        return os.path.join(os.path.dirname(sys.executable), "tinyui", "images", "icon.png")
+        return os.path.join(
+            os.path.dirname(sys.executable), "tinyui", "images", "icon.png"
+        )
     return _TINYUI_ICON
 
 
@@ -57,6 +61,7 @@ def _load_icon() -> QIcon:
 
 # --- PID helpers for single instance check ---
 
+
 def _save_pid_file():
     with open(f"{cfg.path.config}tinyui.pid", "w", encoding="utf-8") as f:
         pid = os.getpid()
@@ -79,6 +84,7 @@ def _is_pid_exist() -> bool:
 
 
 # --- Bootstrap helpers ---
+
 
 def _init_config():
     """Load global config and save defaults."""
@@ -142,6 +148,7 @@ def _check_single_instance() -> bool:
 
 # --- Entry point ---
 
+
 def run():
     """Main entry point."""
     _init_config()
@@ -155,8 +162,8 @@ def run():
     core.start()
     logger.info(f"TinyPedal: {TP_VERSION}")
 
-    from tinyui.ui.main_window import MainWindow
     from tinyui.ui.components.tray import TrayIcon
+    from tinyui.ui.main_window import MainWindow
 
     window = MainWindow()
     tray = TrayIcon(icon=_load_icon(), window=window)

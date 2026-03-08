@@ -1,4 +1,7 @@
-# editors/vehicle_class/viewmodel.py
+#
+#  TinyUi - Vehicle Class Editor ViewModel
+#  Copyright (C) 2026 Oost-hash
+#
 
 from typing import Any, List
 

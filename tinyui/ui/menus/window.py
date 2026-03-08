@@ -1,6 +1,6 @@
 #
 #  TinyUi - Window Menu
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 
 """Window menu."""
@@ -10,6 +10,7 @@ from PySide2.QtWidgets import QMenu
 from tinyui.backend.constants import ConfigType
 from tinyui.backend.controls import loader
 from tinyui.backend.settings import cfg
+
 from .. import _store as store
 
 

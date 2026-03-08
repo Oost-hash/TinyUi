@@ -1,4 +1,7 @@
-# editors/core/observable_model.py
+#
+#  TinyUi - Observable Dict Model
+#  Copyright (C) 2026 Oost-hash
+#
 
 import copy
 from typing import Any, Dict, Optional

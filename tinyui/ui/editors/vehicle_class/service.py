@@ -1,4 +1,7 @@
-# editors/vehicle_class/service.py
+#
+#  TinyUi - Vehicle Class Editor Service
+#  Copyright (C) 2026 Oost-hash
+#
 
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
@@ -53,6 +56,7 @@ class VehicleClassService(EditorService[VehicleClass]):
     def cfg_type(self):
         if self._cfg_type is None:
             from tinyui.backend.constants import ConfigType
+
             self._cfg_type = ConfigType.CLASSES
         return self._cfg_type
 
@@ -133,8 +137,10 @@ class VehicleClassService(EditorService[VehicleClass]):
         """Generate a deterministic random color from a seed string."""
         try:
             from tinyui.backend.formatter import random_color_class
+
             return random_color_class(seed)
         except ImportError:
             import hashlib
+
             h = hashlib.md5(seed.encode()).hexdigest()[:6]
             return f"#{h.upper()}"

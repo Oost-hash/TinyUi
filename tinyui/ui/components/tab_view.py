@@ -1,6 +1,6 @@
 #
 #  TinyUi - Tab View
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 
 """Tab view component."""
@@ -8,22 +8,23 @@
 from PySide2.QtWidgets import QTabWidget, QVBoxLayout, QWidget
 
 from tinyui.backend.controls import app_signal, mctrl, wctrl
-from .notify_bar import NotifyBar
 from tinyui.ui.panels.hotkey_view import HotkeyList
 from tinyui.ui.panels.module_view import ModuleList
 from tinyui.ui.panels.pace_notes_view import PaceNotesControl
 from tinyui.ui.panels.preset_view import PresetList
 from tinyui.ui.panels.spectate_view import SpectateList
 
+from .notify_bar import NotifyBar
+
 # Tab definitions: (label, factory)
 # factory is a callable(parent) -> QWidget
 TAB_DEFS = [
-    ("Widget",    lambda parent: ModuleList(parent, wctrl)),
-    ("Module",    lambda parent: ModuleList(parent, mctrl)),
-    ("Preset",    lambda parent: PresetList(parent)),
-    ("Spectate",  lambda parent: SpectateList(parent)),
+    ("Widget", lambda parent: ModuleList(parent, wctrl)),
+    ("Module", lambda parent: ModuleList(parent, mctrl)),
+    ("Preset", lambda parent: PresetList(parent)),
+    ("Spectate", lambda parent: SpectateList(parent)),
     ("Pacenotes", lambda parent: PaceNotesControl(parent)),
-    ("Hotkey",    lambda parent: HotkeyList(parent)),
+    ("Hotkey", lambda parent: HotkeyList(parent)),
 ]
 
 

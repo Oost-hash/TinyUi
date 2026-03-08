@@ -1,4 +1,7 @@
-# editors/components/base_editor_view.py
+#
+#  TinyUi - Base Editor View
+#  Copyright (C) 2026 Oost-hash
+#
 
 from abc import abstractmethod
 from typing import Any, Callable, Generic, List, Optional, TypeVar

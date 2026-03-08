@@ -1,11 +1,11 @@
 #
 #  TinyUi - Custom UI layer for TinyPedal
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 
 """TinyUi constants"""
 
-from .version import __version__, DEVELOPMENT
+from .version import DEVELOPMENT, __version__
 
 APP_NAME = "TinyUi"
 AUTHOR = "Oost-hash"

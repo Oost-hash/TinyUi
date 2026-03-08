@@ -1,4 +1,7 @@
-# editors/core/base_viewmodel.py
+#
+#  TinyUi - Base ViewModel
+#  Copyright (C) 2025 Oost-hash
+#
 
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, Generic, Optional, TypeVar

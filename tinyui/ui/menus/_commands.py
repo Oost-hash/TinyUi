@@ -1,11 +1,12 @@
 #
 #  TinyUi - Menu Commands
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 
 """Shared menu command functions."""
 
 from tinyui.backend.controls import api, loader
+
 from .. import _store as store
 
 

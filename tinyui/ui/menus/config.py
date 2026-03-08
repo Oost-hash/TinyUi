@@ -1,6 +1,6 @@
 #
 #  TinyUi - Config Menu
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 
 """Config menu."""
@@ -12,8 +12,9 @@ from PySide2.QtWidgets import QMenu, QMessageBox
 from tinyui.backend.constants import PLATFORM, ConfigType
 from tinyui.backend.formatter import format_option_name
 from tinyui.backend.settings import cfg
+
 from ..editors.config import FontConfig, UserConfig
-from ._commands import menu_reload_preset, menu_reload_only, menu_refresh_only
+from ._commands import menu_refresh_only, menu_reload_only, menu_reload_preset
 
 
 class ConfigMenu(QMenu):
@@ -46,7 +47,9 @@ class ConfigMenu(QMenu):
         open_folder = self.addMenu("Open Folder")
         for path_name in cfg.path.__slots__:
             _folder = open_folder.addAction(format_option_name(path_name))
-            _folder.triggered.connect(lambda checked=True, p=path_name: self.open_folder(checked, p))
+            _folder.triggered.connect(
+                lambda checked=True, p=path_name: self.open_folder(checked, p)
+            )
 
     def open_folder(self, checked: bool, path_name: str):
         """Open folder in file manager"""
@@ -61,6 +64,7 @@ class ConfigMenu(QMenu):
         else:  # Linux
             try:
                 import subprocess
+
                 subprocess.run(["xdg-open", filepath])
             except (FileNotFoundError, subprocess.SubprocessError):
                 error = True

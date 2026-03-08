@@ -1,6 +1,6 @@
 #
 #  TinyUi - Tray Icon
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 
 """System tray icon component."""
@@ -19,7 +19,9 @@ class TrayIcon(QSystemTrayIcon):
         self.setToolTip(window.windowTitle())
         self.setContextMenu(OverlayMenu("Overlay", window, True))
         self.activated.connect(
-            lambda reason: window.show_app()
-            if reason == QSystemTrayIcon.ActivationReason.DoubleClick
-            else None
+            lambda reason: (
+                window.show_app()
+                if reason == QSystemTrayIcon.ActivationReason.DoubleClick
+                else None
+            )
         )

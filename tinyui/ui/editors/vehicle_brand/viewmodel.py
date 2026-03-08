@@ -1,4 +1,7 @@
-# editors/vehicle_brand/viewmodel.py
+#
+#  TinyUi - Vehicle Brand Editor ViewModel
+#  Copyright (C) 2026 Oost-hash
+#
 
 from typing import Any, Dict, List
 

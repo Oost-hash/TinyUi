@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 #  TinyUi - Custom UI layer for TinyPedal
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by

@@ -1,4 +1,7 @@
-# editors/brake/viewmodel.py
+#
+#  TinyUi - Brake Editor ViewModel
+#  Copyright (C) 2025 Oost-hash
+#
 
 from typing import Any, List
 

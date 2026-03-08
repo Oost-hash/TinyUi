@@ -1,6 +1,6 @@
 #
 #  TinyUi - Tools Menu
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 
 """Tools menu."""

@@ -1,6 +1,6 @@
 #
 #  TinyUi - API Menu
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 
 """API menu."""
@@ -9,12 +9,13 @@ import os
 
 from PySide2.QtWidgets import QMenu, QMessageBox
 
-from tinyui.backend.controls import api, loader
 from tinyui.backend.constants import ConfigType
+from tinyui.backend.controls import api, loader
 from tinyui.backend.settings import cfg
-from ..editors.config import UserConfig
-from ._commands import menu_reload_only, menu_refresh_only, menu_restart_api
+
 from .. import _store as store
+from ..editors.config import UserConfig
+from ._commands import menu_refresh_only, menu_reload_only, menu_restart_api
 
 
 class APIMenu(QMenu):
@@ -62,7 +63,9 @@ class APIMenu(QMenu):
 
     def toggle_api_selection(self):
         """Toggle API selection mode"""
-        store.toggle(cfg.telemetry, "enable_api_selection_from_preset", ConfigType.CONFIG)
+        store.toggle(
+            cfg.telemetry, "enable_api_selection_from_preset", ConfigType.CONFIG
+        )
         menu_reload_only()
 
     def toggle_carsetup_backup(self):
@@ -74,11 +77,11 @@ class APIMenu(QMenu):
         """Toggle legacy API selection"""
         enabled = cfg.telemetry["enable_legacy_api_selection"]
         state = "Disable" if enabled else "Enable"
-        msg_text = (
-            f"{state} <b>Legacy API</b> selection and restart <b>TinyPedal</b>?"
-        )
+        msg_text = f"{state} <b>Legacy API</b> selection and restart <b>TinyPedal</b>?"
         restart_msg = QMessageBox.question(
-            self._parent, "Legacy API", msg_text,
+            self._parent,
+            "Legacy API",
+            msg_text,
             buttons=QMessageBox.Yes | QMessageBox.No,
             defaultButton=QMessageBox.No,
         )
@@ -112,7 +115,9 @@ class APIMenu(QMenu):
             api_name = _api.NAME
             option = self.addAction(api_name)
             option.setCheckable(True)
-            option.triggered.connect(lambda checked=True, name=api_name: self.__toggle_option(checked, name))
+            option.triggered.connect(
+                lambda checked=True, name=api_name: self.__toggle_option(checked, name)
+            )
             actions_api.addAction(option)
         return actions_api
 

@@ -1,4 +1,7 @@
-# editors/tyre_compound/viewmodel.py
+#
+#  TinyUi - Tyre Compound Editor ViewModel
+#  Copyright (C) 2026 Oost-hash
+#
 
 from typing import Any, List
 

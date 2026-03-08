@@ -1,4 +1,7 @@
-# editors/brake/view.py (refactored)
+#
+#  TinyUi - Brake Editor View
+#  Copyright (C) 2026 Oost-hash
+#
 
 from typing import List
 

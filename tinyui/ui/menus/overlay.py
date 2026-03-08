@@ -1,6 +1,6 @@
 #
 #  TinyUi - Overlay Menu
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 
 """Overlay menu, shared between main window and tray."""
@@ -190,7 +190,9 @@ class ResetDataMenu(QMenu):
             filename=api.read.session.track_name(),
         )
 
-    def __confirmation(self, data_type: str, extension: str, filepath: str, filename: str) -> bool:
+    def __confirmation(
+        self, data_type: str, extension: str, filepath: str, filename: str
+    ) -> bool:
         """Message confirmation, returns true if file deleted"""
         # Check if on track
         if api.read.state.active():
@@ -216,7 +218,9 @@ class ResetDataMenu(QMenu):
             "This cannot be undone!"
         )
         delete_msg = QMessageBox.question(
-            self._parent, f"Reset {data_type.title()}", msg_text,
+            self._parent,
+            f"Reset {data_type.title()}",
+            msg_text,
             buttons=QMessageBox.Yes | QMessageBox.No,
             defaultButton=QMessageBox.No,
         )

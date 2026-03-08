@@ -1,4 +1,7 @@
-# editors/brake/validation.py
+#
+#  TinyUi - Brake Editor Validation
+#  Copyright (C) 2026 Oost-hash
+#
 
 from ..core.validation import (
     RangeValidator,

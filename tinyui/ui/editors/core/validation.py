@@ -1,4 +1,7 @@
-# editors/core/validation.py
+#
+#  TinyUi - Validation Framework
+#  Copyright (C) 2026 Oost-hash
+#
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass

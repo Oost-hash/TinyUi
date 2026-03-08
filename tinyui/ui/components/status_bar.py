@@ -1,6 +1,6 @@
 #
 #  TinyUi - Status Bar
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 
 """Status button bar component."""
@@ -71,14 +71,18 @@ class StatusButtonBar(QStatusBar):
             f"<b>Window</b> and <b>Overlay</b> size and position will {desc}"
         )
         restart_msg = QMessageBox.question(
-            self, "High DPI Scaling", msg_text,
+            self,
+            "High DPI Scaling",
+            msg_text,
             buttons=QMessageBox.Yes | QMessageBox.No,
             defaultButton=QMessageBox.No,
         )
         if restart_msg != QMessageBox.Yes:
             return
 
-        cfg.application["enable_high_dpi_scaling"] = not cfg.application["enable_high_dpi_scaling"]
+        cfg.application["enable_high_dpi_scaling"] = not cfg.application[
+            "enable_high_dpi_scaling"
+        ]
         cfg.save(cfg_type=ConfigType.CONFIG)
         loader.restart()
 

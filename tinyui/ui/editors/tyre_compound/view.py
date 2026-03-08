@@ -1,4 +1,7 @@
-# editors/tyre_compound/view.py (refactored)
+#
+#  TinyUi - Tyre Compound Editor View
+#  Copyright (C) 2026 Oost-hash
+#
 
 from typing import List
 

@@ -1,4 +1,7 @@
-# editors/vehicle_brand/service.py
+#
+#  TinyUi - Vehicle Brand Editor Service
+#  Copyright (C) 2026 Oost-hash
+#
 
 import asyncio
 import json
@@ -46,6 +49,7 @@ class VehicleBrandService(EditorService[VehicleBrand]):
     def cfg_type(self):
         if self._cfg_type is None:
             from tinyui.backend.constants import ConfigType
+
             self._cfg_type = ConfigType.BRANDS
         return self._cfg_type
 

@@ -1,6 +1,6 @@
 #
 #  TinyUi - Theme Style
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 
 """Palette and stylesheet loading."""

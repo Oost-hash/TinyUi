@@ -1,4 +1,7 @@
-# editors/tyre_compound/service.py
+#
+#  TinyUi - Tyre Compound Editor Service
+#  Copyright (C) 2026 Oost-hash
+#
 
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
@@ -49,6 +52,7 @@ class TyreCompoundService(EditorService[TyreCompound]):
     def cfg_type(self):
         if self._cfg_type is None:
             from tinyui.backend.constants import ConfigType
+
             self._cfg_type = ConfigType.COMPOUNDS
         return self._cfg_type
 

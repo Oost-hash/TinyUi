@@ -1,6 +1,6 @@
 #
 #  TinyUi - Main Window
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 
 """TinyUi main window."""
@@ -18,12 +18,12 @@ from tinyui.backend.constants import TP_APP_NAME, TP_VERSION, ConfigType
 from tinyui.backend.controls import app_signal
 from tinyui.backend.core_loader import core
 from tinyui.backend.settings import cfg
+from tinyui.themes.style import set_style_palette, set_style_window
 from tinyui.version import __version__ as TINYUI_VERSION
 
-from tinyui.themes.style import set_style_palette, set_style_window
 from ._common import DialogSingleton, UIScaler
-from .components.tab_view import TabView
 from .components.status_bar import StatusButtonBar
+from .components.tab_view import TabView
 from .menus import APIMenu, ConfigMenu, HelpMenu, OverlayMenu, ToolsMenu, WindowMenu
 
 logger = logging.getLogger("TinyUi")

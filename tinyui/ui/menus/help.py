@@ -1,6 +1,6 @@
 #
 #  TinyUi - Help Menu
-#  Copyright (C) 2025 Oost-hash
+#  Copyright (C) 2026 Oost-hash
 #
 
 """Help menu."""
@@ -10,6 +10,7 @@ from PySide2.QtWidgets import QMenu
 
 from tinyui.backend.constants import URL_FAQ, URL_USER_GUIDE
 from tinyui.backend.misc import update_checker
+
 from ..dialogs.about import About
 from ..dialogs.log_info import LogInfo
 
