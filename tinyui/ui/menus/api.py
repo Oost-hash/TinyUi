@@ -14,6 +14,7 @@ from tinyui.backend.constants import ConfigType
 from tinyui.backend.settings import cfg
 from ..editors.config import UserConfig
 from ._commands import menu_reload_only, menu_refresh_only, menu_restart_api
+from .. import _store as store
 
 
 class APIMenu(QMenu):
@@ -61,25 +62,18 @@ class APIMenu(QMenu):
 
     def toggle_api_selection(self):
         """Toggle API selection mode"""
-        enabled = cfg.telemetry["enable_api_selection_from_preset"]
-        cfg.telemetry["enable_api_selection_from_preset"] = not enabled
-        cfg.save(cfg_type=ConfigType.CONFIG)
+        store.toggle(cfg.telemetry, "enable_api_selection_from_preset", ConfigType.CONFIG)
         menu_reload_only()
 
     def toggle_carsetup_backup(self):
         """Toggle auto car setup backup"""
-        enabled = cfg.telemetry["enable_auto_backup_car_setup"]
-        cfg.telemetry["enable_auto_backup_car_setup"] = not enabled
-        cfg.save(cfg_type=ConfigType.CONFIG)
+        store.toggle(cfg.telemetry, "enable_auto_backup_car_setup", ConfigType.CONFIG)
         menu_refresh_only()
 
     def toggle_legacy_api(self):
         """Toggle legacy API selection"""
         enabled = cfg.telemetry["enable_legacy_api_selection"]
-        if enabled:
-            state = "Disable"
-        else:
-            state = "Enable"
+        state = "Disable" if enabled else "Enable"
         msg_text = (
             f"{state} <b>Legacy API</b> selection and restart <b>TinyPedal</b>?"
         )
@@ -90,8 +84,7 @@ class APIMenu(QMenu):
         )
         if restart_msg != QMessageBox.Yes:
             return
-        cfg.telemetry["enable_legacy_api_selection"] = not enabled
-        cfg.save(cfg_type=ConfigType.CONFIG)
+        store.toggle(cfg.telemetry, "enable_legacy_api_selection", ConfigType.CONFIG)
         loader.restart()
 
     def open_config_api(self):
@@ -132,5 +125,5 @@ class APIMenu(QMenu):
             save_type = ConfigType.SETTING
         else:
             save_type = ConfigType.CONFIG
-        cfg.save(cfg_type=save_type)
+        store.persist(save_type)
         menu_reload_only()

@@ -5,27 +5,28 @@
 
 """Shared menu command functions."""
 
-from tinyui.backend.controls import api, app_signal, loader
+from tinyui.backend.controls import api, loader
+from .. import _store as store
 
 
 def menu_reload_preset():
     """Command - full reload"""
     loader.reload(reload_preset=True)
-    app_signal.refresh.emit(True)
+    store.refresh_ui()
 
 
 def menu_reload_only():
     """Command - fast reload"""
     loader.reload(reload_preset=False)
-    app_signal.refresh.emit(True)
+    store.refresh_ui()
 
 
 def menu_refresh_only():
     """Command - refresh GUI"""
-    app_signal.refresh.emit(True)
+    store.refresh_ui()
 
 
 def menu_restart_api():
     """Command - restart api"""
     api.restart()
-    app_signal.refresh.emit(True)
+    store.refresh_ui()

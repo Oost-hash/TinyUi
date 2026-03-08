@@ -39,8 +39,8 @@ from PySide2.QtWidgets import (
 from ..components.toggle_button import ToggleButton
 from ..components.button_bar import button_bar
 
-from tinyui.backend.controls import app_signal
 from tinyui.backend.constants import PLATFORM, ConfigType
+from tinyui.backend.controls import kctrl
 from tinyui.backend.formatter import format_option_name
 from tinyui.backend.misc import (
     format_hotkey_name,
@@ -48,7 +48,6 @@ from tinyui.backend.misc import (
     refresh_keystate,
     set_hotkey_win,
 )
-from tinyui.backend.controls import kctrl
 from tinyui.backend.settings import cfg
 from tinyui.backend.data import (
     SHORTCUTS_GENERAL,
@@ -56,6 +55,7 @@ from tinyui.backend.data import (
     SHORTCUTS_WIDGET,
 )
 from .._common import BaseDialog, UIScaler
+from .. import _store as store
 
 
 class HotkeyList(QWidget):
@@ -107,10 +107,9 @@ class HotkeyList(QWidget):
 
     def toggle_hotkey(self, checked: bool):
         """Toggle hotkey mode"""
-        cfg.application["enable_global_hotkey"] = checked
-        cfg.save(cfg_type=ConfigType.CONFIG)
-        kctrl.reload()
-        app_signal.refresh.emit(True)
+        store.save_value(cfg.application, "enable_global_hotkey", checked, ConfigType.CONFIG)
+        store.reload_hotkeys()
+        store.refresh_ui()
 
     def add_hotkey_category(self, name: str):
         """Add hotkey category header"""
@@ -153,18 +152,16 @@ class HotkeyList(QWidget):
             defaultButton=QMessageBox.No,
         )
         if confirm_msg == QMessageBox.Yes:
-            # Clear all shortcuts
             for options in cfg.user.shortcuts.values():
                 options["bind"] = ""
-            cfg.save(0, cfg_type=ConfigType.SHORTCUTS)
+            store.persist(ConfigType.SHORTCUTS)
             # Refresh button
             listbox_hotkey = self.listbox_hotkey
             for row_index in range(listbox_hotkey.count()):
                 item = listbox_hotkey.itemWidget(listbox_hotkey.item(row_index))
                 if isinstance(item, HotkeyConfigItem):
                     item.reload_hotkey()
-            # Reload
-            kctrl.reload()
+            store.reload_hotkeys()
 
 
 class HotkeyConfigItem(QWidget):
@@ -288,8 +285,10 @@ class ConfigHotkey(BaseDialog):
         if self.temp_hotkey != self.hotkey_name:
             if self.check_duplicates(self.temp_hotkey):
                 return
-            cfg.user.shortcuts[self.option_name]["bind"] = self.temp_hotkey
-            cfg.save(0, cfg_type=ConfigType.SHORTCUTS)
+            store.save_value(
+                cfg.user.shortcuts[self.option_name], "bind",
+                self.temp_hotkey, ConfigType.SHORTCUTS,
+            )
         self.close()
 
     def check_duplicates(self, temp_hotkey: str) -> bool:
@@ -300,7 +299,7 @@ class ConfigHotkey(BaseDialog):
             if options["bind"] != temp_hotkey:
                 continue
             msg_text = (
-                f"<b>{format_hotkey_name(temp_hotkey)}</b> already used for """
+                f"<b>{format_hotkey_name(temp_hotkey)}</b> already used for "
                 f"<b>{format_option_name(option_name)}</b>."
             )
             QMessageBox.warning(self, "Error", msg_text)

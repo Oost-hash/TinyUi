@@ -31,12 +31,12 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinyui.backend.controls import app_signal
 from tinyui.backend.controls import api
 from tinyui.backend.settings import cfg
 from .._common import UIScaler
 from ..components.toggle_button import ToggleButton
 from ..components.button_bar import button_bar
+from .. import _store as store
 
 logger = logging.getLogger(__name__)
 
@@ -110,10 +110,9 @@ class SpectateList(QWidget):
 
     def toggle_spectate(self, checked: bool):
         """Toggle spectate mode"""
-        cfg.api["enable_player_index_override"] = checked
-        cfg.save()
+        store.save_value(cfg.api, "enable_player_index_override", checked, None)
         api.setup()
-        app_signal.refresh.emit(True)
+        store.refresh_ui()
 
     def spectate_selected(self):
         """Spectate selected player"""
@@ -159,10 +158,8 @@ class SpectateList(QWidget):
         selected_item = self.listbox_spectate.currentItem()
         return "Anonymous" if selected_item is None else selected_item.text()
 
-    @staticmethod
-    def save_selected_index(index: int):
+    def save_selected_index(self, index: int):
         """Save selected driver index"""
         if cfg.api["player_index"] != index:
-            cfg.api["player_index"] = index
+            store.save_value(cfg.api, "player_index", index, None)
             api.setup()
-            cfg.save()

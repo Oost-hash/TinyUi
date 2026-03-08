@@ -26,11 +26,15 @@ pylintrc
 *.csv
 *.fuel
 
-# planning notes
-docs/planning.md
+# notes
+docs/development-notes/
 
 # random file
 test*.py
+
+# editor refactoring (local only)
+tinyui/ui/editors/reference/
+tinyui/ui/tests/
 *.7z
 *.zip
 *.log

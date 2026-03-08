@@ -10,6 +10,7 @@ from PySide2.QtWidgets import QMenu
 from tinyui.backend.constants import ConfigType
 from tinyui.backend.controls import loader
 from tinyui.backend.settings import cfg
+from .. import _store as store
 
 
 class WindowMenu(QMenu):
@@ -48,22 +49,16 @@ class WindowMenu(QMenu):
 
     def is_show_at_startup(self):
         """Toggle config window startup state"""
-        self.__toggle_option("show_at_startup")
+        store.toggle(cfg.application, "show_at_startup", ConfigType.CONFIG)
 
     def is_minimize_to_tray(self):
         """Toggle minimize to tray state"""
-        self.__toggle_option("minimize_to_tray")
+        store.toggle(cfg.application, "minimize_to_tray", ConfigType.CONFIG)
 
     def is_remember_position(self):
         """Toggle config window remember position state"""
-        self.__toggle_option("remember_position")
+        store.toggle(cfg.application, "remember_position", ConfigType.CONFIG)
 
     def is_remember_size(self):
         """Toggle config window remember size state"""
-        self.__toggle_option("remember_size")
-
-    @staticmethod
-    def __toggle_option(option_name: str):
-        """Toggle option"""
-        cfg.application[option_name] = not cfg.application[option_name]
-        cfg.save(cfg_type=ConfigType.CONFIG)
+        store.toggle(cfg.application, "remember_size", ConfigType.CONFIG)
