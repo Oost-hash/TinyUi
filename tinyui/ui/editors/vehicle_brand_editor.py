@@ -42,7 +42,8 @@ from tinyui.backend.constants import (
     ConfigType, FileFilter,
 )
 from tinyui.backend.settings import cfg, copy_setting
-from .._common import CompactButton, UIScaler
+from .._common import UIScaler
+from ..components.compact_button import CompactButton
 from ..components.data_table import DataTable
 from ._editor_common import TableBatchReplace, TableEditor, editor_button_bar
 

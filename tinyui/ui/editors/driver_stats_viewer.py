@@ -45,7 +45,8 @@ from tinyui.backend.data import (
     save_stats_json_file,
     validate_stats_file,
 )
-from .._common import CompactButton, UIScaler
+from .._common import UIScaler
+from ..components.compact_button import CompactButton
 from ..components.data_table import DataTable
 from ..components.table_items import NumericTableItem
 from ._editor_common import BaseEditor

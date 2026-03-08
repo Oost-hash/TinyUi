@@ -31,7 +31,8 @@ from tinyui.backend.controls import api
 from tinyui.backend.constants import ConfigType
 from tinyui.backend.settings import cfg, copy_setting
 from tinyui.backend.data import HEATMAP_DEFAULT_TYRE, set_predefined_compound_symbol
-from .._common import UIScaler, combo_selector
+from .._common import UIScaler
+from ..components.combo_selector import combo_selector
 from ..components.data_table import DataTable
 from ._editor_common import TableBatchReplace, TableEditor, editor_button_bar
 

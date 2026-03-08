@@ -40,7 +40,8 @@ from PySide2.QtWidgets import (
 from tinyui.backend import regex as rxp
 from tinyui.backend.formatter import format_option_name
 from tinyui.backend.settings import cfg, load_setting_json_file, save_and_verify_json_file
-from .._common import CompactButton, UIScaler
+from .._common import UIScaler
+from ..components.compact_button import CompactButton
 from ._editor_common import BaseEditor
 from ..components.list_header import ListHeader
 

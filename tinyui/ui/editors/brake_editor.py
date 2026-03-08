@@ -31,7 +31,8 @@ from tinyui.backend.controls import api
 from tinyui.backend.constants import ConfigType
 from tinyui.backend.settings import cfg, copy_setting
 from tinyui.backend.data import HEATMAP_DEFAULT_BRAKE, set_predefined_brake_name
-from .._common import UIScaler, combo_selector
+from .._common import UIScaler
+from ..components.combo_selector import combo_selector
 from ..components.table_items import FloatTableItem
 from ._editor_common import TableEditor, editor_button_bar
 from ..components.data_table import DataTable

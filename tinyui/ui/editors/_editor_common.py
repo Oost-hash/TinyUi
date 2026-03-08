@@ -25,7 +25,8 @@ from PySide2.QtWidgets import (
 )
 
 from tinyui.backend.settings import cfg
-from .._common import BaseDialog, CompactButton, UIScaler
+from .._common import BaseDialog, UIScaler
+from ..components.compact_button import CompactButton
 
 
 def editor_button_bar(editor, left_buttons=None):
