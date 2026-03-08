@@ -115,7 +115,13 @@ def build():
     """Run the full build process."""
     pyside_name, pyside_path = detect_pyside()
 
-    # -- Step 1: Copy tinyui module into tinypedal/ and create entry point --
+    # -- Step 1: Generate backend adapters before copying --
+
+    from tinyui.backend.generate_adapters import generate
+    generate()
+    print("-> Backend adapters generated")
+
+    # -- Step 2: Copy tinyui module into tinypedal/ and create entry point --
 
     tinyui_dst = PROJECT_ROOT / "tinypedal" / "tinyui"
     entry_point_path = PROJECT_ROOT / "tinypedal" / "run_tinyui.py"
@@ -134,13 +140,7 @@ def build():
     entry_point_path.write_text(ENTRY_POINT)
     print("-> run_tinyui.py created")
 
-    # -- Step 1b: Generate backend adapters from manifest --
-
-    from tinyui.backend.generate_adapters import generate
-    generate()
-    print("-> Backend adapters generated")
-
-    # -- Step 2: Switch to tinypedal/ and import (same as TinyPedal does) --
+    # -- Step 3: Switch to tinypedal/ and import (same as TinyPedal does) --
 
     os.chdir(PROJECT_ROOT / "tinypedal")
 
@@ -161,7 +161,7 @@ def build():
     from tinyui.const_tinyui import APP_NAME, AUTHOR
     from tinyui.version import __version__ as VERSION
 
-    # -- Step 3: Build configuration --
+    # -- Step 4: Build configuration --
 
     python_path = sys.exec_prefix
     dist_folder = str(PROJECT_ROOT / "dist")
@@ -230,7 +230,7 @@ def build():
         "product_version": VERSION,
     }
 
-    # -- Step 4: Build --
+    # -- Step 5: Build --
 
     print(f"\nBuilding {APP_NAME} v{VERSION}...")
     print(f"Platform: {PLATFORM.SYSTEM}")
@@ -252,7 +252,7 @@ def build():
 
     print("\n-> py2exe freeze complete")
 
-    # -- Step 5: Copy PySide runtime DLLs --
+    # -- Step 6: Copy PySide runtime DLLs --
 
     print(f"\nCopying {pyside_name} runtime DLLs...")
     lib_dir = Path(app_name_dist) / "tinyui_lib"
@@ -263,7 +263,7 @@ def build():
             shutil.copy2(dll, dst)
             print(f"  + {dll.name}")
 
-    # -- Step 6: Data folders (full build) --
+    # -- Step 7: Data folders (full build) --
 
     print("\nAdding data folders...")
     dist_app_path = Path(app_name_dist)
@@ -278,7 +278,7 @@ def build():
             dst.mkdir(exist_ok=True)
             print(f"  + {folder}/ (empty)")
 
-    # -- Step 7: Cleanup temp files --
+    # -- Step 8: Cleanup temp files --
 
     print("\nCleanup...")
     if tinyui_dst.exists():
@@ -290,7 +290,7 @@ def build():
     print(f"RELEASE: dist/{APP_NAME}/")
     print(f"{'=' * 50}")
 
-    # -- Step 8: Minimal drop-in build --
+    # -- Step 9: Minimal drop-in build --
     # Structure mirrors TinyPedal so files merge cleanly when dropped in.
     # TinyUi-specific files go under tinyui/ to avoid overwriting TinyPedal's.
 
