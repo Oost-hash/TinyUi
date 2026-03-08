@@ -1,8 +1,15 @@
 # Changelog
+## Version 0.7.0
+
+## Todo
+- implement data schema's
+
 
 ## Version 0.6.0 (2026-03-08)
 
 ### Changed
+- Added failed POC, used for 0.7.0 as refrence
+- Converted combo_selecter and compact_button into components
 - Converted 6 editors to use DataTable component (replaces setup_table):
     - heatmap_editor, vehicle_brand_editor, vehicle_class_editor
     - tyre_compound_editor, track_info_editor, driver_stats_viewer
@@ -19,6 +26,9 @@
 - DataTable component (ui/components/data_table.py): reusable QTableWidget
   with row management (add_row, insert_row, delete_selected_rows, clear_rows,
   sort_by_column) and rowCountChanged signal
+
+### Fix
+- more import fixes
 
 ## Version 0.5.0 (2026-03-07)
 
