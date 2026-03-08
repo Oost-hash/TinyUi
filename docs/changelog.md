@@ -6,12 +6,12 @@
 - Converted 6 editors to use DataTable component (replaces setup_table):
     - heatmap_editor, vehicle_brand_editor, vehicle_class_editor
     - tyre_compound_editor, track_info_editor, driver_stats_viewer
-- Split _common.py (628 lines) into 3 files by scope:
-    - ui/_common.py (174 lines): shared primitives (validators, BaseDialog,
+- Split _common.py into 3 files by scope:
+    - ui/_common.py: shared primitives (validators, BaseDialog,
       CompactButton, singleton system, combo_selector)
-    - ui/components/table_items.py (92 lines): reusable table cell types
+    - ui/components/table_items.py: reusable table cell types
       (FloatTableItem, NumericTableItem, ClockTableItem)
-    - ui/editors/_editor_common.py (373 lines): editor base classes and helpers
+    - ui/editors/_editor_common.py: editor base classes and helpers
       (BaseEditor, TableEditor, editor_button_bar, BatchOffset, TableBatchReplace)
 - Removed setup_table() from _common.py (replaced by DataTable component)
 
