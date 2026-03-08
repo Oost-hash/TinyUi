@@ -31,14 +31,10 @@ from tinyui.backend.controls import api
 from tinyui.backend.constants import ConfigType
 from tinyui.backend.settings import cfg, copy_setting
 from tinyui.backend.data import HEATMAP_DEFAULT_BRAKE, set_predefined_brake_name
-from .._common import (
-    FloatTableItem,
-    TableEditor,
-    UIScaler,
-    combo_selector,
-    editor_button_bar,
-    setup_table,
-)
+from .._common import UIScaler, combo_selector
+from ..components.table_items import FloatTableItem
+from ._editor_common import TableEditor, editor_button_bar
+from ..components.data_table import DataTable
 
 HEADER_BRAKES = "Brake name","Failure (mm)","Heatmap name"
 
@@ -56,7 +52,7 @@ class BrakeEditor(TableEditor):
         self.brakes_temp = copy_setting(cfg.user.brakes)
 
         # Set table
-        self.table = setup_table(
+        self.table = DataTable(
             self, HEADER_BRAKES, column_widths={1: 8, 2: 12}
         )
         self.table.cellChanged.connect(self.verify_input)
@@ -80,16 +76,14 @@ class BrakeEditor(TableEditor):
 
     def refresh_table(self):
         """Refresh brakes list"""
-        self.table.setRowCount(0)
-        row_index = 0
-        for class_name, brake_data in self.brakes_temp.items():
+        self.table.clear_rows()
+        for row_index, (class_name, brake_data) in enumerate(self.brakes_temp.items()):
             self.add_brake_entry(
                 row_index,
                 class_name,
                 brake_data["failure_thickness"],
                 brake_data["heatmap"],
             )
-            row_index += 1
 
     def add_brake(self):
         """Add new brake"""
@@ -118,10 +112,11 @@ class BrakeEditor(TableEditor):
         self, row_index: int, class_name: str, failure_thickness: float,
         heatmap_name: str = HEATMAP_DEFAULT_BRAKE):
         """Add new brake entry to table"""
-        self.table.insertRow(row_index)
-        self.table.setItem(row_index, 0, QTableWidgetItem(class_name))
-        self.table.setItem(row_index, 1, FloatTableItem(failure_thickness))
-        self.table.setCellWidget(row_index, 2, combo_selector(cfg.user.heatmap.keys(), heatmap_name, self.set_modified))
+        self.table.insert_row(row_index, [
+            QTableWidgetItem(class_name),
+            FloatTableItem(failure_thickness),
+            combo_selector(cfg.user.heatmap.keys(), heatmap_name, self.set_modified),
+        ])
 
     def reset_setting(self):
         """Reset setting"""

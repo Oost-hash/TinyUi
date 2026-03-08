@@ -31,14 +31,9 @@ from tinyui.backend.controls import api
 from tinyui.backend.constants import ConfigType
 from tinyui.backend.settings import cfg, copy_setting
 from tinyui.backend.data import HEATMAP_DEFAULT_TYRE, set_predefined_compound_symbol
-from .._common import (
-    TableBatchReplace,
-    TableEditor,
-    UIScaler,
-    combo_selector,
-    editor_button_bar,
-    setup_table,
-)
+from .._common import UIScaler, combo_selector
+from ..components.data_table import DataTable
+from ._editor_common import TableBatchReplace, TableEditor, editor_button_bar
 
 HEADER_COMPOUNDS = "Compound name","Symbol","Heatmap name"
 
@@ -56,7 +51,7 @@ class TyreCompoundEditor(TableEditor):
         self.compounds_temp = copy_setting(cfg.user.compounds)
 
         # Set table
-        self.table = setup_table(
+        self.table = DataTable(
             self, HEADER_COMPOUNDS, column_widths={1: 6, 2: 12}
         )
         self.table.cellChanged.connect(self.verify_input)
@@ -81,16 +76,14 @@ class TyreCompoundEditor(TableEditor):
 
     def refresh_table(self):
         """Refresh compounds list"""
-        self.table.setRowCount(0)
-        row_index = 0
-        for compound_name, compound_data in self.compounds_temp.items():
+        self.table.clear_rows()
+        for row_index, (compound_name, compound_data) in enumerate(self.compounds_temp.items()):
             self.add_compound_entry(
                 row_index,
                 compound_name,
                 compound_data["symbol"],
                 compound_data["heatmap"],
             )
-            row_index += 1
 
     def open_replace_dialog(self):
         """Open replace dialog"""
@@ -130,10 +123,11 @@ class TyreCompoundEditor(TableEditor):
         self, row_index: int, compound_name: str, symbol_name: str,
         heatmap_name: str = HEATMAP_DEFAULT_TYRE):
         """Add new compound entry to table"""
-        self.table.insertRow(row_index)
-        self.table.setItem(row_index, 0, QTableWidgetItem(compound_name))
-        self.table.setItem(row_index, 1, QTableWidgetItem(symbol_name))
-        self.table.setCellWidget(row_index, 2, combo_selector(cfg.user.heatmap.keys(), heatmap_name, self.set_modified))
+        self.table.insert_row(row_index, [
+            QTableWidgetItem(compound_name),
+            QTableWidgetItem(symbol_name),
+            combo_selector(cfg.user.heatmap.keys(), heatmap_name, self.set_modified),
+        ])
 
     def reset_setting(self):
         """Reset setting"""

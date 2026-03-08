@@ -34,14 +34,10 @@ from tinyui.backend.controls import api
 from tinyui.backend.constants import ConfigType
 from tinyui.backend.settings import cfg, copy_setting
 from tinyui.backend.data import TRACKINFO_DEFAULT
-from .._common import (
-    ClockTableItem,
-    FloatTableItem,
-    TableEditor,
-    UIScaler,
-    editor_button_bar,
-    setup_table,
-)
+from .._common import UIScaler
+from ..components.data_table import DataTable
+from ..components.table_items import ClockTableItem, FloatTableItem
+from ._editor_common import TableEditor, editor_button_bar
 
 HEADER_TRACKS = (
     "Track name",
@@ -67,7 +63,7 @@ class TrackInfoEditor(TableEditor):
         self.tracks_temp = copy_setting(cfg.user.tracks)
 
         # Set table
-        self.table = setup_table(
+        self.table = DataTable(
             self, HEADER_TRACKS,
             column_widths={
                 i: 8 if i <= 4 else 5
@@ -99,11 +95,9 @@ class TrackInfoEditor(TableEditor):
 
     def refresh_table(self):
         """Refresh tracks list"""
-        self.table.setRowCount(0)
-        row_index = 0
-        for track_name, track_data in self.tracks_temp.items():
+        self.table.clear_rows()
+        for row_index, (track_name, track_data) in enumerate(self.tracks_temp.items()):
             self.add_track_entry(row_index, track_name, track_data)
-            row_index += 1
 
     def add_track(self):
         """Add new track"""
@@ -121,16 +115,13 @@ class TrackInfoEditor(TableEditor):
 
     def add_track_entry(self, row_index: int, track_name: str, track_data: dict):
         """Add new track entry to table"""
-        self.table.insertRow(row_index)
-        self.table.setItem(row_index, 0, QTableWidgetItem(track_name))
-        column_index = 1
+        items = [QTableWidgetItem(track_name)]
         for key, value in TRACKINFO_DEFAULT.items():
             if isinstance(value, float):
-                item = FloatTableItem(track_data.get(key, value))
+                items.append(FloatTableItem(track_data.get(key, value)))
             else:
-                item = ClockTableItem(track_data.get(key, value))
-            self.table.setItem(row_index, column_index, item)
-            column_index += 1
+                items.append(ClockTableItem(track_data.get(key, value)))
+        self.table.insert_row(row_index, items)
 
     def reset_setting(self):
         """Reset setting"""

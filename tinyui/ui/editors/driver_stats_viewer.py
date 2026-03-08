@@ -45,13 +45,10 @@ from tinyui.backend.data import (
     save_stats_json_file,
     validate_stats_file,
 )
-from .._common import (
-    BaseEditor,
-    CompactButton,
-    NumericTableItem,
-    UIScaler,
-    setup_table,
-)
+from .._common import CompactButton, UIScaler
+from ..components.data_table import DataTable
+from ..components.table_items import NumericTableItem
+from ._editor_common import BaseEditor
 
 
 def parse_display_value(key: str, value: int | float) -> str | int | float:
@@ -119,7 +116,7 @@ class DriverStatsViewer(BaseEditor):
 
         # Set table
         self.table_header_key = ["vehicle", *DriverStats.keys()]
-        self.table_stats = setup_table(
+        self.table_stats = DataTable(
             self,
             [format_header_key(key) for key in self.table_header_key],
             column_widths={
@@ -191,7 +188,7 @@ class DriverStatsViewer(BaseEditor):
     def refresh_table(self):
         """Refresh stats table"""
         self.table_stats.setSortingEnabled(False)  # must disable before refresh
-        self.table_stats.setRowCount(0)
+        self.table_stats.clear_rows()
 
         row_index = 0
         for veh_name, veh_data in self.selected_stats_dict.items():
@@ -229,7 +226,7 @@ class DriverStatsViewer(BaseEditor):
             self.selected_stats_dict = self.stats_temp[self.selected_stats_key]
             self.refresh_table()
         else:
-            self.table_stats.setRowCount(0)  # clear table if no track data found
+            self.table_stats.clear_rows()  # clear table if no track data found
 
     def delete_stats_key(self):
         """Delete stats key"""

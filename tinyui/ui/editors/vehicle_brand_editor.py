@@ -42,14 +42,9 @@ from tinyui.backend.constants import (
     ConfigType, FileFilter,
 )
 from tinyui.backend.settings import cfg, copy_setting
-from .._common import (
-    CompactButton,
-    TableBatchReplace,
-    TableEditor,
-    UIScaler,
-    editor_button_bar,
-    setup_table,
-)
+from .._common import CompactButton, UIScaler
+from ..components.data_table import DataTable
+from ._editor_common import TableBatchReplace, TableEditor, editor_button_bar
 
 HEADER_BRANDS = "Vehicle name","Brand name"
 
@@ -67,7 +62,7 @@ class VehicleBrandEditor(TableEditor):
         self.brands_temp = copy_setting(cfg.user.brands)
 
         # Set table
-        self.table = setup_table(self, HEADER_BRANDS)
+        self.table = DataTable(self, HEADER_BRANDS)
         self.table.cellChanged.connect(self.set_modified)
         self.refresh_table()
         self.set_unmodified()
@@ -106,11 +101,9 @@ class VehicleBrandEditor(TableEditor):
 
     def refresh_table(self):
         """Refresh brands list"""
-        self.table.setRowCount(0)
-        row_index = 0
-        for veh_name, brand_name in self.brands_temp.items():
+        self.table.clear_rows()
+        for row_index, (veh_name, brand_name) in enumerate(self.brands_temp.items()):
             self.add_vehicle_entry(row_index, veh_name, brand_name)
-            row_index += 1
 
     def import_from_rf2(self):
         """Import brand from RF2"""
@@ -226,9 +219,10 @@ class VehicleBrandEditor(TableEditor):
 
     def add_vehicle_entry(self, row_index: int, veh_name: str, brand_name: str):
         """Add new brand entry to table"""
-        self.table.insertRow(row_index)
-        self.table.setItem(row_index, 0, QTableWidgetItem(veh_name))
-        self.table.setItem(row_index, 1, QTableWidgetItem(brand_name))
+        self.table.insert_row(row_index, [
+            QTableWidgetItem(veh_name),
+            QTableWidgetItem(brand_name),
+        ])
 
     def reset_setting(self):
         """Reset setting"""

@@ -31,13 +31,9 @@ from tinyui.backend.controls import api
 from tinyui.backend.constants import EMPTY_DICT, ConfigType
 from tinyui.backend.formatter import random_color_class
 from tinyui.backend.settings import cfg, copy_setting
-from .._common import (
-    QVAL_COLOR,
-    TableEditor,
-    UIScaler,
-    editor_button_bar,
-    setup_table,
-)
+from .._common import QVAL_COLOR, UIScaler
+from ..components.data_table import DataTable
+from ._editor_common import TableEditor, editor_button_bar
 from .._option import ColorEdit
 
 HEADER_CLASSES = "Class name","Alias name","Color"
@@ -54,7 +50,7 @@ class VehicleClassEditor(TableEditor):
         self.classes_temp = copy_setting(cfg.user.classes)
 
         # Set table
-        self.table = setup_table(
+        self.table = DataTable(
             self, HEADER_CLASSES, column_widths={2: 7}, show_row_header=False
         )
         self.table.cellChanged.connect(self.set_modified)
@@ -78,12 +74,10 @@ class VehicleClassEditor(TableEditor):
 
     def refresh_table(self):
         """Refresh class list"""
-        self.table.setRowCount(0)
-        row_index = 0
-        for class_name, class_data in self.classes_temp.items():
+        self.table.clear_rows()
+        for row_index, (class_name, class_data) in enumerate(self.classes_temp.items()):
             self.add_vehicle_entry(
                 row_index, class_name, class_data["alias"], class_data["color"])
-            row_index += 1
 
     def __add_option_color(self, key):
         """Color string"""
@@ -114,10 +108,11 @@ class VehicleClassEditor(TableEditor):
 
     def add_vehicle_entry(self, row_index: int, class_name: str, alias_name: str, color: str):
         """Add new class entry to table"""
-        self.table.insertRow(row_index)
-        self.table.setItem(row_index, 0, QTableWidgetItem(class_name))
-        self.table.setItem(row_index, 1, QTableWidgetItem(alias_name))
-        self.table.setCellWidget(row_index, 2, self.__add_option_color(color))
+        self.table.insert_row(row_index, [
+            QTableWidgetItem(class_name),
+            QTableWidgetItem(alias_name),
+            self.__add_option_color(color),
+        ])
 
     def reset_setting(self):
         """Reset setting"""

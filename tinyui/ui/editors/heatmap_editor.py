@@ -31,17 +31,10 @@ from PySide2.QtWidgets import (
 
 from tinyui.backend.constants import ConfigType
 from tinyui.backend.settings import cfg, copy_setting
-from .._common import (
-    QVAL_COLOR,
-    QVAL_HEATMAP,
-    BaseDialog,
-    BaseEditor,
-    BatchOffset,
-    FloatTableItem,
-    UIScaler,
-    editor_button_bar,
-    setup_table,
-)
+from .._common import QVAL_COLOR, QVAL_HEATMAP, BaseDialog, UIScaler
+from ..components.table_items import FloatTableItem
+from ._editor_common import BaseEditor, BatchOffset, editor_button_bar
+from ..components.data_table import DataTable
 from .._option import ColorEdit
 from ..components.selector_bar import SelectorBar
 
@@ -72,7 +65,7 @@ class HeatmapEditor(BaseEditor):
         self.heatmap_list.currentIndexChanged.connect(self.select_heatmap)
 
         # Heatmap list box
-        self.table_heatmap = setup_table(
+        self.table_heatmap = DataTable(
             self, HEADER_HEATMAP, column_widths={1: 8}, show_row_header=False
         )
         self.table_heatmap.cellChanged.connect(self.set_modified)
@@ -100,13 +93,11 @@ class HeatmapEditor(BaseEditor):
 
     def refresh_table(self):
         """Refresh temperature table"""
-        self.table_heatmap.setRowCount(0)
-        row_index = 0
+        self.table_heatmap.clear_rows()
 
         self._verify_enabled = False
-        for temperature, color in self.selected_heatmap_dict.items():
+        for row_index, (temperature, color) in enumerate(self.selected_heatmap_dict.items()):
             self.add_temperature_entry(row_index, float(temperature), color)
-            row_index += 1
         self._verify_enabled = True
 
     def __add_option_color(self, key):
@@ -120,9 +111,10 @@ class HeatmapEditor(BaseEditor):
 
     def add_temperature_entry(self, row_index: int, temperature: float, color: str):
         """Add new temperature entry to table"""
-        self.table_heatmap.insertRow(row_index)
-        self.table_heatmap.setItem(row_index, 0, FloatTableItem(temperature))
-        self.table_heatmap.setCellWidget(row_index, 1, self.__add_option_color(color))
+        self.table_heatmap.insert_row(row_index, [
+            FloatTableItem(temperature),
+            self.__add_option_color(color),
+        ])
 
     def open_create_dialog(self):
         """Create heatmap preset"""
