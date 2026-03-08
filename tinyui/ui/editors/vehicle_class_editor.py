@@ -1,145 +1,82 @@
-#  TinyPedal is an open-source overlay application for racing simulation.
-#  Copyright (C) 2022-2026 TinyPedal developers, see contributors.md file
-#
-#  This file is part of TinyPedal.
-#
-#  This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-"""
-Vehicle class editor
-"""
+"""Vehicle class editor - refactored to use GenericDictTableEditor."""
 
 import random
 
-from PySide2.QtWidgets import (
-    QTableWidgetItem,
-    QVBoxLayout,
-)
+from PySide2.QtWidgets import QTableWidgetItem
 
-from tinyui.backend.controls import api
 from tinyui.backend.constants import EMPTY_DICT, ConfigType
+from tinyui.backend.controls import api
 from tinyui.backend.formatter import random_color_class
-from tinyui.backend.settings import cfg, copy_setting
-from .._common import QVAL_COLOR, UIScaler
-from ..components.data_table import DataTable
-from ._editor_common import TableEditor, editor_button_bar
+from tinyui.backend.settings import cfg
+
+from .._common import QVAL_COLOR
 from .._option import ColorEdit
+from ._generic_dict_editor import GenericDictTableEditor
 
-HEADER_CLASSES = "Class name","Alias name","Color"
 
+class VehicleClassEditor(GenericDictTableEditor):
+    """Vehicle class editor."""
 
-class VehicleClassEditor(TableEditor):
-    """Vehicle class editor"""
+    _cfg_attr = "classes"
+    _cfg_type = ConfigType.CLASSES
+    _title = "Vehicle Class Editor"
+    _columns = ("Class name", "Alias name", "Color")
+    _column_widths = {2: 7}
+    _min_size = (30, 30)
 
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.set_utility_title("Vehicle Class Editor")
-        self.setMinimumSize(UIScaler.size(30), UIScaler.size(30))
-
-        self.classes_temp = copy_setting(cfg.user.classes)
-
-        # Set table
-        self.table = DataTable(
-            self, HEADER_CLASSES, column_widths={2: 7}, show_row_header=False
-        )
-        self.table.cellChanged.connect(self.set_modified)
-        self.refresh_table()
-        self.set_unmodified()
-
-        # Set button
-        layout_button = editor_button_bar(self, [
-            ("Add", self.add_class),
-            ("Sort", self.sort_rows),
-            ("Delete", self.delete_rows),
-            ("Reset", self.reset_setting),
-        ])
-
-        # Set layout
-        layout_main = QVBoxLayout()
-        layout_main.addWidget(self.table)
-        layout_main.addLayout(layout_button)
-        layout_main.setContentsMargins(self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN)
-        self.setLayout(layout_main)
-
-    def refresh_table(self):
-        """Refresh class list"""
-        self.table.clear_rows()
-        for row_index, (class_name, class_data) in enumerate(self.classes_temp.items()):
-            self.add_vehicle_entry(
-                row_index, class_name, class_data["alias"], class_data["color"])
-
-    def __add_option_color(self, key):
-        """Color string"""
-        color_edit = ColorEdit(self, key)
+    def _create_color_edit(self, color: str) -> ColorEdit:
+        """Create color editor widget."""
+        color_edit = ColorEdit(self, color)
         color_edit.setMaxLength(9)
         color_edit.setValidator(QVAL_COLOR)
         color_edit.textChanged.connect(self.set_modified)
-        color_edit.setText(key)  # load selected option
+        color_edit.setText(color)
         return color_edit
 
-    def add_class(self):
-        """Add new class entry"""
-        start_index = row_index = self.table.rowCount()
-        # Add all missing vehicle class from active session
+    def _row_to_widgets(self, key: str, data: dict) -> list:
+        """Convert class data to table row."""
+        return [
+            QTableWidgetItem(key),
+            QTableWidgetItem(data.get("alias", key)),
+            self._create_color_edit(data.get("color", "#FFFFFF")),
+        ]
+
+    def _row_to_dict(self, row_idx: int) -> dict:
+        """Extract class data from table row."""
+        # Preserve existing preset if any
+        key = self.table.item(row_idx, 0).text()
+        existing = getattr(cfg.user, self._cfg_attr).get(key, EMPTY_DICT)
+
+        return {
+            "alias": self.table.item(row_idx, 1).text(),
+            "color": self.table.cellWidget(row_idx, 2).text(),
+            "preset": existing.get("preset", ""),
+        }
+
+    def add_row(self):
+        """Add new class - auto-import from API or create new."""
+        start_idx = row_idx = self.table.rowCount()
+
+        # Try auto-import from active session
         veh_total = api.read.vehicle.total_vehicles()
-        for index in range(veh_total):
-            class_name = api.read.vehicle.class_name(index)
+        for idx in range(veh_total):
+            class_name = api.read.vehicle.class_name(idx)
             if not self.is_value_in_table(class_name, self.table):
-                self.add_vehicle_entry(
-                    row_index, class_name, class_name, random_color_class(class_name))
-                row_index += 1
-        # Add new class entry
-        if start_index == row_index:
-            new_class_name = self.new_name_increment("New Class Name", self.table)
-            self.add_vehicle_entry(
-                row_index, new_class_name, "NAME", random_color_class(str(random.random())))
-            self.table.setCurrentCell(row_index, 0)
+                widgets = self._row_to_widgets(
+                    class_name,
+                    {"alias": class_name, "color": random_color_class(class_name)},
+                )
+                self.table.insert_row(row_idx, widgets)
+                row_idx += 1
 
-    def add_vehicle_entry(self, row_index: int, class_name: str, alias_name: str, color: str):
-        """Add new class entry to table"""
-        self.table.insert_row(row_index, [
-            QTableWidgetItem(class_name),
-            QTableWidgetItem(alias_name),
-            self.__add_option_color(color),
-        ])
-
-    def reset_setting(self):
-        """Reset setting"""
-        msg_text = (
-            "Reset <b>classes preset</b> to default?<br><br>"
-            "Changes are only saved after clicking Apply or Save Button."
-        )
-        if self.confirm_operation(message=msg_text):
-            self.classes_temp = copy_setting(cfg.default.classes)
+        # Add new entry if no API data
+        if start_idx == row_idx:
+            row_idx = self.table.rowCount()
+            new_name = self.new_name_increment("New Class Name", self.table)
+            widgets = self._row_to_widgets(
+                new_name,
+                {"alias": "NAME", "color": random_color_class(str(random.random()))},
+            )
+            self.table.insert_row(row_idx, widgets)
+            self.table.setCurrentCell(row_idx, 0)
             self.set_modified()
-            self.refresh_table()
-
-    def update_temp(self):
-        """Update temporary changes to class temp"""
-        loaded = self.classes_temp.copy()
-        self.classes_temp.clear()
-        for index in range(self.table.rowCount()):
-            class_name = self.table.item(index, 0).text()
-            abbr_name = self.table.item(index, 1).text()
-            color_string = self.table.cellWidget(index, 2).text()
-            self.classes_temp[class_name] = {
-                "alias": abbr_name,
-                "color": color_string,
-                "preset": loaded.get(class_name, EMPTY_DICT).get("preset", ""),
-            }
-
-    def persist(self):
-        """Persist classes to config"""
-        cfg.user.classes = copy_setting(self.classes_temp)
-        cfg.save(0, cfg_type=ConfigType.CLASSES)

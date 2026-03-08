@@ -1,26 +1,4 @@
-#  TinyPedal is an open-source overlay application for racing simulation.
-#  Copyright (C) 2022-2026 TinyPedal developers, see contributors.md file
-#
-#  This file is part of TinyPedal.
-#
-#  This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-"""
-Heatmap editor
-"""
-
-import time
+"""Heatmap editor"""
 
 from PySide2.QtWidgets import (
     QDialogButtonBox,
@@ -31,14 +9,16 @@ from PySide2.QtWidgets import (
 
 from tinyui.backend.constants import ConfigType
 from tinyui.backend.settings import cfg, copy_setting
-from .._common import QVAL_COLOR, QVAL_HEATMAP, BaseDialog, UIScaler
-from ..components.table_items import FloatTableItem
-from ._editor_common import BaseEditor, BatchOffset, editor_button_bar
-from ..components.data_table import DataTable
-from .._option import ColorEdit
-from ..components.selector_bar import SelectorBar
 
-HEADER_HEATMAP = "Temperature (Celsius)","Color"
+from .._common import QVAL_COLOR, QVAL_HEATMAP, UIScaler
+from .._option import ColorEdit
+from ..components.data_table import DataTable
+from ..components.selector_bar import SelectorBar
+from ..components.table_items import FloatTableItem
+from ._base_editor import BaseEditor, editor_button_bar  # ← CHANGED
+from ._editor_common import BatchOffset  # ← CHANGED
+
+HEADER_HEATMAP = "Temperature (Celsius)", "Color"
 
 
 class HeatmapEditor(BaseEditor):
@@ -55,11 +35,14 @@ class HeatmapEditor(BaseEditor):
         self.selected_heatmap_dict = self.heatmap_temp[self.selected_heatmap_key]
 
         # Preset selector
-        self.selector_bar = SelectorBar(self, buttons=[
-            ("New", self.open_create_dialog),
-            ("Copy", self.open_copy_dialog),
-            ("Delete", self.delete_heatmap),
-        ])
+        self.selector_bar = SelectorBar(
+            self,
+            buttons=[
+                ("New", self.open_create_dialog),
+                ("Copy", self.open_copy_dialog),
+                ("Delete", self.delete_heatmap),
+            ],
+        )
         self.heatmap_list = self.selector_bar.combo
         self.heatmap_list.addItems(self.heatmap_temp.keys())
         self.heatmap_list.currentIndexChanged.connect(self.select_heatmap)
@@ -76,18 +59,23 @@ class HeatmapEditor(BaseEditor):
         # Set layout
         layout_main = QVBoxLayout()
 
-        layout_button = editor_button_bar(self, [
-            ("Add", self.add_temperature),
-            ("Sort", self.sort_temperature),
-            ("Remove", self.delete_temperature),
-            ("Offset", self.open_offset_dialog),
-            ("Reset", self.reset_heatmap),
-        ])
+        layout_button = editor_button_bar(
+            self,
+            [
+                ("Add", self.add_temperature),
+                ("Sort", self.sort_temperature),
+                ("Remove", self.delete_temperature),
+                ("Offset", self.open_offset_dialog),
+                ("Reset", self.reset_heatmap),
+            ],
+        )
 
         layout_main.addWidget(self.selector_bar)
         layout_main.addWidget(self.table_heatmap)
         layout_main.addLayout(layout_button)
-        layout_main.setContentsMargins(self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN)
+        layout_main.setContentsMargins(
+            self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN
+        )
         self.setLayout(layout_main)
         self.setMinimumWidth(self.sizeHint().width() + UIScaler.size(2))
 
@@ -96,7 +84,9 @@ class HeatmapEditor(BaseEditor):
         self.table_heatmap.clear_rows()
 
         self._verify_enabled = False
-        for row_index, (temperature, color) in enumerate(self.selected_heatmap_dict.items()):
+        for row_index, (temperature, color) in enumerate(
+            self.selected_heatmap_dict.items()
+        ):
             self.add_temperature_entry(row_index, float(temperature), color)
         self._verify_enabled = True
 
@@ -111,10 +101,13 @@ class HeatmapEditor(BaseEditor):
 
     def add_temperature_entry(self, row_index: int, temperature: float, color: str):
         """Add new temperature entry to table"""
-        self.table_heatmap.insert_row(row_index, [
-            FloatTableItem(temperature),
-            self.__add_option_color(color),
-        ])
+        self.table_heatmap.insert_row(
+            row_index,
+            [
+                FloatTableItem(temperature),
+                self.__add_option_color(color),
+            ],
+        )
 
     def open_create_dialog(self):
         """Create heatmap preset"""
@@ -246,7 +239,9 @@ class HeatmapEditor(BaseEditor):
             "Changes are only saved after clicking Apply or Save Button."
         )
         if self.confirm_operation(message=msg_text):
-            self.selected_heatmap_dict = cfg.default.heatmap[self.selected_heatmap_key].copy()
+            self.selected_heatmap_dict = cfg.default.heatmap[
+                self.selected_heatmap_key
+            ].copy()
             self.refresh_table()
 
     def applying(self):
@@ -275,12 +270,24 @@ class HeatmapEditor(BaseEditor):
         cfg.user.heatmap = copy_setting(self.heatmap_temp)
         cfg.save(0, cfg_type=ConfigType.HEATMAP)
         while cfg.is_saving:  # wait saving finish
+            import time
+
             time.sleep(0.01)
         self.reloading()
         self.set_unmodified()
 
+    def open_create_dialog(self):
+        """Create new preset"""
+        _dialog = CreateHeatmapPreset(self, "Create Heatmap Preset")
+        _dialog.open()
 
-class CreateHeatmapPreset(BaseDialog):
+    def open_copy_dialog(self):
+        """Copy preset"""
+        _dialog = CreateHeatmapPreset(self, "Duplicate Heatmap Preset", "duplicate")
+        _dialog.open()
+
+
+class CreateHeatmapPreset(BaseEditor):
     """Create heatmap preset
 
     Args:
@@ -326,7 +333,9 @@ class CreateHeatmapPreset(BaseDialog):
         """Saving new preset"""
         # Duplicate preset
         if self.edit_mode == "duplicate":
-            self._parent.heatmap_temp[entered_name] = self._parent.selected_heatmap_dict.copy()
+            self._parent.heatmap_temp[entered_name] = (
+                self._parent.selected_heatmap_dict.copy()
+            )
         # Create new preset
         else:
             self._parent.heatmap_temp[entered_name] = {"-273.0": "#4444FF"}

@@ -34,7 +34,6 @@ from PySide2.QtWidgets import (
     QFileDialog,
     QFrame,
     QGridLayout,
-    QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -43,15 +42,16 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinyui.backend.misc import realtime_state
-from tinyui.backend.controls import api, app_signal, mctrl
 from tinyui.backend.constants import FileFilter
-from tinyui.backend.misc import minfo
-from tinyui.backend.settings import cfg
+from tinyui.backend.controls import api, app_signal, mctrl
 from tinyui.backend.data import COLUMN_PACENOTE, set_relative_path
-from .._common import CompactButton, UIScaler
-from ..components.toggle_button import ToggleButton
+from tinyui.backend.misc import minfo, realtime_state
+from tinyui.backend.settings import cfg
+
+from .._common import UIScaler
 from ..components.button_bar import button_bar
+from ..components.compact_button import CompactButton
+from ..components.toggle_button import ToggleButton
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +108,6 @@ class PaceNotesPlayer(QMediaPlayer):
     def timerEvent(self, event):
         """Update when vehicle on track"""
         if realtime_state.active:
-
             # Reset switch
             if not self._checked:
                 self._checked = True
@@ -117,8 +116,13 @@ class PaceNotesPlayer(QMediaPlayer):
             notes_index = minfo.pacenotes.currentIndex
             if self._last_notes_index != notes_index:
                 self._last_notes_index = notes_index
-                if self.mcfg["enable_playback_while_in_pit"] or not api.read.vehicle.in_pits():
-                    self.__update_queue(minfo.pacenotes.currentNote.get(COLUMN_PACENOTE))
+                if (
+                    self.mcfg["enable_playback_while_in_pit"]
+                    or not api.read.vehicle.in_pits()
+                ):
+                    self.__update_queue(
+                        minfo.pacenotes.currentNote.get(COLUMN_PACENOTE)
+                    )
 
             if self._play_queue:
                 self.__play_next_in_queue()
@@ -153,15 +157,19 @@ class PaceNotesPlayer(QMediaPlayer):
 
     def __update_queue(self, pace_note: str | None):
         """Update playback queue"""
-        if (pace_note is not None
-            and len(self._play_queue) < self.mcfg["pace_notes_sound_max_queue"]):
+        if (
+            pace_note is not None
+            and len(self._play_queue) < self.mcfg["pace_notes_sound_max_queue"]
+        ):
             self._play_queue.append(pace_note)
 
     def __play_next_in_queue(self):
         """Play next sound in playback queue"""
         # Wait if is playing & not exceeded max duration
-        if (self.is_playing() and
-            self.position() < self.mcfg["pace_notes_sound_max_duration"] * 1000):
+        if (
+            self.is_playing()
+            and self.position() < self.mcfg["pace_notes_sound_max_duration"] * 1000
+        ):
             return
         # Play next sound in queue
         self.set_source()
@@ -326,7 +334,9 @@ class PaceNotesControl(QWidget):
     def set_notes_path(self):
         """Set pace notes file path"""
         filepath = self.mcfg["pace_notes_file_name"]
-        filename_full = QFileDialog.getOpenFileName(self, dir=filepath, filter=FileFilter.TPPN)[0]
+        filename_full = QFileDialog.getOpenFileName(
+            self, dir=filepath, filter=FileFilter.TPPN
+        )[0]
         if not filename_full:
             return
         self.file_selector.setText(filename_full)

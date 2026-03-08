@@ -1,13 +1,11 @@
-"""Base classes and helpers shared across editors."""
+"""Editor helpers - dialogs and utilities."""
 
 from __future__ import annotations
 
 import re
-import time
 from typing import Callable
 
-from PySide2.QtCore import QRegularExpression, Qt
-from PySide2.QtGui import QRegularExpressionValidator
+from PySide2.QtCore import Qt
 from PySide2.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -18,187 +16,15 @@ from PySide2.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QMessageBox,
     QPushButton,
-    QTableWidget,
-    QVBoxLayout,
 )
 
-from tinyui.backend.settings import cfg
 from .._common import BaseDialog, UIScaler
 from ..components.compact_button import CompactButton
 
 
-def editor_button_bar(editor, left_buttons=None):
-    """Build standard editor button bar.
-
-    left_buttons: list of (label, callback) for the left side.
-    Right side is always: [stretch] Apply | Save | Close
-    """
-    layout = QHBoxLayout()
-    if left_buttons:
-        for label, callback in left_buttons:
-            btn = CompactButton(label)
-            btn.clicked.connect(callback)
-            layout.addWidget(btn)
-    layout.addStretch(1)
-    for label, callback in [
-        ("Apply", editor.applying),
-        ("Save", editor.saving),
-        ("Close", editor.close),
-    ]:
-        btn = CompactButton(label)
-        btn.clicked.connect(callback)
-        layout.addWidget(btn)
-    return layout
-
-
-class BaseEditor(BaseDialog):
-    """Base editor class"""
-
-    def __init__(self, parent):
-        super().__init__(parent)
-        self._is_modified = False
-        self._is_rejected = False
-
-    def confirm_discard(self) -> bool:
-        """Confirm save or discard changes"""
-        if not self._is_modified:
-            return True
-
-        confirm = QMessageBox.question(
-            self, "Confirm", "<b>Save changes before continue?</b>",
-            buttons=QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
-
-        if confirm == QMessageBox.Save:
-            self.saving()
-            return self.confirm_discard()
-
-        return confirm == QMessageBox.Discard
-
-    def is_modified(self) -> bool:
-        """Is modified"""
-        return self._is_modified
-
-    def set_modified(self):
-        """Set modified state"""
-        if not self._is_modified:
-            self._is_modified = True
-
-    def set_unmodified(self):
-        """Set unmodified state"""
-        if self._is_modified:
-            self._is_modified = False
-
-    def saving(self):
-        """Save changes"""
-
-    def reject(self):
-        """Reject(ESC) confirm"""
-        if self.confirm_discard():
-            self._is_rejected = True
-            self.close()
-
-    def closeEvent(self, event):
-        """Close editor"""
-        if self._is_rejected:
-            return
-        if not self.confirm_discard():
-            event.ignore()
-
-    @staticmethod
-    def new_name_increment(name: str, table: QTableWidget, column: int = 0) -> str:
-        """New name with number increment add at the end"""
-        new_index = 1
-        new_name = f"{name} {new_index}"
-        exist = True
-        while exist:  # check existing name
-            items = table.findItems(new_name, Qt.MatchExactly)
-            for item in items:
-                if item.column() == column:  # match column
-                    new_index += 1
-                    new_name = f"{name} {new_index}"
-                    break
-            else:
-                exist = False
-        return new_name
-
-    @staticmethod
-    def is_value_in_table(target: str, table: QTableWidget, column: int = 0) -> bool:
-        """Is there any matching value in table"""
-        items = table.findItems(target, Qt.MatchExactly)
-        for item in items:
-            if item.column() == column:
-                return True
-        return False
-
-    @staticmethod
-    def reloading(reload_module: bool = True, reload_widget: bool = True) -> None:
-        """Reloading module & widget only"""
-        # Delay import
-        from tinyui.backend.controls import mctrl, wctrl
-
-        if reload_module:
-            mctrl.reload()
-        if reload_widget:
-            wctrl.reload()
-
-
-class TableEditor(BaseEditor):
-    """Base editor for table-based data editors.
-
-    Subclasses must set self.table to a QTableWidget and implement:
-      - refresh_table()
-      - update_temp()      — read table cells back into temp data
-      - persist()          — write temp to cfg and cfg.save(...)
-    """
-
-    def sort_rows(self, column=0):
-        """Sort table rows by column"""
-        if self.table.rowCount() > 1:
-            self.table.sortItems(column)
-            self.set_modified()
-
-    def delete_rows(self):
-        """Delete selected rows"""
-        selected_rows = set(data.row() for data in self.table.selectedIndexes())
-        if not selected_rows:
-            QMessageBox.warning(self, "Error", "No data selected.")
-            return
-        if not self.confirm_operation(message="<b>Delete selected rows?</b>"):
-            return
-        for row_index in sorted(selected_rows, reverse=True):
-            self.table.removeRow(row_index)
-        self.set_modified()
-
-    def applying(self):
-        """Save & apply"""
-        self.save_setting()
-
-    def saving(self):
-        """Save & close"""
-        self.save_setting()
-        self.accept()
-
-    def save_setting(self):
-        """Save setting: update temp, persist, wait, reload"""
-        self.update_temp()
-        self.persist()
-        while cfg.is_saving:
-            time.sleep(0.01)
-        self.reloading()
-        self.set_unmodified()
-
-    def update_temp(self):
-        """Read table cells back into temp data — override in subclass"""
-        raise NotImplementedError
-
-    def persist(self):
-        """Write temp data to cfg and save — override in subclass"""
-        raise NotImplementedError
-
 class BatchOffset(BaseDialog):
-    """Batch offset"""
+    """Batch offset dialog."""
 
     def __init__(self, parent, offset_func: Callable):
         super().__init__(parent)
@@ -212,7 +38,7 @@ class BatchOffset(BaseDialog):
         self.checkbox_scale = QCheckBox("Scale Mode")
 
     def config(self, decimals: int, step: float, min_range: int, max_range: int):
-        """Config offset"""
+        """Config offset."""
         self.decimals = decimals
         self.value_range = min_range, max_range
 
@@ -254,7 +80,7 @@ class BatchOffset(BaseDialog):
         self.setFixedSize(UIScaler.size(12), self.sizeHint().height())
 
     def toggle_mode(self, checked: bool):
-        """Toggle mode"""
+        """Toggle mode."""
         self.last_offset.setText("0")
         if checked:
             self.edit_offset.setRange(0, 100)
@@ -266,7 +92,7 @@ class BatchOffset(BaseDialog):
             self.last_label.setText("Last Offset:")
 
     def applying(self):
-        """Apply offset"""
+        """Apply offset."""
         value = self.edit_offset.value()
         if value != 0:
             self.offset_func(value, self.checkbox_scale.isChecked())
@@ -276,10 +102,9 @@ class BatchOffset(BaseDialog):
 
 
 class TableBatchReplace(BaseDialog):
-    """Table batch replace"""
+    """Table batch replace dialog."""
 
-    def __init__(
-        self, parent, table_selector: dict, table_data: QTableWidget):
+    def __init__(self, parent, table_selector: dict, table_data):
         """
         Args:
             table_selector: table selector dictionary. key=column name, value=column index.
@@ -338,7 +163,7 @@ class TableBatchReplace(BaseDialog):
         self.setFixedHeight(self.sizeHint().height())
 
     def update_selector(self, column_index: int, last_search: str = ""):
-        """Update selector list"""
+        """Update selector list."""
         column_index = self.table_selector[self.column_selector.currentText()]
         self.search_selector.clear()
         selector_list = set(
@@ -349,7 +174,7 @@ class TableBatchReplace(BaseDialog):
         self.search_selector.setCurrentText(last_search)
 
     def replacing(self):
-        """Replace"""
+        """Replace."""
         if not self.search_selector.currentText():
             QMessageBox.warning(self, "Error", "Invalid name.")
             return
@@ -358,7 +183,7 @@ class TableBatchReplace(BaseDialog):
         search = self.search_selector.currentText()
         replace = self.replace_entry.text()
 
-        pattern = re.escape(search)  # escape special chars
+        pattern = re.escape(search)
         if self.checkbox_exactmatch.isChecked():
             pattern = f"^{pattern}$"
 

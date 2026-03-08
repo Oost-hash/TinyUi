@@ -1,24 +1,4 @@
-#  TinyPedal is an open-source overlay application for racing simulation.
-#  Copyright (C) 2022-2026 TinyPedal developers, see contributors.md file
-#
-#  This file is part of TinyPedal.
-#
-#  This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-"""
-Preset transfer
-"""
+"""Preset transfer"""
 
 from __future__ import annotations
 
@@ -39,11 +19,16 @@ from PySide2.QtWidgets import (
 
 from tinyui.backend import regex as rxp
 from tinyui.backend.formatter import format_option_name
-from tinyui.backend.settings import cfg, load_setting_json_file, save_and_verify_json_file
+from tinyui.backend.settings import (
+    cfg,
+    load_setting_json_file,
+    save_and_verify_json_file,
+)
+
 from .._common import UIScaler
 from ..components.compact_button import CompactButton
-from ._editor_common import BaseEditor
 from ..components.list_header import ListHeader
+from ._base_editor import BaseEditor  # ← CHANGED: was _editor_common
 
 logger = logging.getLogger(__name__)
 
@@ -105,15 +90,19 @@ class PresetTransfer(BaseEditor):
         # List header
         header_setting = ListHeader(self, "Setting")
         header_setting.selectAllClicked.connect(
-            lambda: self._set_all_checked(self.listbox_setting, True))
+            lambda: self._set_all_checked(self.listbox_setting, True)
+        )
         header_setting.deselectAllClicked.connect(
-            lambda: self._set_all_checked(self.listbox_setting, False))
+            lambda: self._set_all_checked(self.listbox_setting, False)
+        )
 
         header_options = ListHeader(self, "Option Type")
         header_options.selectAllClicked.connect(
-            lambda: self._set_all_checked(self.listbox_options, True))
+            lambda: self._set_all_checked(self.listbox_options, True)
+        )
         header_options.deselectAllClicked.connect(
-            lambda: self._set_all_checked(self.listbox_options, False))
+            lambda: self._set_all_checked(self.listbox_options, False)
+        )
 
         # Set layout
         layout_main = QGridLayout()
@@ -124,7 +113,9 @@ class PresetTransfer(BaseEditor):
         layout_main.addWidget(header_options, 1, 1)
         layout_main.addWidget(self.listbox_options, 2, 1)
         layout_main.addLayout(layout_button, 3, 1)
-        layout_main.setContentsMargins(self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN)
+        layout_main.setContentsMargins(
+            self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN
+        )
         self.setLayout(layout_main)
 
     def set_selector_list(self) -> list:
@@ -209,7 +200,12 @@ class PresetTransfer(BaseEditor):
         )
         QMessageBox.information(self, "Transfer Completed", msg_text)
 
-    def copy_setting(self, dest_dict: dict, setting_selection: tuple[str, ...], options_selection: tuple[str, ...]):
+    def copy_setting(
+        self,
+        dest_dict: dict,
+        setting_selection: tuple[str, ...],
+        options_selection: tuple[str, ...],
+    ):
         """Copy setting"""
         source_dict = MappingProxyType(cfg.user.setting)
         for setting_name, source_setting_dict in source_dict.items():
@@ -245,7 +241,9 @@ class PresetTransfer(BaseEditor):
                     if "color" in options_selection:
                         dest_setting_dict[option_name] = option_value
                     continue
-                if re.search("font_name|font_weight|font_size|font_offset", option_name):
+                if re.search(
+                    "font_name|font_weight|font_size|font_offset", option_name
+                ):
                     if "font" in options_selection:
                         dest_setting_dict[option_name] = option_value
                     continue
@@ -268,5 +266,3 @@ class PresetTransfer(BaseEditor):
                 if "other_options" in options_selection:
                     dest_setting_dict[option_name] = option_value
                     continue
-
-

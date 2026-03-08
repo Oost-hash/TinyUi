@@ -1,24 +1,4 @@
-#  TinyPedal is an open-source overlay application for racing simulation.
-#  Copyright (C) 2022-2026 TinyPedal developers, see contributors.md file
-#
-#  This file is part of TinyPedal.
-#
-#  This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-"""
-Track & pace notes editor
-"""
+"""Track & pace notes editor"""
 
 import os
 
@@ -42,8 +22,6 @@ from PySide2.QtWidgets import (
 )
 
 from tinyui.backend.controls import api
-from tinyui.backend.formatter import strip_invalid_char
-from tinyui.backend.settings import cfg
 from tinyui.backend.data import (
     NOTESTYPE_PACE,
     NOTESTYPE_TRACK,
@@ -55,11 +33,15 @@ from tinyui.backend.data import (
     set_notes_parser,
     set_notes_writer,
 )
-from .._common import QVAL_FILENAME, BaseDialog, UIScaler
+from tinyui.backend.formatter import strip_invalid_char
+from tinyui.backend.settings import cfg
+
+from .._common import QVAL_FILENAME, UIScaler
 from ..components.compact_button import CompactButton
 from ..components.table_items import FloatTableItem
-from ._editor_common import BaseEditor, BatchOffset, TableBatchReplace
 from ..dialogs.track_map_viewer import MapView
+from ._base_editor import BaseEditor  # ← CHANGED: was _editor_common
+from ._editor_common import BatchOffset, TableBatchReplace  # ← CHANGED: split
 
 DECIMALS = 2
 
@@ -98,7 +80,7 @@ class TrackNotesEditor(BaseEditor):
         splitter.addWidget(self.editor_panel)
         splitter.setCollapsible(0, False)
         splitter.setCollapsible(1, False)
-        splitter.setStretchFactor(0,1)
+        splitter.setStretchFactor(0, 1)
 
         # Init setting & table
         self.create_pacenotes()
@@ -345,12 +327,16 @@ class TrackNotesEditor(BaseEditor):
 
     def open_replace_dialog(self):
         """Open replace dialog"""
-        selector = {name: index for index, name in enumerate(self.notes_header) if index > 0}
+        selector = {
+            name: index for index, name in enumerate(self.notes_header) if index > 0
+        }
         _dialog = TableBatchReplace(self, selector, self.table_notes)
         _dialog.open()
 
     def open_metadata_dialog(self):
         """Open metadata dialog"""
+        from ..dialogs.track_map_viewer import MetaDataEditor
+
         _dialog = MetaDataEditor(self, self.notes_metadata)
         _dialog.open()
 
@@ -399,7 +385,9 @@ class TrackNotesEditor(BaseEditor):
             QMessageBox.warning(self, "Error", msg_text)
             return
 
-        if not self.confirm_operation(message=f"Set position at <b>{position}</b> {source}?"):
+        if not self.confirm_operation(
+            message=f"Set position at <b>{position}</b> {source}?"
+        ):
             return
 
         pos_curr = round(position, DECIMALS)
@@ -411,16 +399,12 @@ class TrackNotesEditor(BaseEditor):
 
     def add_notes(self):
         """Add new notes entry"""
-        self.add_table_row(
-            self.table_notes.rowCount(),
-            self.table_notes.columnCount()
-        )
+        self.add_table_row(self.table_notes.rowCount(), self.table_notes.columnCount())
 
     def insert_notes(self, row_offset: int = 0):
         """Insert new notes entry"""
         self.add_table_row(
-            self.table_notes.currentRow() + row_offset,
-            self.table_notes.columnCount()
+            self.table_notes.currentRow() + row_offset, self.table_notes.columnCount()
         )
 
     def sort_notes(self) -> bool:
@@ -552,7 +536,8 @@ class TrackNotesEditor(BaseEditor):
             self.table_notes.horizontalHeader().height(),
         )
         selected_action = self.table_context_menu.exec_(
-            self.table_notes.mapToGlobal(position))
+            self.table_notes.mapToGlobal(position)
+        )
         if not selected_action:
             return
 
@@ -602,51 +587,3 @@ class TrackNotesEditor(BaseEditor):
             else:
                 item = QTableWidgetItem("")
             self.table_notes.setItem(row_index, column_index, item)
-
-
-class MetaDataEditor(BaseDialog):
-    """Metadata editor"""
-
-    def __init__(self, parent, metadata: dict):
-        super().__init__(parent)
-        self.setWindowTitle("Metadata Info")
-
-        self.metadata = metadata
-        self.option_metadata = {}
-
-        # Label & Edit
-        layout_option = QGridLayout()
-        layout_option.setAlignment(Qt.AlignTop)
-
-        for index, fieldname in enumerate(metadata):
-            desc_label = QLabel(f"{fieldname.capitalize()}:")
-            edit_entry = QLineEdit()
-            edit_entry.setText(metadata[fieldname])
-            layout_option.addWidget(desc_label, index, 0)
-            layout_option.addWidget(edit_entry, index, 1)
-            self.option_metadata[fieldname] = edit_entry
-
-        # Button
-        button_save = QPushButton("Ok")
-        button_save.clicked.connect(self.saving)
-
-        button_close = QPushButton("Close")
-        button_close.clicked.connect(self.reject)
-
-        layout_button = QHBoxLayout()
-        layout_button.addStretch(1)
-        layout_button.addWidget(button_save)
-        layout_button.addWidget(button_close)
-
-        # Set layout
-        layout_main = QVBoxLayout()
-        layout_main.addLayout(layout_option)
-        layout_main.addLayout(layout_button)
-        self.setLayout(layout_main)
-        self.setMinimumWidth(UIScaler.size(38))
-        self.setFixedHeight(self.sizeHint().height())
-
-    def saving(self):
-        """Save metadata"""
-        self.metadata.update({key:edit.text() for key, edit in self.option_metadata.items()})
-        self.accept()

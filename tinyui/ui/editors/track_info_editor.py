@@ -1,213 +1,123 @@
-#  TinyPedal is an open-source overlay application for racing simulation.
-#  Copyright (C) 2022-2026 TinyPedal developers, see contributors.md file
-#
-#  This file is part of TinyPedal.
-#
-#  This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""Track info editor - refactored to use GenericDictTableEditor."""
 
-"""
-Track info editor
-"""
-
-import logging
-
-from PySide2.QtCore import QPoint, Qt
+from PySide2.QtCore import QPoint
 from PySide2.QtWidgets import (
     QMenu,
     QMessageBox,
     QTableWidgetItem,
-    QVBoxLayout,
 )
 
-from tinyui.backend.controls import api
 from tinyui.backend.constants import ConfigType
-from tinyui.backend.settings import cfg, copy_setting
+from tinyui.backend.controls import api
 from tinyui.backend.data import TRACKINFO_DEFAULT
-from .._common import UIScaler
-from ..components.data_table import DataTable
+
 from ..components.table_items import ClockTableItem, FloatTableItem
-from ._editor_common import TableEditor, editor_button_bar
-
-HEADER_TRACKS = (
-    "Track name",
-    "Pit entry (m)",
-    "Pit exit (m)",
-    "Pit speed (m/s)",
-    "Speed trap (m)",
-    "Sunrise",
-    "Sunset",
-)
-
-logger = logging.getLogger(__name__)
+from ._generic_dict_editor import GenericDictTableEditor
 
 
-class TrackInfoEditor(TableEditor):
-    """Track info editor"""
+class TrackInfoEditor(GenericDictTableEditor):
+    """Track info editor."""
+
+    _cfg_attr = "tracks"
+    _cfg_type = ConfigType.TRACKS
+    _title = "Track Info Editor"
+    _columns = (
+        "Track name",
+        "Pit entry (m)",
+        "Pit exit (m)",
+        "Pit speed (m/s)",
+        "Speed trap (m)",
+        "Sunrise",
+        "Sunset",
+    )
+    _column_widths = {i: 8 if i <= 4 else 5 for i in range(1, 7)}
+    _min_size = (64, 35)
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.set_utility_title("Track Info Editor")
-        self.setMinimumSize(UIScaler.size(64), UIScaler.size(35))
-
-        self.tracks_temp = copy_setting(cfg.user.tracks)
-
-        # Set table
-        self.table = DataTable(
-            self, HEADER_TRACKS,
-            column_widths={
-                i: 8 if i <= 4 else 5
-                for i in range(1, len(HEADER_TRACKS))
-            },
-        )
-        self.table.cellChanged.connect(self.verify_input)
-
+        # Add context menu
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.table.customContextMenuRequested.connect(self.open_context_menu)
+        self.table.customContextMenuRequested.connect(self._open_context_menu)
 
-        self.refresh_table()
-        self.set_unmodified()
-
-        # Set button
-        layout_button = editor_button_bar(self, [
-            ("Add", self.add_track),
-            ("Sort", self.sort_rows),
-            ("Delete", self.delete_rows),
-            ("Reset", self.reset_setting),
-        ])
-
-        # Set layout
-        layout_main = QVBoxLayout()
-        layout_main.addWidget(self.table)
-        layout_main.addLayout(layout_button)
-        layout_main.setContentsMargins(self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN)
-        self.setLayout(layout_main)
-
-    def refresh_table(self):
-        """Refresh tracks list"""
-        self.table.clear_rows()
-        for row_index, (track_name, track_data) in enumerate(self.tracks_temp.items()):
-            self.add_track_entry(row_index, track_name, track_data)
-
-    def add_track(self):
-        """Add new track"""
-        start_index = row_index = self.table.rowCount()
-        # Add missing track name from active session
-        track_name = api.read.session.track_name()
-        if track_name and not self.is_value_in_table(track_name, self.table):
-            self.add_track_entry(row_index, track_name, TRACKINFO_DEFAULT)
-            row_index += 1
-        # Add new name entry
-        if start_index == row_index:
-            new_track_name = self.new_name_increment("New Track Name", self.table)
-            self.add_track_entry(row_index, new_track_name, TRACKINFO_DEFAULT)
-            self.table.setCurrentCell(row_index, 0)
-
-    def add_track_entry(self, row_index: int, track_name: str, track_data: dict):
-        """Add new track entry to table"""
-        items = [QTableWidgetItem(track_name)]
-        for key, value in TRACKINFO_DEFAULT.items():
-            if isinstance(value, float):
-                items.append(FloatTableItem(track_data.get(key, value)))
+    def _row_to_widgets(self, key: str, data: dict) -> list:
+        """Convert track data to table row."""
+        items = [QTableWidgetItem(key)]
+        for field_key, default in TRACKINFO_DEFAULT.items():
+            value = data.get(field_key, default)
+            if isinstance(default, float):
+                items.append(FloatTableItem(value))
             else:
-                items.append(ClockTableItem(track_data.get(key, value)))
-        self.table.insert_row(row_index, items)
+                items.append(ClockTableItem(value))
+        return items
 
-    def reset_setting(self):
-        """Reset setting"""
-        msg_text = (
-            "Reset <b>tracks preset</b> to default?<br><br>"
-            "Changes are only saved after clicking Apply or Save Button."
-        )
-        if self.confirm_operation(message=msg_text):
-            self.tracks_temp = copy_setting(cfg.default.tracks)
+    def _row_to_dict(self, row_idx: int) -> dict:
+        """Extract track data from table row."""
+        return {
+            key: self.table.item(row_idx, col_idx).value()
+            for col_idx, key in enumerate(TRACKINFO_DEFAULT.keys(), start=1)
+        }
+
+    def add_row(self):
+        """Add new track - auto-import from API or create new."""
+        track_name = api.read.session.track_name()
+
+        if track_name and not self.is_value_in_table(track_name, self.table):
+            widgets = self._row_to_widgets(track_name, TRACKINFO_DEFAULT)
+            row_idx = self.table.rowCount()
+            self.table.insert_row(row_idx, widgets)
+            self.table.setCurrentCell(row_idx, 0)
             self.set_modified()
-            self.refresh_table()
+        else:
+            super().add_row()
 
-    def verify_input(self, row_index: int, column_index: int):
-        """Verify input value"""
-        self.set_modified()
-        item = self.table.item(row_index, column_index)
-        if column_index >= 1:
-            item.validate()
-
-    def open_context_menu(self, position: QPoint):
-        """Open context menu"""
+    def _open_context_menu(self, position: QPoint):
+        """Open context menu for speed trap column."""
         if not self.table.itemAt(position):
             return
 
-        menu = QMenu()
-        if self.table.currentColumn() == 4:
-            menu.addAction("Set from Telemetry")
-        else:
+        if self.table.currentColumn() != 4:  # Speed trap column
             return
 
-        position += QPoint(  # position correction from header
+        menu = QMenu()
+        menu.addAction("Set from Telemetry").triggered.connect(self._set_from_telemetry)
+
+        # Position correction
+        position += QPoint(
             self.table.verticalHeader().width(),
             self.table.horizontalHeader().height(),
         )
-        selected_action = menu.exec_(self.table.mapToGlobal(position))
-        if not selected_action:
-            return
+        menu.exec_(self.table.mapToGlobal(position))
 
-        action = selected_action.text()
-        if action == "Set from Telemetry":
-            self.set_position_from_tele()
-
-    def set_position_from_tele(self):
-        """Set position from telemetry to selected cell"""
-        if len(self.table.selectedIndexes()) != 1:  # limit to one selected cell
-            msg_text = (
-                "Select <b>one value</b> from <b>Speed trap</b> column to set position."
+    def _set_from_telemetry(self):
+        """Set speed trap position from telemetry."""
+        if len(self.table.selectedIndexes()) != 1:
+            QMessageBox.warning(
+                self, "Error", "Select one value from Speed trap column."
             )
-            QMessageBox.warning(self, "Error", msg_text)
             return
 
         if api.read.vehicle.in_pits():
-            msg_text = "Cannot set speed trap position while in pit lane."
-            QMessageBox.warning(self, "Error", msg_text)
+            QMessageBox.warning(self, "Error", "Cannot set position while in pit lane.")
             return
 
-        row_index = self.table.currentRow()
-        track_name = self.table.item(row_index, 0).text()
-        current_name = api.read.session.track_name()
-        if track_name != current_name:
-            msg_text = (
-                f"Unable to set speed trap position for selected track:<br><b>{track_name}</b><br><br>"
-                f"Only support to set speed trap position for current track:<br><b>{current_name}</b>"
+        row_idx = self.table.currentRow()
+        track_name = self.table.item(row_idx, 0).text()
+        current_track = api.read.session.track_name()
+
+        if track_name != current_track:
+            QMessageBox.warning(
+                self,
+                "Error",
+                f"Cannot set for <b>{track_name}</b>.<br><br>"
+                f"Only current track: <b>{current_track}</b>",
             )
-            QMessageBox.warning(self, "Error", msg_text)
             return
 
         position = round(api.read.lap.distance(), 4)
         if not self.confirm_operation(
-            message=f"Set speed trap at position <b>{position}</b><br>for <b>{track_name}</b>?"):
+            message=f"Set speed trap at <b>{position}</b> for <b>{track_name}</b>?"
+        ):
             return
 
-        self.table.item(row_index, 4).setValue(position)
-        self.table.setCurrentCell(-1, -1)  # deselect to avoid mis-clicking
-
-    def update_temp(self):
-        """Update temporary changes to tracks temp"""
-        self.tracks_temp.clear()
-        for row_index in range(self.table.rowCount()):
-            track_name = self.table.item(row_index, 0).text()
-            self.tracks_temp[track_name] = {
-                key: self.table.item(row_index, column_index).value()
-                for column_index, key in enumerate(TRACKINFO_DEFAULT, start=1)
-            }
-
-    def persist(self):
-        """Persist tracks to config"""
-        cfg.user.tracks = copy_setting(self.tracks_temp)
-        cfg.save(0, cfg_type=ConfigType.TRACKS)
+        self.table.item(row_idx, 4).setValue(position)
+        self.table.setCurrentCell(-1, -1)

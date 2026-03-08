@@ -1,24 +1,4 @@
-#  TinyPedal is an open-source overlay application for racing simulation.
-#  Copyright (C) 2022-2026 TinyPedal developers, see contributors.md file
-#
-#  This file is part of TinyPedal.
-#
-#  This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-"""
-Driver stats viewer
-"""
+"""Driver stats viewer"""
 
 from __future__ import annotations
 
@@ -33,23 +13,23 @@ from PySide2.QtWidgets import (
     QVBoxLayout,
 )
 
-from tinyui.backend.misc import calc
-from tinyui.backend.misc import units
-from tinyui.backend.controls import api
 from tinyui.backend.constants import MAX_SECONDS, TEXT_NOLAPTIME
-from tinyui.backend.formatter import strip_invalid_char
-from tinyui.backend.settings import cfg
+from tinyui.backend.controls import api
 from tinyui.backend.data import (
     DriverStats,
     load_stats_json_file,
     save_stats_json_file,
     validate_stats_file,
 )
+from tinyui.backend.formatter import strip_invalid_char
+from tinyui.backend.misc import calc, units
+from tinyui.backend.settings import cfg
+
 from .._common import UIScaler
 from ..components.compact_button import CompactButton
 from ..components.data_table import DataTable
 from ..components.table_items import NumericTableItem
-from ._editor_common import BaseEditor
+from ._base_editor import BaseEditor  # ← CHANGED: was _editor_common
 
 
 def parse_display_value(key: str, value: int | float) -> str | int | float:
@@ -121,8 +101,7 @@ class DriverStatsViewer(BaseEditor):
             self,
             [format_header_key(key) for key in self.table_header_key],
             column_widths={
-                i: 5 + (i <= 6)
-                for i in range(1, len(self.table_header_key))
+                i: 5 + (i <= 6) for i in range(1, len(self.table_header_key))
             },
             show_row_header=False,
         )
@@ -163,7 +142,9 @@ class DriverStatsViewer(BaseEditor):
         layout_main.addLayout(layout_selector)
         layout_main.addWidget(self.table_stats)
         layout_main.addLayout(layout_button)
-        layout_main.setContentsMargins(self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN)
+        layout_main.setContentsMargins(
+            self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN
+        )
         self.setLayout(layout_main)
 
     def reload_stats(self):
@@ -215,7 +196,9 @@ class DriverStatsViewer(BaseEditor):
             value_raw = veh_data.get(header_key, 0)
             if DriverStats.is_lap_time(header_key) and value_raw <= 0:
                 value_raw = MAX_SECONDS  # correct invalid lap time
-            item = NumericTableItem(value_raw, str(parse_display_value(header_key, value_raw)))
+            item = NumericTableItem(
+                value_raw, str(parse_display_value(header_key, value_raw))
+            )
             item.setFlags(flag_selectable)
             item.setTextAlignment(Qt.AlignCenter)
             self.table_stats.setItem(row_index, column_index, item)
@@ -287,7 +270,9 @@ class DriverStatsViewer(BaseEditor):
         )
         if self.confirm_operation(message=msg_text):
             default_value = DriverStats.__dict__[selected_column]
-            self.stats_temp[self.selected_stats_key][selected_vehicle][selected_column] = default_value
+            self.stats_temp[self.selected_stats_key][selected_vehicle][
+                selected_column
+            ] = default_value
             save_stats_json_file(
                 stats_user=self.stats_temp,
                 filepath=cfg.path.config,
@@ -327,6 +312,7 @@ class DriverStatsViewer(BaseEditor):
     def open_trackmap(self):
         """Open trackmap, make sure to strip off invalid char from key name"""
         from ..dialogs.track_map_viewer import TrackMapViewer
+
         _dialog = TrackMapViewer(
             self,
             filepath=cfg.path.track_map,

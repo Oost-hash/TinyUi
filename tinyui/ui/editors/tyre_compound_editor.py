@@ -1,170 +1,87 @@
-#  TinyPedal is an open-source overlay application for racing simulation.
-#  Copyright (C) 2022-2026 TinyPedal developers, see contributors.md file
-#
-#  This file is part of TinyPedal.
-#
-#  This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""Tyre compound editor - refactored to use GenericDictTableEditor."""
 
-"""
-Tyre compound editor
-"""
+from PySide2.QtWidgets import QTableWidgetItem
 
-import logging
-
-from PySide2.QtWidgets import (
-    QTableWidgetItem,
-    QVBoxLayout,
-)
-
-from tinyui.backend.controls import api
 from tinyui.backend.constants import ConfigType
-from tinyui.backend.settings import cfg, copy_setting
+from tinyui.backend.controls import api
 from tinyui.backend.data import HEATMAP_DEFAULT_TYRE, set_predefined_compound_symbol
-from .._common import UIScaler
+from tinyui.backend.settings import cfg
+
 from ..components.combo_selector import combo_selector
-from ..components.data_table import DataTable
-from ._editor_common import TableBatchReplace, TableEditor, editor_button_bar
-
-HEADER_COMPOUNDS = "Compound name","Symbol","Heatmap name"
-
-logger = logging.getLogger(__name__)
+from ._generic_dict_editor import GenericDictTableEditor
 
 
-class TyreCompoundEditor(TableEditor):
-    """Tyre compound editor"""
+class TyreCompoundEditor(GenericDictTableEditor):
+    """Tyre compound editor."""
 
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.set_utility_title("Tyre Compound Editor")
-        self.setMinimumSize(UIScaler.size(45), UIScaler.size(38))
+    _cfg_attr = "compounds"
+    _cfg_type = ConfigType.COMPOUNDS
+    _title = "Tyre Compound Editor"
+    _columns = ("Compound name", "Symbol", "Heatmap name")
+    _column_widths = {1: 6, 2: 12}
+    _min_size = (45, 38)
 
-        self.compounds_temp = copy_setting(cfg.user.compounds)
+    def _row_to_widgets(self, key: str, data: dict) -> list:
+        """Convert compound data to table row."""
+        return [
+            QTableWidgetItem(key),
+            QTableWidgetItem(data.get("symbol", "?")),
+            combo_selector(
+                cfg.user.heatmap.keys(),
+                data.get("heatmap", HEATMAP_DEFAULT_TYRE),
+                self.set_modified,
+            ),
+        ]
 
-        # Set table
-        self.table = DataTable(
-            self, HEADER_COMPOUNDS, column_widths={1: 6, 2: 12}
-        )
-        self.table.cellChanged.connect(self.verify_input)
-        self.refresh_table()
-        self.set_unmodified()
+    def _row_to_dict(self, row_idx: int) -> dict:
+        """Extract compound data from table row."""
+        return {
+            "symbol": self.table.item(row_idx, 1).text(),
+            "heatmap": self.table.cellWidget(row_idx, 2).currentText(),
+        }
 
-        # Set button
-        layout_button = editor_button_bar(self, [
-            ("Add", self.add_compound),
-            ("Sort", self.sort_rows),
-            ("Delete", self.delete_rows),
-            ("Replace", self.open_replace_dialog),
-            ("Reset", self.reset_setting),
-        ])
+    def _default_row_data(self) -> dict:
+        """Default data for new compound."""
+        return {"symbol": "?", "heatmap": HEATMAP_DEFAULT_TYRE}
 
-        # Set layout
-        layout_main = QVBoxLayout()
-        layout_main.addWidget(self.table)
-        layout_main.addLayout(layout_button)
-        layout_main.setContentsMargins(self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN)
-        self.setLayout(layout_main)
+    def add_row(self):
+        """Add new compound - auto-import from API or create new."""
+        start_idx = row_idx = self.table.rowCount()
 
-    def refresh_table(self):
-        """Refresh compounds list"""
-        self.table.clear_rows()
-        for row_index, (compound_name, compound_data) in enumerate(self.compounds_temp.items()):
-            self.add_compound_entry(
-                row_index,
-                compound_name,
-                compound_data["symbol"],
-                compound_data["heatmap"],
-            )
-
-    def open_replace_dialog(self):
-        """Open replace dialog"""
-        selector = {HEADER_COMPOUNDS[1]: 1}
-        _dialog = TableBatchReplace(self, selector, self.table)
-        _dialog.open()
-
-    def add_compound(self):
-        """Add new compound"""
-        start_index = row_index = self.table.rowCount()
-        # Add all missing vehicle name from active session
+        # Try auto-import from active session
         veh_total = api.read.vehicle.total_vehicles()
-        for index in range(veh_total):
-            class_name = api.read.vehicle.class_name(index)
-            compound_names = set(
-                (
-                    f"{class_name} - {api.read.tyre.compound_name_front(index)}",
-                    f"{class_name} - {api.read.tyre.compound_name_rear(index)}",
-                )
-            )
+        for idx in range(veh_total):
+            class_name = api.read.vehicle.class_name(idx)
+            compound_names = {
+                f"{class_name} - {api.read.tyre.compound_name_front(idx)}",
+                f"{class_name} - {api.read.tyre.compound_name_rear(idx)}",
+            }
             for compound in compound_names:
                 if not self.is_value_in_table(compound, self.table):
-                    self.add_compound_entry(
-                        row_index,
+                    widgets = self._row_to_widgets(
                         compound,
-                        set_predefined_compound_symbol(compound),
+                        {
+                            "symbol": set_predefined_compound_symbol(compound),
+                            "heatmap": HEATMAP_DEFAULT_TYRE,
+                        },
                     )
-                    self.table.setCurrentCell(row_index, 0)
-                    row_index += 1
-        # Add new name entry
-        if start_index == row_index:
-            new_compound_name = self.new_name_increment("New Compound Name", self.table)
-            self.add_compound_entry(row_index, new_compound_name, "?")
-            self.table.setCurrentCell(row_index, 0)
+                    self.table.insert_row(row_idx, widgets)
+                    self.table.setCurrentCell(row_idx, 0)
+                    row_idx += 1
 
-    def add_compound_entry(
-        self, row_index: int, compound_name: str, symbol_name: str,
-        heatmap_name: str = HEATMAP_DEFAULT_TYRE):
-        """Add new compound entry to table"""
-        self.table.insert_row(row_index, [
-            QTableWidgetItem(compound_name),
-            QTableWidgetItem(symbol_name),
-            combo_selector(cfg.user.heatmap.keys(), heatmap_name, self.set_modified),
-        ])
-
-    def reset_setting(self):
-        """Reset setting"""
-        msg_text = (
-            "Reset <b>compounds preset</b> to default?<br><br>"
-            "Changes are only saved after clicking Apply or Save Button."
-        )
-        if self.confirm_operation(message=msg_text):
-            self.compounds_temp = copy_setting(cfg.default.compounds)
+        # Add new entry if no API data
+        if start_idx == row_idx:
+            super().add_row()
+        else:
             self.set_modified()
-            self.refresh_table()
 
     def verify_input(self, row_index: int, column_index: int):
-        """Verify input value"""
+        """Custom validation: symbol column limited to 1 char."""
         self.set_modified()
-        item = self.table.item(row_index, column_index)
-        if column_index == 1:  # symbol column
+        if column_index == 1:
+            item = self.table.item(row_index, column_index)
             text = item.text()
             if not text:
                 item.setText("?")
             else:
                 item.setText(text[:1])
-
-    def update_temp(self):
-        """Update temporary changes to compounds temp"""
-        self.compounds_temp.clear()
-        for index in range(self.table.rowCount()):
-            compound_name = self.table.item(index, 0).text()
-            symbol_name = self.table.item(index, 1).text()
-            heatmap_name = self.table.cellWidget(index, 2).currentText()
-            self.compounds_temp[compound_name] = {
-                "symbol": symbol_name,
-                "heatmap": heatmap_name,
-            }
-
-    def persist(self):
-        """Persist compounds to config"""
-        cfg.user.compounds = copy_setting(self.compounds_temp)
-        cfg.save(0, cfg_type=ConfigType.COMPOUNDS)
