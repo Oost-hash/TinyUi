@@ -55,16 +55,9 @@ from tinyui.backend.data import (
     set_notes_parser,
     set_notes_writer,
 )
-from .._common import (
-    QVAL_FILENAME,
-    BaseDialog,
-    BaseEditor,
-    BatchOffset,
-    CompactButton,
-    FloatTableItem,
-    TableBatchReplace,
-    UIScaler,
-)
+from .._common import QVAL_FILENAME, BaseDialog, CompactButton, UIScaler
+from ..components.table_items import FloatTableItem
+from ._editor_common import BaseEditor, BatchOffset, TableBatchReplace
 from ..dialogs.track_map_viewer import MapView
 
 DECIMALS = 2
