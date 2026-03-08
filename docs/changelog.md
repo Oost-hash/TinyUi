@@ -1,5 +1,25 @@
 # Changelog
 
+## Version 0.6.0 (2026-03-08)
+
+### Changed
+- Converted 6 editors to use DataTable component (replaces setup_table):
+    - heatmap_editor, vehicle_brand_editor, vehicle_class_editor
+    - tyre_compound_editor, track_info_editor, driver_stats_viewer
+- Split _common.py (628 lines) into 3 files by scope:
+    - ui/_common.py (174 lines): shared primitives (validators, BaseDialog,
+      CompactButton, singleton system, combo_selector)
+    - ui/components/table_items.py (92 lines): reusable table cell types
+      (FloatTableItem, NumericTableItem, ClockTableItem)
+    - ui/editors/_editor_common.py (373 lines): editor base classes and helpers
+      (BaseEditor, TableEditor, editor_button_bar, BatchOffset, TableBatchReplace)
+- Removed setup_table() from _common.py (replaced by DataTable component)
+
+### Added
+- DataTable component (ui/components/data_table.py): reusable QTableWidget
+  with row management (add_row, insert_row, delete_selected_rows, clear_rows,
+  sort_by_column) and rowCountChanged signal
+
 ## Version 0.5.0 (2026-03-07)
 
 ### Changed
@@ -41,7 +61,7 @@ If people would like, they could test it. It does not change much yet on the
 foreground, but that is to be expected halfway in the process of reworking the code.
 
 ### Todo
-- Separate rest of UI code into components
+- Separate rest of UI code into components (done in 0.6.0)
 
 ## Version 0.4.0 (2026-03-06)
 
@@ -99,7 +119,7 @@ foreground, but that is to be expected halfway in the process of reworking the c
 - Updated all internal imports to match new directory structure
 
 ### Added
-- Table helper functions in _common.py: setup_table, editor_button_bar, combo_selector
+- Table helper functions in _common.py: setup_table (removed in 0.6.0), editor_button_bar, combo_selector
 - TableEditor base class with shared sort/delete/save flow
 - Declarative TAB_DEFS and MENU_DEFS lists in app.py
 - Config form builder: dispatch table replaces if/elif chain in UserConfig
