@@ -8,7 +8,7 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from .._common import CompactButton
+from ..components.compact_button import CompactButton
 
 
 class SearchBar(QWidget):

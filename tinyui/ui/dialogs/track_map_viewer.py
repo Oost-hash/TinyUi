@@ -40,11 +40,13 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinyui.backend.misc import calc
 from tinyui.backend.constants import ConfigType, FileExt, FileFilter
-from tinyui.backend.settings import cfg
 from tinyui.backend.data import load_track_map_file
-from .._common import BaseDialog, CompactButton, UIScaler
+from tinyui.backend.misc import calc
+from tinyui.backend.settings import cfg
+
+from .._common import BaseDialog, UIScaler
+from ..components.compact_button import CompactButton
 
 
 class TrackMapViewer(BaseDialog):
@@ -59,7 +61,9 @@ class TrackMapViewer(BaseDialog):
 
         # Set layout
         layout_main = QVBoxLayout()
-        layout_main.setContentsMargins(self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN)
+        layout_main.setContentsMargins(
+            self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN
+        )
         layout_main.addWidget(self.trackmap_panel)
         self.setLayout(layout_main)
 
@@ -132,14 +136,14 @@ class MapView(QWidget):
             "position_info": True,
             "curve_info": True,
             "slope_info": True,
-            "separator1":"",
+            "separator1": "",
             "center_mark": True,
             "distance_circle": True,
             "osculating_circle": True,
             "curve_section": True,
             "marked_coordinates": True,
             "highlighted_coordinates": True,
-            "separator2":"",
+            "separator2": "",
             "dark_background": cfg.application["window_color_theme"] == "Dark",
         }
 
@@ -158,8 +162,11 @@ class MapView(QWidget):
         ]
         self.curve_grades = [
             (self.ecfg["curve_grade_hairpin"], "Hairpin"),
-            *[(self.ecfg[f"curve_grade_{idx}"], str(idx))
-            for idx in range(1, 9) if self.ecfg[f"curve_grade_{idx}"] >= 0],
+            *[
+                (self.ecfg[f"curve_grade_{idx}"], str(idx))
+                for idx in range(1, 9)
+                if self.ecfg[f"curve_grade_{idx}"] >= 0
+            ],
             (self.ecfg["curve_grade_straight"], "Straight"),
         ]
         self.curve_grades.sort()
@@ -288,7 +295,8 @@ class MapView(QWidget):
             return
         dist = self.spinbox_pos_dist.value()
         index = calc.binary_search_higher_column(
-            self.raw_dists, dist, 0, self.map_nodes - 1)
+            self.raw_dists, dist, 0, self.map_nodes - 1
+        )
         self.highlighted_coords = self.raw_coords[index]
         self.update()
 
@@ -303,7 +311,8 @@ class MapView(QWidget):
         for dist in temp_dists:
             if 0 <= dist <= self.map_length:
                 index = calc.binary_search_higher_column(
-                    self.raw_dists, dist, 0, end_node)
+                    self.raw_dists, dist, 0, end_node
+                )
                 self.marked_coords.append(QPointF(*self.raw_coords[index]))
         self.marked_dists = temp_dists
         self.update()
@@ -332,6 +341,7 @@ class MapView(QWidget):
     def open_config_dialog(self):
         """Open config"""
         from ..editors.config import UserConfig
+
         _dialog = UserConfig(
             parent=self,
             key_name="track_map_viewer",
@@ -344,7 +354,9 @@ class MapView(QWidget):
 
     def open_trackmap(self):
         """Open trackmap"""
-        filename_full = QFileDialog.getOpenFileName(self, dir=cfg.path.track_map, filter=FileFilter.SVG)[0]
+        filename_full = QFileDialog.getOpenFileName(
+            self, dir=cfg.path.track_map, filter=FileFilter.SVG
+        )[0]
         if not filename_full:
             return
 
@@ -401,14 +413,21 @@ class MapView(QWidget):
             map_path.closeSubpath()
         # Create start/finish path
         sfinish_path = self.create_sector_path(
-            sfinish_path, self.ecfg["start_line_length"], 0, 1)
+            sfinish_path, self.ecfg["start_line_length"], 0, 1
+        )
         # Create sectors paths
         sector1_path = self.create_sector_path(
-            sector1_path, self.ecfg["sector_line_length"],
-            sectors_index[0], sectors_index[0] + 1)
+            sector1_path,
+            self.ecfg["sector_line_length"],
+            sectors_index[0],
+            sectors_index[0] + 1,
+        )
         sector1_path = self.create_sector_path(
-            sector1_path, self.ecfg["sector_line_length"],
-            sectors_index[1], sectors_index[1] + 1)
+            sector1_path,
+            self.ecfg["sector_line_length"],
+            sectors_index[1],
+            sectors_index[1] + 1,
+        )
 
         self.map_path = map_path
         self.sfinish_path = sfinish_path
@@ -421,7 +440,7 @@ class MapView(QWidget):
             self.raw_coords[node_idx1],  # point a
             self.raw_coords[node_idx2],  # point b
             1.57079633,  # 90 degree rotation
-            length
+            length,
         )
         sector_path.moveTo(pos_x1, pos_y1)
         sector_path.lineTo(pos_x2, pos_y2)
@@ -460,7 +479,8 @@ class MapView(QWidget):
 
         # Locate position node index
         self.map_seek_index = calc.binary_search_higher_column(
-            self.raw_dists, self.map_seek_dist, 0, self.map_nodes - 1)
+            self.raw_dists, self.map_seek_dist, 0, self.map_nodes - 1
+        )
 
         # Raw coordinates
         pos_x, pos_y = self.raw_coords[self.map_seek_index]
@@ -473,30 +493,41 @@ class MapView(QWidget):
         center_offset_y = self.center_y - pos_y * self.map_scale
 
         # Calculation
-        curve_section = list(gen_section_path(
-            self.map_nodes, self.curve_nodes, self.map_seek_index, self.raw_coords))
-        mid_index = int(len(curve_section)/2)
+        curve_section = list(
+            gen_section_path(
+                self.map_nodes, self.curve_nodes, self.map_seek_index, self.raw_coords
+            )
+        )
+        mid_index = int(len(curve_section) / 2)
         point_one = curve_section[0].x(), curve_section[0].y()
         point_sec = curve_section[1].x(), curve_section[1].y()
         point_mid = curve_section[mid_index].x(), curve_section[mid_index].y()
         point_end = curve_section[-1].x(), curve_section[-1].y()
-        arc_center_pos = calc.tri_coords_circle_center(*point_one, *point_mid, *point_end)
+        arc_center_pos = calc.tri_coords_circle_center(
+            *point_one, *point_mid, *point_end
+        )
         arc_radius = calc.distance(point_one, arc_center_pos)
         arc_angle = calc.quad_coords_angle(
-            arc_center_pos, point_one, point_mid, point_end)
+            arc_center_pos, point_one, point_mid, point_end
+        )
         yaw_radians = calc.oriyaw2rad(
-            point_sec[1] - point_one[1], point_sec[0] - point_one[0])
-        turn_direct = calc.turning_direction(
-            yaw_radians, *point_one, *point_end)
+            point_sec[1] - point_one[1], point_sec[0] - point_one[0]
+        )
+        turn_direct = calc.turning_direction(yaw_radians, *point_one, *point_end)
 
         curve_length = calc_section_length(
-            self.map_length, self.map_nodes, self.curve_nodes,
-            self.map_seek_index, self.raw_dists)
+            self.map_length,
+            self.map_nodes,
+            self.curve_nodes,
+            self.map_seek_index,
+            self.raw_dists,
+        )
         length_desc = calc.select_grade(self.length_grades, curve_length)
         curve_desc = curve_description(arc_radius, turn_direct, self.curve_grades)
 
         slope_delta = calc_section_height_delta(
-            self.map_nodes, self.curve_nodes, self.map_seek_index, self.raw_dists)
+            self.map_nodes, self.curve_nodes, self.map_seek_index, self.raw_dists
+        )
         slope_percent = calc.slope_percent(slope_delta, curve_length)
         slope_angle = calc.slope_angle(slope_delta, curve_length)
         slope_desc = calc.select_grade(self.slope_grades, abs(slope_percent))
@@ -508,7 +539,8 @@ class MapView(QWidget):
         # Draw map
         self.draw_map_image(painter)
         self.draw_osculating_circle(
-            painter, arc_center_pos, arc_radius, point_one, point_end)
+            painter, arc_center_pos, arc_radius, point_one, point_end
+        )
         self.draw_curve(painter, curve_section)
         self.draw_marked_coords(painter)
 
@@ -521,9 +553,11 @@ class MapView(QWidget):
         self.update_info_rect(painter)
         self.draw_map_info(painter)
         self.draw_curve_info(
-            painter, curve_length, arc_radius, arc_angle, curve_desc, length_desc)
+            painter, curve_length, arc_radius, arc_angle, curve_desc, length_desc
+        )
         self.draw_slope_info(
-            painter, slope_percent, slope_angle, slope_delta, slope_desc)
+            painter, slope_percent, slope_angle, slope_delta, slope_desc
+        )
         self.draw_position_info(painter, pos_x, pos_y, pos_z, pos_dist)
 
     def draw_map_image(self, painter):
@@ -555,7 +589,8 @@ class MapView(QWidget):
         painter.drawPath(self.sector2_path)
 
     def draw_osculating_circle(
-        self, painter, arc_center_pos, arc_radius, point_one, point_end):
+        self, painter, arc_center_pos, arc_radius, point_one, point_end
+    ):
         """Draw osculating circle"""
         if self.osd["osculating_circle"]:
             self.pen.setWidth(self.ecfg["osculating_circle_width"])
@@ -566,7 +601,9 @@ class MapView(QWidget):
             painter.drawEllipse(
                 arc_center_pos[0] - arc_radius,
                 arc_center_pos[1] - arc_radius,
-                arc_radius * 2, arc_radius * 2)
+                arc_radius * 2,
+                arc_radius * 2,
+            )
 
     def draw_curve(self, painter, curve_section):
         """Draw curve"""
@@ -594,7 +631,7 @@ class MapView(QWidget):
                 x - highlighted_size,
                 y - highlighted_size,
                 highlighted_size * 2,
-                highlighted_size * 2
+                highlighted_size * 2,
             )
 
     def draw_distance_circle(self, painter):
@@ -609,7 +646,9 @@ class MapView(QWidget):
                     painter.drawEllipse(
                         self.center_x - circle_radius,
                         self.center_y - circle_radius,
-                        circle_radius * 2, circle_radius * 2)
+                        circle_radius * 2,
+                        circle_radius * 2,
+                    )
 
     def draw_center_mark(self, painter, yaw_radians):
         """Draw center mark"""
@@ -629,8 +668,10 @@ class MapView(QWidget):
         """Update info rect"""
         margin = self.ecfg["inner_margin"]
         self.rect_info.setRect(
-            margin, margin, (self.center_x - margin) * 2,
-            (self.center_y - margin - self.slider_pos_dist.height()) * 2
+            margin,
+            margin,
+            (self.center_x - margin) * 2,
+            (self.center_y - margin - self.slider_pos_dist.height()) * 2,
         )
         if self.osd["dark_background"]:
             font_color = self.ecfg["font_color_light"]
@@ -643,50 +684,58 @@ class MapView(QWidget):
         """Draw map info"""
         if self.osd["map_info"]:
             painter.drawText(
-                self.rect_info, Qt.AlignRight,
-                f"{self.map_length:.3f}m ({self.map_nodes} nodes)"
+                self.rect_info,
+                Qt.AlignRight,
+                f"{self.map_length:.3f}m ({self.map_nodes} nodes)",
             )
 
     def draw_curve_info(
-        self, painter, curve_length, arc_radius, arc_angle, curve_desc, length_desc):
+        self, painter, curve_length, arc_radius, arc_angle, curve_desc, length_desc
+    ):
         """Draw curve info"""
         if self.osd["curve_info"]:
             painter.drawText(
-                self.rect_info, Qt.AlignLeft,
+                self.rect_info,
+                Qt.AlignLeft,
                 (
                     f"Curve: {curve_length:.3f}m ({length_desc})\n"
                     f"Radius: {arc_radius:.3f}m ({curve_desc})\n"
                     f"Angle: {arc_angle:.3f}°"
-                    #f"Curvature: {calc.curvature(arc_radius):.6f}"
-                )
+                    # f"Curvature: {calc.curvature(arc_radius):.6f}"
+                ),
             )
 
-    def draw_slope_info(self, painter, slope_percent, slope_angle, slope_delta, slope_desc):
+    def draw_slope_info(
+        self, painter, slope_percent, slope_angle, slope_delta, slope_desc
+    ):
         """Draw slope info"""
         if self.osd["slope_info"]:
             painter.drawText(
-                self.rect_info, Qt.AlignLeft | Qt.AlignBottom,
+                self.rect_info,
+                Qt.AlignLeft | Qt.AlignBottom,
                 (
                     f"Slope: {slope_percent:.3%} ({slope_desc})\n"
                     f"Angle: {slope_angle:.3f}°\n"
                     f"Delta: {slope_delta:.3f}m"
-                )
+                ),
             )
 
     def draw_position_info(self, painter, pos_x, pos_y, pos_z, pos_dist):
         """Draw position info"""
         if self.osd["position_info"]:
             painter.drawText(
-                self.rect_info, Qt.AlignRight | Qt.AlignBottom,
+                self.rect_info,
+                Qt.AlignRight | Qt.AlignBottom,
                 (
                     f"{pos_dist:.3f}m (node {self.map_seek_index + 1})\n"
                     f"{pos_x:.3f}m, {pos_y:.3f}m, {pos_z:.3f}m"
-                )
+                ),
             )
 
 
 def gen_section_path(
-    total_nodes: int, section_nodes: int, seek_index: int, raw_coords: tuple):
+    total_nodes: int, section_nodes: int, seek_index: int, raw_coords: tuple
+):
     """Generate section path from selected nodes"""
     max_nodes = int(min(section_nodes, total_nodes - 2))
     for index in range(max_nodes):
@@ -697,22 +746,29 @@ def gen_section_path(
 
 
 def calc_section_length(
-    map_length: float, total_nodes: int, section_nodes: int,
-    seek_index: int, raw_dists: tuple) -> float:
+    map_length: float,
+    total_nodes: int,
+    section_nodes: int,
+    seek_index: int,
+    raw_dists: tuple,
+) -> float:
     """Calculate section length from selected nodes"""
     max_nodes = int(min(section_nodes, total_nodes - 2))
     end_index = seek_index + max_nodes
     if end_index >= total_nodes:
         length = (
-            map_length - raw_dists[seek_index][0]
-            + raw_dists[end_index - total_nodes][0])
+            map_length
+            - raw_dists[seek_index][0]
+            + raw_dists[end_index - total_nodes][0]
+        )
     else:
         length = raw_dists[end_index][0] - raw_dists[seek_index][0]
     return length
 
 
 def calc_section_height_delta(
-    total_nodes: int, section_nodes: int, seek_index: int, raw_dists: tuple) -> float:
+    total_nodes: int, section_nodes: int, seek_index: int, raw_dists: tuple
+) -> float:
     """Calculate section height delta from selected nodes"""
     max_nodes = int(min(section_nodes, total_nodes - 2))
     end_index = seek_index + max_nodes

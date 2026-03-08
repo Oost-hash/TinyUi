@@ -7,7 +7,7 @@ from PySide2.QtWidgets import (
     QLabel,
 )
 
-from .._common import CompactButton
+from .compact_button import CompactButton
 
 
 class ListHeader(QFrame):

@@ -33,7 +33,9 @@ from PySide2.QtWidgets import (
 
 from tinyui.backend.constants import FileFilter
 from tinyui.backend.misc import log_stream
-from .._common import BaseDialog, CompactButton, UIScaler, singleton_dialog
+
+from .._common import BaseDialog, UIScaler, singleton_dialog
+from ..components.compact_button import CompactButton
 
 
 @singleton_dialog("log", show_error=False)
@@ -87,7 +89,9 @@ class LogInfo(BaseDialog):
         layout_main = QVBoxLayout()
         layout_main.addWidget(self.log_view)
         layout_main.addLayout(layout_button)
-        layout_main.setContentsMargins(self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN)
+        layout_main.setContentsMargins(
+            self.MARGIN, self.MARGIN, self.MARGIN, self.MARGIN
+        )
         self.setLayout(layout_main)
 
     def timerEvent(self, event):

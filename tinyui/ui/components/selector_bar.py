@@ -2,7 +2,7 @@
 
 from PySide2.QtWidgets import QComboBox, QHBoxLayout, QWidget
 
-from .._common import CompactButton
+from .compact_button import CompactButton
 
 
 class SelectorBar(QWidget):
