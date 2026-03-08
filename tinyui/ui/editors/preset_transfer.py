@@ -105,8 +105,17 @@ class PresetTransfer(BaseEditor):
         layout_button.addWidget(button_close)
 
         # List header
-        header_setting = ListHeader(self, "Setting", self.listbox_setting)
-        header_options = ListHeader(self, "Option Type", self.listbox_options)
+        header_setting = ListHeader(self, "Setting")
+        header_setting.selectAllClicked.connect(
+            lambda: self._set_all_checked(self.listbox_setting, True))
+        header_setting.deselectAllClicked.connect(
+            lambda: self._set_all_checked(self.listbox_setting, False))
+
+        header_options = ListHeader(self, "Option Type")
+        header_options.selectAllClicked.connect(
+            lambda: self._set_all_checked(self.listbox_options, True))
+        header_options.deselectAllClicked.connect(
+            lambda: self._set_all_checked(self.listbox_options, False))
 
         # Set layout
         layout_main = QGridLayout()
@@ -142,6 +151,11 @@ class PresetTransfer(BaseEditor):
             checkbox_item.setText(format_option_name(setting_name))
             checkbox_item.key_name = setting_name
             listbox.setItemWidget(item, checkbox_item)
+
+    def _set_all_checked(self, listbox: QListWidget, checked: bool):
+        """Set all checkboxes in a listbox"""
+        for row_index in range(listbox.count()):
+            listbox.itemWidget(listbox.item(row_index)).setChecked(checked)
 
     def get_setting_selection(self, listbox: QListWidget):
         """Get setting selection"""

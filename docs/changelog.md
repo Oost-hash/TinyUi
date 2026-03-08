@@ -12,6 +12,7 @@
     - button_bar(): horizontal layout with left buttons, stretch, right buttons
     - SelectorBar: combo box with action buttons (new/copy/delete)
     - ListHeader: select-all/none header for checkbox lists
+- Sanitized components: signal-based (no business logic in components)
 - Extracted tray icon to self-contained ui/tray.py component (TrayIcon)
 - Simplified main.py run(): replaced inline tray setup with TrayIcon class
 - MainWindow no longer builds or configures the tray icon
