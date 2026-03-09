@@ -33,7 +33,7 @@ docs/development-notes/
 test*.py
 
 # editor refactoring (local only)
-tinyui/ui/editors/reference/
+tinyui/editors_reference/
 tinyui/ui/tests/
 *.7z
 *.zip
