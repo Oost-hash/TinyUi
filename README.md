@@ -1,6 +1,6 @@
 # TinyUi
 
-![Version](https://img.shields.io/badge/version-0.5.0-purple)
+![Version](https://img.shields.io/badge/version-0.6.0-purple)
 ![Status](https://img.shields.io/badge/status-work%20in%20progress-orange)
 ![TinyPedal](https://img.shields.io/badge/TinyPedal-v2.42.0-lightgrey)
 ![License](https://img.shields.io/badge/license-GPLv3-green)
