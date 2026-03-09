@@ -97,3 +97,10 @@ class ObservableDict(QObject):
 
     def __contains__(self, key: str) -> bool:
         return key in self._data
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Dict-like get method."""
+        return self._data.get(key, default)
