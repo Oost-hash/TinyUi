@@ -1,39 +1,8 @@
 # Changelog
 ## Version 0.7.0
 
-### Added
-- Service-ViewModel-View (MVVM) architecture for editors
-  - `editors/core/` — reusable base classes:
-    - `ObservableDict`: reactive data container with automatic dirty tracking
-    - `BaseViewModel`: abstract VM with load/save/validate/dirty state
-    - `EditorService`: abstract service base (load/save/validate)
-    - `ValidationChain`: composable validators (Required, Range, UniqueKey, Regex)
-    - `ConfigStoreAdapter` + `MockStoreAdapter` for testable persistence
-  - `editors/components/` — shared UI:
-    - `BaseEditorView`: generic table-based editor view
-    - `DataTable`: dumb table widget (render + emit events)
-- Migrated 4 editors to MVVM (service + viewmodel + tests):
-  - **BrakeEditor**: Brake dataclass, BrakeService, BrakeEditorVM
-  - **TyreCompoundEditor**: TyreCompound dataclass, symbol truncation/validation
-  - **VehicleBrandEditor**: string-value data, REST API + JSON file import
-  - **VehicleClassEditor**: alias + color fields, preset field preservation
-  - **HeatmapEditor**: temperature-to-color presets, batch offset/sort
-- Test suite: 176 tests covering all services, viewmodels, observable model,
-  and validation framework
-- `pyproject.toml` with pytest configuration
-
-### Changed
-- Editor schema system (`editors/reference/_schema.py`) preserved as reference
-  for old editors; new editors use MVVM pattern instead
-- Old editors moved to `editors/reference/` directory
-- All backend imports in editor services are now lazy (inside methods/properties)
-  to enable testing without tinypedal runtime
-- Centralized data flow via `_store.py`: load/save/reset/reload in one place
-    - Editors no longer import cfg directly for data operations
-    - Removed `reloading()` static method from BaseEditor
-    - Removed `cfg.is_saving` wait loop from TableEditor.save_setting()
-    - store.save() handles: setattr → cfg.save → wait → reload
-
+Start fresh, i have indentified most off the code and the patterns are clear. 
+Now lets start building generic editors. 
 
 ## Version 0.6.0 (2026-03-08)
 
