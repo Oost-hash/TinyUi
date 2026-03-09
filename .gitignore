@@ -31,10 +31,6 @@ docs/development-notes/
 
 # random file
 test*.py
-
-# editor refactoring (local only)
-tinyui/editors_reference/
-tinyui/ui/tests/
 *.7z
 *.zip
 *.log
@@ -49,6 +45,3 @@ tinyui/backend/misc.py
 tinyui/backend/regex.py
 tinyui/backend/settings.py
 tinyui/backend/validator.py
-
-#not ready for primetime
-tinyui/ui/editors/track_notes/

@@ -162,10 +162,10 @@ def run():
     core.start()
     logger.info(f"TinyPedal: {TP_VERSION}")
 
-    from tinyui.ui.components.tray import TrayIcon
-    from tinyui.ui.main_window import MainWindow
+    # from tinyui.ui_backup.components.tray import TrayIcon
+    # from tinyui.ui_backup.main_window import create_main_window
 
-    window = MainWindow()
+    # window = create_main_window()
     tray = TrayIcon(icon=_load_icon(), window=window)
     window.set_tray(tray)
     tray.show()
