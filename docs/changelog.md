@@ -17,7 +17,8 @@
   - **TyreCompoundEditor**: TyreCompound dataclass, symbol truncation/validation
   - **VehicleBrandEditor**: string-value data, REST API + JSON file import
   - **VehicleClassEditor**: alias + color fields, preset field preservation
-- Test suite: 101 tests covering all services, viewmodels, observable model,
+  - **HeatmapEditor**: temperature-to-color presets, batch offset/sort
+- Test suite: 176 tests covering all services, viewmodels, observable model,
   and validation framework
 - `pyproject.toml` with pytest configuration
 
