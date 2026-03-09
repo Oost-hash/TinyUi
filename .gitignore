@@ -49,3 +49,6 @@ tinyui/backend/misc.py
 tinyui/backend/regex.py
 tinyui/backend/settings.py
 tinyui/backend/validator.py
+
+#not ready for primetime
+tinyui/ui/editors/track_notes/
