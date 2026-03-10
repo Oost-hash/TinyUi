@@ -6,9 +6,11 @@
 - `HeatmapEditor` window that uses the generic editor for editing heatmap presets
 - "Open Heatmap Editor" button in the `HelloWindow`
 - `Tabs`, `tabs`, `tabs`, everybody!!! Made an tabs component and added it too `HelloWindow`
+- Made Ai make an `button`, with everything.. i dont know did not want too make another `button`
 
 ### Todo: 
 - Ai fix changelog
+- still need todo this
 
 ## Version 0.7.0 (2026-03-11)
 
