@@ -1,4 +1,11 @@
 # Changelog
+## Version 0.8.0 **in-progress**
+
+### Added
+- Generic table editor components: `TableModel`, `TableEditor`, `EditorViewModel`, and `ColumnSpec`
+- `HeatmapEditor` window that uses the generic editor for editing heatmap presets
+- "Open Heatmap Editor" button in the `HelloWindow`
+
 ## Version 0.7.0 (2026-03-11)
 
 ### Changed
