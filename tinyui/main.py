@@ -19,10 +19,10 @@ from PySide2.QtWidgets import QApplication, QMessageBox
 from tinypedal_repo.tinypedal.setting import cfg as real_cfg
 
 # Importeer de adapter en initialisatie
-from tinyui.backend import config, init_backend
-from tinyui.backend.constants import TP_VERSION, ConfigType, ImageFile
-from tinyui.backend.core_loader import core
-from tinyui.backend.misc import set_environment, set_logging_level, unset_environment
+from tinyui.adapters import config, init_backend
+from tinyui.adapters.constants import TP_VERSION, ConfigType, ImageFile
+from tinyui.adapters.core_loader import core
+from tinyui.adapters.misc import set_environment, set_logging_level, unset_environment
 from tinyui.version import __version__ as TINYUI_VERSION
 
 logger = logging.getLogger("TinyUi")

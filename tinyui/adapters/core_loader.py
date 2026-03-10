@@ -10,7 +10,7 @@ import signal
 import sys
 import time
 
-from tinyui.backend import (
+from tinyui.adapters import (
     api,
     config,
     kctrl,
@@ -19,7 +19,7 @@ from tinyui.backend import (
     update_checker,
     wctrl,
 )
-from tinyui.backend.constants import FileExt
+from tinyui.adapters.constants import FileExt
 
 logger = logging.getLogger("TinyUi")
 
