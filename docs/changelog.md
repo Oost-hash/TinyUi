@@ -1,8 +1,15 @@
 # Changelog
-## Version 0.7.0
+## Version 0.7.0 (2026-03-11)
 
-Start fresh, i have indentified most off the code and the patterns are clear. 
-Now lets start building generic editors. 
+### Changed
+- Simplified internal architecture - faster startup, cleaner shutdown
+- Refactored adapter layer from auto-generated to hand-written for clarity
+- Reorganized how TinyUi connects to TinyPedal
+- More reliable startup and shutdown sequence
+
+### Fixed
+- Application now closes properly when closing the main window
+
 
 ## Version 0.6.0 (2026-03-08)
 
