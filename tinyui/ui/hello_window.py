@@ -25,13 +25,13 @@ from PySide2.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMainWindow,
-    QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
 from tinyui.adapters import cfg, lifecycle
 
+from .components.button import Button, create_danger_button, create_primary_button
 from .components.tabs import TabComponent, TabSpec, TabViewModel
 from .editors import HeatmapEditor
 from .tabs import ModuleTabView, ModuleTabViewModel, PresetTabView, PresetTabViewModel
@@ -92,15 +92,30 @@ class HelloWindow(QMainWindow):
         # === BUTTONS ===
         buttons_layout = QHBoxLayout()
 
-        # Knop om HeatmapEditor te openen
-        self.open_heatmap_btn = QPushButton("Open Heatmap Editor")
-        self.open_heatmap_btn.clicked.connect(self.open_heatmap_editor)
+        # Primary button voor Heatmap Editor (met loading support)
+        self.open_heatmap_btn = Button(
+            "Open Heatmap Editor",
+            variant=Button.PRIMARY,
+            size=Button.MEDIUM,
+            on_click=self.open_heatmap_editor,
+        )
         buttons_layout.addWidget(self.open_heatmap_btn)
 
-        # Afsluitknop
-        quit_btn = QPushButton("Close")
-        quit_btn.clicked.connect(self._quit)
-        buttons_layout.addWidget(quit_btn)
+        # Ghost button voor secondary actie (bijvoorbeeld "Refresh")
+        self.refresh_btn = Button(
+            "Refresh",
+            variant=Button.GHOST,
+            size=Button.SMALL,
+            on_click=self._on_refresh,
+        )
+        buttons_layout.addWidget(self.refresh_btn)
+
+        # Spacer
+        buttons_layout.addStretch()
+
+        # Danger button voor afsluiten (rood = destructieve actie)
+        self.quit_btn = create_danger_button("Close", on_click=self._quit, parent=self)
+        buttons_layout.addWidget(self.quit_btn)
 
         layout.addLayout(buttons_layout)
 
@@ -108,12 +123,30 @@ class HelloWindow(QMainWindow):
         self.heatmap_editor = None
 
     def open_heatmap_editor(self):
-        """Opent het HeatmapEditor-venster."""
+        """Opent het HeatmapEditor-venster met loading state."""
+        # Toon loading state op de button
+        self.open_heatmap_btn.set_loading(True)
+
+        # Simuleer async loading (of echt werk doen)
+        QtCore.QTimer.singleShot(500, self._do_open_heatmap)
+
+    def _do_open_heatmap(self):
+        """Daadwerkelijk openen van editor."""
+        self.open_heatmap_btn.set_loading(False)
+
         if self.heatmap_editor is None or not self.heatmap_editor.isVisible():
             self.heatmap_editor = HeatmapEditor()
             self.heatmap_editor.show()
         else:
             self.heatmap_editor.raise_()
+            self.heatmap_editor.activateWindow()
+
+    def _on_refresh(self):
+        """Handler voor refresh button."""
+        print("[HelloWindow] Refresh clicked")
+        # Hier kun je data herladen, UI updaten, etc.
+        self.refresh_btn.set_loading(True)
+        QtCore.QTimer.singleShot(300, lambda: self.refresh_btn.set_loading(False))
 
     def closeEvent(self, event):
         """Overschrijf kruisje-gedrag: sluit hele applicatie."""
