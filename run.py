@@ -12,12 +12,6 @@ import sys
 
 _PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
-# Generate adapter files FIRST (before any tinypedal/tinyui imports)
-_gen_script = os.path.join(_PROJECT_ROOT, "tinyui", "adapters", "generate_adapters.py")
-_result = subprocess.run([sys.executable, _gen_script])
-if _result.returncode != 0:
-    sys.exit(1)
-
 # Voeg de root van tinypedal_repo toe aan sys.path (zodat pyLMUSharedMemory gevonden wordt)
 sys.path.insert(0, os.path.join(_PROJECT_ROOT, "tinypedal_repo"))
 

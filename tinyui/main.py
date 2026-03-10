@@ -15,26 +15,27 @@ from PySide2.QtCore import QCoreApplication, QLocale, Qt
 from PySide2.QtGui import QFont, QGuiApplication, QIcon, QPixmapCache
 from PySide2.QtWidgets import QApplication, QMessageBox
 
-# Importeer de echte cfg uit TinyPedal (volledig package pad, consistent met gegenereerde imports)
+# TinyPedal's real cfg (voor injectie)
 from tinypedal_repo.tinypedal.setting import cfg as real_cfg
 
-# Importeer de adapter en initialisatie
-from tinyui.adapters import config, init_backend
-from tinyui.adapters.constants import TP_VERSION, ConfigType, ImageFile
-from tinyui.adapters.core_loader import core
-from tinyui.adapters.misc import set_environment, set_logging_level, unset_environment
+# TinyUi adapters - NIEUWE STRUCTUUR
+from tinyui.adapters import cfg, hotkey, lifecycle, loader
+from tinyui.adapters.tinypedal.app import VERSION as TP_VERSION
+from tinyui.adapters.tinypedal.files import ConfigType, ImageFile
+from tinyui.adapters.tinypedal.log import set_logging_level
+from tinyui.adapters.tinypedal.main import set_environment, unset_environment
 from tinyui.version import __version__ as TINYUI_VERSION
 
 logger = logging.getLogger("TinyUi")
 
-# TinyUi icon path (relative to tinyui package)
+# TinyUi icon path
 _TINYUI_ICON = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "images", "icon.png"
 )
 
 
 def _tinyui_icon() -> str:
-    """Resolve TinyUi icon path, works both frozen and development."""
+    """Resolve TinyUi icon path."""
     if getattr(sys, "frozen", False):
         return os.path.join(
             os.path.dirname(sys.executable), "tinyui", "images", "icon.png"
@@ -43,7 +44,7 @@ def _tinyui_icon() -> str:
 
 
 def _app_root():
-    """Application root path (works frozen and dev)."""
+    """Application root path."""
     if getattr(sys, "frozen", False):
         return os.path.dirname(sys.executable)
     return os.path.join(
@@ -56,6 +57,7 @@ def _load_icon() -> QIcon:
     path = _tinyui_icon()
     if os.path.exists(path):
         return QIcon(path)
+
     logger.warning(f"TinyUi icon not found: {path}")
     tp_path = os.path.join(_app_root(), ImageFile.APP_ICON)
     if os.path.exists(tp_path):
@@ -67,7 +69,7 @@ def _load_icon() -> QIcon:
 
 
 def _save_pid_file():
-    with open(f"{config.path.config}tinyui.pid", "w", encoding="utf-8") as f:
+    with open(f"{cfg.path.config}tinyui.pid", "w", encoding="utf-8") as f:
         pid = os.getpid()
         create_time = psutil.Process(pid).create_time()
         f.write(f"{pid},{create_time}")
@@ -75,7 +77,7 @@ def _save_pid_file():
 
 def _is_pid_exist() -> bool:
     try:
-        with open(f"{config.path.config}tinyui.pid", "r", encoding="utf-8") as f:
+        with open(f"{cfg.path.config}tinyui.pid", "r", encoding="utf-8") as f:
             line = f.readline().strip()
         pid_str, create_time_str = line.split(",")
         pid = int(pid_str)
@@ -93,18 +95,18 @@ def _is_pid_exist() -> bool:
 def _init_config():
     """Load global config and save defaults."""
     unset_environment()
-    # Eerst de echte cfg injecteren in de adapter
-    init_backend(real_cfg)
-    # Nu via de adapter werken
-    config.load_global()
-    config.save(cfg_type=ConfigType.CONFIG)
-    config.save(cfg_type=ConfigType.SHORTCUTS)
+    # Inject real cfg into adapter
+    cfg.inject(real_cfg)
+    # Load via adapter
+    cfg.load_global()
+    cfg.save(cfg_type=ConfigType.CONFIG)
+    cfg.save(cfg_type=ConfigType.SHORTCUTS)
 
 
 def _init_logging():
     """Setup logging to file and stream."""
     log_stream = io.StringIO()
-    set_logging_level(logger, config.path.config, "tinyui.log", log_stream, 2)
+    set_logging_level(logger, cfg.path.config, "tinyui.log", log_stream, 2)
     logger.info("=" * 50)
     logger.info(f"TinyUi v{TINYUI_VERSION} Starting...")
     set_environment()
@@ -116,7 +118,7 @@ def _init_qt() -> QApplication:
     loc.setNumberOptions(QLocale.RejectGroupSeparator)
     QLocale.setDefault(loc)
 
-    if config.application["enable_high_dpi_scaling"]:
+    if cfg.application["enable_high_dpi_scaling"]:
         QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
         QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
             Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
@@ -142,7 +144,7 @@ def _init_qt() -> QApplication:
 
 
 def _check_single_instance() -> bool:
-    """Returns True if this is the only instance, False if already running."""
+    """Returns True if this is the only instance."""
     if os.getenv("TINYUI_RESTART") == "TRUE":
         os.environ.pop("TINYUI_RESTART", None)
         _save_pid_file()
@@ -166,7 +168,7 @@ def run():
         QMessageBox.warning(None, "TinyUi", "TinyUi is already running!")
         return 1
 
-    core.start()
+    lifecycle.start()
     logger.info(f"TinyPedal: {TP_VERSION}")
 
     # --- Tijdelijke UI voor test ---

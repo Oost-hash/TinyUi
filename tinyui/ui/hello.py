@@ -1,7 +1,13 @@
-# tinyui/ui/hello.py
-from PySide2.QtWidgets import QLabel, QMainWindow, QVBoxLayout, QWidget
+from PySide2.QtWidgets import (
+    QApplication,
+    QLabel,
+    QMainWindow,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
-from tinyui.adapters import config
+from tinyui.adapters import cfg
 
 
 class HelloWindow(QMainWindow):
@@ -11,6 +17,24 @@ class HelloWindow(QMainWindow):
         central = QWidget()
         self.setCentralWidget(central)
         layout = QVBoxLayout(central)
-        api_name = config.api_name
+
+        api_name = cfg.api_name
         label = QLabel(f"Hallo! API = {api_name}")
         layout.addWidget(label)
+
+        # Afsluitknop
+        quit_btn = QPushButton("Close")
+        quit_btn.clicked.connect(self._quit)
+        layout.addWidget(quit_btn)
+
+    def closeEvent(self, event):
+        """Overschrijf kruisje-gedrag: sluit hele applicatie."""
+        self._quit()
+        event.accept()
+
+    def _quit(self):
+        """Graceful shutdown."""
+        from tinyui.adapters import lifecycle
+
+        lifecycle.close()  # Stop TinyPedal
+        QApplication.quit()  # Stop Qt
