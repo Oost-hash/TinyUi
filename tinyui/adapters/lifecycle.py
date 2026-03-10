@@ -56,7 +56,20 @@ class Lifecycle:
         self.widgets.close()
         self.modules.close()
         self.overlay.disable()
+
+        # Stop API
         self.api.stop()
+
+        del self.api
+        del self.modules
+        del self.widgets
+        del self.overlay
+        del self.hotkey
+        del self.updater
+
+        import gc
+
+        gc.collect()
 
         self._running = False
         logger.info("Tinypedal stopped")
