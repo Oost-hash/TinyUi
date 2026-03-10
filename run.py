@@ -3,11 +3,6 @@
 #  TinyUi - Custom UI layer for TinyPedal
 #  Copyright (C) 2026 Oost-hash
 #
-#  This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
 
 """TinyUi - Entry point"""
 
@@ -23,11 +18,11 @@ _result = subprocess.run([sys.executable, _gen_script])
 if _result.returncode != 0:
     sys.exit(1)
 
-# Add tinypedal submodule to path
-sys.path.insert(0, os.path.join(_PROJECT_ROOT, "tinypedal"))
+# Voeg de root van tinypedal_repo toe aan sys.path (zodat pyLMUSharedMemory gevonden wordt)
+sys.path.insert(0, os.path.join(_PROJECT_ROOT, "tinypedal_repo"))
 
-# chdir naar tinypedal/ zodat TinyPedal's relatieve paden daar worden aangemaakt
-os.chdir(os.path.join(_PROJECT_ROOT, "tinypedal"))
+# Ga naar de TinyPedal package map voor configuratiebestanden
+os.chdir(os.path.join(_PROJECT_ROOT, "tinypedal_repo", "tinypedal"))
 
 from tinyui import main
 

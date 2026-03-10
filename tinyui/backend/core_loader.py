@@ -10,8 +10,16 @@ import signal
 import sys
 import time
 
+from tinyui.backend import (
+    api,
+    config,
+    kctrl,
+    mctrl,
+    octrl,
+    update_checker,
+    wctrl,
+)
 from tinyui.backend.constants import FileExt
-from tinyui.backend.settings import cfg
 
 logger = logging.getLogger("TinyUi")
 
@@ -20,27 +28,13 @@ class TinyPedalCore:
     """Beheert TinyPedal core lifecycle (api, modules, widgets)"""
 
     def __init__(self):
-        self.api = None
-        self.mctrl = None
-        self.wctrl = None
-        self.octrl = None
-        self.kctrl = None
-        self.update_checker = None
-        self._running = False
-
-    def _init_globals(self):
-        """Initialize alle TinyPedal globals - pas aangeroepen in start()"""
-        from tinyui.backend.controls import api, loader, mctrl, octrl, wctrl
-        from tinyui.backend.misc import update_checker
-
         self.api = api
         self.mctrl = mctrl
         self.wctrl = wctrl
         self.octrl = octrl
-        self.kctrl = loader.kctrl
+        self.kctrl = kctrl
         self.update_checker = update_checker
-
-        logger.info("TinyPedal core globals geinitialiseerd")
+        self._running = False
 
     def _setup_signal_handler(self):
         """Setup SIGINT handler voor graceful shutdown"""
@@ -54,10 +48,10 @@ class TinyPedalCore:
 
     def _load_preset(self):
         """Laad eerste preset"""
-        cfg.set_next_to_load(f"{cfg.preset_files()[0]}{FileExt.JSON}")
-        cfg.load_user()
-        cfg.save()
-        logger.info(f"Preset geladen: {cfg.filename.setting}")
+        config.set_next_to_load(f"{config.preset_files()[0]}{FileExt.JSON}")
+        config.load_user()
+        config.save()
+        logger.info(f"Preset geladen: {config.filename.setting}")
 
     def _start_api(self):
         """Start telemetry API"""
@@ -84,7 +78,7 @@ class TinyPedalCore:
         self.octrl.enable()
         self.kctrl.enable()
 
-        if cfg.application["check_for_updates_on_startup"]:
+        if config.application["check_for_updates_on_startup"]:
             self.update_checker.check(False)
 
         self._running = True
@@ -95,7 +89,6 @@ class TinyPedalCore:
         logger.info("STARTING TINYPEDAL CORE...")
 
         self._setup_signal_handler()
-        self._init_globals()  # Pas hier de imports!
         self._load_preset()
         self._start_api()
         self._start_modules()
@@ -129,9 +122,9 @@ class TinyPedalCore:
         """Reload preset/modules/widgets"""
         logger.info("RELOADING TINYPEDAL CORE...")
 
-        if cfg.is_saving:
-            cfg.save(next_task=True)
-            while cfg.is_saving:
+        if config.is_saving:
+            config.save(next_task=True)
+            while config.is_saving:
                 time.sleep(0.01)
 
         self.kctrl.disable()
@@ -140,8 +133,8 @@ class TinyPedalCore:
         self.octrl.disable()
 
         if reload_preset:
-            cfg.load_user()
-            cfg.save(0)
+            config.load_user()
+            config.save(0)
 
         self.api.restart()
         self.octrl.enable()

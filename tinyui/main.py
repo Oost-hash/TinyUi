@@ -15,10 +15,14 @@ from PySide2.QtCore import QCoreApplication, QLocale, Qt
 from PySide2.QtGui import QFont, QGuiApplication, QIcon, QPixmapCache
 from PySide2.QtWidgets import QApplication, QMessageBox
 
+# Importeer de echte cfg uit TinyPedal (volledig package pad, consistent met gegenereerde imports)
+from tinypedal_repo.tinypedal.setting import cfg as real_cfg
+
+# Importeer de adapter en initialisatie
+from tinyui.backend import config, init_backend
 from tinyui.backend.constants import TP_VERSION, ConfigType, ImageFile
 from tinyui.backend.core_loader import core
 from tinyui.backend.misc import set_environment, set_logging_level, unset_environment
-from tinyui.backend.settings import cfg
 from tinyui.version import __version__ as TINYUI_VERSION
 
 logger = logging.getLogger("TinyUi")
@@ -63,7 +67,7 @@ def _load_icon() -> QIcon:
 
 
 def _save_pid_file():
-    with open(f"{cfg.path.config}tinyui.pid", "w", encoding="utf-8") as f:
+    with open(f"{config.path.config}tinyui.pid", "w", encoding="utf-8") as f:
         pid = os.getpid()
         create_time = psutil.Process(pid).create_time()
         f.write(f"{pid},{create_time}")
@@ -71,7 +75,7 @@ def _save_pid_file():
 
 def _is_pid_exist() -> bool:
     try:
-        with open(f"{cfg.path.config}tinyui.pid", "r", encoding="utf-8") as f:
+        with open(f"{config.path.config}tinyui.pid", "r", encoding="utf-8") as f:
             line = f.readline().strip()
         pid_str, create_time_str = line.split(",")
         pid = int(pid_str)
@@ -89,15 +93,18 @@ def _is_pid_exist() -> bool:
 def _init_config():
     """Load global config and save defaults."""
     unset_environment()
-    cfg.load_global()
-    cfg.save(cfg_type=ConfigType.CONFIG)
-    cfg.save(cfg_type=ConfigType.SHORTCUTS)
+    # Eerst de echte cfg injecteren in de adapter
+    init_backend(real_cfg)
+    # Nu via de adapter werken
+    config.load_global()
+    config.save(cfg_type=ConfigType.CONFIG)
+    config.save(cfg_type=ConfigType.SHORTCUTS)
 
 
 def _init_logging():
     """Setup logging to file and stream."""
     log_stream = io.StringIO()
-    set_logging_level(logger, cfg.path.config, "tinyui.log", log_stream, 2)
+    set_logging_level(logger, config.path.config, "tinyui.log", log_stream, 2)
     logger.info("=" * 50)
     logger.info(f"TinyUi v{TINYUI_VERSION} Starting...")
     set_environment()
@@ -109,7 +116,7 @@ def _init_qt() -> QApplication:
     loc.setNumberOptions(QLocale.RejectGroupSeparator)
     QLocale.setDefault(loc)
 
-    if cfg.application["enable_high_dpi_scaling"]:
+    if config.application["enable_high_dpi_scaling"]:
         QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
         QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
             Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
@@ -162,14 +169,10 @@ def run():
     core.start()
     logger.info(f"TinyPedal: {TP_VERSION}")
 
-    # from tinyui.ui_backup.components.tray import TrayIcon
-    # from tinyui.ui_backup.main_window import create_main_window
+    # --- Tijdelijke UI voor test ---
+    from tinyui.ui.hello import HelloWindow
 
-    # window = create_main_window()
-    tray = TrayIcon(icon=_load_icon(), window=window)
-    window.set_tray(tray)
-    tray.show()
-
+    window = HelloWindow()
     window.show()
 
     logger.info("TinyUi ready!")
