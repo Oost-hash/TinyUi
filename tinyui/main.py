@@ -21,7 +21,7 @@ from tinypedal_repo.tinypedal.setting import cfg as real_cfg
 # TinyUi adapters - NIEUWE STRUCTUUR
 from tinyui.adapters import cfg, lifecycle
 from tinyui.adapters.tinypedal.app import VERSION as TP_VERSION
-from tinyui.adapters.tinypedal.files import ConfigType, ImageFile
+from tinyui.adapters.tinypedal.files import ConfigType
 from tinyui.adapters.tinypedal.log import set_logging_level
 from tinyui.adapters.tinypedal.main import set_environment, unset_environment
 from tinyui.version import __version__ as TINYUI_VERSION
@@ -169,7 +169,7 @@ def run():
     logger.info(f"TinyPedal: {TP_VERSION}")
 
     # --- UI ---
-    from tinyui.ui.hello import HelloWindow
+    from tinyui.ui.hello_window import HelloWindow
 
     window = HelloWindow()
     window.setWindowIcon(app.windowIcon())  # <-- ICON DOORGEGEVEN!
