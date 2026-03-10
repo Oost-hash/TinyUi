@@ -5,6 +5,10 @@
 - Generic table editor components: `TableModel`, `TableEditor`, `EditorViewModel`, and `ColumnSpec`
 - `HeatmapEditor` window that uses the generic editor for editing heatmap presets
 - "Open Heatmap Editor" button in the `HelloWindow`
+- `Tabs`, `tabs`, `tabs`, everybody!!! Made an tabs component and added it too `HelloWindow`
+
+### Todo: 
+- Ai fix changelog
 
 ## Version 0.7.0 (2026-03-11)
 
