@@ -1,0 +1,151 @@
+{
+  "constants.py": {
+    "tinypedal_repo.tinypedal.const_app": [
+      ["APP_NAME", "TP_APP_NAME"],
+      ["COPYRIGHT", "TP_COPYRIGHT"],
+      ["DESCRIPTION", "TP_DESCRIPTION"],
+      ["LICENSE", "TP_LICENSE"],
+      "PLATFORM",
+      ["VERSION", "TP_VERSION"],
+      "URL_FAQ",
+      "URL_RELEASE",
+      "URL_USER_GUIDE",
+      "URL_WEBSITE"
+    ],
+    "tinypedal_repo.tinypedal.const_file": [
+      "ConfigType",
+      "FileExt",
+      "FileFilter",
+      "ImageFile"
+    ],
+    "tinypedal_repo.tinypedal.const_common": [
+      "EMPTY_DICT",
+      "MAX_SECONDS",
+      "TEXT_NOLAPTIME"
+    ],
+    "tinypedal_repo.tinypedal.const_api": [
+      "API_LMU_ALIAS",
+      "API_LMU_CONFIG",
+      "API_RF2_ALIAS",
+      "API_RF2_CONFIG"
+    ]
+  },
+  "controls.py": {
+    "tinypedal_repo.tinypedal": ["app_signal", "loader"],
+    "tinypedal_repo.tinypedal.api_control": ["api"],
+    "tinypedal_repo.tinypedal.hotkey_control": ["kctrl"],
+    "tinypedal_repo.tinypedal.module_control": [
+      "ModuleControl",
+      "mctrl",
+      "wctrl"
+    ],
+    "tinypedal_repo.tinypedal.overlay_control": ["octrl"]
+  },
+  "data.py": {
+    "tinypedal_repo.tinypedal.userfile": [
+      "set_relative_path",
+      "set_user_data_path"
+    ],
+    "tinypedal_repo.tinypedal.userfile.consumption_history": [
+      "load_consumption_history_file"
+    ],
+    "tinypedal_repo.tinypedal.userfile.driver_stats": [
+      "DriverStats",
+      "load_stats_json_file",
+      "save_stats_json_file",
+      "validate_stats_file"
+    ],
+    "tinypedal_repo.tinypedal.userfile.heatmap": [
+      "HEATMAP_DEFAULT_BRAKE",
+      "HEATMAP_DEFAULT_TYRE",
+      "set_predefined_brake_name",
+      "set_predefined_compound_symbol"
+    ],
+    "tinypedal_repo.tinypedal.userfile.track_map": ["load_track_map_file"],
+    "tinypedal_repo.tinypedal.userfile.track_notes": [
+      "COLUMN_PACENOTE",
+      "NOTESTYPE_PACE",
+      "NOTESTYPE_TRACK",
+      "create_notes_metadata",
+      "load_notes_file",
+      "save_notes_file",
+      "set_notes_filter",
+      "set_notes_header",
+      "set_notes_parser",
+      "set_notes_writer"
+    ],
+    "tinypedal_repo.tinypedal.template.setting_shortcuts": [
+      "SHORTCUTS_GENERAL",
+      "SHORTCUTS_MODULE",
+      "SHORTCUTS_WIDGET"
+    ],
+    "tinypedal_repo.tinypedal.template.setting_tracks": ["TRACKINFO_DEFAULT"]
+  },
+  "formatter.py": {
+    "tinypedal_repo.tinypedal.formatter": [
+      "format_module_name",
+      "format_option_name",
+      "laptime_string_to_seconds",
+      "random_color_class",
+      "strip_filename_extension",
+      "strip_invalid_char"
+    ]
+  },
+  "misc.py": {
+    "tinypedal_repo.tinypedal": [
+      ["calculation", "calc"],
+      "realtime_state",
+      "units"
+    ],
+    "tinypedal_repo.tinypedal.async_request": [
+      "get_response",
+      "set_header_get"
+    ],
+    "tinypedal_repo.tinypedal.hotkey.common": [
+      "format_hotkey_name",
+      "get_key_state_function",
+      "refresh_keystate",
+      "set_hotkey_win"
+    ],
+    "tinypedal_repo.tinypedal.log_handler": ["set_logging_level"],
+    "tinypedal_repo.tinypedal.main": [
+      "log_stream",
+      "set_environment",
+      "unset_environment"
+    ],
+    "tinypedal_repo.tinypedal.module_info": ["ConsumptionDataSet", "minfo"],
+    "tinypedal_repo.tinypedal.update": ["update_checker"]
+  },
+  "regex.py": {
+    "tinypedal_repo.tinypedal.regex_pattern": [
+      "CFG_BOOL",
+      "CFG_CLOCK_FORMAT",
+      "CFG_COLOR",
+      "CFG_FONT_NAME",
+      "CFG_FONT_WEIGHT",
+      "CFG_HEATMAP",
+      "CFG_INTEGER",
+      "CFG_STRING",
+      "CFG_USER_IMAGE",
+      "CFG_USER_PATH",
+      "CHOICE_COMMON",
+      "CHOICE_UNITS"
+    ]
+  },
+  "settings.py": {
+    "tinypedal_repo.tinypedal.setting": [
+      "copy_setting",
+      "load_setting_json_file",
+      "save_and_verify_json_file"
+    ]
+  },
+  "validator.py": {
+    "tinypedal_repo.tinypedal.validator": [
+      "image_exists",
+      "is_allowed_filename",
+      "is_clock_format",
+      "is_hex_color",
+      "is_string_number"
+    ]
+  }
+}
