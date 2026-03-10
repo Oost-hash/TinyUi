@@ -8,7 +8,7 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
-from tinyui.adapters import cfg, lifecycle
+from tinyui.adapters import cfg
 
 from .editors.heatmap import HeatmapEditor
 
