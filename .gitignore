@@ -29,8 +29,10 @@ pylintrc
 # notes
 docs/development-notes/
 
-# tests
+# non working parts
 tinyui/tests
+tinyui/ui/components
+tinyui/ui/editors
 
 # random file
 test*.py
