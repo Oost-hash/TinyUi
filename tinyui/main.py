@@ -19,7 +19,7 @@ from PySide2.QtWidgets import QApplication, QMessageBox
 from tinypedal_repo.tinypedal.setting import cfg as real_cfg
 
 # TinyUi adapters - NIEUWE STRUCTUUR
-from tinyui.adapters import cfg, hotkey, lifecycle, loader
+from tinyui.adapters import cfg, lifecycle
 from tinyui.adapters.tinypedal.app import VERSION as TP_VERSION
 from tinyui.adapters.tinypedal.files import ConfigType, ImageFile
 from tinyui.adapters.tinypedal.log import set_logging_level
@@ -35,12 +35,29 @@ _TINYUI_ICON = os.path.join(
 
 
 def _tinyui_icon() -> str:
-    """Resolve TinyUi icon path."""
+    """Resolve TinyUi icon path, works both frozen and development."""
     if getattr(sys, "frozen", False):
+        # Frozen: naast executable in tinyui/images/
         return os.path.join(
             os.path.dirname(sys.executable), "tinyui", "images", "icon.png"
         )
+
+    # Dev: vanuit main.py naar tinyui/images/
     return _TINYUI_ICON
+
+
+def _load_icon() -> QIcon:
+    """Load TinyUi icon."""
+    path = _tinyui_icon()
+
+    if os.path.exists(path):
+        icon = QIcon(path)
+        if not icon.isNull():
+            return icon
+        logger.warning(f"Icon file exists but failed to load: {path}")
+
+    logger.warning(f"No icon found at: {path}")
+    return QIcon()
 
 
 def _app_root():
@@ -52,23 +69,8 @@ def _app_root():
     )
 
 
-def _load_icon() -> QIcon:
-    """Load TinyUi icon with TinyPedal fallback."""
-    path = _tinyui_icon()
-    if os.path.exists(path):
-        return QIcon(path)
-
-    logger.warning(f"TinyUi icon not found: {path}")
-    tp_path = os.path.join(_app_root(), ImageFile.APP_ICON)
-    if os.path.exists(tp_path):
-        return QIcon(tp_path)
-    return QIcon()
-
-
-# --- PID helpers for single instance check ---
-
-
 def _save_pid_file():
+    """Save PID and process creation time for single instance check."""
     with open(f"{cfg.path.config}tinyui.pid", "w", encoding="utf-8") as f:
         pid = os.getpid()
         create_time = psutil.Process(pid).create_time()
@@ -76,6 +78,7 @@ def _save_pid_file():
 
 
 def _is_pid_exist() -> bool:
+    """Check if another instance is already running."""
     try:
         with open(f"{cfg.path.config}tinyui.pid", "r", encoding="utf-8") as f:
             line = f.readline().strip()
@@ -89,15 +92,10 @@ def _is_pid_exist() -> bool:
     return False
 
 
-# --- Bootstrap helpers ---
-
-
 def _init_config():
     """Load global config and save defaults."""
     unset_environment()
-    # Inject real cfg into adapter
     cfg.inject(real_cfg)
-    # Load via adapter
     cfg.load_global()
     cfg.save(cfg_type=ConfigType.CONFIG)
     cfg.save(cfg_type=ConfigType.SHORTCUTS)
@@ -128,6 +126,8 @@ def _init_qt() -> QApplication:
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     app.setApplicationName("TinyUi")
+
+    # Set icon
     app.setWindowIcon(_load_icon())
 
     font = app.font()
@@ -155,9 +155,6 @@ def _check_single_instance() -> bool:
     return False
 
 
-# --- Entry point ---
-
-
 def run():
     """Main entry point."""
     _init_config()
@@ -171,10 +168,11 @@ def run():
     lifecycle.start()
     logger.info(f"TinyPedal: {TP_VERSION}")
 
-    # --- Tijdelijke UI voor test ---
+    # --- UI ---
     from tinyui.ui.hello import HelloWindow
 
     window = HelloWindow()
+    window.setWindowIcon(app.windowIcon())  # <-- ICON DOORGEGEVEN!
     window.show()
 
     logger.info("TinyUi ready!")
