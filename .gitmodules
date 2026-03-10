@@ -1,3 +1,3 @@
-[submodule "tinypedal"]
-	path = tinypedal
+[submodule "tinypedal_repo"]
+	path = tinypedal_repo
 	url = https://github.com/TinyPedal/TinyPedal.git
