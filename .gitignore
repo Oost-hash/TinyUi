@@ -1,5 +1,6 @@
 # ignore list
 /.venv/
+/.zed/
 /brandlogo/
 /deltabest/
 /dist/
@@ -11,6 +12,7 @@
 /carsetups/
 
 __pycache__/
+.pytest_cache/
 
 # pipenv stuff
 Pipfile
@@ -26,8 +28,9 @@ pylintrc
 *.csv
 *.fuel
 
-# notes
-docs/development-notes/
+# dev
+dev_tools/
+dev_notes/
 
 # non working parts
 tinyui/tests
@@ -40,13 +43,3 @@ test*.py
 *.zip
 *.log
 *.db
-
-# Generated adapter files (auto-generated from manifest.json)
-tinyui/adapters/constants.py
-tinyui/adapters/controls.py
-tinyui/adapters/data.py
-tinyui/adapters/formatter.py
-tinyui/adapters/misc.py
-tinyui/adapters/regex.py
-tinyui/adapters/settings.py
-tinyui/adapters/validator.py
