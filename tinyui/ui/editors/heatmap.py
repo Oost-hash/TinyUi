@@ -15,10 +15,10 @@ from PySide2.QtWidgets import (
 from ...adapters import cfg
 from ...adapters.tinypedal.files import ConfigType
 from ...adapters.tinypedal.settings import copy_setting
-from ..components.column_spec import ColumnSpec, Validators
-from ..components.editor_viewmodel import EditorViewModel
-from ..components.table_editor import TableEditor
-from ..components.table_model import TableModel
+from ..components.table_editor.column_spec import ColumnSpec, Validators
+from ..components.table_editor.editor_viewmodel import EditorViewModel
+from ..components.table_editor.table_editor import TableEditor
+from ..components.table_editor.table_model import TableModel
 
 
 class HeatmapEditor(QWidget):
