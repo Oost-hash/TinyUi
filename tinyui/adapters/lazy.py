@@ -1,37 +1,64 @@
-# tinyui/backend/lazy.py
-"""Lazy loading proxies voor TinyPedal modules."""
+"""Base classes for lazy loading and adaptation."""
 
 import importlib
-from typing import Any
+from typing import Any, Optional
 
 
 class LazyModule:
-    """Importeert een module pas bij eerste gebruik van een attribuut."""
+    """Lazy proxy that imports the real module on first attribute access.
 
-    def __init__(self, module_name: str, attr_name: str = None):
+    This breaks circular imports and speeds up startup by only loading
+    what's actually used.
+    """
+
+    def __init__(self, module_path: str, attr: Optional[str] = None):
         """
         Args:
-            module_name: Volledige module naam, bv. 'tinypedal_repo.tinypedal.api_control'
-            attr_name: Optioneel, als we een specifiek attribuut uit de module willen (bv. 'api')
+            module_path: Full dotted path, e.g. 'tinypedal_repo.tinypedal.api_control'
+            attr: Optional attribute to extract from module (e.g. 'api')
         """
-        self._module_name = module_name
-        self._attr_name = attr_name
-        self._module = None
+        self._path = module_path
+        self._attr = attr
+        self._real: Any = None
+        self._loaded = False
 
-    def _load(self):
-        if self._module is None:
-            self._module = importlib.import_module(self._module_name)
+    def _load(self) -> Any:
+        """Import and cache the real module/object."""
+        if not self._loaded:
+            module = importlib.import_module(self._path)
+            self._real = getattr(module, self._attr) if self._attr else module
+            self._loaded = True
+        return self._real
 
     def __getattr__(self, name: str) -> Any:
-        self._load()
-        if self._attr_name:
-            obj = getattr(self._module, self._attr_name)
-            return getattr(obj, name)
-        return getattr(self._module, name)
+        """Forward attribute access to real module."""
+        real = self._load()
+        return getattr(real, name)
 
     def __call__(self, *args, **kwargs):
-        self._load()
-        if self._attr_name:
-            obj = getattr(self._module, self._attr_name)
-            return obj(*args, **kwargs)
-        return self._module(*args, **kwargs)
+        """Allow calling if the wrapped object is callable."""
+        real = self._load()
+        return real(*args, **kwargs)
+
+    def __repr__(self) -> str:
+        status = "loaded" if self._loaded else "lazy"
+        target = f".{self._attr}" if self._attr else ""
+        return f"<LazyModule {status}: {self._path}{target}>"
+
+
+class LazyCallable:
+    """Lazy wrapper for a specific callable (function/method)."""
+
+    def __init__(self, module_path: str, func_name: str):
+        self._module_path = module_path
+        self._func_name = func_name
+        self._func: Optional[callable] = None
+
+    def _load(self):
+        if self._func is None:
+            module = importlib.import_module(self._module_path)
+            self._func = getattr(module, self._func_name)
+        return self._func
+
+    def __call__(self, *args, **kwargs):
+        return self._load()(*args, **kwargs)

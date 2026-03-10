@@ -1,33 +1,48 @@
-"""TinyPedal backend adapter layer."""
+"""TinyPedal adapter layer for TinyUi.
 
-from .config_adapter import ConfigAdapter
-from .lazy import LazyModule
-from .settings import (
-    copy_setting,
-    load_setting_json_file,
-    save_and_verify_json_file,
-)
+Provides a clean interface to TinyPedal core functionality without
+tight coupling to the original UI or circular import issues.
+"""
 
-config = ConfigAdapter()
+import sys
+from pathlib import Path
 
+# Add tinypedal_repo to path if needed (adjust based on your setup)
+# This assumes tinypedal_repo is a sibling of tinyui or installed
+try:
+    import tinypedal_repo
+except ImportError:
+    # Fallback: add parent of tinyui to path
+    _tinyui_root = Path(__file__).parent.parent.parent
+    _tinypedal_path = _tinyui_root / "tinypedal_repo"
+    if _tinypedal_path.exists():
+        sys.path.insert(0, str(_tinypedal_path.parent))
 
-def init_backend(real_cfg):
-    config.inject_real(real_cfg)
+# Core adapters - direct imports
+# Lazy-loaded TinyPedal modules via tinypedal subpackage
+from . import tinypedal
+from .config import Config
+from .hotkey import Hotkey
+from .lifecycle import Lifecycle
+from .loader import Loader
 
+# Convenience exports
+cfg = Config()  # Singleton instance
+lifecycle = Lifecycle()  # Singleton instance
+loader = Loader(cfg)  # Needs config
+hotkey = Hotkey()
 
-# Lazy proxies voor TinyPedal modules
-api = LazyModule("tinypedal_repo.tinypedal.api_control", "api")
-loader = LazyModule("tinypedal_repo.tinypedal.loader")
-kctrl = LazyModule("tinypedal_repo.tinypedal.hotkey_control", "kctrl")
-mctrl = LazyModule("tinypedal_repo.tinypedal.module_control", "mctrl")
-octrl = LazyModule("tinypedal_repo.tinypedal.overlay_control", "octrl")
-wctrl = LazyModule("tinypedal_repo.tinypedal.module_control", "wctrl")
-update_checker = LazyModule("tinypedal_repo.tinypedal.update", "update_checker")
-minfo = LazyModule("tinypedal_repo.tinypedal.module_info", "minfo")
-calc = LazyModule("tinypedal_repo.tinypedal.calculation")
-units = LazyModule("tinypedal_repo.tinypedal.units")
-realtime_state = LazyModule("tinypedal_repo.tinypedal.realtime_state")
+# Legacy compatibility: inject loader into sys.modules for tinypedal imports
+sys.modules["tinypedal_repo.tinypedal.loader"] = loader
 
-# Exporteer ook de minimale gegenereerde modules
-from .constants import *
-from .misc import *
+__all__ = [
+    "cfg",
+    "lifecycle",
+    "loader",
+    "hotkey",
+    "tinypedal",
+    "Config",
+    "Lifecycle",
+    "Loader",
+    "Hotkey",
+]
