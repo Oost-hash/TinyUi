@@ -1,22 +1,38 @@
-#!/usr/bin/env python3
-#
-#  TinyUi - Custom UI layer for TinyPedal
+#  TinyUI - A mod for TinyPedal
 #  Copyright (C) 2026 Oost-hash
 #
+#  This file is part of TinyUI.
+#
+#  TinyUI is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  TinyUI is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
+#  licensed under GPLv3. TinyPedal is included as a submodule.
+
 
 """TinyUi - Entry point"""
 
 import os
-import subprocess
 import sys
 
 _PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+SRC_DIR = os.path.join(_PROJECT_ROOT, "src")
 
-# Voeg de root van tinypedal_repo toe aan sys.path (zodat pyLMUSharedMemory gevonden wordt)
-sys.path.insert(0, os.path.join(_PROJECT_ROOT, "tinypedal_repo"))
+# Voeg src/ toe aan path (bevat tinypedal, pyLMUSharedMemory, tinyui)
+sys.path.insert(0, SRC_DIR)
 
-# Ga naar de TinyPedal package map voor configuratiebestanden
-os.chdir(os.path.join(_PROJECT_ROOT, "tinypedal_repo", "tinypedal"))
+# Ga naar src/ als working directory (voor data folders)
+os.chdir(SRC_DIR)
 
 from tinyui import main
 

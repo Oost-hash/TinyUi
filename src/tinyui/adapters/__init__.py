@@ -28,16 +28,10 @@ tight coupling to the original UI or circular import issues.
 import sys
 from pathlib import Path
 
-# Add tinypedal_repo to path if needed (adjust based on your setup)
-# This assumes tinypedal_repo is a sibling of tinyui or installed
-try:
-    import tinypedal_repo
-except ImportError:
-    # Fallback: add parent of tinyui to path
-    _tinyui_root = Path(__file__).parent.parent.parent
-    _tinypedal_path = _tinyui_root / "tinypedal_repo"
-    if _tinypedal_path.exists():
-        sys.path.insert(0, str(_tinypedal_path.parent))
+# TODO: move too constant file
+_src_root = Path(__file__).parent.parent.parent  # src/
+if str(_src_root) not in sys.path:
+    sys.path.insert(0, str(_src_root))
 
 # Core adapters - direct imports
 # Lazy-loaded TinyPedal modules via tinypedal subpackage
@@ -54,7 +48,7 @@ loader = Loader(cfg)  # Needs config
 hotkey = Hotkey()
 
 # Legacy compatibility: inject loader into sys.modules for tinypedal imports
-sys.modules["tinypedal_repo.tinypedal.loader"] = loader
+sys.modules["tinypedal.loader"] = loader
 
 __all__ = [
     "cfg",
