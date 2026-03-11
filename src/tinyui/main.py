@@ -32,7 +32,7 @@ from PySide2.QtGui import QFont, QGuiApplication, QIcon, QPixmapCache
 from PySide2.QtWidgets import QApplication, QMessageBox
 
 # TinyPedal's real cfg (voor injectie)
-from tinypedal_repo.tinypedal.setting import cfg as real_cfg
+from tinypedal.setting import cfg as real_cfg
 
 # TinyUi adapters - NIEUWE STRUCTUUR
 from tinyui.adapters import cfg, lifecycle
