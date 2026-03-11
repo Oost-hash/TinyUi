@@ -11,15 +11,6 @@ TinyUi replaces TinyPedal's built-in interface with a separated, customizable UI
 
 **This project is in early development. Things will break.**
 
-## Current state
-
-- UI module runs as a layer on top of TinyPedal (v2.42.0, pinned as submodule)
-- Modular UI components (`ui/components/`)
-- Menus split into individual modules (`ui/menus/`)
-- Theme system with QSS templates (`themes/`)
-- Backend adapter layer auto-generated from manifest
-- py2exe build pipeline works
-
 ## Installation
 
 1. Download [TinyPedal v2.42.0](https://github.com/TinyPedal/TinyPedal/releases/tag/v2.42.0)
