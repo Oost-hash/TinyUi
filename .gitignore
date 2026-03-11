@@ -8,6 +8,8 @@
 
 tinypedal_repo
 src/data
+
+#TODO: just import submodules?
 src/pyLMUSharedMemory
 src/pyRfactor2SharedMemory
 src/tinypedal
