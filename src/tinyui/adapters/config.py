@@ -37,7 +37,7 @@ class Config:
         if self._real is None:
             try:
                 # BELANGRIJK: importeer het cfg OBJECT, niet de setting module
-                from tinypedal_repo.tinypedal.setting import cfg as real_cfg_obj
+                from tinypedal.setting import cfg as real_cfg_obj
 
                 self._real = real_cfg_obj
             except ImportError:

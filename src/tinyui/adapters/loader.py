@@ -35,7 +35,7 @@ logger = logging.getLogger("TinyUi")
 class Loader:
     """Drop-in replacement for tinypedal.loader.
 
-    This is injected into sys.modules["tinypedal_repo.tinypedal.loader"]
+    This is injected into sys.modules["tinypedal.loader"]
     to intercept calls from legacy TinyPedal code.
     """
 
@@ -43,11 +43,11 @@ class Loader:
         self.cfg = config
 
         # Lazy-loaded dependencies
-        self._api = LazyModule("tinypedal_repo.tinypedal.api_control", "api")
-        self._modules = LazyModule("tinypedal_repo.tinypedal.module_control", "mctrl")
-        self._widgets = LazyModule("tinypedal_repo.tinypedal.module_control", "wctrl")
-        self._overlay = LazyModule("tinypedal_repo.tinypedal.overlay_control", "octrl")
-        self._hotkey = LazyModule("tinypedal_repo.tinypedal.hotkey_control", "kctrl")
+        self._api = LazyModule("tinypedal.api_control", "api")
+        self._modules = LazyModule("tinypedal.module_control", "mctrl")
+        self._widgets = LazyModule("tinypedal.module_control", "wctrl")
+        self._overlay = LazyModule("tinypedal.overlay_control", "octrl")
+        self._hotkey = LazyModule("tinypedal.hotkey_control", "kctrl")
 
     # --- Public API matching original loader.py ---
 
@@ -55,7 +55,7 @@ class Loader:
         """Called by original TinyPedal startup. We handle it differently."""
         logger.info("Loader adapter start called")
 
-        from tinypedal_repo.tinypedal.const_file import FileExt
+        from tinypedal.const_file import FileExt
 
         # Load preset
         preset = f"{self.cfg.preset_files()[0]}{FileExt.JSON}"

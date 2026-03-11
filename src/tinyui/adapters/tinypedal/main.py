@@ -21,7 +21,7 @@
 
 """Main application utilities."""
 
-from tinypedal_repo.tinypedal.main import (
+from tinypedal.main import (
     set_environment,
     unset_environment,
 )

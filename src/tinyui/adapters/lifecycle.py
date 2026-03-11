@@ -40,12 +40,12 @@ class Lifecycle:
         self.cfg = config or Config()
 
         # Lazy-loaded controllers
-        self.api = LazyModule("tinypedal_repo.tinypedal.api_control", "api")
-        self.modules = LazyModule("tinypedal_repo.tinypedal.module_control", "mctrl")
-        self.widgets = LazyModule("tinypedal_repo.tinypedal.module_control", "wctrl")
-        self.overlay = LazyModule("tinypedal_repo.tinypedal.overlay_control", "octrl")
-        self.hotkey = LazyModule("tinypedal_repo.tinypedal.hotkey_control", "kctrl")
-        self.updater = LazyModule("tinypedal_repo.tinypedal.update", "update_checker")
+        self.api = LazyModule("tinypedal.api_control", "api")
+        self.modules = LazyModule("tinypedal.module_control", "mctrl")
+        self.widgets = LazyModule("tinypedal.module_control", "wctrl")
+        self.overlay = LazyModule("tinypedal.overlay_control", "octrl")
+        self.hotkey = LazyModule("tinypedal.hotkey_control", "kctrl")
+        self.updater = LazyModule("tinypedal.update", "update_checker")
 
         self._running = False
 
@@ -132,7 +132,7 @@ class Lifecycle:
 
     def _load_preset(self) -> None:
         """Load first available preset."""
-        from tinypedal_repo.tinypedal.const_file import FileExt
+        from tinypedal.const_file import FileExt
 
         first_preset = f"{self.cfg.preset_files()[0]}{FileExt.JSON}"
         self.cfg.set_next_to_load(first_preset)

@@ -28,7 +28,7 @@ class Hotkey:
     """Manages hotkey state with enable/disable tracking."""
 
     def __init__(self):
-        self._real = LazyModule("tinypedal_repo.tinypedal.hotkey_control", "kctrl")
+        self._real = LazyModule("tinypedal.hotkey_control", "kctrl")
         self._enabled = False
 
     def enable(self) -> None:

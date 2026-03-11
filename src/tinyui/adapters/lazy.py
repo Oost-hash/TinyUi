@@ -35,7 +35,7 @@ class LazyModule:
     def __init__(self, module_path: str, attr: Optional[str] = None):
         """
         Args:
-            module_path: Full dotted path, e.g. 'tinypedal_repo.tinypedal.api_control'
+            module_path: Full dotted path, e.g. 'tinypedal.api_control'
             attr: Optional attribute to extract from module (e.g. 'api')
         """
         self._path = module_path

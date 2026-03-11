@@ -21,7 +21,7 @@
 
 """Application constants."""
 
-from tinypedal_repo.tinypedal.const_app import (
+from tinypedal.const_app import (
     APP_NAME,
     PLATFORM,
     VERSION,

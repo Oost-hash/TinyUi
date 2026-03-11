@@ -28,16 +28,16 @@ the attribute. This prevents circular imports and speeds up startup.
 from ..lazy import LazyCallable, LazyModule
 
 # Core API
-api = LazyModule("tinypedal_repo.tinypedal.api_control", "api")
+api = LazyModule("tinypedal.api_control", "api")
 
 # Info modules
-info = LazyModule("tinypedal_repo.tinypedal.module_info", "minfo")
-state = LazyModule("tinypedal_repo.tinypedal.realtime_state")
-calc = LazyModule("tinypedal_repo.tinypedal.calculation")
-units = LazyModule("tinypedal_repo.tinypedal.units")
+info = LazyModule("tinypedal.module_info", "minfo")
+state = LazyModule("tinypedal.realtime_state")
+calc = LazyModule("tinypedal.calculation")
+units = LazyModule("tinypedal.units")
 
 # Signals
-signal = LazyModule("tinypedal_repo.tinypedal.app_signal")
+signal = LazyModule("tinypedal.app_signal")
 
 # Submodules (for organized imports)
 from . import app, files, log, main, settings

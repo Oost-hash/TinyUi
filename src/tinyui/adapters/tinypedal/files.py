@@ -21,7 +21,7 @@
 
 """File and configuration type constants."""
 
-from tinypedal_repo.tinypedal.const_file import (
+from tinypedal.const_file import (
     ConfigType,
     FileExt,
     ImageFile,
