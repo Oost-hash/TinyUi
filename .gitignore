@@ -1,16 +1,19 @@
 # ignore list
 /.venv/
 /.zed/
-/brandlogo/
-/deltabest/
+
 /.output/
 /.dist/
 /.dist/TinyPedal/
-/settings/
-/trackmap/
-/tracknotes/
-/pacenotes/
-/carsetups/
+
+tinypedal_repo
+src/data
+src/pyLMUSharedMemory
+src/pyRfactor2SharedMemory
+src/tinypedal
+
+
+tinypedal_repo/tests
 
 __pycache__/
 .pytest_cache/
@@ -34,6 +37,7 @@ dev_notes/
 
 # non working parts
 src/tinyui/tests/
+.build_release
 
 # random file
 test*.py
