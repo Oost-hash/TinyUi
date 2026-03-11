@@ -28,11 +28,6 @@ tight coupling to the original UI or circular import issues.
 import sys
 from pathlib import Path
 
-# TODO: move too constant file
-_src_root = Path(__file__).parent.parent.parent  # src/
-if str(_src_root) not in sys.path:
-    sys.path.insert(0, str(_src_root))
-
 # Core adapters - direct imports
 # Lazy-loaded TinyPedal modules via tinypedal subpackage
 from . import tinypedal
@@ -40,15 +35,14 @@ from .config import Config
 from .hotkey import Hotkey
 from .lifecycle import Lifecycle
 from .loader import Loader
+from .path import configure_data_paths
 
 # Convenience exports
 cfg = Config()  # Singleton instance
 lifecycle = Lifecycle()  # Singleton instance
 loader = Loader(cfg)  # Needs config
 hotkey = Hotkey()
-
-# Legacy compatibility: inject loader into sys.modules for tinypedal imports
-sys.modules["tinypedal.loader"] = loader
+path = configure_data_paths
 
 __all__ = [
     "cfg",
@@ -60,4 +54,5 @@ __all__ = [
     "Lifecycle",
     "Loader",
     "Hotkey",
+    "path",
 ]

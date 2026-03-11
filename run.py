@@ -28,13 +28,19 @@ import sys
 _PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC_DIR = os.path.join(_PROJECT_ROOT, "src")
 
-# Voeg src/ toe aan path (bevat tinypedal, pyLMUSharedMemory, tinyui)
+# Voeg src/ toe aan path
 sys.path.insert(0, SRC_DIR)
 
-# Ga naar src/ als working directory (voor data folders)
+# CRUCIAL: Injecteer loader adapter VOORDAT we tinypedal importeren
+# Dit breekt circular imports in hotkey_control -> loader -> hotkey_control
+from src.tinyui.adapters.loader import Loader  # Geen src. prefix!
+
+sys.modules["tinypedal.loader"] = Loader(None)  # Let op: geen sys. ervoor!
+
+# Ga naar src/ als working directory
 os.chdir(SRC_DIR)
 
-from tinyui import main
+from src.tinyui import main  # Geen src. prefix!
 
 if __name__ == "__main__":
     sys.exit(main.run())

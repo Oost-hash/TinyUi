@@ -34,8 +34,9 @@ from PySide2.QtWidgets import QApplication, QMessageBox
 # TinyPedal's real cfg (voor injectie)
 from tinypedal.setting import cfg as real_cfg
 
-# TinyUi adapters - NIEUWE STRUCTUUR
+# TinyUi adapters
 from tinyui.adapters import cfg, lifecycle
+from tinyui.adapters import path as configure_data_paths
 from tinyui.adapters.tinypedal.app import VERSION as TP_VERSION
 from tinyui.adapters.tinypedal.files import ConfigType
 from tinyui.adapters.tinypedal.log import set_logging_level
@@ -76,15 +77,6 @@ def _load_icon() -> QIcon:
     return QIcon()
 
 
-def _app_root():
-    """Application root path."""
-    if getattr(sys, "frozen", False):
-        return os.path.dirname(sys.executable)
-    return os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tinypedal"
-    )
-
-
 def _save_pid_file():
     """Save PID and process creation time for single instance check."""
     with open(f"{cfg.path.config}tinyui.pid", "w", encoding="utf-8") as f:
@@ -106,15 +98,6 @@ def _is_pid_exist() -> bool:
     except (OSError, ValueError, psutil.Error) as exc:
         logger.debug("PID check failed: %s", exc)
     return False
-
-
-def _init_config():
-    """Load global config and save defaults."""
-    unset_environment()
-    cfg.inject(real_cfg)
-    cfg.load_global()
-    cfg.save(cfg_type=ConfigType.CONFIG)
-    cfg.save(cfg_type=ConfigType.SHORTCUTS)
 
 
 def _init_logging():
@@ -169,6 +152,19 @@ def _check_single_instance() -> bool:
         _save_pid_file()
         return True
     return False
+
+
+def _init_config():
+    """Load global config and save defaults."""
+    unset_environment()
+    cfg.inject(real_cfg)
+    cfg.load_global()
+
+    # Redirect data paths before saving
+    configure_data_paths(real_cfg)
+
+    cfg.save(cfg_type=ConfigType.CONFIG)
+    cfg.save(cfg_type=ConfigType.SHORTCUTS)
 
 
 def run():
