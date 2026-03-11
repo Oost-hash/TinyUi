@@ -111,35 +111,23 @@ def build():
     """Run the full build process."""
     pyside_name, pyside_path = detect_pyside()
 
-    # -- Step 1: Generate backend adapters before copying --
-
-    from tinyui.backend.generate_adapters import generate
-
-    generate()
-    print("-> Backend adapters generated")
-
     # -- Step 2: Copy tinyui module into tinypedal/ and create entry point --
 
-    tinyui_dst = PROJECT_ROOT / "tinypedal" / "tinyui"
-    entry_point_path = PROJECT_ROOT / "tinypedal" / "run_tinyui.py"
+    tinyui_dst = PROJECT_ROOT / "tinypedal_repo" / "tinyui"
+    entry_point_path = PROJECT_ROOT / "tinypedal_repo" / "run_tinyui.py"
 
     if tinyui_dst.exists():
         shutil.rmtree(tinyui_dst)
     shutil.copytree(TINYUI_SRC, tinyui_dst)
 
-    # Remove dev-only files from the build copy
-    for dev_file in ("generate_adapters.py", "manifest.json"):
-        dev_path = tinyui_dst / "backend" / dev_file
-        if dev_path.exists():
-            dev_path.unlink()
-    print("-> tinyui/ copied to tinypedal/tinyui/ (dev files excluded)")
+    print("-> tinyui/ copied to tinypedal_repo/tinyui/")
 
     entry_point_path.write_text(ENTRY_POINT)
     print("-> run_tinyui.py created")
 
     # -- Step 3: Switch to tinypedal/ and import (same as TinyPedal does) --
 
-    os.chdir(PROJECT_ROOT / "tinypedal")
+    os.chdir(PROJECT_ROOT / "tinypedal_repo")
 
     # tinypedal/ (submodule root) must come before PROJECT_ROOT on sys.path,
     # otherwise Python finds the tinypedal/ directory as a namespace package
@@ -152,9 +140,9 @@ def build():
     from glob import glob as globfiles
 
     from py2exe import freeze
-    from tinypedal.const_app import PLATFORM
 
-    from tinypedal import version_check
+    from tinypedal_repo.tinypedal import version_check
+    from tinypedal_repo.tinypedal.const_app import PLATFORM
     from tinyui.const_tinyui import APP_NAME, AUTHOR
     from tinyui.version import __version__ as VERSION
 
@@ -185,14 +173,14 @@ def build():
 
     # Tinypedal modules that py2exe doesn't pick up automatically
     tinypedal_includes = [
-        "tinypedal.module_info",
-        "tinypedal.hotkey_control",
-        "tinypedal.hotkey.command",
-        "tinypedal.userfile.consumption_history",
-        "tinypedal.userfile.driver_stats",
-        "tinypedal.userfile.heatmap",
-        "tinypedal.userfile.track_map",
-        "tinypedal.userfile.track_notes",
+        "tinypedal_repo.tinypedal.module_info",
+        "tinypedal_repo.tinypedal.hotkey_control",
+        "tinypedal_repo.tinypedal.hotkey.command",
+        "tinypedal_repo.tinypedal.userfile.consumption_history",
+        "tinypedal_repo.tinypedal.userfile.driver_stats",
+        "tinypedal_repo.tinypedal.userfile.heatmap",
+        "tinypedal_repo.tinypedal.userfile.track_map",
+        "tinypedal_repo.tinypedal.userfile.track_notes",
     ]
 
     tinyui_modules = discover_tinyui_modules()
@@ -341,11 +329,11 @@ def build():
     print(f"  + tinyui/docs/")
 
     # Copy TinyUi license and readme
-    for root_file in ("LICENSE.txt", "README.md"):
+    for root_file in ("LICENSE", "README.md"):
         src = PROJECT_ROOT / root_file
         if src.exists():
             shutil.copy2(src, tinyui_dir / root_file)
-    print(f"  + tinyui/LICENSE.txt, README.md")
+    print(f"  + tinyui/LICENSE, README.md")
 
     remaining = sorted(f.name for f in minimal_path.iterdir())
     print(f"  = Contents: {', '.join(remaining)}")
