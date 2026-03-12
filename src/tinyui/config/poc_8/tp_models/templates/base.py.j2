@@ -1,0 +1,57 @@
+# Auto-generated base classes
+
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+
+@dataclass
+class ColumnField:
+    id: str
+    column_index: int = 0
+    show: bool = True
+    font_color: Optional[str] = None
+    bkg_color: Optional[str] = None
+    decimal_places: Optional[int] = None
+    prefix: Optional[str] = None
+    suffix: Optional[str] = None
+    low_threshold: Optional[float] = None
+    high_threshold: Optional[float] = None
+    warning_color_low: Optional[str] = None
+    warning_color_high: Optional[str] = None
+    warning_flash: bool = False
+    flash_count: int = 10
+    flash_duration: float = 0.4
+    flash_interval: float = 0.4
+
+    def to_flat(self) -> Dict[str, Any]:
+        result = {f"show_{self.id}": self.show, f"column_index_{self.id}": self.column_index}
+        if self.font_color: result[f"font_color_{self.id}"] = self.font_color
+        if self.bkg_color: result[f"bkg_color_{self.id}"] = self.bkg_color
+        if self.decimal_places is not None: result[f"decimal_places_{self.id}"] = self.decimal_places
+        if self.prefix: result[f"prefix_{self.id}"] = self.prefix
+        if self.suffix: result[f"suffix_{self.id}"] = self.suffix
+        if self.low_threshold is not None:
+            result[f"low_{self.id}_threshold"] = self.low_threshold
+            result[f"high_{self.id}_threshold"] = self.high_threshold
+        if self.warning_color_low: result[f"warning_color_low_{self.id}"] = self.warning_color_low
+        if self.warning_color_high: result[f"warning_color_high_{self.id}"] = self.warning_color_high
+        if self.warning_flash:
+            result[f"show_{self.id}_warning_flash"] = True
+            result[f"number_of_{self.id}_warning_flashes"] = self.flash_count
+            result[f"{self.id}_warning_flash_duration"] = self.flash_duration
+            result[f"{self.id}_warning_flash_interval"] = self.flash_interval
+        return result
+
+
+@dataclass
+class WidgetConfig:
+    def to_flat(self) -> Dict[str, Any]:
+        result = {}
+        for k, v in self.__dict__.items():
+            if k == "name":
+                continue
+            if isinstance(v, ColumnField):
+                result.update(v.to_flat())
+            elif v is not None:
+                result[k] = v
+        return result

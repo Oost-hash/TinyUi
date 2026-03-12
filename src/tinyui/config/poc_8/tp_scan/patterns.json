@@ -1,0 +1,78 @@
+{
+  "prefix_components": [
+    {
+      "name": "position",
+      "pattern": "^(position)_(x|y)$",
+      "attributes": ["x", "y"]
+    },
+    {
+      "name": "font",
+      "pattern": "^(font)_(color|name|size|weight|offset_vertical|scale_caption)$",
+      "attributes": [
+        "color",
+        "name",
+        "size",
+        "weight",
+        "offset_vertical",
+        "scale_caption"
+      ]
+    },
+    {
+      "name": "enable",
+      "pattern": "^(enable)_(auto_font_offset|comments_line_break|heatmap_auto_matching|radar_fade)$",
+      "attributes": [
+        "auto_font_offset",
+        "comments_line_break",
+        "heatmap_auto_matching",
+        "radar_fade"
+      ]
+    },
+    {
+      "name": "bar",
+      "pattern": "^(bar)_(gap|padding|width|height|edge_color|edge_width|padding_horizontal|padding_vertical)$",
+      "attributes": [
+        "gap",
+        "padding",
+        "width",
+        "height",
+        "edge_color",
+        "edge_width",
+        "padding_horizontal",
+        "padding_vertical"
+      ]
+    },
+    {
+      "name": "warning",
+      "pattern": "^(warning)_(color_low_fuel|color_high_battery|color_low_battery|color_lengthy_stop|threshold_laps|threshold_minutes|threshold_remaining|threshold_wear|flash_highlight_duration|flash_interval)$",
+      "attributes": [
+        "color_low_fuel",
+        "color_high_battery",
+        "color_low_battery",
+        "color_lengthy_stop",
+        "threshold_laps",
+        "threshold_minutes",
+        "threshold_remaining",
+        "threshold_wear",
+        "flash_highlight_duration",
+        "flash_interval"
+      ]
+    }
+  ],
+  "numbered_components": [
+    {
+      "name": "distance_circle",
+      "pattern": "^distance_circle_(\\d+)_(color|radius|style|width)$",
+      "attributes": ["color", "radius", "style", "width"]
+    },
+    {
+      "name": "reference_circle",
+      "pattern": "^reference_circle_(\\d+)_(color|radius_g|style|width)$",
+      "attributes": ["color", "radius_g", "style", "width"]
+    },
+    {
+      "name": "reference_line",
+      "pattern": "^reference_line_(\\d+)_(color|offset|style|width)$",
+      "attributes": ["color", "offset", "style", "width"]
+    }
+  ]
+}

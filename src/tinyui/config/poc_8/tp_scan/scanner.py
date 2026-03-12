@@ -1,0 +1,192 @@
+"""Kernlogica voor patroon-gebaseerde analyse."""
+
+import random
+import re
+from collections import Counter, defaultdict
+from typing import Any, Dict, List, Optional
+
+from .loader import load_heatmaps, load_widget_configs
+
+
+def is_column_key(key: str) -> bool:
+    """Check of een key bij een kolom hoort (overgenomen uit tp_models)."""
+    return (
+        key.startswith("column_index_")
+        or key.startswith("show_")
+        or key.startswith("font_color_")
+        or key.startswith("bkg_color_")
+        or key.startswith("decimal_places_")
+        or key.startswith("prefix_")
+        or key.startswith("suffix_")
+        or key.startswith("low_")
+        and key.endswith("_threshold")
+        or key.startswith("high_")
+        and key.endswith("_threshold")
+        or key.startswith("warning_color_low_")
+        or key.startswith("warning_color_high_")
+        or key.startswith("show_")
+        and key.endswith("_warning_flash")
+        or key.startswith("number_of_")
+        and key.endswith("_warning_flashes")
+        or key.endswith("_warning_flash_duration")
+        or key.endswith("_warning_flash_interval")
+    )
+
+
+def infer_type_from_values(values: List[Any]) -> str:
+    """Bepaal het type op basis van een lijst waarden."""
+    types = set(type(v).__name__ for v in values if v is not None)
+    if not types:
+        return "Any"
+    if "str" in types:
+        return "str"
+    if "bool" in types:
+        return "bool"
+    if "int" in types and "float" not in types:
+        return "int"
+    if "float" in types:
+        return "float"
+    return "Any"
+
+
+def analyze_with_patterns(
+    templates_dir: str,
+    patterns: Dict[str, List[Dict]],
+    sample_size: Optional[int] = None,
+) -> Dict[str, Any]:
+    """
+    Laad alle widgets, pas patronen toe en retourneer analyse.
+    """
+    # Laad configuraties
+    heatmaps = load_heatmaps(templates_dir)
+    all_configs = load_widget_configs(templates_dir, heatmaps)
+
+    # Eventueel subset nemen
+    if sample_size is not None and sample_size < len(all_configs):
+        widget_names = random.sample(list(all_configs.keys()), sample_size)
+        configs = {name: all_configs[name] for name in widget_names}
+        print(
+            f"Analyseert {sample_size} willekeurige widgets: {', '.join(widget_names)}"
+        )
+    else:
+        configs = all_configs
+        print(f"Analyseert alle {len(configs)} widgets")
+
+    # Verzamel per key alle waarden (negeer kolomkeys)
+    key_values = defaultdict(list)
+    for config in configs.values():
+        for key, value in config.items():
+            if not is_column_key(key):
+                key_values[key].append(value)
+
+    # Bepaal per key type, voorbeelden en modus
+    key_types = {}
+    key_examples = {}
+    key_mode = {}
+    for key, values in key_values.items():
+        typ = infer_type_from_values(values)
+        key_types[key] = typ
+        # Unieke representaties als voorbeeld (max 5)
+        unique = list(dict.fromkeys(repr(v) for v in values))[:5]
+        key_examples[key] = unique
+        # Meest voorkomende waarde (modus) voor default
+        str_values = [repr(v) for v in values]
+        counter = Counter(str_values)
+        if counter:
+            mode_str = counter.most_common(1)[0][0]
+            key_mode[key] = mode_str
+        else:
+            key_mode[key] = "None"
+
+    # Toepassen van patronen
+    prefix_components = {}
+    numbered_components = {}
+
+    # Prefix componenten
+    for comp in patterns.get("prefix_components", []):
+        name = comp["name"]
+        pattern = re.compile(comp["pattern"])
+        attributes = comp["attributes"]
+        # Verzamel alle keys die matchen
+        matching_keys = [k for k in key_types if pattern.match(k)]
+        if not matching_keys:
+            continue
+        # Bepaal types en modii per attribuut
+        attr_types = {}
+        attr_examples = {}
+        attr_modes = {}
+        for attr in attributes:
+            full_key = f"{name}_{attr}"  # volgens patroon
+            if full_key in key_types:
+                attr_types[attr] = key_types[full_key]
+                attr_examples[attr] = key_examples.get(full_key, [])
+                attr_modes[attr] = key_mode.get(full_key, "None")
+            else:
+                attr_types[attr] = "Any"
+                attr_examples[attr] = []
+                attr_modes[attr] = "None"
+        # Bepaal in welke widgets deze component voorkomt (optioneel)
+        widgets = set()
+        for key in matching_keys:
+            for wname, cfg in configs.items():
+                if key in cfg:
+                    widgets.add(wname)
+        prefix_components[name] = {
+            "suffixes": attributes,
+            "widgets": sorted(widgets),
+            "type_hints": attr_types,
+            "examples": attr_examples,
+            "modes": attr_modes,
+        }
+
+    # Genummerde componenten
+    for comp in patterns.get("numbered_components", []):
+        name = comp["name"]
+        pattern = re.compile(comp["pattern"])
+        attributes = comp["attributes"]
+        # Verzamel per index de keys
+        indices = set()
+        keys_per_index = defaultdict(list)
+        for key in key_types:
+            m = pattern.match(key)
+            if m:
+                idx = int(m.group(1))
+                indices.add(idx)
+                keys_per_index[idx].append(key)
+        if not indices:
+            continue
+        # Bepaal types en modii per attribuut over alle indices
+        attr_types = {}
+        attr_examples = {}
+        attr_modes = {}
+        for attr in attributes:
+            all_values = []
+            for idx in indices:
+                key = f"{name}_{idx}_{attr}"  # volgens patroon
+                if key in key_values:
+                    all_values.extend(key_values[key])
+            if all_values:
+                attr_types[attr] = infer_type_from_values(all_values)
+                unique = list(dict.fromkeys(repr(v) for v in all_values))[:5]
+                attr_examples[attr] = unique
+                str_values = [repr(v) for v in all_values]
+                counter = Counter(str_values)
+                mode_str = counter.most_common(1)[0][0] if counter else "None"
+                attr_modes[attr] = mode_str
+            else:
+                attr_types[attr] = "Any"
+                attr_examples[attr] = []
+                attr_modes[attr] = "None"
+        numbered_components[name] = {
+            "indices": sorted(indices),
+            "attributes": attributes,
+            "type_hints": attr_types,
+            "examples": attr_examples,
+            "modes": attr_modes,
+        }
+
+    return {
+        "prefix_components": prefix_components,
+        "numbered_components": numbered_components,
+        "all_keys": list(key_types.keys()),
+    }

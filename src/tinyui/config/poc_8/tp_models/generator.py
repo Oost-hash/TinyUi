@@ -1,0 +1,243 @@
+import json
+import re
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from jinja2 import Environment, FileSystemLoader
+
+from .loader import load_heatmaps, load_widget_configs
+
+
+# ---------- filters voor Jinja ----------
+def to_safe_id(name: str) -> str:
+    safe = re.sub(r"[^a-zA-Z0-9_]", "_", name)
+    if safe and safe[0].isdigit():
+        safe = "_" + safe
+    return safe
+
+
+def to_class_name(name: str) -> str:
+    return "".join(x.capitalize() for x in name.split("_"))
+
+
+def to_type_hint(value: Any) -> str:
+    if isinstance(value, bool):
+        return "bool"
+    if isinstance(value, int):
+        return "int"
+    if isinstance(value, float):
+        return "float"
+    if isinstance(value, str):
+        return "str"
+    return "Any"
+
+
+def to_dict_repr(d: Dict[int, Dict]) -> str:
+    items = []
+    for idx, kwargs in sorted(d.items()):
+        class_name = kwargs.pop("_class_name", "Unknown")
+        kw_str = ", ".join(f"{k}={repr(v)}" for k, v in kwargs.items())
+        items.append(f"{idx}: {class_name}({kw_str})")
+    return "{" + ", ".join(items) + "}"
+
+
+# ---------- kolom extractie ----------
+def extract_columns(flat_dict: Dict[str, Any]) -> List[Dict]:
+    """Haalt kolomdefinities uit config en verwijdert gebruikte keys."""
+    col_ids = set()
+    for key in list(flat_dict.keys()):
+        if key.startswith("column_index_"):
+            col_ids.add(key[13:])
+
+    columns = []
+    for col_id in sorted(col_ids):
+        kwargs = {
+            "id": col_id,
+            "show": flat_dict.pop(f"show_{col_id}", True),
+            "column_index": flat_dict.pop(f"column_index_{col_id}", 0),
+        }
+
+        opt_attrs = [
+            ("font_color", f"font_color_{col_id}"),
+            ("bkg_color", f"bkg_color_{col_id}"),
+            ("decimal_places", f"decimal_places_{col_id}"),
+            ("prefix", f"prefix_{col_id}"),
+            ("suffix", f"suffix_{col_id}"),
+        ]
+        for attr, key in opt_attrs:
+            if key in flat_dict:
+                kwargs[attr] = flat_dict.pop(key)
+
+        low_key = f"low_{col_id}_threshold"
+        high_key = f"high_{col_id}_threshold"
+        if low_key in flat_dict or high_key in flat_dict:
+            kwargs["low_threshold"] = flat_dict.pop(low_key, None)
+            kwargs["high_threshold"] = flat_dict.pop(high_key, None)
+
+        wl_key = f"warning_color_low_{col_id}"
+        wh_key = f"warning_color_high_{col_id}"
+        if wl_key in flat_dict:
+            kwargs["warning_color_low"] = flat_dict.pop(wl_key)
+        if wh_key in flat_dict:
+            kwargs["warning_color_high"] = flat_dict.pop(wh_key)
+
+        flash_key = f"show_{col_id}_warning_flash"
+        if flat_dict.get(flash_key, False):
+            kwargs["warning_flash"] = True
+            kwargs["flash_count"] = flat_dict.pop(
+                f"number_of_{col_id}_warning_flashes", 10
+            )
+            kwargs["flash_duration"] = flat_dict.pop(
+                f"{col_id}_warning_flash_duration", 0.4
+            )
+            kwargs["flash_interval"] = flat_dict.pop(
+                f"{col_id}_warning_flash_interval", 0.2
+            )
+            flat_dict.pop(flash_key, None)
+
+        # Maak een dict met safe_id en kwargs string voor in de template
+        col_entry = {
+            "safe_id": to_safe_id(col_id),
+            "kwargs_str": ", ".join(f"{k}={repr(v)}" for k, v in kwargs.items()),
+        }
+        columns.append(col_entry)
+    return columns
+
+
+# ---------- generatie functies ----------
+def generate_component_classes(analysis: Dict, output_dir: Path, env: Environment):
+    """Genereer _components.py op basis van analyse."""
+    template = env.get_template("component.py.j2")
+    components = []
+    for prefix, data in analysis.get("prefix_components", {}).items():
+        class_name = prefix.capitalize() + "Config"
+        suffixes = {}
+        for suffix in data["suffixes"]:
+            typ = data["type_hints"].get(suffix, "Any")
+            default = data["modes"].get(suffix, "None")  # <-- hier de modus
+            suffixes[suffix] = (typ, default)
+        components.append((class_name, suffixes))
+    for base, data in analysis.get("numbered_components", {}).items():
+        class_name = base.capitalize()
+        suffixes = {}
+        for attr in data["attributes"]:
+            typ = data["type_hints"].get(attr, "Any")
+            default = data["modes"].get(attr, "None")
+            suffixes[attr] = (typ, default)
+        components.append((class_name, suffixes))
+    # Render alle classes in één keer
+    content = template.render(components=components)
+    with open(output_dir / "_components.py", "w", encoding="utf-8") as f:
+        f.write(content)
+
+
+def generate_widgets(
+    configs: Dict, analysis: Dict, output_dir: Path, env: Environment
+) -> List[str]:
+    """Genereer alle widget bestanden."""
+    template = env.get_template("widget.py.j2")
+    widget_names = []
+    for name, flat_config in configs.items():
+        config = flat_config.copy()
+        columns = extract_columns(config)
+
+        # Componenten met prefix
+        components = {}
+        for prefix, data in analysis.get("prefix_components", {}).items():
+            kwargs = {}
+            for key in list(config.keys()):
+                if key.startswith(prefix + "_"):
+                    suffix = key[len(prefix) + 1 :]
+                    kwargs[suffix] = config.pop(key)
+            if kwargs:
+                components[prefix] = {
+                    "class_name": prefix.capitalize() + "Config",
+                    "kwargs_dict": kwargs,
+                }
+
+        # Genummerde componenten
+        numbered = {}
+        for base, data in analysis.get("numbered_components", {}).items():
+            indices = data.get("indices", [])
+            for idx in indices:
+                kwargs = {}
+                pattern = f"{base}_{idx}_"
+                for key in list(config.keys()):
+                    if key.startswith(pattern):
+                        attr = key[len(pattern) :]
+                        kwargs[attr] = config.pop(key)
+                if kwargs:
+                    kwargs["_class_name"] = base.capitalize()
+                    if base not in numbered:
+                        numbered[base] = {}
+                    numbered[base][idx] = kwargs
+
+        # Losse attributen
+        leftovers = config
+
+        # Render
+        content = template.render(
+            name=name,
+            class_name=to_class_name(name),
+            columns=columns,
+            components=components,
+            numbered=numbered,
+            leftovers=leftovers,
+            # filters worden in Jinja geregistreerd
+        )
+        widget_path = output_dir / f"{name}.py"
+        with open(widget_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        widget_names.append(name)
+    return widget_names
+
+
+def generate_base_and_init(output_dir: Path, env: Environment, widget_names: List[str]):
+    """Genereer base.py en __init__.py."""
+    base_template = env.get_template("base.py.j2")
+    with open(output_dir / "_base.py", "w", encoding="utf-8") as f:
+        f.write(base_template.render())
+
+    init_template = env.get_template("__init__.py.j2")
+    with open(output_dir / "__init__.py", "w", encoding="utf-8") as f:
+        f.write(init_template.render(widget_names=widget_names))
+
+
+def run(templates_dir: Path, analysis_path: Path, output_dir: Path):
+    """Hoofdfunctie: laad alles en genereer."""
+    # Jinja omgeving opzetten
+    template_dir = Path(__file__).parent / "templates"
+    env = Environment(loader=FileSystemLoader(template_dir))
+    env.filters["safe_id"] = to_safe_id
+    env.filters["type_hint"] = to_type_hint
+    env.filters["class_name"] = to_class_name
+    env.filters["to_dict_repr"] = to_dict_repr
+    env.filters["repr"] = repr
+
+    # Laad analyse
+    with open(analysis_path, "r", encoding="utf-8") as f:
+        analysis = json.load(f)
+
+    # Maak output directory
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Genereer componenten
+    generate_component_classes(analysis, output_dir, env)
+    print("  generated_components.py")
+
+    # Laad configuraties uit templates
+    heatmaps = load_heatmaps(templates_dir)
+    configs = load_widget_configs(templates_dir, heatmaps)
+    print(f"heatmaps: {len(heatmaps)}, widgets: {len(configs)}")
+
+    # Genereer widgets
+    widget_names = generate_widgets(configs, analysis, output_dir, env)
+    for name in widget_names:
+        print(f"  {name}.py")
+
+    # Base en init
+    generate_base_and_init(output_dir, env, widget_names)
+    print("  base.py")
+    print("  __init__.py")
+
+    print(f"\nGegenereerd in {output_dir}")

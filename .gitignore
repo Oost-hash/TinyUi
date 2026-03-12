@@ -47,3 +47,6 @@ test*.py
 *.zip
 *.log
 *.db
+
+!src/tinyui/config/poc_8/tp_scan/*.json
+src/tinyui/config/poc_8/output

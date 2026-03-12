@@ -1,0 +1,56 @@
+# Auto-generated from template
+# Widget: {{ name }}
+
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+from ._base import ColumnField, WidgetConfig
+from ._components import *
+
+@dataclass
+class {{ class_name }}(WidgetConfig):
+    name: str = "{{ name }}"
+
+    # columns
+{%- for col in columns %}
+    {{ col.safe_id }}: ColumnField = field(default_factory=lambda: ColumnField({{ col.kwargs_str }}))
+{%- endfor %}
+
+{%- if components %}
+    # components (with prefix)
+{%- for prefix, comp in components.items() %}
+    {{ prefix }}_config: {{ comp.class_name }} = field(default_factory=lambda: {{ comp.class_name }}(**{{ comp.kwargs_dict|repr }}))
+{%- endfor %}
+{%- endif %}
+
+{%- if numbered %}
+    # numbered components
+{%- for base, instances in numbered.items() %}
+    {{ base }}s: Dict[int, {{ base|capitalize }}] = field(default_factory=lambda: {{ instances|to_dict_repr }})
+{%- endfor %}
+{%- endif %}
+
+{%- if leftovers %}
+    # other attributes
+{%- for key, value in leftovers.items() %}
+    {{ key|safe_id }}: {{ value|type_hint }} = {{ value|repr }}
+{%- endfor %}
+{%- endif %}
+
+    def to_flat(self) -> Dict[str, Any]:
+        result = {}
+        result["name"] = self.name
+{%- for col in columns %}
+        result.update(self.{{ col.safe_id }}.to_flat())
+{%- endfor %}
+{%- for prefix in components %}
+        result.update(self.{{ prefix }}_config.to_flat('{{ prefix }}'))
+{%- endfor %}
+{%- for base in numbered %}
+        for idx, comp in self.{{ base }}s.items():
+            result.update(comp.to_flat(str(idx)))
+{%- endfor %}
+{%- for key in leftovers %}
+        result["{{ key }}"] = self.{{ key|safe_id }}
+{%- endfor %}
+        return result

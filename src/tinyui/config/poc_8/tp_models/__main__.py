@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+import argparse
+from pathlib import Path
+
+from .generator import run
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Genereer gestructureerde widgets op basis van analyse"
+    )
+    parser.add_argument("templates", help="Pad naar templates directory")
+    parser.add_argument(
+        "--analysis", required=True, help="Pad naar analysis JSON bestand"
+    )
+    parser.add_argument("-o", "--output", default="output", help="Output directory")
+    args = parser.parse_args()
+
+    templates_dir = Path(args.templates).resolve()
+    analysis_path = Path(args.analysis).resolve()
+    output_dir = Path(args.output).resolve()
+
+    run(templates_dir, analysis_path, output_dir)
+
+
+if __name__ == "__main__":
+    main()

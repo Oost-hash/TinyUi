@@ -1,0 +1,114 @@
+"""Valideert gegenereerde widgets tegen originele configuraties."""
+
+import importlib
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
+
+
+def validate_widgets(
+    templates_dir: Path, output_dir: Path, analysis_path: Path
+) -> List[Tuple[str, List[str]]]:
+    """
+    Valideert alle gegenereerde widgets.
+    Retourneert lijst van (widget_naam, [fouten]) voor widgets met problemen.
+    """
+    import json
+
+    from .loader import load_heatmaps, load_widget_configs
+
+    # Laad originele configuraties
+    heatmaps = load_heatmaps(templates_dir)
+    orig_configs = load_widget_configs(templates_dir, heatmaps)
+
+    # Laad analyse (voor type info, optioneel)
+    with open(analysis_path, "r") as f:
+        analysis = json.load(f)
+
+    # Importeer de gegenereerde widget package
+    # output_dir is bijvoorbeeld 'output' en bevat __init__.py
+    sys.path.insert(0, str(output_dir.parent))
+    module_name = output_dir.name
+    try:
+        widgets_module = importlib.import_module(module_name)
+        REGISTRY = getattr(widgets_module, "REGISTRY")
+    except ImportError as e:
+        raise ImportError(
+            f"Kan gegenereerde module niet laden vanuit {output_dir}: {e}"
+        )
+
+    errors = []
+    for name, orig_flat in orig_configs.items():
+        if name not in REGISTRY:
+            errors.append((name, ["Widget niet gevonden in REGISTRY"]))
+            continue
+
+        # Maak instantie
+        try:
+            widget = REGISTRY[name]()
+        except Exception as e:
+            errors.append((name, [f"Kan widget niet instantieren: {e}"]))
+            continue
+
+        # Genereer platte dict
+        try:
+            generated_flat = widget.to_flat()
+        except Exception as e:
+            errors.append((name, [f"to_flat() geeft fout: {e}"]))
+            continue
+
+        # Vergelijk
+        diffs = []
+        # Check of alle originele keys aanwezig zijn met dezelfde waarde
+        for key, value in orig_flat.items():
+            if key not in generated_flat:
+                diffs.append(f"Ontbrekende key: {key}")
+            elif generated_flat[key] != value:
+                diffs.append(
+                    f"Waarde verschilt voor {key}: origineel={value}, gegenereerd={generated_flat[key]}"
+                )
+
+        # Check of er extra keys zijn (die niet in origineel zaten)
+        for key in generated_flat:
+            if (
+                key not in orig_flat and key != "name"
+            ):  # name is toegevoegd in widget, niet in originele flat
+                diffs.append(f"Extra key: {key}")
+
+        if diffs:
+            errors.append((name, diffs))
+
+    return errors
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Valideer gegenereerde widgets")
+    parser.add_argument("templates", help="Pad naar templates directory")
+    parser.add_argument("--analysis", required=True, help="Pad naar analysis JSON")
+    parser.add_argument(
+        "--output", default="output", help="Output directory met widgets"
+    )
+    args = parser.parse_args()
+
+    templates_dir = Path(args.templates).resolve()
+    analysis_path = Path(args.analysis).resolve()
+    output_dir = Path(args.output).resolve()
+
+    errors = validate_widgets(templates_dir, output_dir, analysis_path)
+
+    if not errors:
+        print("✅ Alle widgets zijn correct gegenereerd.")
+        return 0
+
+    print(f"❌ Fouten gevonden in {len(errors)} widgets:\n")
+    for name, diffs in errors:
+        print(f"  {name}:")
+        for d in diffs:
+            print(f"    - {d}")
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

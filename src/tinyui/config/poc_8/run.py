@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""Run script voor de complete pipeline: scan -> generate -> (optioneel) validate."""
+
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Draai de volledige pipeline")
+    parser.add_argument(
+        "-t", "--templates", default="templates", help="Pad naar templates directory"
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        default="output",
+        help="Output directory voor gegenereerde widgets",
+    )
+    parser.add_argument(
+        "-p",
+        "--patterns",
+        default="tp_scan/patterns.json",
+        help="Pad naar patterns JSON",
+    )
+    parser.add_argument(
+        "-a",
+        "--analysis",
+        default="component_analysis.json",
+        help="Naam van analyse JSON bestand",
+    )
+    parser.add_argument(
+        "-f", "--first", type=int, help="Aantal willekeurige widgets om te scannen"
+    )
+    parser.add_argument(
+        "--skip-generate", action="store_true", help="Sla generate over (alleen scan)"
+    )
+    parser.add_argument(
+        "--skip-validate", action="store_true", help="Sla validatie over"
+    )
+    parser.add_argument(
+        "--no-clean", action="store_true", help="Verwijder output niet voor generate"
+    )
+    args = parser.parse_args()
+
+    base_dir = Path(__file__).parent.resolve()
+    templates_dir = base_dir / args.templates
+    patterns_path = base_dir / args.patterns
+    analysis_path = base_dir / args.analysis
+    output_dir = base_dir / args.output
+
+    # Controleer of templates bestaan
+    if not templates_dir.exists():
+        print(f"Fout: templates directory niet gevonden: {templates_dir}")
+        sys.exit(1)
+    if not patterns_path.exists():
+        print(f"Fout: patterns bestand niet gevonden: {patterns_path}")
+        sys.exit(1)
+
+    # Stap 1: scan
+    print("\n=== Stap 1: Scannen met tp_scan ===\n")
+    scan_cmd = [
+        sys.executable,
+        "-m",
+        "tp_scan",
+        "-t",
+        str(templates_dir),
+        "-p",
+        str(patterns_path),
+        "-o",
+        str(analysis_path),
+    ]
+    if args.first:
+        scan_cmd.extend(["-f", str(args.first)])
+    result = subprocess.run(scan_cmd)
+    if result.returncode != 0:
+        print("Scan mislukt.")
+        sys.exit(result.returncode)
+
+    if args.skip_generate:
+        print("\nGenerate overgeslagen.\n")
+        return
+
+    # Stap 2: genereer
+    print("\n=== Stap 2: Genereren met tp_models ===\n")
+    # Optioneel output leegmaken (behalve als --no-clean)
+    if not args.no_clean and output_dir.exists():
+        import shutil
+
+        print(f"Leegmaken van {output_dir}...")
+        shutil.rmtree(output_dir)
+    generate_cmd = [
+        sys.executable,
+        "-m",
+        "tp_models",
+        str(templates_dir),
+        "--analysis",
+        str(analysis_path),
+        "-o",
+        str(output_dir),
+    ]
+    result = subprocess.run(generate_cmd)
+    if result.returncode != 0:
+        print("Generate mislukt.")
+        sys.exit(result.returncode)
+
+    if args.skip_validate:
+        print("\nValidatie overgeslagen.\n")
+        return
+
+    # Stap 3: valideer (optioneel)
+    print("\n=== Stap 3: Valideren met tp_scan.validator ===\n")
+    validate_cmd = [
+        sys.executable,
+        "-m",
+        "tp_scan.validator",
+        str(templates_dir),
+        "--analysis",
+        str(analysis_path),
+        "--output",
+        str(output_dir),
+    ]
+    result = subprocess.run(validate_cmd)
+    if result.returncode != 0:
+        print("Validatie mislukt.")
+        sys.exit(result.returncode)
+
+    print("\n✅ Pipeline succesvol doorlopen!")
+
+
+if __name__ == "__main__":
+    main()
