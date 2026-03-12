@@ -1,4 +1,4 @@
-# Auto-generated from template
+# Auto-generated widget
 # Widget: {{ name }}
 
 from dataclasses import dataclass, field
@@ -30,10 +30,14 @@ class {{ class_name }}(WidgetConfig):
 {%- endfor %}
 {%- endif %}
 
-{%- if leftovers %}
+{%- if leftover_items %}
     # other attributes
-{%- for key, value in leftovers.items() %}
-    {{ key|safe_id }}: {{ value|type_hint }} = {{ value|repr }}
+{%- for item in leftover_items %}
+    {%- if item.is_mutable %}
+    {{ item.safe_id }}: {{ item.type_hint }} = field(default_factory=lambda: {{ item.value_repr }})
+    {%- else %}
+    {{ item.safe_id }}: {{ item.type_hint }} = {{ item.value_repr }}
+    {%- endif %}
 {%- endfor %}
 {%- endif %}
 
@@ -50,7 +54,7 @@ class {{ class_name }}(WidgetConfig):
         for idx, comp in self.{{ base }}s.items():
             result.update(comp.to_flat(str(idx)))
 {%- endfor %}
-{%- for key in leftovers %}
-        result["{{ key }}"] = self.{{ key|safe_id }}
+{%- for item in leftover_items %}
+        result["{{ item.key }}"] = self.{{ item.safe_id }}
 {%- endfor %}
         return result

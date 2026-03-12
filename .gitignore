@@ -48,5 +48,5 @@ test*.py
 *.log
 *.db
 
-!src/tinyui/config/poc_8/tp_scan/*.json
-src/tinyui/config/poc_8/output
+!src/tinyui/config/config_tool/patterns.json
+src/tinyui/config/config_tool/output
