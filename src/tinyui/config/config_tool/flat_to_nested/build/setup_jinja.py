@@ -45,6 +45,11 @@ def _to_dict_repr(d: dict) -> str:
     return "{" + ", ".join(items) + "}"
 
 
+def _to_dict_kwargs(d: dict) -> str:
+    """Formatteer dict als keyword arguments string."""
+    return ", ".join(f"{k}={repr(v)}" for k, v in d.items())
+
+
 def create(template_dir: Path) -> Environment:
     """Maak Jinja environment met custom filters."""
     env = Environment(loader=FileSystemLoader(template_dir))
@@ -53,6 +58,7 @@ def create(template_dir: Path) -> Environment:
     env.filters["class_name"] = _to_class_name
     env.filters["type_hint"] = _to_type_hint
     env.filters["to_dict_repr"] = _to_dict_repr
+    env.filters["dict_kwargs"] = _to_dict_kwargs
     env.filters["repr"] = repr
 
     return env

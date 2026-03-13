@@ -5,53 +5,97 @@ from typing import Any, Dict, List, Optional
 
 
 @dataclass
+class FontConfig:
+    font_name: str = "Consolas"
+    font_size: int = 15
+    font_weight: str = "Bold"
+    font_offset_vertical: int = 0
+    font_scale_caption: float = 0.8
+    enable_auto_font_offset: bool = True
+
+    def to_flat(self) -> Dict[str, Any]:
+        return {
+            "font_name": self.font_name,
+            "font_size": self.font_size,
+            "font_weight": self.font_weight,
+            "font_offset_vertical": self.font_offset_vertical,
+            "font_scale_caption": self.font_scale_caption,
+            "enable_auto_font_offset": self.enable_auto_font_offset,
+        }
+
+
+@dataclass
+class PositionConfig:
+    position_x: int = 0
+    position_y: int = 0
+
+    def to_flat(self) -> Dict[str, Any]:
+        return {
+            "position_x": self.position_x,
+            "position_y": self.position_y,
+        }
+
+
+@dataclass
 class ColumnField:
     id: str
     column_index: int = 0
     show: bool = True
-    font_color: Optional[str] = None
-    bkg_color: Optional[str] = None
-    decimal_places: Optional[int] = None
-    prefix: Optional[str] = None
-    suffix: Optional[str] = None
-    low_threshold: Optional[float] = None
-    high_threshold: Optional[float] = None
-    warning_color_low: Optional[str] = None
-    warning_color_high: Optional[str] = None
-    warning_flash: bool = False
-    flash_count: int = 10
-    flash_duration: float = 0.4
-    flash_interval: float = 0.4
 
     def to_flat(self) -> Dict[str, Any]:
-        result = {f"show_{self.id}": self.show, f"column_index_{self.id}": self.column_index}
-        if self.font_color: result[f"font_color_{self.id}"] = self.font_color
-        if self.bkg_color: result[f"bkg_color_{self.id}"] = self.bkg_color
-        if self.decimal_places is not None: result[f"decimal_places_{self.id}"] = self.decimal_places
-        if self.prefix: result[f"prefix_{self.id}"] = self.prefix
-        if self.suffix: result[f"suffix_{self.id}"] = self.suffix
-        if self.low_threshold is not None:
-            result[f"low_{self.id}_threshold"] = self.low_threshold
-            result[f"high_{self.id}_threshold"] = self.high_threshold
-        if self.warning_color_low: result[f"warning_color_low_{self.id}"] = self.warning_color_low
-        if self.warning_color_high: result[f"warning_color_high_{self.id}"] = self.warning_color_high
-        if self.warning_flash:
-            result[f"show_{self.id}_warning_flash"] = True
-            result[f"number_of_{self.id}_warning_flashes"] = self.flash_count
-            result[f"{self.id}_warning_flash_duration"] = self.flash_duration
-            result[f"{self.id}_warning_flash_interval"] = self.flash_interval
+        return {
+            f"show_{self.id}": self.show,
+            f"column_index_{self.id}": self.column_index,
+        }
+
+
+@dataclass
+class Cell:
+    id: str
+    font_color: Optional[str] = None
+    bkg_color: Optional[str] = None
+    caption_text: Optional[str] = None
+    decimal_places: Optional[int] = None
+    column_index: Optional[int] = None
+    show: Optional[bool] = None
+    prefix: Optional[str] = None
+    suffix: Optional[str] = None
+
+    def to_flat(self) -> Dict[str, Any]:
+        result = {}
+        if self.font_color is not None:
+            result[f"font_color_{self.id}"] = self.font_color
+        if self.bkg_color is not None:
+            result[f"bkg_color_{self.id}"] = self.bkg_color
+        if self.caption_text is not None:
+            result[f"caption_text_{self.id}"] = self.caption_text
+        if self.decimal_places is not None:
+            result[f"decimal_places_{self.id}"] = self.decimal_places
+        if self.column_index is not None:
+            result[f"column_index_{self.id}"] = self.column_index
+        if self.show is not None:
+            result[f"show_{self.id}"] = self.show
+        if self.prefix is not None:
+            result[f"prefix_{self.id}"] = self.prefix
+        if self.suffix is not None:
+            result[f"suffix_{self.id}"] = self.suffix
         return result
 
 
 @dataclass
 class WidgetConfig:
+    enable: bool = True
+    update_interval: int = 20
+    opacity: float = 0.9
+    position: PositionConfig = field(default_factory=PositionConfig)
+    font: FontConfig = field(default_factory=FontConfig)
+
     def to_flat(self) -> Dict[str, Any]:
-        result = {}
-        for k, v in self.__dict__.items():
-            if k == "name":
-                continue
-            if isinstance(v, ColumnField):
-                result.update(v.to_flat())
-            elif v is not None:
-                result[k] = v
+        result = {
+            "enable": self.enable,
+            "update_interval": self.update_interval,
+            "opacity": self.opacity,
+        }
+        result.update(self.position.to_flat())
+        result.update(self.font.to_flat())
         return result

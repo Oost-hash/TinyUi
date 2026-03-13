@@ -6,6 +6,17 @@ from typing import Any, Dict, List
 from jinja2 import Environment
 
 
+def write_colors(
+    palettes: List[Dict], output_dir: Path, env: Environment
+) -> None:
+    """Schrijf _colors.py."""
+    template = env.get_template("colors.py.j2")
+    content = template.render(palettes=palettes)
+
+    path = output_dir / "_colors.py"
+    path.write_text(content, encoding="utf-8")
+
+
 def write_components(
     components: List[tuple], output_dir: Path, env: Environment
 ) -> None:
@@ -45,6 +56,7 @@ def write_widget(data: Dict[str, Any], output_dir: Path, env: Environment) -> No
 
 
 def write_all(
+    palettes: List[Dict],
     components: List[tuple],
     widgets_data: List[Dict],
     output_dir: Path,
@@ -53,8 +65,9 @@ def write_all(
     """Schrijf alle output files."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    write_components(components, output_dir, env)
     write_base(output_dir, env)
+    write_colors(palettes, output_dir, env)
+    write_components(components, output_dir, env)
 
     widget_names = []
     for widget_data in widgets_data:

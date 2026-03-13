@@ -4,17 +4,43 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from ._base import ColumnField, WidgetConfig
+from ._base import Cell, ColumnField, FontConfig, PositionConfig, WidgetConfig
 from ._components import *
 
 @dataclass
 class {{ class_name }}(WidgetConfig):
     name: str = "{{ name }}"
 
-    # columns
+{%- if base_keys %}
+    # base overrides
+{%- for key, value in base_keys.items() %}
+    {{ key }}: {{ value|type_hint }} = {{ value|repr }}
+{%- endfor %}
+{%- endif %}
+
+{%- if font_keys %}
+    # font overrides
+    font: FontConfig = field(default_factory=lambda: FontConfig({{ font_keys|dict_kwargs }}))
+{%- endif %}
+
+{%- if position_keys %}
+    # position
+    position: PositionConfig = field(default_factory=lambda: PositionConfig({{ position_keys|dict_kwargs }}))
+{%- endif %}
+
+{%- if cells %}
+    # cells
+{%- for cell in cells %}
+    {{ cell.safe_id }}: Cell = field(default_factory=lambda: Cell({{ cell.kwargs_str }}))
+{%- endfor %}
+{%- endif %}
+
+{%- if columns %}
+    # columns (layout)
 {%- for col in columns %}
     {{ col.safe_id }}: ColumnField = field(default_factory=lambda: ColumnField({{ col.kwargs_str }}))
 {%- endfor %}
+{%- endif %}
 
 {%- if components %}
     # components (with prefix)
@@ -30,6 +56,16 @@ class {{ class_name }}(WidgetConfig):
 {%- endfor %}
 {%- endif %}
 
+{%- if auto_groups %}
+    # auto-detected groups
+{%- for prefix, group in auto_groups.items() %}
+    # {{ prefix }}
+{%- for fname, finfo in group.fields.items() %}
+    {{ prefix }}_{{ finfo.safe_id }}: {{ finfo.type_hint }} = {{ finfo.value_repr }}
+{%- endfor %}
+{%- endfor %}
+{%- endif %}
+
 {%- if leftover_items %}
     # other attributes
 {%- for item in leftover_items %}
@@ -42,8 +78,11 @@ class {{ class_name }}(WidgetConfig):
 {%- endif %}
 
     def to_flat(self) -> Dict[str, Any]:
-        result = {}
+        result = super().to_flat()
         result["name"] = self.name
+{%- for cell in cells %}
+        result.update(self.{{ cell.safe_id }}.to_flat())
+{%- endfor %}
 {%- for col in columns %}
         result.update(self.{{ col.safe_id }}.to_flat())
 {%- endfor %}
@@ -53,6 +92,11 @@ class {{ class_name }}(WidgetConfig):
 {%- for base in numbered %}
         for idx, comp in self.{{ base }}s.items():
             result.update(comp.to_flat(str(idx)))
+{%- endfor %}
+{%- for prefix, group in auto_groups.items() %}
+{%- for fname, finfo in group.fields.items() %}
+        result["{{ prefix }}_{{ fname }}"] = self.{{ prefix }}_{{ finfo.safe_id }}
+{%- endfor %}
 {%- endfor %}
 {%- for item in leftover_items %}
         result["{{ item.key }}"] = self.{{ item.safe_id }}

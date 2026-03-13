@@ -1,6 +1,6 @@
-"""Kolom detectie en groepering per widget."""
+"""Kolom en cell detectie per widget."""
 
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 
 def extract_column_suffixes(keys: List[str]) -> Set[str]:
@@ -146,3 +146,77 @@ def find_column_inconsistencies(columns_analysis: Dict[str, List[Dict]]) -> List
             pass  # Met column_index detectie zijn er minder "fouten"
 
     return issues
+
+
+# --- Cell detectie ---
+
+CELL_PREFIXES = [
+    "font_color_",
+    "bkg_color_",
+    "caption_text_",
+    "decimal_places_",
+    "column_index_",
+    "show_",
+    "prefix_",
+    "suffix_",
+]
+
+
+def extract_cell_suffixes(config: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    """Detecteer cell suffixen: suffixen met 2+ attrs EN minstens font/bkg_color.
+
+    Returns dict van suffix -> {attr_name: flat_key}.
+    """
+    suffix_attrs: Dict[str, Dict[str, str]] = {}
+
+    for key in config:
+        for cp in CELL_PREFIXES:
+            if key.startswith(cp):
+                suffix = key[len(cp):]
+                attr = cp.rstrip("_")
+                if suffix not in suffix_attrs:
+                    suffix_attrs[suffix] = {}
+                suffix_attrs[suffix][attr] = key
+                break
+
+    # Filter: 2+ attrs EN minstens font_color of bkg_color
+    color_attrs = {"font_color", "bkg_color"}
+    return {
+        suffix: attrs
+        for suffix, attrs in suffix_attrs.items()
+        if len(attrs) >= 2 and set(attrs.keys()) & color_attrs
+    }
+
+
+def analyze_widget_cells(widget_name: str, config: Dict[str, Any]) -> List[Dict]:
+    """Analyseer alle cells in één widget."""
+    cells_data = extract_cell_suffixes(config)
+
+    cells = []
+    for suffix in sorted(cells_data.keys()):
+        attrs = cells_data[suffix]
+        cell = {
+            "id": suffix,
+            "attrs": sorted(attrs.keys()),
+            "keys": attrs,
+        }
+
+        # Determine type: caption variant of column variant
+        if "caption_text" in attrs:
+            cell["variant"] = "caption"
+        elif "column_index" in attrs:
+            cell["variant"] = "column"
+        else:
+            cell["variant"] = "basic"
+
+        cells.append(cell)
+
+    return cells
+
+
+def analyze_all_cells(configs: Dict[str, Dict]) -> Dict[str, List[Dict]]:
+    """Analyseer cells voor alle widgets."""
+    return {
+        name: analyze_widget_cells(name, config)
+        for name, config in configs.items()
+    }
