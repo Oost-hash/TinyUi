@@ -8,6 +8,7 @@
 
 tinypedal_repo
 src/data
+src/tinyui/config/output
 
 #TODO: just import submodules?
 src/pyLMUSharedMemory
@@ -47,5 +48,3 @@ test*.py
 *.zip
 *.log
 *.db
-
-src/tinyui/config/config_tool/output
