@@ -581,6 +581,7 @@ def build(ctx, output, widget):
     """Build nested widgets from flat configurations."""
     from .build.colors import prepare as prepare_colors
     from .build.components import prepare as prepare_components
+    from .build.post_process import post_process
     from .build.setup_jinja import create as create_env
     from .build.widgets import prepare as prepare_widget
     from .build.writer import write_all
@@ -638,6 +639,10 @@ def build(ctx, output, widget):
         widgets_data.append(data)
 
     click.echo(f"  Widgets: {len(widgets_data)}")
+
+    # 5. Post-processing (strip defaults, etc)
+    for i, data in enumerate(widgets_data):
+        widgets_data[i] = post_process(data)
 
     # 5. Setup Jinja en schrijf
     template_dir = Path(__file__).parent / "templates"

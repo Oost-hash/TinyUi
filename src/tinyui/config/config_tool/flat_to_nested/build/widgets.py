@@ -118,6 +118,7 @@ def extract_cells(config: Dict[str, Any]) -> List[Dict]:
         cells.append(
             {
                 "safe_id": _safe_id(cell_id),
+                "kwargs": kwargs,
                 "kwargs_str": ", ".join(f"{k}={repr(v)}" for k, v in kwargs.items()),
             }
         )

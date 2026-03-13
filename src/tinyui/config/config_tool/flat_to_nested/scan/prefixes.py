@@ -35,7 +35,7 @@ KNOWN_GROUPS = {
         "class_name": "PositionConfig",
     },
     "base": {
-        "keys": ["enable", "update_interval", "opacity"],
+        "keys": ["enable", "update_interval", "opacity", "bar_gap", "bar_padding", "layout"],
         "class_name": "WidgetBase",
     },
 }

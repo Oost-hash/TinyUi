@@ -9,14 +9,11 @@
 tinypedal_repo
 src/data
 src/tinyui/config/output
+src/tinypedal
 
 #TODO: just import submodules?
 src/pyLMUSharedMemory
 src/pyRfactor2SharedMemory
-src/tinypedal
-
-
-tinypedal_repo/tests
 
 __pycache__/
 .pytest_cache/

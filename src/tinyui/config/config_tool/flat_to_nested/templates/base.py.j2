@@ -52,8 +52,8 @@ class ColumnField:
 @dataclass
 class Cell:
     id: str
-    font_color: Optional[str] = None
-    bkg_color: Optional[str] = None
+    font_color: str = "#FFFFFF"
+    bkg_color: str = "#222222"
     caption_text: Optional[str] = None
     decimal_places: Optional[int] = None
     column_index: Optional[int] = None
@@ -62,11 +62,10 @@ class Cell:
     suffix: Optional[str] = None
 
     def to_flat(self) -> Dict[str, Any]:
-        result = {}
-        if self.font_color is not None:
-            result[f"font_color_{self.id}"] = self.font_color
-        if self.bkg_color is not None:
-            result[f"bkg_color_{self.id}"] = self.bkg_color
+        result = {
+            f"font_color_{self.id}": self.font_color,
+            f"bkg_color_{self.id}": self.bkg_color,
+        }
         if self.caption_text is not None:
             result[f"caption_text_{self.id}"] = self.caption_text
         if self.decimal_places is not None:
@@ -87,6 +86,9 @@ class WidgetConfig:
     enable: bool = True
     update_interval: int = 20
     opacity: float = 0.9
+    bar_gap: int = 2
+    bar_padding: float = 0.2
+    layout: int = 0
     position: PositionConfig = field(default_factory=PositionConfig)
     font: FontConfig = field(default_factory=FontConfig)
 
@@ -95,6 +97,9 @@ class WidgetConfig:
             "enable": self.enable,
             "update_interval": self.update_interval,
             "opacity": self.opacity,
+            "bar_gap": self.bar_gap,
+            "bar_padding": self.bar_padding,
+            "layout": self.layout,
         }
         result.update(self.position.to_flat())
         result.update(self.font.to_flat())
