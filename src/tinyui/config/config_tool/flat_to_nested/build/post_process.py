@@ -33,6 +33,7 @@ BASE_DEFAULTS = {
     "opacity": 0.9,
     "bar_gap": 2,
     "bar_padding": 0.2,
+    "layout": 0,
 }
 
 
