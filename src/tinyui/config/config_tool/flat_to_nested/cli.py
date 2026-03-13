@@ -1,241 +1,249 @@
-"""Command line interface voor flat_to_nested."""
+"""Command line interface for flat_to_nested.
 
-import argparse
-import sys
+SCAN COMMAND ARGUMENTS:
+-----------------------
+
+Position: flat_to_nested -t <templates> scan [OPTIONS]
+
+Options:
+    -w, --widget <name>     Focus on single widget by name
+                            Example: -w engine
+
+    -s, --sample <int>      Random sample of N widgets
+                            Example: -s 5
+
+    -v, --vars              Show all configuration variables
+                            Use with -w to see full widget config
+                            Example: -w engine --vars
+
+    -o, --output <path>     Write JSON output to file
+                            Example: -o output.json
+
+EXAMPLES:
+---------
+
+# Scan all widgets
+python -m flat_to_nested -t templates/ scan
+
+"""
+
+import random
 from pathlib import Path
 
-from flat_to_nested.build import create, prepare_components, prepare_widget, write_all
-from flat_to_nested.check import print_report, validate
-from flat_to_nested.scan import Matcher, aggregate, collect_by_component, is_column
-from flat_to_nested.scan.columns import (
-    analyze_all_columns,
-    analyze_widget_columns,
-    find_column_inconsistencies,
+import click
+
+from flat_to_nested.scan.columns import analyze_all_columns, analyze_widget_columns
+from flat_to_nested.utils.load_python import LoadError, load_assignments
+from flat_to_nested.utils.save_json import save_json
+
+
+def load_configs(templates_path: Path):
+    """Load widget configurations from templates directory."""
+    heatmaps = load_assignments(
+        templates_path / "setting_heatmap.py", "HEATMAP_DEFAULT"
+    )
+    raw_widgets = load_assignments(
+        templates_path / "setting_widget.py", "WIDGET_DEFAULT"
+    )
+
+    configs = {}
+    for widget_name, widget_config in raw_widgets.items():
+        resolved = {}
+        for key, value in widget_config.items():
+            if isinstance(value, str) and value.startswith("HEATMAP["):
+                heatmap_key = value[8:-1]
+                resolved[key] = heatmaps.get(heatmap_key, value)
+            else:
+                resolved[key] = value
+        configs[widget_name] = resolved
+
+    return configs
+
+
+@click.group()
+@click.option(
+    "--templates",
+    "-t",
+    type=click.Path(exists=True, path_type=Path),
+    required=True,
+    help="Path to templates directory",
 )
-from flat_to_nested.utils import load_assignments, load_json, resolve
+@click.pass_context
+def cli(ctx, templates):
+    """Flat to nested widget converter."""
+    ctx.ensure_object(dict)
+    ctx.obj["templates"] = templates
 
 
-def do_scan(args, configs):
-    """Voer scan uit op basis van args."""
+def format_value(value):
+    """Format value for display, truncate if too long."""
+    s = repr(value)
+    if len(s) > 50:
+        return s[:47] + "..."
+    return s
 
-    if args.scan == "columns":
-        if args.widget:
-            # Scan specifieke widget
-            if args.widget not in configs:
-                print(f"Widget '{args.widget}' niet gevonden")
-                return 1
 
-            print(f"\nKolommen in '{args.widget}':")
-            columns = analyze_widget_columns(args.widget, configs[args.widget])
+@cli.command()
+@click.option(
+    "--widget",
+    "-w",
+    help="Specific widget to scan",
+)
+@click.option(
+    "--sample",
+    "-s",
+    type=int,
+    help="Random sample of N widgets",
+)
+@click.option(
+    "--vars",
+    "-v",
+    "show_vars",
+    is_flag=True,
+    help="Show all configuration variables",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    help="Write scan results to JSON file",
+)
+@click.pass_context
+def scan(ctx, widget, sample, show_vars, output):
+    """Scan column configurations."""
+    templates = ctx.obj["templates"]
 
+    try:
+        configs = load_configs(templates)
+    except LoadError as e:
+        click.echo(f"Error loading configurations: {e}", err=True)
+        raise click.Exit(1)
+
+    if not configs:
+        click.echo("No configurations found", err=True)
+        raise click.Exit(1)
+
+    # Handle sample selection
+    if sample:
+        if sample >= len(configs):
+            selected = list(configs.keys())
+        else:
+            selected = random.sample(list(configs.keys()), sample)
+        configs = {k: configs[k] for k in selected}
+        click.echo(f"\nRandom sample of {len(configs)} widgets")
+
+    # Single widget focus
+    if widget:
+        if widget not in configs:
+            click.echo(f"Widget '{widget}' not found", err=True)
+            available = ", ".join(sorted(configs.keys())[:10])
+            click.echo(f"Available: {available}...", err=True)
+            raise click.Exit(1)
+
+        config = configs[widget]
+        columns = analyze_widget_columns(widget, config)
+
+        click.echo(f"\n{widget}: {len(columns)} columns")
+
+        for col in columns:
+            click.echo(f"\n  Column: {col['id']}")
+            click.echo(f"    show_key: {col['show_key']}")
+
+            optional_attrs = [
+                "font_color",
+                "bkg_color",
+                "decimal_places",
+                "prefix",
+                "suffix_attr",
+                "state_colors",
+            ]
+            for attr in optional_attrs:
+                if attr in col:
+                    click.echo(f"    {attr}: {col[attr]}")
+
+            show_suffix = col["show_key"][5:] if col.get("show_key") else ""
+            if col["id"] != show_suffix:
+                click.echo(
+                    f"    WARNING: inconsistent id='{col['id']}' vs show='{col['show_key']}'"
+                )
+
+        if show_vars:
+            click.echo(f"\n  All variables ({len(config)} total):")
+            for key in sorted(config.keys()):
+                value = format_value(config[key])
+                click.echo(f"    {key}: {value}")
+
+        if output:
+            result = {
+                widget: {"columns": columns, "variables": config if show_vars else None}
+            }
+            save_json(result, output)
+            click.echo(f"\nWritten to {output}")
+
+        return
+
+    # All widgets (or sample)
+    all_columns = analyze_all_columns(configs)
+
+    total_cols = sum(len(cols) for cols in all_columns.values())
+    click.echo(f"\nFound {total_cols} columns across {len(all_columns)} widgets")
+
+    # Build result for JSON output
+    result = {}
+
+    for widget_name, columns in all_columns.items():
+        if columns:
+            click.echo(f"\n{widget_name}: {len(columns)} columns")
             for col in columns:
-                print(f"\n  Kolom: {col['id']}")
-                print(f"    show_key: {col['show_key']}")
-                for attr, key in col.items():
-                    if attr not in ("id", "show_key"):
-                        print(f"    {attr}: {key}")
+                click.echo(f"  - {col['id']} (via {col['show_key']})")
 
-                # Check inconsistentie
-                show_suffix = col["show_key"][5:] if col.get("show_key") else ""
-                if col["id"] != show_suffix:
-                    print(
-                        f"    ⚠️  Inconsistent: id='{col['id']}' vs show='{col['show_key']}'"
-                    )
+            if show_vars:
+                config = configs[widget_name]
+                click.echo(f"    Variables ({len(config)} total):")
+                for key in sorted(list(config.keys())[:20]):
+                    value = format_value(config[key])
+                    click.echo(f"      {key}: {value}")
+                if len(config) > 20:
+                    click.echo(f"      ... and {len(config) - 20} more")
 
-        else:
-            # Scan alle widgets
-            print(f"\nKolommen in {len(configs)} widgets:")
-            all_columns = analyze_all_columns(configs)
+                result[widget_name] = {"columns": columns, "variables": config}
+            else:
+                result[widget_name] = columns
 
-            for widget_name, columns in all_columns.items():
-                if columns:
-                    print(f"\n{widget_name}: {len(columns)} kolommen")
-                    for col in columns:
-                        print(f"  - {col['id']} (via {col['show_key']})")
+    if output:
+        save_json(result, output)
+        click.echo(f"\nWritten to {output}")
 
-            # Toon inconsistenties
-            inconsistencies = find_column_inconsistencies(all_columns)
-            if inconsistencies:
-                print(f"\n⚠️  {len(inconsistencies)} inconsistenties:")
-                for inc in inconsistencies[:10]:
-                    print(f"  {inc['widget']}: {inc['column_id']} vs {inc['show_key']}")
 
-    elif args.scan == "components":
-        key_values = {}
-        for cfg in configs.values():
-            for key, value in cfg.items():
-                if not is_column(key, []):
-                    key_values.setdefault(key, []).append(value)
+@cli.command()
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=Path("output"),
+    help="Output directory for generated widgets",
+)
+@click.pass_context
+def build(ctx, output):
+    """Build nested widgets from flat configurations."""
+    templates = ctx.obj["templates"]
+    click.echo(f"Building widgets from {templates}...")
+    click.echo(f"Output directory: {output}")
+    click.echo("Build command not yet implemented")
 
-        matcher = Matcher(load_json(args.patterns))
-        prefix_comps, numbered_comps = collect_by_component(
-            key_values, matcher, configs
-        )
 
-        print(f"\nPrefix componenten: {len(prefix_comps)}")
-        for name, data in prefix_comps.items():
-            print(
-                f"  {name}: {len(data['suffixes'])} attrs, {len(data['widgets'])} widgets"
-            )
-
-        print(f"\nNumbered componenten: {len(numbered_comps)}")
-        for name, data in numbered_comps.items():
-            print(
-                f"  {name}: {len(data['indices'])} indices, {len(data['attributes'])} attrs"
-            )
-
-    elif args.scan == "keys":
-        if args.widget:
-            if args.widget not in configs:
-                print(f"Widget '{args.widget}' niet gevonden")
-                return 1
-
-            print(f"\nKeys in '{args.widget}':")
-            for key in sorted(configs[args.widget].keys()):
-                print(f"  {key}")
-        else:
-            all_keys = set()
-            for cfg in configs.values():
-                all_keys.update(cfg.keys())
-
-            print(f"\n{len(all_keys)} unieke keys in {len(configs)} widgets:")
-            for key in sorted(all_keys)[:50]:
-                print(f"  {key}")
-            if len(all_keys) > 50:
-                print(f"  ... en {len(all_keys) - 50} meer")
-
-    return 0
+@cli.command()
+@click.argument("generated", type=click.Path(exists=True, path_type=Path))
+@click.argument("original", type=click.Path(exists=True, path_type=Path))
+def compare(generated, original):
+    """Compare generated widgets against original configurations."""
+    click.echo(f"Comparing {generated} against {original}...")
+    click.echo("Compare command not yet implemented")
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Genereer gestructureerde widgets uit platte configs"
-    )
-    parser.add_argument(
-        "-t", "--templates", required=True, help="Pad naar templates directory"
-    )
-    parser.add_argument(
-        "-p", "--patterns", default="patterns.json", help="Pad naar patterns JSON"
-    )
-    parser.add_argument("-o", "--output", default="output", help="Output directory")
-    parser.add_argument(
-        "-s",
-        "--scan",
-        choices=["columns", "components", "keys"],
-        help="Scan mode: columns, components, of keys",
-    )
-    parser.add_argument("-w", "--widget", help="Specifieke widget (bij --scan)")
-    parser.add_argument(
-        "-a",
-        "--analyse",
-        action="store_true",
-        help="Analyse JSON wegschrijven (vervangt --analysis-only)",
-    )
-    parser.add_argument(
-        "--validate", action="store_true", help="Valideer gegenereerde code"
-    )
-    parser.add_argument("--sample", type=int, help="Sample N willekeurige widgets")
-
-    args = parser.parse_args()
-
-    paths = {
-        "templates": Path(args.templates).resolve(),
-        "patterns": Path(args.patterns).resolve(),
-        "output": Path(args.output).resolve(),
-    }
-
-    # Laad data
-    try:
-        patterns = load_json(paths["patterns"])
-    except FileNotFoundError as e:
-        print(f"Fout: {e}")
-        return 1
-
-    try:
-        heatmaps = load_assignments(
-            paths["templates"] / "setting_heatmap.py", "HEATMAP_DEFAULT"
-        )
-        raw_widgets = load_assignments(
-            paths["templates"] / "setting_widget.py", "WIDGET_DEFAULT"
-        )
-    except Exception as e:
-        print(f"Fout bij laden templates: {e}")
-        return 1
-
-    configs = resolve(raw_widgets, heatmaps)
-
-    # Sample
-    if args.sample and args.sample < len(configs):
-        import random
-
-        selected = random.sample(list(configs.keys()), args.sample)
-        configs = {k: configs[k] for k in selected}
-        print(f"Sample: {len(configs)} widgets")
-
-    # Scan mode
-    if args.scan:
-        return do_scan(args, configs)
-
-    # Analyse mode (JSON output)
-    if args.analyse:
-        key_values = {}
-        for cfg in configs.values():
-            for key, value in cfg.items():
-                if not is_column(key, []):
-                    key_values.setdefault(key, []).append(value)
-
-        matcher = Matcher(patterns)
-        prefix_comps, numbered_comps = collect_by_component(
-            key_values, matcher, configs
-        )
-
-        from flat_to_nested.utils.load_json import save
-
-        save(
-            {
-                "prefix_components": prefix_comps,
-                "numbered_components": numbered_comps,
-            },
-            paths["output"].with_suffix(".json"),
-        )
-
-        print(f"Analyse: {paths['output']}.json")
-        return 0
-
-    # Generate mode
-    print(f"Genereren {len(configs)} widgets...")
-
-    template_dir = Path(__file__).parent / "templates"
-    env = create(template_dir)
-
-    key_values = {}
-    for cfg in configs.values():
-        for key, value in cfg.items():
-            if not is_column(key, []):
-                key_values.setdefault(key, []).append(value)
-
-    matcher = Matcher(patterns)
-    prefix_comps, numbered_comps = collect_by_component(key_values, matcher, configs)
-
-    components = prepare_components(prefix_comps, numbered_comps)
-
-    widgets_data = []
-    for name, cfg in configs.items():
-        data = prepare_widget(name, cfg, prefix_comps, numbered_comps)
-        widgets_data.append(data)
-        print(f"  {name}.py")
-
-    write_all(components, widgets_data, paths["output"], env)
-    print(f"\n✅ {len(widgets_data)} widgets → {paths['output']}")
-
-    if args.validate:
-        print("\nValideren...")
-        errors = validate(configs, paths["output"])
-        if not print_report(errors):
-            return 1
-
-    return 0
+    cli()
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

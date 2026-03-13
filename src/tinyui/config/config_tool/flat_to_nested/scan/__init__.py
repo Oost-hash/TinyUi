@@ -1,14 +1,8 @@
 """Analyseert widget configuraties."""
 
-from .keys import infer_type, is_column
-from .patterns import Match, Matcher
-from .stats import aggregate, collect_by_component
+from .columns import analyze_all_columns, analyze_widget_columns
 
 __all__ = [
-    "is_column",
-    "infer_type",
-    "Matcher",
-    "Match",
-    "aggregate",
-    "collect_by_component",
+    "analyze_all_columns",
+    "analyze_widget_columns",
 ]

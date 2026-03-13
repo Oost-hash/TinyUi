@@ -48,5 +48,4 @@ test*.py
 *.log
 *.db
 
-!src/tinyui/config/config_tool/patterns.json
 src/tinyui/config/config_tool/output
