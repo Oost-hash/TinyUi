@@ -2,7 +2,7 @@
 
 from .app import App, create_app
 from .config.store import ConfigStore
-from .config.loader import LoaderRegistry, read_toml, write_toml
+from .config.loader import LoaderRegistry, read_json, write_json
 from .editor import ColumnDef, EditorRegistry, EditorSpec, load_editors_toml
 from .events.bus import EventBus
 from .plugin.protocol import Plugin
@@ -15,8 +15,8 @@ __all__ = [
     "create_app",
     "ConfigStore",
     "LoaderRegistry",
-    "read_toml",
-    "write_toml",
+    "read_json",
+    "write_json",
     "ColumnDef",
     "EditorRegistry",
     "EditorSpec",
