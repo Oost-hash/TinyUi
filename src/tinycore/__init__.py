@@ -9,6 +9,7 @@ from .plugin.protocol import Plugin
 from .plugin.registry import PluginRegistry
 from .providers.protocol import Provider
 from .providers.registry import ProviderRegistry
+from .widget import WidgetRegistry, WidgetSpec, load_widgets_toml
 
 __all__ = [
     "App",
@@ -26,4 +27,7 @@ __all__ = [
     "PluginRegistry",
     "Provider",
     "ProviderRegistry",
+    "WidgetRegistry",
+    "WidgetSpec",
+    "load_widgets_toml",
 ]

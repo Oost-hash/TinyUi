@@ -1,0 +1,22 @@
+# Demo plugin — widget definitions
+# Each section defines one overlay widget.
+
+[battery]
+title = "Battery"
+description = "Battery charge, drain, regen and estimated net change"
+enable = true
+
+[brake_temperature]
+title = "Brake Temperature"
+description = "Brake disc temperature with heatmap colors"
+enable = true
+
+[tyre_temperature]
+title = "Tyre Temperature"
+description = "Tyre surface temperature with heatmap colors"
+enable = false
+
+[fuel]
+title = "Fuel"
+description = "Fuel level, consumption and estimated laps remaining"
+enable = true

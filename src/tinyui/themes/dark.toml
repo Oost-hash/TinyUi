@@ -1,0 +1,19 @@
+# Dark theme — design tokens
+
+[colors]
+surface = "#222222"          # main background
+surface-alt = "#2A2A2A"      # alternating rows
+surface-raised = "#333333"   # cards, menus, tab bar
+border = "#444444"           # borders, separators
+text = "#FAFAFA"             # primary text
+text-muted = "#808080"       # descriptions, disabled
+accent = "#00AA44"           # active state, highlight
+accent-text = "#FAFAFA"      # text on accent
+accent-muted = "#CCCCCC"     # inactive highlight
+accent-muted-text = "#181818"
+danger = "#FF2200"           # warnings
+
+[font]
+scale-title = 1.2
+scale-button = 1.05
+scale-small = 0.9

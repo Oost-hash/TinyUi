@@ -10,6 +10,7 @@ from .editor import EditorRegistry
 from .events.bus import EventBus
 from .plugin.registry import PluginRegistry
 from .providers.registry import ProviderRegistry
+from .widget import WidgetRegistry
 
 
 class App:
@@ -22,6 +23,7 @@ class App:
         self.events = EventBus()
         self.plugins = PluginRegistry()
         self.providers = ProviderRegistry()
+        self.widgets = WidgetRegistry()
 
     def start(self) -> None:
         """Start the application: emit events, start plugins."""

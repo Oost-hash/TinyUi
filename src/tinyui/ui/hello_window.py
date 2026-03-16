@@ -19,11 +19,19 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3. TinyPedal is included as a submodule.
 
+from collections import defaultdict
+
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QHBoxLayout,
+    QLabel,
     QMainWindow,
+    QMessageBox,
     QPushButton,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -40,25 +48,105 @@ class HelloWindow(QMainWindow):
         self.setWindowTitle(f"{APP_NAME} v{VERSION}")
         self.resize(1024, 768)
 
-        central = QWidget()
-        self.setCentralWidget(central)
-        layout = QVBoxLayout(central)
+        self._build_menubar()
+        self._build_tabs()
 
-        # Build editor buttons from registered EditorSpecs
-        for spec in core.editors.all():
-            btn = QPushButton(f"Open {spec.title}")
-            btn.clicked.connect(lambda checked=False, s=spec: self._open_editor(s))
-            layout.addWidget(btn)
+    def _build_menubar(self):
+        menubar = self.menuBar()
+
+        # File menu
+        file_menu = menubar.addMenu("&File")
+        quit_action = QAction("&Quit", self)
+        quit_action.setShortcut("Ctrl+Q")
+        quit_action.triggered.connect(QApplication.quit)
+        file_menu.addAction(quit_action)
+
+        # Plugin menus — grouped by spec.menu
+        grouped: dict[str, list] = defaultdict(list)
+        for spec in self._core.editors.all():
+            menu_name = spec.menu or "Tools"
+            grouped[menu_name].append(spec)
+
+        for menu_name, specs in grouped.items():
+            menu = menubar.addMenu(f"&{menu_name}")
+            for spec in specs:
+                action = QAction(spec.title, self)
+                action.triggered.connect(
+                    lambda checked=False, s=spec: self._open_editor(s)
+                )
+                menu.addAction(action)
+
+        # Help menu
+        help_menu = menubar.addMenu("&Help")
+        about_action = QAction(f"&About {APP_NAME}", self)
+        about_action.triggered.connect(self._show_about)
+        help_menu.addAction(about_action)
+
+    def _build_tabs(self):
+        tabs = QTabWidget()
+        self.setCentralWidget(tabs)
+
+        tabs.addTab(self._build_widgets_tab(), "Widgets")
+
+    def _build_widgets_tab(self):
+        from PySide6.QtWidgets import QFrame, QScrollArea
+
+        scroll = QScrollArea()
+        scroll.setObjectName("widgetList")
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+
+        container = QWidget()
+        container.setObjectName("widgetListContainer")
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        for i, spec in enumerate(self._core.widgets.all()):
+            row = QFrame()
+            row.setObjectName("widgetRow")
+            row.setProperty("alt", i % 2 == 1)
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(8, 6, 8, 6)
+
+            toggle = QCheckBox()
+            toggle.setChecked(spec.enable)
+            toggle.stateChanged.connect(
+                lambda state, s=spec: self._toggle_widget(s, state)
+            )
+            row_layout.addWidget(toggle)
+
+            title = QLabel(spec.title)
+            title.setObjectName("widgetTitle")
+            title.setMinimumWidth(150)
+            row_layout.addWidget(title)
+
+            desc = QLabel(spec.description)
+            desc.setObjectName("widgetDesc")
+            row_layout.addWidget(desc, stretch=1)
+
+            config_btn = QPushButton("Configure")
+            config_btn.setObjectName("widgetConfigBtn")
+            config_btn.clicked.connect(
+                lambda checked=False, s=spec: self._configure_widget(s)
+            )
+            row_layout.addWidget(config_btn)
+
+            layout.addWidget(row)
 
         layout.addStretch()
+        scroll.setWidget(container)
+        return scroll
 
-        # Quit
-        buttons = QHBoxLayout()
-        buttons.addStretch()
-        btn_quit = QPushButton("Quit")
-        btn_quit.clicked.connect(QApplication.quit)
-        buttons.addWidget(btn_quit)
-        layout.addLayout(buttons)
+    def _toggle_widget(self, spec, state):
+        spec.enable = bool(state)
+
+    def _configure_widget(self, spec):
+        QMessageBox.information(
+            self,
+            spec.title,
+            f"Widget config for '{spec.title}' is still under construction.",
+        )
 
     def _open_editor(self, spec):
         from tinyui.ui.editors.data_editor_dialog import DataEditorDialog
@@ -72,6 +160,13 @@ class HelloWindow(QMainWindow):
         editor = DataEditorDialog(self._core, spec)
         self._open_editors[spec.id] = editor
         editor.show()
+
+    def _show_about(self):
+        QMessageBox.about(
+            self,
+            f"About {APP_NAME}",
+            f"{APP_NAME} v{VERSION}\n\nA modular overlay — just input data.",
+        )
 
     def closeEvent(self, event):
         QApplication.quit()

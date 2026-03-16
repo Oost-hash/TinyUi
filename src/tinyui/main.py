@@ -105,6 +105,11 @@ def _init_qt() -> QApplication:
     app.setFont(font)
     QPixmapCache.setCacheLimit(0)
 
+    # Apply theme
+    from tinyui.themes.style import load_theme
+
+    app.setStyleSheet(load_theme("dark", font.pointSize()))
+
     logger.info("Screen DPI: %s", app.devicePixelRatio())
     logger.info("Platform: %s", app.platformName())
     return app

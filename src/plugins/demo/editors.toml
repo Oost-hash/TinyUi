@@ -4,6 +4,7 @@
 [heatmap]
 title = "Heatmap Editor"
 config = "heatmaps"
+menu = "Demo"
 has_presets = true
 data_field = "entries"
 
@@ -21,6 +22,7 @@ default = "#FFFFFF"
 [compound]
 title = "Compound Editor"
 config = "compounds"
+menu = "Demo"
 has_presets = true
 
 [[compound.columns]]

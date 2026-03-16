@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from tinycore.editor import load_editors_toml
+from tinycore.widget import load_widgets_toml
 
 if TYPE_CHECKING:
     from tinycore.app import App
@@ -65,9 +66,13 @@ class DemoPlugin:
         app.loaders.load_all(app.config)
 
         # 3. Load editor specs from editors.toml (lives with plugin source)
-        editors_path = Path(__file__).parent / "editors.toml"
-        for spec in load_editors_toml(editors_path):
+        plugin_dir = Path(__file__).parent
+        for spec in load_editors_toml(plugin_dir / "editors.toml"):
             app.editors.register(spec)
+
+        # 4. Load widget specs from widgets.toml
+        for spec in load_widgets_toml(plugin_dir / "widgets.toml"):
+            app.widgets.register(spec)
 
     def start(self) -> None:
         pass

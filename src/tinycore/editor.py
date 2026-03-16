@@ -46,6 +46,7 @@ class EditorSpec:
     columns: list[ColumnDef]         # column definitions for the table
     has_presets: bool = True         # data is dict[preset_name, ...]
     data_field: str = ""             # if set, rows live in this field per preset
+    menu: str = ""                   # menu group, e.g. "Demo"
     icon: str = ""                   # optional icon name
 
 
@@ -114,6 +115,7 @@ def load_editors_toml(path: Path) -> list[EditorSpec]:
             columns=columns,
             has_presets=editor_data.get("has_presets", True),
             data_field=editor_data.get("data_field", ""),
+            menu=editor_data.get("menu", ""),
             icon=editor_data.get("icon", ""),
         ))
 
