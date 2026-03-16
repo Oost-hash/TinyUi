@@ -22,7 +22,6 @@
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
-    QLabel,
     QMainWindow,
     QPushButton,
     QVBoxLayout,
@@ -44,9 +43,6 @@ class HelloWindow(QMainWindow):
         central = QWidget()
         self.setCentralWidget(central)
         layout = QVBoxLayout(central)
-
-        label = QLabel(f"{APP_NAME} v{VERSION} — running on tinycore")
-        layout.addWidget(label)
 
         # Build editor buttons from registered EditorSpecs
         for spec in core.editors.all():
