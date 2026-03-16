@@ -21,7 +21,7 @@ The idea is to restructure how data flows through the system so that UI componen
 - safer to modify
 
 # Current idea
----
+
 This diagram illustrates a possible architectural direction, not a finalized design. Many aspects of the system are still undefined and may change as the project evolves.
 
 To explore different approaches, I am experimenting with AI agents that iterate on the concept and help generate prototype implementations. The goal is to rapidly test ideas and identify which patterns work well in practice.
@@ -39,8 +39,8 @@ graph TB
 
     subgraph UI["tinyui — UI Platform"]
         direction TB
-        screens[Screen Renderers\n(table · form · tree)]
-        mvvm[MVVM Layer\n(viewmodel ↔ view)]
+        screens[Screen Renderers table form tree]
+        mvvm[MVVM Layer viewmodel to view]
         theme[Theme Engine]
     end
 
@@ -64,7 +64,6 @@ graph TB
     style UI fill:#27ae60,color:#fff
     style Widget fill:#2980b9,color:#fff
     style Plugins fill:#e67e22,color:#fff
-
 ```
 
 **This project is in early development. Things will break.**
