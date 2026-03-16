@@ -27,9 +27,9 @@ Een veelzijdige button met theming, icons, states en animations.
 import os
 from typing import Callable, Optional, Union
 
-from PySide2.QtCore import Property, QSize, Qt, QTimer, Signal
-from PySide2.QtGui import QColor, QFont, QIcon, QPainter, QPalette, QPixmap
-from PySide2.QtWidgets import QPushButton, QSizePolicy
+from PySide6.QtCore import Property, QSize, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QFont, QIcon, QPainter, QPalette, QPixmap
+from PySide6.QtWidgets import QPushButton, QSizePolicy
 
 
 class Button(QPushButton):

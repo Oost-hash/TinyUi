@@ -20,7 +20,7 @@
 #  licensed under GPLv3. TinyPedal is included as a submodule.
 
 # tinyui/ui/tabs/module_tab/module_tab_view.py
-from PySide2.QtWidgets import QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from .module_tab_viewmodel import ModuleTabViewModel
 

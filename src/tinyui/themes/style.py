@@ -26,8 +26,8 @@ import os
 import sys
 from string import Template
 
-from PySide2.QtGui import QGuiApplication, QPalette
-from PySide2.QtWidgets import QApplication
+from PySide6.QtGui import QGuiApplication, QPalette
+from PySide6.QtWidgets import QApplication
 
 _ROLE_MAP = {
     "Window": QPalette.Window,

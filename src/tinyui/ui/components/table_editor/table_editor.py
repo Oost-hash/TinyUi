@@ -22,8 +22,8 @@
 # tinyui/ui/components/table_editor.py
 from typing import List, Optional
 
-from PySide2.QtCore import QPoint, Qt
-from PySide2.QtWidgets import (
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtWidgets import (
     QAbstractItemView,
     QHeaderView,
     QMenu,

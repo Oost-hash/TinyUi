@@ -22,7 +22,7 @@
 # tinyui/ui/components/editor_viewmodel.py
 from typing import Any, Callable, List, Optional
 
-from PySide2.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal
 
 from .table_model import TableModel
 

@@ -20,8 +20,8 @@
 #  licensed under GPLv3. TinyPedal is included as a submodule.
 
 # tinyui/ui/components/tab_component.py
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QTabBar, QTabWidget, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QTabBar, QTabWidget, QVBoxLayout, QWidget
 
 from .tab_model import TabSpec
 from .tab_viewmodel import TabViewModel

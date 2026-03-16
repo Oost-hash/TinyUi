@@ -20,7 +20,7 @@
 #  licensed under GPLv3. TinyPedal is included as a submodule.
 
 # tinyui/ui/components/tab_viewmodel.py
-from PySide2.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal
 
 from .tab_model import TabModel, TabSpec
 
