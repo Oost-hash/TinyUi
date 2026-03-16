@@ -5,6 +5,9 @@
 # build output
 .output/
 .dist/
+build/
+dist/
+*.spec
 
 # git submodules (tracked separately)
 tinypedal_repo
