@@ -1,102 +1,73 @@
 """DemoPlugin — sample data + editor registrations for development.
 
-This is the reference example of how a plugin declares:
-1. Config data (what goes in the ConfigStore)
-2. Editor specs (what editors the UI should offer)
+This is the reference example of how a plugin works:
+1. Provide default config data (written to TOML if files don't exist)
+2. Provide editors.toml (declares what editors the UI should offer)
+
+The plugin only provides data — tinycore handles loading, saving, and paths.
+Config files live in: data/plugin-config/demo/
 """
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
-from tinycore.editor import ColumnDef, EditorSpec
+from tinycore.editor import load_editors_toml
 
 if TYPE_CHECKING:
     from tinycore.app import App
 
 
-# --- Sample data ---
+# --- Default data (used when TOML files don't exist yet) ---
 
-SAMPLE_HEATMAPS = {
+DEFAULT_HEATMAPS = {
     "HEATMAP_DEFAULT_BRAKE": {
-        "0": "#4444FF",
-        "200": "#44AAFF",
-        "400": "#44FF44",
-        "600": "#FFAA44",
-        "800": "#FF4444",
+        "entries": [
+            {"temperature": -273.0, "color": "#44F"},
+            {"temperature": 100.0, "color": "#48F"},
+            {"temperature": 200.0, "color": "#4FF"},
+            {"temperature": 400.0, "color": "#4F4"},
+            {"temperature": 600.0, "color": "#FF4"},
+            {"temperature": 800.0, "color": "#F44"},
+        ],
     },
     "HEATMAP_DEFAULT_TYRE": {
-        "50": "#4444FF",
-        "70": "#44AAFF",
-        "85": "#44FF44",
-        "100": "#FFAA44",
-        "120": "#FF4444",
-    },
-    "HEATMAP_RAIN": {
-        "30": "#2244AA",
-        "50": "#4488CC",
-        "70": "#66BBEE",
-        "90": "#AADDFF",
+        "entries": [
+            {"temperature": -273.0, "color": "#44F"},
+            {"temperature": 60.0, "color": "#F4F"},
+            {"temperature": 80.0, "color": "#F48"},
+            {"temperature": 100.0, "color": "#F44"},
+            {"temperature": 120.0, "color": "#F84"},
+            {"temperature": 140.0, "color": "#FF4"},
+        ],
     },
 }
 
-SAMPLE_BRAKES = {
-    "Default": {
-        "failure_thickness": "0.0",
-        "heatmap": "HEATMAP_DEFAULT_BRAKE",
-    },
-    "Carbon Ceramic": {
-        "failure_thickness": "2.5",
-        "heatmap": "HEATMAP_DEFAULT_BRAKE",
-    },
+DEFAULT_COMPOUNDS = {
+    "Dry": {"symbol": "D", "heatmap": "HEATMAP_DEFAULT_TYRE"},
+    "Wet": {"symbol": "W", "heatmap": "HEATMAP_DEFAULT_TYRE"},
+    "Intermediate": {"symbol": "I", "heatmap": "HEATMAP_DEFAULT_TYRE"},
 }
-
-
-# --- Config keys (used as type keys in ConfigStore) ---
-
-class HeatmapData:
-    """Type key for heatmap config in the store."""
-
-class BrakeData:
-    """Type key for brake preset config in the store."""
-
-
-# --- Editor specs ---
-
-HEATMAP_EDITOR = EditorSpec(
-    id="heatmap",
-    title="Heatmap Editor",
-    config_key=HeatmapData,
-    columns=[
-        ColumnDef("temperature", float, default_value=0.0),
-        ColumnDef("color", str, default_value="#FFFFFF"),
-    ],
-)
-
-BRAKE_EDITOR = EditorSpec(
-    id="brake_preset",
-    title="Brake Preset Editor",
-    config_key=BrakeData,
-    columns=[
-        ColumnDef("failure_thickness", float, default_value=0.0),
-        ColumnDef("heatmap", str, default_value="HEATMAP_DEFAULT_BRAKE"),
-    ],
-)
 
 
 class DemoPlugin:
-    """Development plugin — seeds config store and registers editors."""
+    """Development plugin — registers config + editors via TOML."""
 
     name = "demo"
 
     def register(self, app: App) -> None:
-        # 1. Seed data into config store
-        app.config.update(HeatmapData, SAMPLE_HEATMAPS)
-        app.config.update(BrakeData, SAMPLE_BRAKES)
+        # 1. Register config files with defaults
+        app.loaders.register("heatmaps", "heatmaps.toml", self.name, DEFAULT_HEATMAPS)
+        app.loaders.register("compounds", "compounds.toml", self.name, DEFAULT_COMPOUNDS)
 
-        # 2. Register editors — UI will pick these up automatically
-        app.editors.register(HEATMAP_EDITOR)
-        app.editors.register(BRAKE_EDITOR)
+        # 2. Load from disk (creates TOML from defaults if missing)
+        app.loaders.load_all(app.config)
+
+        # 3. Load editor specs from editors.toml (lives with plugin source)
+        editors_path = Path(__file__).parent / "editors.toml"
+        for spec in load_editors_toml(editors_path):
+            app.editors.register(spec)
 
     def start(self) -> None:
         pass

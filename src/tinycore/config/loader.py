@@ -1,88 +1,106 @@
-"""ConfigLoader protocol + LoaderRegistry.
+"""TOML-based config loading and saving.
 
-Loaders know how to read/write one config type from/to disk.
-The registry maps config types to their loader + file path.
+tinycore owns all config I/O. Plugins don't need custom loaders —
+they just provide TOML files and tinycore handles the rest.
+
+Path layout: config_dir / plugin_name / filename.toml
 """
 
 from __future__ import annotations
 
-import json
+import tomllib
 from pathlib import Path
-from typing import Any, Protocol, TypeVar, runtime_checkable
+from typing import Any
+
+import tomli_w
 
 from .store import ConfigStore
 
-T = TypeVar("T")
+
+def read_toml(path: Path) -> dict[str, Any]:
+    """Read a TOML file, return empty dict if missing."""
+    if not path.exists():
+        return {}
+    with open(path, "rb") as f:
+        return tomllib.load(f)
 
 
-@runtime_checkable
-class ConfigLoader(Protocol[T]):
-    """Knows how to load/save one config type."""
-
-    def load(self, path: Path) -> T: ...
-    def save(self, path: Path, config: T) -> None: ...
+def write_toml(path: Path, data: dict[str, Any]) -> None:
+    """Write a TOML file with consistent formatting."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "wb") as f:
+        tomli_w.dump(data, f)
 
 
 class LoaderEntry:
-    """Binds a config type to its loader and file path."""
+    """Binds a config key to its file path and optional default data."""
 
-    def __init__(self, config_type: type, loader: ConfigLoader, path: Path):
-        self.config_type = config_type
-        self.loader = loader
+    def __init__(self, key: str, path: Path, defaults: dict[str, Any] | None = None):
+        self.key = key
         self.path = path
+        self.defaults = defaults
 
 
 class LoaderRegistry:
-    """Maps config types to their loader + file path.
+    """Maps config keys to their TOML file paths.
 
-    Orchestrates loading from disk into the store,
-    and saving from the store back to disk.
+    Owns config_dir — the root directory for all plugin configs.
+    Plugins register with (key, filename, plugin_name) and the
+    registry resolves the full path as config_dir / plugin_name / filename.
     """
 
-    def __init__(self):
-        self._entries: dict[type, LoaderEntry] = {}
-
-    def register(self, config_type: type[T], loader: ConfigLoader[T], path: Path) -> None:
-        """Register a loader for a config type."""
-        self._entries[config_type] = LoaderEntry(config_type, loader, path)
-
-    def load_all(self, store: ConfigStore) -> None:
-        """Load all registered config types from disk into the store."""
-        for entry in self._entries.values():
-            config = entry.loader.load(entry.path)
-            store.update(entry.config_type, config)
-
-    def load_one(self, store: ConfigStore, config_type: type[T]) -> None:
-        """Load a single config type from disk into the store."""
-        entry = self._entries[config_type]
-        config = entry.loader.load(entry.path)
-        store.update(config_type, config)
-
-    def save(self, store: ConfigStore, config_type: type[T]) -> None:
-        """Save a config type from the store to disk."""
-        entry = self._entries[config_type]
-        config = store.get(config_type)
-        entry.loader.save(entry.path, config)
+    def __init__(self, config_dir: Path | None = None):
+        self._config_dir = config_dir
+        self._entries: dict[str, LoaderEntry] = {}
 
     @property
-    def registered_types(self) -> set[type]:
+    def config_dir(self) -> Path | None:
+        return self._config_dir
+
+    def register(
+        self,
+        key: str,
+        filename: str,
+        plugin_name: str,
+        defaults: dict[str, Any] | None = None,
+    ) -> None:
+        """Register a config file.
+
+        Args:
+            key: String key for ConfigStore lookup.
+            filename: Just the filename, e.g. "heatmaps.toml".
+            plugin_name: Plugin that owns this config.
+            defaults: Default data to write if file doesn't exist.
+        """
+        if self._config_dir is None:
+            raise RuntimeError("config_dir not set on LoaderRegistry")
+        path = self._config_dir / plugin_name / filename
+        self._entries[key] = LoaderEntry(key, path, defaults)
+
+    def load_all(self, store: ConfigStore) -> None:
+        """Load all registered configs from disk into the store."""
+        for entry in self._entries.values():
+            data = read_toml(entry.path)
+            if not data and entry.defaults:
+                data = entry.defaults
+                write_toml(entry.path, data)
+            store.update(entry.key, data)
+
+    def load_one(self, store: ConfigStore, key: str) -> None:
+        """Load a single config from disk into the store."""
+        entry = self._entries[key]
+        data = read_toml(entry.path)
+        if not data and entry.defaults:
+            data = entry.defaults
+            write_toml(entry.path, data)
+        store.update(key, data)
+
+    def save(self, store: ConfigStore, key: str) -> None:
+        """Save a config from the store to disk."""
+        entry = self._entries[key]
+        data = store.get(key)
+        write_toml(entry.path, data)
+
+    @property
+    def registered_keys(self) -> set[str]:
         return set(self._entries.keys())
-
-
-# --- Utility for JSON-based loaders ---
-
-
-def read_json(path: Path) -> dict[str, Any]:
-    """Read a JSON file, return empty dict if missing."""
-    if not path.exists():
-        return {}
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def write_json(path: Path, data: dict[str, Any]) -> None:
-    """Write a JSON file with consistent formatting."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
-        f.write("\n")

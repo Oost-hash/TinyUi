@@ -126,7 +126,8 @@ def run():
     _init_logging()
 
     # --- tinycore boot ---
-    core = create_app(DemoPlugin())
+    config_dir = Path(__file__).resolve().parents[2] / "data" / "plugin-config"
+    core = create_app(config_dir, DemoPlugin())
     core.start()
 
     # --- Qt ---

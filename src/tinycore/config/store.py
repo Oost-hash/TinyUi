@@ -1,58 +1,56 @@
-"""ConfigStore — type-keyed config distribution.
+"""ConfigStore — string-keyed config distribution.
 
 A message broker for configuration, not a config manager.
-The store has no domain knowledge. It stores typed snapshots
+The store has no domain knowledge. It stores named snapshots
 and notifies observers on changes.
 """
 
 from __future__ import annotations
 
-from typing import Any, Callable, TypeVar
-
-T = TypeVar("T")
+from typing import Any, Callable
 
 
 class ConfigStore:
-    """Generic typed config store with push notifications."""
+    """Generic config store with push notifications."""
 
     def __init__(self):
-        self._current: dict[type, Any] = {}
-        self._observers: dict[type, list[Callable]] = {}
+        self._current: dict[str, Any] = {}
+        self._observers: dict[str, list[Callable]] = {}
 
-    def get(self, config_type: type[T]) -> T:
-        """Get current snapshot for a config type.
+    def get(self, key: str) -> Any:
+        """Get current snapshot for a config key.
 
-        Raises KeyError if the type was never registered.
+        Raises KeyError if the key was never registered.
         """
-        return self._current[config_type]
+        return self._current[key]
 
-    def get_or_default(self, config_type: type[T], default: T) -> T:
+    def get_or_default(self, key: str, default: Any = None) -> Any:
         """Get current snapshot, or return default if not registered."""
-        return self._current.get(config_type, default)
+        return self._current.get(key, default)
 
-    def has(self, config_type: type) -> bool:
-        """Check if a config type is registered."""
-        return config_type in self._current
+    def has(self, key: str) -> bool:
+        """Check if a config key is registered."""
+        return key in self._current
 
-    def update(self, config_type: type[T], value: T) -> None:
-        """Publish a new value. Notifies all observers of this type."""
-        self._current[config_type] = value
-        for callback in self._observers.get(config_type, []):
+    def update(self, key: str, value: Any) -> None:
+        """Publish a new value. Notifies all observers of this key."""
+        self._current[key] = value
+        for callback in self._observers.get(key, []):
             callback(value)
 
-    def observe(self, config_type: type[T], callback: Callable[[T], None]) -> Callable:
-        """Subscribe to changes for a config type.
+    def observe(self, key: str, callback: Callable[[Any], None]) -> Callable:
+        """Subscribe to changes for a config key.
 
         Returns an unsubscribe function.
         """
-        self._observers.setdefault(config_type, []).append(callback)
+        self._observers.setdefault(key, []).append(callback)
 
         def unsubscribe():
-            self._observers[config_type].remove(callback)
+            self._observers[key].remove(callback)
 
         return unsubscribe
 
     @property
-    def registered_types(self) -> set[type]:
-        """All currently registered config types."""
+    def registered_keys(self) -> set[str]:
+        """All currently registered config keys."""
         return set(self._current.keys())

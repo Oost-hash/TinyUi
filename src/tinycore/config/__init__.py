@@ -1,6 +1,6 @@
-"""tinycore.config — generic config store and loader infrastructure."""
+"""tinycore.config — generic config store and TOML loader infrastructure."""
 
 from .store import ConfigStore
-from .loader import ConfigLoader, LoaderRegistry, read_json, write_json
+from .loader import LoaderRegistry, read_toml, write_toml
 
-__all__ = ["ConfigStore", "ConfigLoader", "LoaderRegistry", "read_json", "write_json"]
+__all__ = ["ConfigStore", "LoaderRegistry", "read_toml", "write_toml"]

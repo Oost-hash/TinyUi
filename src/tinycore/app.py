@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from .config.store import ConfigStore
 from .config.loader import LoaderRegistry
 from .editor import EditorRegistry
@@ -13,9 +15,9 @@ from .providers.registry import ProviderRegistry
 class App:
     """Central application container — owns all registries."""
 
-    def __init__(self):
+    def __init__(self, config_dir: Path):
         self.config = ConfigStore()
-        self.loaders = LoaderRegistry()
+        self.loaders = LoaderRegistry(config_dir)
         self.editors = EditorRegistry()
         self.events = EventBus()
         self.plugins = PluginRegistry()
@@ -34,15 +36,19 @@ class App:
         self.events.emit("app.stopped")
 
 
-def create_app(*plugins) -> App:
+def create_app(config_dir: Path, *plugins) -> App:
     """Factory: create an App, add plugins, and run register phase.
 
+    Args:
+        config_dir: Root directory for all plugin config files.
+                    Each plugin gets a subdirectory: config_dir/plugin_name/
+
     Usage:
-        app = create_app(PluginA(), PluginB())
+        app = create_app(Path("data/config"), PluginA(), PluginB())
         app.loaders.load_all(app.config)
         app.start()
     """
-    app = App()
+    app = App(config_dir)
     for plugin in plugins:
         app.plugins.add(plugin)
     app.plugins.register_all(app)

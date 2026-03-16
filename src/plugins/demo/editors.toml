@@ -1,0 +1,34 @@
+# Demo plugin — editor definitions
+# Each section defines one editor that appears in the UI.
+
+[heatmap]
+title = "Heatmap Editor"
+config = "heatmaps"
+has_presets = true
+data_field = "entries"
+
+[[heatmap.columns]]
+name = "temperature"
+type = "float"
+default = 0.0
+
+[[heatmap.columns]]
+name = "color"
+type = "str"
+default = "#FFFFFF"
+
+
+[compound]
+title = "Compound Editor"
+config = "compounds"
+has_presets = true
+
+[[compound.columns]]
+name = "symbol"
+type = "str"
+default = "?"
+
+[[compound.columns]]
+name = "heatmap"
+type = "str"
+default = "HEATMAP_DEFAULT_TYRE"

@@ -2,6 +2,9 @@
 
 Takes an EditorSpec (registered by a plugin) and builds a complete
 editor dialog with preset selector, table editor, and save/close buttons.
+
+All data is plain dicts from TOML — no custom models needed.
+The spec's data_field tells us where rows live within each preset.
 """
 
 from __future__ import annotations
@@ -34,8 +37,8 @@ if TYPE_CHECKING:
 class DataEditorDialog(QWidget):
     """Generic data editor driven by an EditorSpec.
 
-    Reads data from ConfigStore, shows a preset selector + table editor,
-    and writes changes back to the store on save.
+    Reads plain dict data from ConfigStore, shows a preset selector +
+    table editor, and writes changes back to the store on save.
     """
 
     def __init__(self, core: App, spec: EditorSpec, parent=None):
@@ -44,10 +47,8 @@ class DataEditorDialog(QWidget):
         self._spec = spec
         self.setWindowTitle(spec.title)
 
-        # Get data from config store
-        self._data: dict[str, dict] = copy.deepcopy(
-            core.config.get(spec.config_key)
-        )
+        # Get data from config store — plain dict from TOML
+        self._data: dict = copy.deepcopy(core.config.get(spec.config_key))
         self._current_key = next(iter(self._data.keys()))
 
         # Convert EditorSpec columns to TableEditor ColumnSpecs
@@ -69,17 +70,38 @@ class DataEditorDialog(QWidget):
         self._setup_layout()
         self._load_preset(self._current_key)
 
+    # --- Row conversion ---
+
+    def _preset_to_rows(self, preset_data) -> list[dict]:
+        """Convert a preset's data to table rows."""
+        if self._spec.data_field:
+            # Nested: rows live in preset_data[data_field]
+            return list(preset_data.get(self._spec.data_field, []))
+        # Flat: the preset itself is one row
+        if isinstance(preset_data, dict):
+            return [preset_data]
+        return list(preset_data)
+
+    def _rows_to_preset(self, rows: list[dict]):
+        """Convert table rows back to preset data."""
+        if self._spec.data_field:
+            # Nested: wrap rows in {data_field: rows}
+            return {self._spec.data_field: rows}
+        # Flat: first row is the preset
+        return rows[0] if rows else {}
+
+    # --- Setup ---
+
     def _setup_editor(self):
         self._model = TableModel(self._col_specs)
 
         def save(data: list[dict]) -> bool:
-            self._data[self._current_key] = {
-                str(row[self._col_specs[0].name]): row[self._col_specs[1].name]
-                for row in data
-            } if len(self._col_specs) == 2 else {
-                str(i): row for i, row in enumerate(data)
-            }
-            self._core.config.update(self._spec.config_key, copy.deepcopy(self._data))
+            self._data[self._current_key] = self._rows_to_preset(data)
+            self._core.config.update(
+                self._spec.config_key, copy.deepcopy(self._data)
+            )
+            # Persist to disk via the loader
+            self._core.loaders.save(self._core.config, self._spec.config_key)
             return True
 
         self._vm = EditorViewModel(self._model, save)
@@ -130,23 +152,18 @@ class DataEditorDialog(QWidget):
         self.setLayout(main)
         self.resize(500, 400)
 
+    # --- Preset loading ---
+
     def _load_preset(self, key: str):
         self._current_key = key
-        raw = self._data.get(key, {})
-
-        # Convert dict[key, value] to list[dict] for the table
-        col_names = [c.name for c in self._col_specs]
-        if len(col_names) == 2:
-            data = [
-                {col_names[0]: k, col_names[1]: v}
-                for k, v in raw.items()
-            ]
-        else:
-            data = [raw] if isinstance(raw, dict) else list(raw)
+        preset_data = self._data.get(key, {})
+        data = self._preset_to_rows(preset_data)
 
         self._model._data = data
         self._model._original_data = self._model.get_data()
         self._table.refresh()
+
+    # --- Preset actions ---
 
     def _on_preset_changed(self, new_key: str):
         if self._vm.is_modified():
@@ -168,11 +185,8 @@ class DataEditorDialog(QWidget):
     def _on_new_preset(self):
         name, ok = QInputDialog.getText(self, "New Preset", "Name:")
         if ok and name and name not in self._data:
-            # Create with one default row
-            defaults = {c.name: str(c.default_value) for c in self._col_specs}
-            key = str(defaults[self._col_specs[0].name])
-            val = defaults[self._col_specs[1].name] if len(self._col_specs) == 2 else defaults
-            self._data[name] = {key: val}
+            defaults = {c.name: c.default_value for c in self._col_specs}
+            self._data[name] = self._rows_to_preset([defaults])
             self._preset_combo.addItem(name)
             self._preset_combo.setCurrentText(name)
 

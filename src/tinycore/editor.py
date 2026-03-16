@@ -1,13 +1,23 @@
 """EditorSpec — declarative editor registration.
 
 Plugins register EditorSpecs to tell the UI what data editors are available.
-The UI reads these specs and builds the appropriate dialogs.
+Specs can be defined in Python or loaded from editors.toml.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
+
+
+# Maps TOML type names to Python types
+_TYPE_MAP: dict[str, type] = {
+    "str": str,
+    "int": int,
+    "float": float,
+    "bool": bool,
+}
 
 
 @dataclass
@@ -32,9 +42,10 @@ class EditorSpec:
 
     id: str                          # unique identifier, e.g. "heatmap"
     title: str                       # window title, e.g. "Heatmap Editor"
-    config_key: type                 # key in ConfigStore to read/write
+    config_key: str                  # key in ConfigStore (matches loader key)
     columns: list[ColumnDef]         # column definitions for the table
-    has_presets: bool = True         # data is dict[preset_name, list[row]]
+    has_presets: bool = True         # data is dict[preset_name, ...]
+    data_field: str = ""             # if set, rows live in this field per preset
     icon: str = ""                   # optional icon name
 
 
@@ -55,3 +66,55 @@ class EditorRegistry:
 
     def has(self, editor_id: str) -> bool:
         return editor_id in self._specs
+
+
+def load_editors_toml(path: Path) -> list[EditorSpec]:
+    """Load editor specs from an editors.toml file.
+
+    Example editors.toml:
+
+        [heatmap]
+        title = "Heatmap Editor"
+        config = "heatmaps"
+        has_presets = true
+        data_field = "entries"
+
+        [[heatmap.columns]]
+        name = "temperature"
+        type = "float"
+        default = 0.0
+
+        [[heatmap.columns]]
+        name = "color"
+        type = "str"
+        default = "#FFFFFF"
+    """
+    import tomllib
+
+    with open(path, "rb") as f:
+        data = tomllib.load(f)
+
+    specs = []
+    for editor_id, editor_data in data.items():
+        columns = []
+        for col in editor_data.get("columns", []):
+            columns.append(ColumnDef(
+                name=col["name"],
+                data_type=_TYPE_MAP.get(col.get("type", "str"), str),
+                editable=col.get("editable", True),
+                width=col.get("width", 0),
+                default_value=col.get("default"),
+                widget=col.get("widget", "default"),
+            ))
+
+        specs.append(EditorSpec(
+            id=editor_id,
+            title=editor_data.get("title", editor_id),
+            config_key=editor_data.get("config", editor_id),
+            columns=columns,
+            has_presets=editor_data.get("has_presets", True),
+            data_field=editor_data.get("data_field", ""),
+            icon=editor_data.get("icon", ""),
+        ))
+
+    return specs
