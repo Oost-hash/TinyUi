@@ -43,7 +43,7 @@ _PID_FILE = Path.home() / ".tinyui" / "tinyui.pid"
 
 def _resolve_icon() -> str:
     if getattr(sys, "frozen", False):
-        return os.path.join(os.path.dirname(sys.executable), "tinyui", "images", "icon.png")
+        return os.path.join(os.path.dirname(sys.executable), "images", "icon.png")
     return str(_ICON_PATH)
 
 
@@ -131,7 +131,12 @@ def run():
     _init_logging()
 
     # --- tinycore boot ---
-    config_dir = Path(__file__).resolve().parents[2] / "data" / "plugin-config"
+    if getattr(sys, "frozen", False):
+        # Frozen build: config/ next to .exe
+        config_dir = Path(sys.executable).parent / "config"
+    else:
+        # Development: data/plugin-config/ in repo root
+        config_dir = Path(__file__).resolve().parents[2] / "data" / "plugin-config"
     core = create_app(config_dir, DemoPlugin())
     core.start()
 

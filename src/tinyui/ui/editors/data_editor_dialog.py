@@ -109,7 +109,7 @@ class DataEditorDialog(QWidget):
 
     def _setup_preset_selector(self):
         self._preset_combo = QComboBox()
-        self._preset_combo.addItems(self._data.keys())
+        self._preset_combo.addItems(list(self._data.keys()))
         self._preset_combo.currentTextChanged.connect(self._on_preset_changed)
 
         self._btn_new = QPushButton("New")
@@ -160,7 +160,7 @@ class DataEditorDialog(QWidget):
         data = self._preset_to_rows(preset_data)
 
         self._model._data = data
-        self._model._original_data = self._model.get_data()
+        self._vm._original_data = self._model.get_data()
         self._table.refresh()
 
     # --- Preset actions ---

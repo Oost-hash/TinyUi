@@ -8,7 +8,8 @@ from string import Template
 
 def _themes_dir() -> str:
     if getattr(sys, "frozen", False):
-        return os.path.join(os.path.dirname(sys.executable), "tinyui", "themes")
+        # Frozen build: themes/ next to .exe
+        return os.path.join(os.path.dirname(sys.executable), "themes")
     return os.path.dirname(os.path.abspath(__file__))
 
 
