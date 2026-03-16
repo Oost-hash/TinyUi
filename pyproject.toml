@@ -1,3 +1,17 @@
+[project]
+name = "tinyui"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "PySide6>=6.8",
+    "psutil>=6.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
 [tool.pytest.ini_options]
-testpaths = ["tinyui/tests"]
-pythonpath = [".", "tinypedal_repo", "tinyui/ui"]
+testpaths = ["src/tinyui/tests"]
+pythonpath = ["src"]

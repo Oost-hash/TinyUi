@@ -1,46 +1,34 @@
-# ignore list
-/.venv/
-/.zed/
+# environment
+.venv/
+.zed/
 
-/.output/
-/.dist/
-/.dist/TinyPedal/
+# build output
+.output/
+.dist/
 
+# git submodules (tracked separately)
 tinypedal_repo
+
+# runtime data
 src/data
-src/tinyui/config/output
-src/tinypedal
 
-#TODO: just import submodules?
-src/pyLMUSharedMemory
-src/pyRfactor2SharedMemory
-
+# python
 __pycache__/
 .pytest_cache/
+*.egg-info/
 
-# pipenv stuff
-Pipfile
-Pipfile.lock
-
-# pylint stuff
-pylintrc
-
-# local config file
+# config files (runtime generated)
 *.json
 !src/tinyui/themes/*.json
+
+# data files
 *.csv
 *.fuel
 
-# dev
-dev_tools/
+# dev notes (archived)
 dev_notes/
 
-# non working parts
-src/tinyui/tests/
-.build_release
-
-# random file
-test*.py
+# archives
 *.7z
 *.zip
 *.log
