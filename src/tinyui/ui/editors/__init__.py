@@ -19,4 +19,3 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3. TinyPedal is included as a submodule.
 
-from .heatmap import HeatmapEditor
