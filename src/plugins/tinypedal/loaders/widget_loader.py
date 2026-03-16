@@ -18,15 +18,15 @@ from pathlib import Path
 from typing import Any
 
 from tinycore.config import read_json, write_json
-from tinypedal_plugin.models.base import WidgetConfig
+from plugins.tinypedal.models.base import WidgetConfig
 
 
 def _load_widget_class(widget_name: str) -> type[WidgetConfig]:
     """Dynamically import a widget class by module name.
 
-    e.g. 'battery' → from tinypedal_plugin.models.widgets.battery import Battery
+    e.g. 'battery' → from plugins.tinypedal.models.widgets.battery import Battery
     """
-    module = importlib.import_module(f"tinypedal_plugin.models.widgets.{widget_name}")
+    module = importlib.import_module(f"plugins.tinypedal.models.widgets.{widget_name}")
     # class name is PascalCase of the module name
     class_name = widget_name.replace("_", " ").title().replace(" ", "")
     return getattr(module, class_name)

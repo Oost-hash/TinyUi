@@ -18,7 +18,7 @@ class TinyPedalPlugin:
         self._config_dir = config_dir
 
     def register(self, app: App) -> None:
-        from tinypedal_plugin.loaders import (
+        from plugins.tinypedal.loaders import (
             BrakePresetLoader,
             ClassPresetLoader,
             CompoundPresetLoader,
@@ -26,7 +26,7 @@ class TinyPedalPlugin:
             HeatmapLoader,
             WidgetLoader,
         )
-        from tinypedal_plugin.models.base import (
+        from plugins.tinypedal.models.base import (
             BrakePreset,
             ClassPreset,
             CompoundPreset,

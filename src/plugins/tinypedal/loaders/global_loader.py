@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from tinycore.config import read_json, write_json
-from tinypedal_plugin.models.tinypedal_global_config import (
+from plugins.tinypedal.models.tinypedal_global_config import (
     ApplicationConfig,
     CompatibilityConfig,
     NotificationConfig,

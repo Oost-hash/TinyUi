@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from tinycore.config import read_json, write_json
-from tinypedal_plugin.models.base import BrakePreset, ClassPreset, CompoundPreset
+from plugins.tinypedal.models.base import BrakePreset, ClassPreset, CompoundPreset
 
 
 class BrakePresetLoader:

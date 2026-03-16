@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from tinycore.config import read_json, write_json
-from tinypedal_plugin.models.base import HeatmapConfig
+from plugins.tinypedal.models.base import HeatmapConfig
 
 
 class HeatmapLoader:

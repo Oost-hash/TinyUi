@@ -1,4 +1,4 @@
-"""tinypedal_plugin — TinyPedal domain plugin for tinycore."""
+"""plugins.tinypedal — TinyPedal domain plugin for tinycore."""
 
 from .plugin import TinyPedalPlugin
 
