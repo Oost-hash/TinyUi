@@ -19,173 +19,137 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3. TinyPedal is included as a submodule.
 
-"""TinyUi bootstrap — config, logging, Qt init, single instance, start."""
+"""TinyUi bootstrap — tinycore init, Qt init, single instance, start."""
 
-import io
 import logging
 import os
 import sys
+from pathlib import Path
 
 import psutil
-from PySide2.QtCore import QCoreApplication, QLocale, Qt
-from PySide2.QtGui import QFont, QGuiApplication, QIcon, QPixmapCache
-from PySide2.QtWidgets import QApplication, QMessageBox
+from PySide6.QtCore import QLocale, Qt
+from PySide6.QtGui import QFont, QIcon, QPixmapCache
+from PySide6.QtWidgets import QApplication, QMessageBox
 
-# TinyPedal's real cfg (voor injectie)
-from tinypedal.setting import cfg as real_cfg
+from tinycore import create_app
+from plugins.demo import DemoPlugin
+from tinyui.const import APP_NAME, VERSION
 
-# TinyUi adapters
-from tinyui.adapters import cfg, lifecycle
-from tinyui.adapters import path as configure_data_paths
-from tinyui.adapters.tinypedal.app import VERSION as TP_VERSION
-from tinyui.adapters.tinypedal.files import ConfigType
-from tinyui.adapters.tinypedal.log import set_logging_level
-from tinyui.adapters.tinypedal.main import set_environment, unset_environment
-from tinyui.version import __version__ as TINYUI_VERSION
+logger = logging.getLogger(APP_NAME)
 
-logger = logging.getLogger("TinyUi")
-
-# TinyUi icon path
-_TINYUI_ICON = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "images", "icon.png"
-)
+_ICON_PATH = Path(__file__).parent / "images" / "icon.png"
+_PID_FILE = Path.home() / ".tinyui" / "tinyui.pid"
 
 
-def _tinyui_icon() -> str:
-    """Resolve TinyUi icon path, works both frozen and development."""
+def _resolve_icon() -> str:
     if getattr(sys, "frozen", False):
-        # Frozen: naast executable in tinyui/images/
-        return os.path.join(
-            os.path.dirname(sys.executable), "tinyui", "images", "icon.png"
-        )
-
-    # Dev: vanuit main.py naar tinyui/images/
-    return _TINYUI_ICON
+        return os.path.join(os.path.dirname(sys.executable), "tinyui", "images", "icon.png")
+    return str(_ICON_PATH)
 
 
 def _load_icon() -> QIcon:
-    """Load TinyUi icon."""
-    path = _tinyui_icon()
-
+    path = _resolve_icon()
     if os.path.exists(path):
         icon = QIcon(path)
         if not icon.isNull():
             return icon
-        logger.warning(f"Icon file exists but failed to load: {path}")
-
-    logger.warning(f"No icon found at: {path}")
+        logger.warning("Icon file exists but failed to load: %s", path)
+    logger.warning("No icon found at: %s", path)
     return QIcon()
 
 
-def _save_pid_file():
-    """Save PID and process creation time for single instance check."""
-    with open(f"{cfg.path.config}tinyui.pid", "w", encoding="utf-8") as f:
-        pid = os.getpid()
-        create_time = psutil.Process(pid).create_time()
-        f.write(f"{pid},{create_time}")
+def _save_pid():
+    _PID_FILE.parent.mkdir(parents=True, exist_ok=True)
+    pid = os.getpid()
+    create_time = psutil.Process(pid).create_time()
+    _PID_FILE.write_text(f"{pid},{create_time}", encoding="utf-8")
 
 
-def _is_pid_exist() -> bool:
-    """Check if another instance is already running."""
+def _is_already_running() -> bool:
     try:
-        with open(f"{cfg.path.config}tinyui.pid", "r", encoding="utf-8") as f:
-            line = f.readline().strip()
+        line = _PID_FILE.read_text(encoding="utf-8").strip()
         pid_str, create_time_str = line.split(",")
         pid = int(pid_str)
         if psutil.pid_exists(pid):
             if str(psutil.Process(pid).create_time()) == create_time_str:
                 return True
-    except (OSError, ValueError, psutil.Error) as exc:
-        logger.debug("PID check failed: %s", exc)
+    except (OSError, ValueError, psutil.Error):
+        pass
     return False
 
 
 def _init_logging():
-    """Setup logging to file and stream."""
-    log_stream = io.StringIO()
-    set_logging_level(logger, cfg.path.config, "tinyui.log", log_stream, 2)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+    )
     logger.info("=" * 50)
-    logger.info(f"TinyUi v{TINYUI_VERSION} Starting...")
-    set_environment()
+    logger.info("TinyUi v%s starting...", VERSION)
 
 
 def _init_qt() -> QApplication:
-    """Create and configure the Qt application."""
-    loc = QLocale(QLocale.C)
-    loc.setNumberOptions(QLocale.RejectGroupSeparator)
+    loc = QLocale(QLocale.c())
+    loc.setNumberOptions(QLocale.NumberOption.RejectGroupSeparator)
     QLocale.setDefault(loc)
-
-    if cfg.application["enable_high_dpi_scaling"]:
-        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-        QGuiApplication.setHighDpiScaleFactorRoundingPolicy(
-            Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
-        )
 
     QApplication.setStyle("Fusion")
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
-    app.setApplicationName("TinyUi")
-
-    # Set icon
+    app.setApplicationName(APP_NAME)
     app.setWindowIcon(_load_icon())
 
     font = app.font()
-    if os.getenv("PYSIDE_OVERRIDE") != "6":
-        font.setFamily("sans-serif")
+    font.setFamily("sans-serif")
     font.setPointSize(10)
-    font.setStyleHint(QFont.SansSerif)
+    font.setStyleHint(QFont.StyleHint.SansSerif)
     app.setFont(font)
     QPixmapCache.setCacheLimit(0)
 
-    logger.info(f"Screen DPI: {app.devicePixelRatio()}")
-    logger.info(f"Platform: {app.platformName()}")
+    logger.info("Screen DPI: %s", app.devicePixelRatio())
+    logger.info("Platform: %s", app.platformName())
     return app
 
 
 def _check_single_instance() -> bool:
-    """Returns True if this is the only instance."""
     if os.getenv("TINYUI_RESTART") == "TRUE":
         os.environ.pop("TINYUI_RESTART", None)
-        _save_pid_file()
+        _save_pid()
         return True
-    if not _is_pid_exist():
-        _save_pid_file()
+    if not _is_already_running():
+        _save_pid()
         return True
     return False
 
 
-def _init_config():
-    """Load global config and save defaults."""
-    unset_environment()
-    cfg.inject(real_cfg)
-    cfg.load_global()
-
-    # Redirect data paths before saving
-    configure_data_paths(real_cfg)
-
-    cfg.save(cfg_type=ConfigType.CONFIG)
-    cfg.save(cfg_type=ConfigType.SHORTCUTS)
-
-
 def run():
     """Main entry point."""
-    _init_config()
     _init_logging()
-    app = _init_qt()
+
+    # --- tinycore boot ---
+    core = create_app(DemoPlugin())
+    core.start()
+
+    # --- Qt ---
+    qt_app = _init_qt()
 
     if not _check_single_instance():
-        QMessageBox.warning(None, "TinyUi", "TinyUi is already running!")
+        QMessageBox.warning(None, APP_NAME, "TinyUi is already running!")
+        core.stop()
         return 1
-
-    lifecycle.start()
-    logger.info(f"TinyPedal: {TP_VERSION}")
 
     # --- UI ---
     from tinyui.ui.hello_window import HelloWindow
 
-    window = HelloWindow()
-    window.setWindowIcon(app.windowIcon())  # <-- ICON DOORGEGEVEN!
+    window = HelloWindow(core)
+    window.setWindowIcon(qt_app.windowIcon())
     window.show()
 
     logger.info("TinyUi ready!")
-    return app.exec_()
+    exit_code = qt_app.exec()
+
+    core.stop()
+    return exit_code
+
+
+if __name__ == "__main__":
+    sys.exit(run())

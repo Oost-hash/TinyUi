@@ -3,6 +3,7 @@
 from .app import App, create_app
 from .config.store import ConfigStore
 from .config.loader import ConfigLoader, LoaderRegistry, read_json, write_json
+from .editor import ColumnDef, EditorRegistry, EditorSpec
 from .events.bus import EventBus
 from .plugin.protocol import Plugin
 from .plugin.registry import PluginRegistry
@@ -17,6 +18,9 @@ __all__ = [
     "LoaderRegistry",
     "read_json",
     "write_json",
+    "ColumnDef",
+    "EditorRegistry",
+    "EditorSpec",
     "EventBus",
     "Plugin",
     "PluginRegistry",

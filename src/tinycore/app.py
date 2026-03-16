@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from .config.store import ConfigStore
 from .config.loader import LoaderRegistry
+from .editor import EditorRegistry
 from .events.bus import EventBus
 from .plugin.registry import PluginRegistry
 from .providers.registry import ProviderRegistry
@@ -15,6 +16,7 @@ class App:
     def __init__(self):
         self.config = ConfigStore()
         self.loaders = LoaderRegistry()
+        self.editors = EditorRegistry()
         self.events = EventBus()
         self.plugins = PluginRegistry()
         self.providers = ProviderRegistry()
