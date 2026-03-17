@@ -1,4 +1,4 @@
-#  TinyUI - A mod for TinyPedal
+#  TinyUI
 #  Copyright (C) 2026 Oost-hash
 #
 #  This file is part of TinyUI.
@@ -17,7 +17,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
-#  licensed under GPLv3. TinyPedal is included as a submodule.
+#  licensed under GPLv3.
 
 """TinyUi bootstrap — tinycore init, Qt init, single instance, start."""
 
@@ -31,8 +31,8 @@ from PySide6.QtCore import QLocale, Qt
 from PySide6.QtGui import QFont, QIcon, QPixmapCache
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from tinycore import create_app
 from plugins.demo import DemoPlugin
+from tinycore import create_app
 from tinyui.const import APP_NAME, VERSION
 
 logger = logging.getLogger(APP_NAME)
@@ -150,8 +150,10 @@ def run():
 
     # --- UI ---
     from tinyui.ui.hello_window import HelloWindow
+    from tinyui.ui.main_viewmodel import MainViewModel
 
-    window = HelloWindow(core)
+    vm = MainViewModel(core)
+    window = HelloWindow(vm)
     window.setWindowIcon(qt_app.windowIcon())
     window.show()
 

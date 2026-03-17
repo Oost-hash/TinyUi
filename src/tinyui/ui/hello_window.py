@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
@@ -14,14 +12,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from tinycore import App
 from tinyui.const import APP_NAME, VERSION
+from tinyui.ui.main_viewmodel import MainViewModel
 
 
 class MainView(QWidget):
-    def __init__(self, core: App):
+    def __init__(self, viewmodel: MainViewModel):
         super().__init__()
-        self._core = core
+        self._vm = viewmodel
         self.setObjectName("mainView")
 
         self._build_ui()
@@ -36,15 +34,52 @@ class MainView(QWidget):
 
 
 class HelloWindow(QMainWindow):
-    def __init__(self, core: App):
+    def __init__(self, viewmodel: MainViewModel):
         super().__init__()
-        self._core = core
-        self._open_editors: dict[str, QWidget] = {}
+        self._vm = viewmodel
         self.setWindowTitle(f"{APP_NAME} v{VERSION}")
         self.resize(1024, 768)
 
+        self._vm.window_requested.connect(self._on_window_requested)
+
         self._build_menubar()
         self._build_ui()
+
+    # --- Window dispatch ---
+
+    def _on_window_requested(self, window_type, params):
+        handler = self._window_handlers.get(window_type)
+        if handler:
+            handler(self, params)
+
+    def _open_about(self, _params):
+        QMessageBox.about(
+            self,
+            f"About {APP_NAME}",
+            f"{APP_NAME} v{VERSION}\n\nA modular overlay — just input data.",
+        )
+
+    def _open_widget_config(self, spec):
+        QMessageBox.information(
+            self,
+            spec.title,
+            f"Widget config for '{spec.title}' is still under construction.",
+        )
+
+    def _open_editor(self, spec):
+        from tinyui.ui.editors.data_editor_dialog import DataEditorDialog
+
+        editor = DataEditorDialog(self._vm.core, spec)
+        self._vm.register_window(spec.id, editor)
+        editor.show()
+
+    _window_handlers = {
+        "about": _open_about,
+        "widget_config": _open_widget_config,
+        "editor": _open_editor,
+    }
+
+    # --- UI building ---
 
     def _build_menubar(self):
         menubar = self.menuBar()
@@ -57,31 +92,25 @@ class HelloWindow(QMainWindow):
         file_menu.addAction(quit_action)
 
         # Plugin menus — grouped by spec.menu
-        grouped: dict[str, list] = defaultdict(list)
-        for spec in self._core.editors.all():
-            menu_name = spec.menu or "Tools"
-            grouped[menu_name].append(spec)
-
-        for menu_name, specs in grouped.items():
+        for menu_name, specs in self._vm.editor_groups.items():
             menu = menubar.addMenu(f"&{menu_name}")
             for spec in specs:
                 action = QAction(spec.title, self)
                 action.triggered.connect(
-                    lambda checked=False, s=spec: self._open_editor(s)
+                    lambda checked=False, s=spec: self._vm.open_editor(s)
                 )
                 menu.addAction(action)
 
         # Help menu
         help_menu = menubar.addMenu("&Help")
         about_action = QAction(f"&About {APP_NAME}", self)
-        about_action.triggered.connect(self._show_about)
+        about_action.triggered.connect(self._vm.show_about)
         help_menu.addAction(about_action)
 
     def _build_ui(self):
-        self.main_view = MainView(self._core)
+        self.main_view = MainView(self._vm)
         self.setCentralWidget(self.main_view)
 
-        # Tabs toevoegen
         self.main_view.tabs.addTab(self._build_widgets_tab(), "Widgets")
 
     def _build_widgets_tab(self):
@@ -99,7 +128,7 @@ class HelloWindow(QMainWindow):
         layout.setSpacing(0)
         container.setAutoFillBackground(True)
 
-        for i, spec in enumerate(self._core.widgets.all()):
+        for i, spec in enumerate(self._vm.widget_specs):
             row = QFrame()
             row.setObjectName("widgetRow")
             row.setProperty("alt", i % 2 == 1)
@@ -109,7 +138,7 @@ class HelloWindow(QMainWindow):
             toggle = QCheckBox()
             toggle.setChecked(spec.enable)
             toggle.stateChanged.connect(
-                lambda state, s=spec: self._toggle_widget(s, state)
+                lambda state, s=spec: self._vm.toggle_widget(s, state)
             )
             row_layout.addWidget(toggle)
 
@@ -125,7 +154,7 @@ class HelloWindow(QMainWindow):
             config_btn = QPushButton("Configure")
             config_btn.setObjectName("widgetConfigBtn")
             config_btn.clicked.connect(
-                lambda checked=False, s=spec: self._configure_widget(s)
+                lambda checked=False, s=spec: self._vm.configure_widget(s)
             )
             row_layout.addWidget(config_btn)
 
@@ -134,36 +163,6 @@ class HelloWindow(QMainWindow):
         layout.addStretch()
         scroll.setWidget(container)
         return scroll
-
-    def _toggle_widget(self, spec, state):
-        spec.enable = bool(state)
-
-    def _configure_widget(self, spec):
-        QMessageBox.information(
-            self,
-            spec.title,
-            f"Widget config for '{spec.title}' is still under construction.",
-        )
-
-    def _open_editor(self, spec):
-        from tinyui.ui.editors.data_editor_dialog import DataEditorDialog
-
-        existing = self._open_editors.get(spec.id)
-        if existing is not None and existing.isVisible():
-            existing.raise_()
-            existing.activateWindow()
-            return
-
-        editor = DataEditorDialog(self._core, spec)
-        self._open_editors[spec.id] = editor
-        editor.show()
-
-    def _show_about(self):
-        QMessageBox.about(
-            self,
-            f"About {APP_NAME}",
-            f"{APP_NAME} v{VERSION}\n\nA modular overlay — just input data.",
-        )
 
     def closeEvent(self, event):
         QApplication.quit()
