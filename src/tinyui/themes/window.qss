@@ -1,152 +1,297 @@
 /* === Global === */
 
+QMainWindow, #mainView {
+    background: ${surface_alt};
+}
+
 QWidget {
     color: ${text};
-    background: ${surface_raised};
+    font-family: "Segoe UI", "SF Pro Display", -apple-system, sans-serif;
+    font-size: 10pt;
 }
 
-QToolTip {
-    color: ${text};
-    background: ${surface_raised};
-    border: 1px solid ${text_muted};
-}
-
-QSizeGrip {
-    image: none;
-    width: 4px;
-}
-
-/* === Menu bar === */
+/* === Menu & Navigation === */
 
 QMenuBar {
     background: ${surface_raised};
+    border-bottom: 1px solid ${border};
 }
+
+QMenuBar::item {
+    padding: 4px 10px;
+    margin: 0;
+    border-radius: 4px;
+}
+
 QMenuBar::item:selected {
     color: ${accent_text};
     background: ${accent};
 }
+
 QMenu {
-    background: ${surface_raised};
+    background: ${surface_floating};
     border: 1px solid ${border};
+    border-radius: 6px;
+    padding: 6px;
 }
+
+QMenu::item {
+    padding: 6px 16px;
+    border-radius: 4px;
+    margin: 1px 4px;
+}
+
 QMenu::item:selected {
     color: ${accent_text};
     background: ${accent};
 }
 
-/* === Tab bar === */
+/* === Tabs === */
 
 QTabWidget::pane {
     border: 1px solid ${border};
     background: ${surface};
+    border-radius: 0 0 8px 8px;
 }
+
+QTabBar {
+    margin-left: 0;
+}
+
 QTabBar::tab {
-    padding: 0.4em 1em;
+    padding: 10px 20px;
     background: ${surface_raised};
-    border: 1px solid ${border};
-    border-bottom: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-right: 0;
+    color: ${text_secondary};
 }
+
 QTabBar::tab:selected {
     background: ${surface};
     color: ${text};
+    border-bottom: 2px solid ${accent};
 }
-QTabBar::tab:hover:!selected {
-    background: ${border};
+
+/* === Checkboxes === */
+
+QCheckBox {
+    spacing: 6px;
+    background: transparent;
+}
+
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid ${border_strong};
+    border-radius: 4px;
+    background: ${surface};
+}
+
+QCheckBox::indicator:hover {
+    border-color: ${accent};
+}
+
+QCheckBox::indicator:checked {
+    background: ${accent};
+    border-color: ${accent};
+    image: url(${images_dir}/check.svg);
 }
 
 /* === Buttons === */
 
 QPushButton {
-    padding: 0.3em 0.8em;
-    border: 1px solid ${border};
-    border-radius: 3px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
     background: ${surface_raised};
     color: ${text};
+    font-weight: 500;
 }
+
 QPushButton:hover {
-    color: ${accent_text};
-    background: ${accent};
-    border-color: ${accent};
+    background: ${surface_floating};
 }
+
 QPushButton:pressed {
     background: ${surface};
 }
 
-/* === Input === */
+/* Primary/Accent button */
+QPushButton[primary="true"] {
+    background: ${accent};
+    color: ${accent_text};
+}
+
+QPushButton[primary="true"]:hover {
+    background: ${accent_hover};
+}
+
+QPushButton[primary="true"]:pressed {
+    background: ${accent_pressed};
+}
+
+/* === Inputs === */
 
 QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
-    padding: 0.2em 0.4em;
-    background: ${surface};
+    padding: 10px 12px;
+    background: ${surface_raised};
     border: 1px solid ${border};
-    border-radius: 2px;
+    border-radius: 6px;
     color: ${text};
-}
-QComboBox:hover, QLineEdit:focus {
-    border-color: ${accent};
+    selection-background-color: ${accent};
 }
 
-/* === Scroll area === */
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus {
+    border-color: ${accent};
+    border-width: 2px;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 24px;
+}
+
+QComboBox QAbstractItemView {
+    background: ${surface_floating};
+    border: 1px solid ${border};
+    border-radius: 6px;
+    padding: 6px;
+    selection-background-color: ${accent};
+}
+
+/* === Scrollbars === */
 
 QScrollBar:vertical {
-    background: ${surface};
-    width: 8px;
+    background: transparent;
+    width: 12px;
+    margin: 4px;
 }
+
 QScrollBar::handle:vertical {
     background: ${border};
-    border-radius: 4px;
-    min-height: 20px;
+    border-radius: 6px;
+    min-height: 40px;
+    margin: 2px;
 }
+
 QScrollBar::handle:vertical:hover {
     background: ${text_muted};
 }
+
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
     height: 0;
 }
 
-/* === Table === */
+/* === Tables === */
 
 QTableView, QTableWidget {
     background: ${surface};
     alternate-background-color: ${surface_alt};
     gridline-color: ${border};
-    color: ${text};
-    selection-background-color: ${accent};
-    selection-color: ${accent_text};
-}
-QHeaderView::section {
-    background: ${surface_raised};
-    color: ${text};
-    border: 1px solid ${border};
-    padding: 0.2em 0.4em;
-    font-weight: bold;
+    border: none;
+    selection-background-color: ${accent}80;
+    selection-color: ${text};
+    border-radius: 8px;
 }
 
-/* === Widget list === */
+QHeaderView::section {
+    background: ${surface_raised};
+    color: ${text_secondary};
+    border: none;
+    border-bottom: 2px solid ${border};
+    padding: 12px 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    letter-spacing: 0.5px;
+}
+
+QTableView::item {
+    padding: 12px;
+    border-bottom: 1px solid ${border};
+}
+
+QTableView::item:selected {
+    background: ${accent}40;
+    color: ${text};
+}
+
+/* === Cards/Groups === */
+
+QGroupBox {
+    background: ${surface_raised};
+    border: 1px solid ${border};
+    border-radius: 12px;
+    margin-top: 16px;
+    padding: 20px;
+    font-weight: 600;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 16px;
+    padding: 0 8px;
+    color: ${text_secondary};
+}
+
+/* === Tooltips === */
+
+QToolTip {
+    color: ${text};
+    background: ${surface_floating};
+    border: 1px solid ${border};
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 0.9em;
+}
+
+/* === Widget List (Custom) === */
 
 #widgetList, #widgetListContainer {
     background: ${surface};
+    border: none;
+    border-radius: 0;
 }
+
 #widgetRow {
     background: ${surface};
     border-bottom: 1px solid ${border};
+    padding: 4px;
+    min-height: 32px;
 }
-#widgetRow[alt="true"] {
+
+#widgetRow[alt=true] {
     background: ${surface_alt};
 }
+
 #widgetRow:hover {
-    background: ${border};
+    background: ${surface_raised};
 }
+
 #widgetTitle {
-    font-weight: bold;
+    font-weight: 600;
     font-size: ${font_title}pt;
+    color: ${text};
     background: transparent;
 }
+
 #widgetDesc {
-    color: ${text_muted};
+    color: ${text_secondary};
     font-size: ${font_small}pt;
     background: transparent;
+    margin-top: 4px;
 }
+
 #widgetConfigBtn {
     font-size: ${font_button}pt;
-    padding: 0.2em 0.6em;
+    padding: 8px 16px;
+    border-radius: 6px;
+    background: ${accent};
+    color: ${accent_text};
+    border: none;
+}
+
+#widgetConfigBtn:hover {
+    background: ${accent_hover};
 }

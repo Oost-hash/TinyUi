@@ -1,27 +1,5 @@
-#  TinyUI - A mod for TinyPedal
-#  Copyright (C) 2026 Oost-hash
-#
-#  This file is part of TinyUI.
-#
-#  TinyUI is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  TinyUI is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#
-#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
-#  licensed under GPLv3. TinyPedal is included as a submodule.
-
 from collections import defaultdict
 
-from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
@@ -40,6 +18,23 @@ from tinycore import App
 from tinyui.const import APP_NAME, VERSION
 
 
+class MainView(QWidget):
+    def __init__(self, core: App):
+        super().__init__()
+        self._core = core
+        self.setObjectName("mainView")
+
+        self._build_ui()
+
+    def _build_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(0)
+
+        self.tabs = QTabWidget()
+        layout.addWidget(self.tabs)
+
+
 class HelloWindow(QMainWindow):
     def __init__(self, core: App):
         super().__init__()
@@ -49,7 +44,7 @@ class HelloWindow(QMainWindow):
         self.resize(1024, 768)
 
         self._build_menubar()
-        self._build_tabs()
+        self._build_ui()
 
     def _build_menubar(self):
         menubar = self.menuBar()
@@ -82,11 +77,12 @@ class HelloWindow(QMainWindow):
         about_action.triggered.connect(self._show_about)
         help_menu.addAction(about_action)
 
-    def _build_tabs(self):
-        tabs = QTabWidget()
-        self.setCentralWidget(tabs)
+    def _build_ui(self):
+        self.main_view = MainView(self._core)
+        self.setCentralWidget(self.main_view)
 
-        tabs.addTab(self._build_widgets_tab(), "Widgets")
+        # Tabs toevoegen
+        self.main_view.tabs.addTab(self._build_widgets_tab(), "Widgets")
 
     def _build_widgets_tab(self):
         from PySide6.QtWidgets import QFrame, QScrollArea
@@ -101,13 +97,14 @@ class HelloWindow(QMainWindow):
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
+        container.setAutoFillBackground(True)
 
         for i, spec in enumerate(self._core.widgets.all()):
             row = QFrame()
             row.setObjectName("widgetRow")
             row.setProperty("alt", i % 2 == 1)
             row_layout = QHBoxLayout(row)
-            row_layout.setContentsMargins(8, 6, 8, 6)
+            row_layout.setContentsMargins(8, 2, 8, 2)
 
             toggle = QCheckBox()
             toggle.setChecked(spec.enable)

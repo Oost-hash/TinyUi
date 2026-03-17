@@ -40,4 +40,11 @@ def load_theme(name: str, base_font_pt: int = 10) -> str:
     tokens["font_button"] = round(font.get("scale-button", 1.05) * base_font_pt, 1)
     tokens["font_small"] = round(font.get("scale-small", 0.9) * base_font_pt, 1)
 
+    # Images path (forward slashes for QSS)
+    if getattr(sys, "frozen", False):
+        images_dir = os.path.join(os.path.dirname(sys.executable), "images")
+    else:
+        images_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "images")
+    tokens["images_dir"] = os.path.normpath(images_dir).replace("\\", "/")
+
     return template.substitute(tokens)
