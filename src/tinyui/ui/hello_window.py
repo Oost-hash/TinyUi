@@ -1,3 +1,4 @@
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
@@ -5,6 +6,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMainWindow,
+    QMenuBar,
     QMessageBox,
     QPushButton,
     QTabWidget,
@@ -13,6 +15,7 @@ from PySide6.QtWidgets import (
 )
 
 from tinyui.const import APP_NAME, VERSION
+from tinyui.ui.components.title_bar import TitleBar
 from tinyui.ui.main_viewmodel import MainViewModel
 
 
@@ -26,24 +29,46 @@ class MainView(QWidget):
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
+        from PySide6.QtWidgets import QApplication
+
+        self.title_bar = TitleBar(
+            f"{APP_NAME} v{VERSION}",
+            minimizable=True,
+            icon=QApplication.instance().windowIcon(),
+        )
+        layout.addWidget(self.title_bar)
+
+        self.menubar = QMenuBar()
+        layout.addWidget(self.menubar)
+
+        content = QVBoxLayout()
+        content.setContentsMargins(5, 5, 5, 5)
+        content.setSpacing(0)
+
         self.tabs = QTabWidget()
-        layout.addWidget(self.tabs)
+        content.addWidget(self.tabs)
+        layout.addLayout(content)
+
+
+_GRIP = 6  # pixels from edge for resize
 
 
 class HelloWindow(QMainWindow):
     def __init__(self, viewmodel: MainViewModel):
         super().__init__()
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setMouseTracking(True)
         self._vm = viewmodel
-        self.setWindowTitle(f"{APP_NAME} v{VERSION}")
+        self._resize_edge = None
         self.resize(1024, 768)
 
         self._vm.window_requested.connect(self._on_window_requested)
 
-        self._build_menubar()
         self._build_ui()
+        self._build_menubar()
 
     # --- Window dispatch ---
 
@@ -82,7 +107,7 @@ class HelloWindow(QMainWindow):
     # --- UI building ---
 
     def _build_menubar(self):
-        menubar = self.menuBar()
+        menubar = self.main_view.menubar
 
         # File menu
         file_menu = menubar.addMenu("&File")
@@ -112,6 +137,18 @@ class HelloWindow(QMainWindow):
         self.setCentralWidget(self.main_view)
 
         self.main_view.tabs.addTab(self._build_widgets_tab(), "Widgets")
+        self.main_view.tabs.addTab(QWidget(), "Presets")
+
+        reload_btn = QPushButton("Reload UI")
+        reload_btn.setObjectName("reloadBtn")
+        reload_btn.setProperty("compact", True)
+        reload_btn.clicked.connect(self._reload_ui)
+        self.main_view.tabs.setCornerWidget(reload_btn)
+
+    def _reload_ui(self):
+        from tinyui.themes.style import load_theme
+
+        self.setStyleSheet(load_theme("dark"))
 
     def _build_widgets_tab(self):
         from PySide6.QtWidgets import QFrame, QScrollArea
@@ -153,6 +190,7 @@ class HelloWindow(QMainWindow):
 
             config_btn = QPushButton("Configure")
             config_btn.setObjectName("widgetConfigBtn")
+            config_btn.setProperty("compact", True)
             config_btn.clicked.connect(
                 lambda checked=False, s=spec: self._vm.configure_widget(s)
             )
@@ -163,6 +201,44 @@ class HelloWindow(QMainWindow):
         layout.addStretch()
         scroll.setWidget(container)
         return scroll
+
+    # --- Edge resize ---
+
+    def _edge_at(self, pos):
+        r = self.rect()
+        edges = Qt.Edges()
+        if pos.x() < _GRIP:
+            edges |= Qt.LeftEdge
+        if pos.x() > r.width() - _GRIP:
+            edges |= Qt.RightEdge
+        if pos.y() < _GRIP:
+            edges |= Qt.TopEdge
+        if pos.y() > r.height() - _GRIP:
+            edges |= Qt.BottomEdge
+        return edges
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            edges = self._edge_at(event.position().toPoint())
+            if edges:
+                self.windowHandle().startSystemResize(edges)
+                event.accept()
+                return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        edges = self._edge_at(event.position().toPoint())
+        if edges == (Qt.LeftEdge | Qt.TopEdge) or edges == (Qt.RightEdge | Qt.BottomEdge):
+            self.setCursor(Qt.SizeFDiagCursor)
+        elif edges == (Qt.RightEdge | Qt.TopEdge) or edges == (Qt.LeftEdge | Qt.BottomEdge):
+            self.setCursor(Qt.SizeBDiagCursor)
+        elif edges & (Qt.LeftEdge | Qt.RightEdge):
+            self.setCursor(Qt.SizeHorCursor)
+        elif edges & (Qt.TopEdge | Qt.BottomEdge):
+            self.setCursor(Qt.SizeVerCursor)
+        else:
+            self.setCursor(Qt.ArrowCursor)
+        super().mouseMoveEvent(event)
 
     def closeEvent(self, event):
         QApplication.quit()

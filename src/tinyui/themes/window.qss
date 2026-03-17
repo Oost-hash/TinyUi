@@ -52,6 +52,7 @@ QTabWidget::pane {
     border: 1px solid ${border};
     background: ${surface};
     border-radius: 0 0 8px 8px;
+    top: -1px;
 }
 
 QTabBar {
@@ -61,16 +62,32 @@ QTabBar {
 QTabBar::tab {
     padding: 10px 20px;
     background: ${surface_raised};
-    border: none;
-    border-bottom: 2px solid transparent;
-    margin-right: 0;
+    border: 1px solid ${border};
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    margin-right: 0px;
     color: ${text_secondary};
 }
 
 QTabBar::tab:selected {
     background: ${surface};
     color: ${text};
-    border-bottom: 2px solid ${accent};
+    border-bottom: 1px solid ${surface};
+}
+
+QTabBar::tab:!selected {
+    margin-top: 2px;
+}
+
+/* Compact button variant */
+QPushButton[compact="true"] {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: ${font_small}pt;
+}
+
+#reloadBtn {
+    margin: 2px 4px;
 }
 
 /* === Checkboxes === */
@@ -233,6 +250,63 @@ QGroupBox::title {
     left: 16px;
     padding: 0 8px;
     color: ${text_secondary};
+}
+
+/* === Title Bar === */
+
+#titleBar {
+    background: ${surface_raised};
+    border-bottom: 1px solid ${border};
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+#titleBarLabel {
+    color: ${text};
+    font-weight: 600;
+    font-size: ${font_small}pt;
+    background: transparent;
+}
+
+#titleBarBtn {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: ${text_secondary};
+    font-size: 12px;
+}
+
+#titleBarBtn:hover {
+    background: ${surface_floating};
+    color: ${text};
+}
+
+#titleBarCloseBtn {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: ${text_secondary};
+    font-size: 12px;
+}
+
+#titleBarCloseBtn:hover {
+    background: ${danger};
+    color: ${accent_text};
+}
+
+/* === Dialogs / Message Boxes === */
+
+QMessageBox, QDialog {
+    background: ${surface_alt};
+    color: ${text};
+}
+
+QMessageBox QLabel {
+    color: ${text};
+}
+
+QMessageBox QPushButton {
+    min-width: 80px;
 }
 
 /* === Tooltips === */
