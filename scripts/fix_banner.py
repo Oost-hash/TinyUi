@@ -6,11 +6,14 @@ Usage:
 
 If no files are given, processes all staged .py files (for pre-commit use).
 Exits 1 when any file was changed so the commit is retried with the fix.
+Backups are saved to .banner_backups/ before any changes.
 """
 
 import re
+import shutil
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 BANNER = """\
@@ -36,23 +39,25 @@ BANNER = """\
 #  licensed under GPLv3.
 """
 
+BANNER_LINES = BANNER.strip().splitlines()
+
 # Directories that contain our own source (relative to repo root)
 SRC_DIRS = ("src/tinyui", "src/tinycore", "src/plugins")
 
 # Skip auto-generated files
 SKIP_MARKERS = ("# Auto-generated",)
 
-# Regex that matches any old/current banner variant.
-# Catches everything from the first "#  TinyUI" line through the
-# "licensed under GPLv3." line (with optional trailing comment).
-_OLD_BANNER_RE = re.compile(
-    r"^(#  TinyUI[^\n]*\n"       # first line: "#  TinyUI" with optional suffix
-    r"(?:#[^\n]*\n)*?"           # comment lines (copyright, license text, etc.)
-    r"#  licensed under GPLv3\."  # anchor: always the last real line
-    r"[^\n]*\n)"                 # rest of that line + newline
-    r"\n?",                      # optional blank line after banner
-    re.MULTILINE,
-)
+# Fingerprints: if any of these appear in the first 25 lines, it's a banner.
+# This is much more robust than a single regex — catches any variant.
+_FINGERPRINTS = [
+    "This file is part of TinyUI",
+    "TinyUI is free software",
+    "GNU General Public License",
+    "licensed under GPLv3",
+]
+
+# Backup directory
+BACKUP_DIR = Path(".banner_backups")
 
 
 def _is_src_file(path: Path) -> bool:
@@ -62,13 +67,47 @@ def _is_src_file(path: Path) -> bool:
 
 
 def _should_skip(content: str) -> bool:
-    """Skip auto-generated files and empty __init__.py."""
+    """Skip auto-generated files and empty files."""
     if not content.strip():
         return True
     for marker in SKIP_MARKERS:
         if content.startswith(marker):
             return True
     return False
+
+
+def _find_banner_end(lines: list[str]) -> int:
+    """Find where the existing banner ends.
+
+    Scans from the top through the leading comment block. If the block
+    contains enough license fingerprints, the whole block is considered
+    a banner. Returns the index of the first non-banner line.
+    """
+    # First check: does this file even have a banner?
+    head = "\n".join(lines[:30])
+    matches = sum(1 for fp in _FINGERPRINTS if fp in head)
+    if matches < 2:
+        return 0  # Not a banner
+
+    # Find the end of the leading comment block (comments + blank lines)
+    end = 0
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("#") or stripped == "":
+            end = i + 1
+        else:
+            break
+
+    return end
+
+
+def _backup(path: Path) -> Path:
+    """Create a timestamped backup of the file."""
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_path = BACKUP_DIR / stamp / path
+    backup_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(path, backup_path)
+    return backup_path
 
 
 def fix_file(path: Path) -> bool:
@@ -82,23 +121,33 @@ def fix_file(path: Path) -> bool:
     if content.startswith(BANNER):
         return False
 
-    # Has an old/wrong banner? Replace it.
-    if _OLD_BANNER_RE.match(content):
-        new_content = _OLD_BANNER_RE.sub(BANNER + "\n", content, count=1)
-    else:
-        # No banner at all — prepend it.
-        # Preserve shebang if present.
-        if content.startswith("#!"):
-            first_nl = content.index("\n") + 1
-            shebang = content[:first_nl]
-            rest = content[first_nl:].lstrip("\n")
-            new_content = shebang + "\n" + BANNER + "\n" + rest
-        else:
-            new_content = BANNER + "\n" + content
+    lines = content.splitlines(keepends=True)
+
+    # Preserve shebang
+    shebang = ""
+    if lines and lines[0].startswith("#!"):
+        shebang = lines[0]
+        lines = lines[1:]
+        # Skip blank lines after shebang
+        while lines and lines[0].strip() == "":
+            lines = lines[1:]
+
+    banner_end = _find_banner_end(lines)
+    rest = lines[banner_end:]
+
+    # Strip leading blank lines from rest
+    while rest and rest[0].strip() == "":
+        rest = rest[1:]
+
+    new_content = shebang
+    if shebang:
+        new_content += "\n"
+    new_content += BANNER + "\n" + "".join(rest)
 
     if new_content == content:
         return False
 
+    _backup(path)
     path.write_text(new_content, encoding="utf-8")
     return True
 
@@ -132,10 +181,11 @@ def main():
             print(f"  fixed: {path}")
 
     if changed:
+        print(f"  backups in: {BACKUP_DIR.resolve()}")
         # Re-stage fixed files
         if len(sys.argv) <= 1:
             subprocess.run(["git", "add"] + [str(p) for p in changed])
-        print(f"\n  {len(changed)} file(s) fixed")
+        print(f"  {len(changed)} file(s) fixed")
         return 1
 
     return 0
