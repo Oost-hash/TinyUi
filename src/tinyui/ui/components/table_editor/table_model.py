@@ -1,4 +1,4 @@
-#  TinyUI - A mod for TinyPedal
+#  TinyUI
 #  Copyright (C) 2026 Oost-hash
 #
 #  This file is part of TinyUI.
@@ -17,7 +17,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
-#  licensed under GPLv3. TinyPedal is included as a submodule.
+#  licensed under GPLv3.
 
 # tinyui/ui/components/table_model.py
 from copy import deepcopy

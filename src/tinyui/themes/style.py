@@ -1,3 +1,24 @@
+#  TinyUI
+#  Copyright (C) 2026 Oost-hash
+#
+#  This file is part of TinyUI.
+#
+#  TinyUI is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  TinyUI is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
+#  licensed under GPLv3.
+
 """Theme loading — reads TOML tokens, fills QSS template."""
 
 import os
@@ -30,10 +51,7 @@ def load_theme(name: str, base_font_pt: int = 10) -> str:
 
     # Build token map for QSS substitution
     # TOML uses dashes, QSS template uses underscores
-    tokens = {
-        k.replace("-", "_"): v
-        for k, v in colors.items()
-    }
+    tokens = {k.replace("-", "_"): v for k, v in colors.items()}
 
     # Font sizes from base
     tokens["font_title"] = round(font.get("scale-title", 1.2) * base_font_pt, 1)
@@ -44,7 +62,9 @@ def load_theme(name: str, base_font_pt: int = 10) -> str:
     if getattr(sys, "frozen", False):
         images_dir = os.path.join(os.path.dirname(sys.executable), "images")
     else:
-        images_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "images")
+        images_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "..", "images"
+        )
     tokens["images_dir"] = os.path.normpath(images_dir).replace("\\", "/")
 
     return template.substitute(tokens)
