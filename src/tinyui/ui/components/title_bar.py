@@ -54,9 +54,9 @@ class TitleBar(QWidget):
 
         if icon:
             icon_label = QLabel()
-            icon_label.setPixmap(icon.pixmap(18, 18))
+            icon_label.setPixmap(icon.pixmap(28, 28))
             icon_label.setObjectName("titleBarIcon")
-            icon_label.setFixedSize(20, 20)
+            icon_label.setFixedSize(28, 28)
             layout.addWidget(icon_label)
 
         self._title = QLabel(title)

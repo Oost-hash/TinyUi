@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- Antenna -->
+  <line x1="128" y1="12" x2="128" y2="44" stroke="#74ADE8" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="128" cy="10" r="8" fill="#74ADE8"/>
+
+  <!-- Head (grey outer shell) -->
+  <rect x="36" y="44" width="184" height="168" rx="32" fill="#555A63" stroke="#464B57" stroke-width="4"/>
+
+  <!-- Screen (blue, inset) -->
+  <rect x="52" y="58" width="152" height="140" rx="20" fill="#74ADE8"/>
+
+  <!-- Eyes -->
+  <rect x="76" y="90" width="36" height="28" rx="6" fill="#FFFFFF"/>
+  <rect x="144" y="90" width="36" height="28" rx="6" fill="#FFFFFF"/>
+
+  <!-- Eyelids / brow bars (same blue as screen, covering top of eyes) -->
+  <rect x="74" y="84" width="40" height="14" rx="4" fill="#74ADE8"/>
+  <rect x="142" y="84" width="40" height="14" rx="4" fill="#74ADE8"/>
+
+  <!-- Brow lines (white bars above eyes) -->
+  <rect x="76" y="80" width="32" height="5" rx="2" fill="#FFFFFF" opacity="0.9"/>
+  <rect x="148" y="80" width="32" height="5" rx="2" fill="#FFFFFF" opacity="0.9"/>
+
+  <!-- Mouth - white bar -->
+  <rect x="100" y="148" width="56" height="8" rx="4" fill="#FFFFFF" opacity="0.9"/>
+</svg>
