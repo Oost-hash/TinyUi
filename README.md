@@ -66,7 +66,33 @@ graph TB
     style Plugins fill:#e67e22,color:#fff
 ```
 
-**This project is in early development. Things will break.**
+## Help Wanted: TinyUi Logo
+
+I am looking for a community-contributed logo for **TinyUi**!
+
+The current placeholder is a modified version of the [TinyPedal](https://github.com/s-victor/TinyPedal) icon and is not a permanent solution. I'd love something that truly represents this project.
+
+### How to contribute
+
+1. Open a new **Issue** with the text `[logo-proposal]`
+2. Share your design idea, sketch, or finished logo in the issue
+3. All submissions are welcome — rough concepts, SVG files, PNG mockups, anything!
+
+### License
+
+By submitting a logo, you agree to release it under the **[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)** license, keeping TinyUi open and its assets freely usable by the community.
+
+### What we're looking for
+
+- Something clean and recognizable at small sizes (32×32 up to 256×256)
+- Fits the vibe of a lightweight UI overlay tool
+- "Ui" or "TinyUi" incorporated in some way is a plus, but not required
+
+Contributors will of course be credited! ⭐
+
+*Feel free to comment on existing proposals too — feedback and votes help a lot.*
+
+---
 
 ## License
 
