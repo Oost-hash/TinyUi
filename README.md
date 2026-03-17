@@ -74,7 +74,7 @@ The current placeholder is a modified version of the [TinyPedal](https://github.
 
 ### How to contribute
 
-1. Open a new **Issue** with the label `logo-proposal`
+1. Open a new **Issue** with the text `[logo-proposal]`
 2. Share your design idea, sketch, or finished logo in the issue
 3. All submissions are welcome — rough concepts, SVG files, PNG mockups, anything!
 
