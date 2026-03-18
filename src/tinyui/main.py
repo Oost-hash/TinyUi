@@ -27,7 +27,7 @@ import sys
 from pathlib import Path
 
 import psutil
-from PySide6.QtCore import QLocale, Qt
+from PySide6.QtCore import QLocale
 from PySide6.QtGui import QFont, QIcon, QPixmapCache
 from PySide6.QtWidgets import QApplication, QMessageBox
 
@@ -109,6 +109,10 @@ def _init_qt() -> QApplication:
     from tinyui.themes.style import load_theme
 
     app.setStyleSheet(load_theme("dark", font.pointSize()))
+    qss_string = load_theme("dark", font.pointSize())
+    print("=== GELADEN QSS ===")
+    print(qss_string)
+    print("=== EINDE QSS ===")
 
     logger.info("Screen DPI: %s", app.devicePixelRatio())
     logger.info("Platform: %s", app.platformName())
@@ -149,11 +153,11 @@ def run():
         return 1
 
     # --- UI ---
-    from tinyui.ui.hello_window import HelloWindow
     from tinyui.ui.main_viewmodel import MainViewModel
+    from tinyui.ui.main_window import MainWindow
 
     vm = MainViewModel(core)
-    window = HelloWindow(vm)
+    window = MainWindow(vm)
     window.setWindowIcon(qt_app.windowIcon())
     window.show()
 
