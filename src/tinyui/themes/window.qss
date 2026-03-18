@@ -1,19 +1,23 @@
 /* === Global === */
 
-QMainWindow, #mainView {
-    background: ${surface_alt};
-}
-
 QWidget {
     color: ${text};
     font-family: "Segoe UI", "SF Pro Display", -apple-system, sans-serif;
     font-size: 10pt;
 }
 
+/* === Main Window (buitenrand met radius) === */
+
+#mainWindow {
+    background-color: ${surface};        /* kies een passende kleur */
+    border: 1px solid ${border};
+    border-radius: 8px;
+}
+
 /* === Menu & Navigation === */
 
 QMenuBar {
-    background: ${surface_raised};
+    background: ${surface_alt};
     border-bottom: 1px solid ${border};
 }
 
@@ -257,8 +261,6 @@ QGroupBox::title {
 #titleBar {
     background: ${surface_raised};
     border-bottom: 1px solid ${border};
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
 }
 
 #titleBarLabel {
