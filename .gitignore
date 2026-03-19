@@ -14,7 +14,7 @@ dist/
 tinypedal_repo
 
 # runtime data
-src/data
+data/
 
 # python
 __pycache__/
