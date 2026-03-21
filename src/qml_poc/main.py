@@ -19,84 +19,119 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
+import logging
 import os
+import platform
 import sys
 
 # Logging vóór alle andere imports — configure() zet basicConfig in
 from qml_poc import log as app_log
+
 app_log.configure()
 
+import PySide6
+from PySide6.QtCore import QUrl, qVersion
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
-from PySide6.QtCore import QUrl
 from PySide6.QtQuick import QQuickWindow
 from PySide6.QtQuickControls2 import QQuickStyle
 
 from qml_poc.app_state import AppState
 from qml_poc.const import APP_NAME, VERSION
+from qml_poc.icons import Icons, glyph, load_font
 from qml_poc.theme import Theme
-from qml_poc.viewmodels.menu_viewmodel import MenuViewModel
-from qml_poc.viewmodels.tab_viewmodel import TabViewModel
 from qml_poc.viewmodels.home_tab_viewmodel import HomeTabViewModel
+from qml_poc.viewmodels.menu_viewmodel import MenuViewModel
 from qml_poc.viewmodels.settings_tab_viewmodel import SettingsTabViewModel
+from qml_poc.viewmodels.statusbar_viewmodel import StatusBarViewModel
+from qml_poc.viewmodels.tab_viewmodel import TabViewModel
 
 
 def main():
-    QQuickWindow.setDefaultAlphaBuffer(True)  # vóór app — alpha-kanaal voor transparantie
+    QQuickWindow.setDefaultAlphaBuffer(
+        True
+    )  # vóór app — alpha-kanaal voor transparantie
     QQuickStyle.setStyle("Basic")
     app = QGuiApplication(sys.argv)
+    load_font()
     app.setApplicationName(APP_NAME)
     app.setApplicationVersion(VERSION)
+
+    log = logging.getLogger(__name__)
+    log.info("── %s %s ──────────────────────────────", APP_NAME, VERSION)
+    log.info("OS:      %s %s", platform.system(), platform.release())
+    log.info("Python:  %s", platform.python_version())
+    log.info("Qt:      %s  PySide6: %s", qVersion(), PySide6.__version__)
+    log.info("Backend: %s", app.platformName())
 
     # Objecten op functie-niveau bewaren — outleven de engine
     state = AppState()
     theme = Theme()
     menu_vm = MenuViewModel()
+    statusbar_vm = StatusBarViewModel()
     home_vm = HomeTabViewModel(app_state=state)
     settings_vm = SettingsTabViewModel(app_state=state, theme=theme)
     tab_vm = TabViewModel(app_state=state)
-    tab_vm.register("home", "Home", "\uE80F")
-    tab_vm.register("settings", "Settings", "\uE74C")
+    tab_vm.register("home", "Home", glyph("home"))
+    tab_vm.register("settings", "Settings", glyph("settings"))
+
+    # Mutual exclusion: als één opent, sluit de andere
+    menu_vm.menuOpenChanged.connect(
+        lambda: statusbar_vm.closePluginDropdown() if menu_vm.menuOpen else None
+    )
+    statusbar_vm.pluginDropdownOpenChanged.connect(
+        lambda: menu_vm.closeMenu() if statusbar_vm.pluginDropdownOpen else None
+    )
+
+    icons = Icons()
 
     engine = QQmlApplicationEngine()
     ctx = engine.rootContext()
     ctx.setContextProperty("appName", APP_NAME)
     ctx.setContextProperty("theme", theme)
+    ctx.setContextProperty("icons", icons)
     ctx.setContextProperty("menuViewModel", menu_vm)
+    ctx.setContextProperty("statusBarViewModel", statusbar_vm)
     ctx.setContextProperty("tabViewModel", tab_vm)
     ctx.setContextProperty("homeTabViewModel", home_vm)
     ctx.setContextProperty("settingsTabViewModel", settings_vm)
 
-    qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qml", "main.qml")
+    qml_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "qml", "main.qml"
+    )
     engine.load(QUrl.fromLocalFile(qml_path))
 
     if not engine.rootObjects():
         sys.exit(-1)
 
-    # ── Win32/DWM setup (Windows only) ───────────────────────────────────────
-    # WndProc subclassing geeft gegarandeerde controle over WM_NCCALCSIZE en
-    # WM_NCHITTEST. _wnd_proc MOET bewaard blijven — anders garbage collected.
-    _wnd_proc = None
-    _win_ctrl = None
+    # ── Platform-specifieke vensterbesturing ──────────────────────────────────
+    window = engine.rootObjects()[0]
+    dpr    = app.devicePixelRatio()
+
+    _wnd_proc  = None   # Windows only: MOET bewaard blijven — anders GC → crash
+    _win_ctrl  = None
+
     if sys.platform == "win32":
-        from qml_poc.win32_window import WindowController, apply_dwm_frame, install_wnd_proc
+        from qml_poc.windowing.win_window import WindowController, apply_dwm_frame, install_wnd_proc
 
-        window = engine.rootObjects()[0]
-        hwnd   = int(window.winId())
-        dpr    = app.devicePixelRatio()
-
+        hwnd = int(window.winId())
         # WndProc EERST installeren — apply_dwm_frame triggert WM_NCCALCSIZE
         _wnd_proc, _set_left = install_wnd_proc(
             hwnd,
             title_bar_height   = round(theme.titleBarHeight * dpr),
-            resize_border      = round(8   * dpr),
-            resize_corner      = round(20  * dpr),
+            resize_border      = round(8  * dpr),
+            resize_corner      = round(20 * dpr),
             left_button_width  = round(300 * dpr),  # initiële waarde; QML werkt dit bij
             right_button_width = round(142 * dpr),
         )
         apply_dwm_frame(hwnd)
-
         _win_ctrl = WindowController(hwnd, dpr=dpr, set_left_button_width=_set_left)
+
+    elif sys.platform.startswith("linux") or sys.platform == "darwin":
+        from qml_poc.windowing.wayland_window import WindowController
+        _win_ctrl = WindowController(window)
+
+    if _win_ctrl is not None:
         engine.rootContext().setContextProperty("windowController", _win_ctrl)
 
     # Engine opruimen vóór Python-objecten worden vrijgegeven
@@ -111,6 +146,8 @@ def main():
     del settings_vm
     del home_vm
     del menu_vm
+    del statusbar_vm
+    del icons
     del theme
     del state
 

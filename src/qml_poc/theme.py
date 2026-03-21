@@ -20,9 +20,12 @@
 #  licensed under GPLv3.
 
 import os
+import platform as _platform
 import tomllib
 
 from PySide6.QtCore import QObject, Property, Signal
+
+_ICON_FONT = "Segoe Fluent Icons" if _platform.system() == "Windows" else "Material Symbols Rounded"
 
 
 def _load_toml(name: str) -> dict:
@@ -66,6 +69,9 @@ class Theme(QObject):
 
     @Property(str, constant=True)
     def fontFamily(self): return "Segoe UI"
+
+    @Property(str, constant=True)
+    def iconFont(self): return _ICON_FONT
 
     # ── Font sizes (uit TOML schalen) ────────────────────────────────────
 

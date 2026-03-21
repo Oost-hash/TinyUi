@@ -49,7 +49,12 @@ def _read_pyproject_categories() -> Optional[str]:
         if candidate.exists():
             with candidate.open("rb") as f:
                 data = tomllib.load(f)
-            return data.get("tool", {}).get("tinyui", {}).get("debug", {}).get("categories")
+            return (
+                data.get("tool", {})
+                .get("tinyui", {})
+                .get("debug", {})
+                .get("categories")
+            )
         current = current.parent
     return None
 
@@ -96,18 +101,36 @@ class CategoryLogger:
         self._log.debug("[%-5s] %s  %s", category, msg, detail)
 
     # ── Debug-kanalen ──────────────────────────────────────────────────────
-    def menu(self,  msg: str, **kw) -> None: self._cat("menu",  msg, **kw)
-    def state(self, msg: str, **kw) -> None: self._cat("state", msg, **kw)
-    def mouse(self, msg: str, **kw) -> None: self._cat("mouse", msg, **kw)
-    def win32(self, msg: str, **kw) -> None: self._cat("win32", msg, **kw)
-    def theme(self, msg: str, **kw) -> None: self._cat("theme", msg, **kw)
-    def ui(self,    msg: str, **kw) -> None: self._cat("ui",    msg, **kw)
+    def menu(self, msg: str, **kw) -> None:
+        self._cat("menu", msg, **kw)
+
+    def state(self, msg: str, **kw) -> None:
+        self._cat("state", msg, **kw)
+
+    def mouse(self, msg: str, **kw) -> None:
+        self._cat("mouse", msg, **kw)
+
+    def win32(self, msg: str, **kw) -> None:
+        self._cat("win32", msg, **kw)
+
+    def theme(self, msg: str, **kw) -> None:
+        self._cat("theme", msg, **kw)
+
+    def ui(self, msg: str, **kw) -> None:
+        self._cat("ui", msg, **kw)
 
     # ── Standaard niveaus (altijd actief) ──────────────────────────────────
-    def info(self,      msg, *a, **kw): self._log.info(msg,      *a, **kw)
-    def warning(self,   msg, *a, **kw): self._log.warning(msg,   *a, **kw)
-    def error(self,     msg, *a, **kw): self._log.error(msg,     *a, **kw)
-    def exception(self, msg, *a, **kw): self._log.exception(msg, *a, **kw)
+    def info(self, msg, *a, **kw):
+        self._log.info(msg, *a, **kw)
+
+    def warning(self, msg, *a, **kw):
+        self._log.warning(msg, *a, **kw)
+
+    def error(self, msg, *a, **kw):
+        self._log.error(msg, *a, **kw)
+
+    def exception(self, msg, *a, **kw):
+        self._log.exception(msg, *a, **kw)
 
 
 def get_logger(name: str) -> CategoryLogger:

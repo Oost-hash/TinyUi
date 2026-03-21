@@ -120,14 +120,14 @@ class MenuViewModel(QObject):
 
     @Slot()
     def dismissActivePopup(self):
-        """Klik buiten een popup — sluit popup, start timer, menu blijft open."""
+        """Klik buiten menu-zone — sluit popup of dropdown, start timer."""
         log.menu("dismissActivePopup", **self._snap())
         if self._active_popup:
             self._dismissed = self._active_popup
             self._set_active("")
-            self._set_dropdown_open(False)
-            if self._menu_open:
-                self._close_timer.start()
+        self._set_dropdown_open(False)
+        if self._menu_open:
+            self._close_timer.start()
 
     @Slot()
     def mouseEnteredMenu(self):

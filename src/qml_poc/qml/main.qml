@@ -22,6 +22,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "layout"
+import "tabs"
 
 ApplicationWindow {
     id: root
@@ -33,23 +35,49 @@ ApplicationWindow {
     visible: true
 
     title: appName
-    flags: Qt.Window | Qt.FramelessWindowHint
+    // Windows: frameless + custom TitleBar + DWM chrome.
+    // Linux/macOS: server-side decorations — compositor/AppKit verzorgt chrome.
+    //              Onze TitleBar fungeert als menu bar onder de native chrome.
+    readonly property bool nativeChrome: Qt.platform.os === "linux" || Qt.platform.os === "osx"
+    flags: nativeChrome ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
     color: theme.surface
 
-    // Vangt klikken buiten een open popup op — sluit popup, menu blijft open
+    // Beide backdrops dekken alleen de content area (tussen titelbalk en statusbalk).
+    // Mutual exclusion wordt afgedwongen in Python — ze zijn nooit tegelijk actief.
+    // Op Linux: geen custom titelbalk, dus content begint op y:0.
+
+    readonly property int contentTop: Qt.platform.os === "linux" ? 0 : theme.titleBarHeight
+
+    // Vangt klikken buiten een open menu popup op — sluit popup, menu blijft open
     MouseArea {
-        x: 0
-        y: theme.titleBarHeight
+        x: 0; y: root.contentTop
         width: parent.width
-        height: parent.height - theme.titleBarHeight
+        height: parent.height - root.contentTop - 32
         z: 4
-        enabled: menuViewModel.activePopup !== ""
+        enabled: menuViewModel.menuOpen
         propagateComposedEvents: true
         onClicked: mouse => {
             menuViewModel.dismissActivePopup()
             mouse.accepted = false
         }
     }
+
+    // Vangt klikken buiten de plugin dropdown op — sluit dropdown
+    MouseArea {
+        x: 0; y: root.contentTop
+        width: parent.width
+        height: parent.height - root.contentTop - 32
+        z: 3
+        enabled: statusBarViewModel.pluginDropdownOpen
+        propagateComposedEvents: true
+        onClicked: mouse => {
+            statusBarViewModel.closePluginDropdown()
+            mouse.accepted = false
+        }
+    }
+
+    // Op Linux/macOS: native chrome verzorgt resize
+    ResizeHandles { visible: !root.nativeChrome }
 
     ColumnLayout {
         anchors.fill: parent
