@@ -29,6 +29,7 @@ from .plugin.protocol import Plugin
 from .plugin.registry import PluginRegistry
 from .providers.protocol import Provider
 from .providers.registry import ProviderRegistry
+from .settings import SettingsRegistry, SettingsSpec
 from .widget import WidgetRegistry, WidgetSpec, load_widgets_toml
 
 __all__ = [
@@ -47,6 +48,8 @@ __all__ = [
     "PluginRegistry",
     "Provider",
     "ProviderRegistry",
+    "SettingsRegistry",
+    "SettingsSpec",
     "WidgetRegistry",
     "WidgetSpec",
     "load_widgets_toml",

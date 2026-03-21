@@ -39,12 +39,13 @@ from PySide6.QtQuickControls2 import QQuickStyle
 
 from plugins.demo import DemoPlugin
 from tinycore import create_app
+from tinyui_qml.plugin import TinyUIPlugin
 from tinyui_qml.const import APP_NAME, VERSION
-from tinyui_qml.icons import Icons, glyph, load_font
+from tinyui_qml.icons import Icons, load_font
 from tinyui_qml.theme import Theme
 from tinyui_qml.viewmodels.core_viewmodel import CoreViewModel
 from tinyui_qml.viewmodels.menu_viewmodel import MenuViewModel
-from tinyui_qml.viewmodels.settings_tab_viewmodel import SettingsTabViewModel
+from tinyui_qml.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
 from tinyui_qml.viewmodels.statusbar_viewmodel import StatusBarViewModel
 from tinyui_qml.viewmodels.tab_viewmodel import TabViewModel
 
@@ -57,7 +58,7 @@ def _config_dir() -> Path:
 
 def main():
     # ── tinycore boot — EERST, vóór Qt ───────────────────────────────────────
-    core = create_app(_config_dir(), DemoPlugin())
+    core = create_app(_config_dir(), TinyUIPlugin(), DemoPlugin())
     core.loaders.load_all(core.config)
     core.start()
 
@@ -79,20 +80,22 @@ def main():
              len(core.widgets.all()), len(core.editors.all()))
 
     # ── ViewModels ────────────────────────────────────────────────────────────
-    theme       = Theme()
-    menu_vm     = MenuViewModel()
-    statusbar_vm = StatusBarViewModel()
-    core_vm     = CoreViewModel(core)
-    settings_vm = SettingsTabViewModel(theme=theme)
-    tab_vm      = TabViewModel()
+    theme         = Theme()
+    menu_vm       = MenuViewModel()
+    statusbar_vm  = StatusBarViewModel()
+    settings_vm   = SettingsPanelViewModel()
+    core_vm       = CoreViewModel(core)
+    tab_vm        = TabViewModel()
 
-    # Plugin widget tabs (enabled widgets worden tabs)
-    for widget in core.widgets.all():
-        if widget.enable:
-            tab_vm.register(widget.id, widget.title, glyph("home"))
+    # Vaste Widgets tab — plugins voegen later hun eigen tabs toe
+    tab_vm.register("widgets", "Widgets")
 
-    # Settings altijd als laatste tab
-    tab_vm.register("settings", "Settings", glyph("settings"))
+    # Settings verandering → theme toepassen
+    def _apply_tinyui_settings():
+        val = core.settings.get_value("TinyUI", "theme")
+        if val:
+            theme.load(val)
+    core_vm.settingsChanged.connect(_apply_tinyui_settings)
 
     # Mutual exclusion: als één opent, sluit de andere
     menu_vm.menuOpenChanged.connect(
@@ -100,6 +103,12 @@ def main():
     )
     statusbar_vm.pluginDropdownOpenChanged.connect(
         lambda: menu_vm.closeMenu() if statusbar_vm.pluginDropdownOpen else None
+    )
+    menu_vm.menuOpenChanged.connect(
+        lambda: settings_vm.closePanel() if menu_vm.menuOpen else None
+    )
+    settings_vm.openChanged.connect(
+        lambda: menu_vm.closeMenu() if settings_vm.open else None
     )
 
     icons = Icons()
@@ -113,8 +122,8 @@ def main():
     ctx.setContextProperty("coreViewModel",      core_vm)
     ctx.setContextProperty("menuViewModel",      menu_vm)
     ctx.setContextProperty("statusBarViewModel", statusbar_vm)
-    ctx.setContextProperty("tabViewModel",       tab_vm)
-    ctx.setContextProperty("settingsTabViewModel", settings_vm)
+    ctx.setContextProperty("settingsPanelViewModel", settings_vm)
+    ctx.setContextProperty("tabViewModel",           tab_vm)
 
     qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qml", "main.qml")
     engine.load(QUrl.fromLocalFile(qml_path))

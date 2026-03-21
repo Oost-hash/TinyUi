@@ -129,7 +129,7 @@ Rectangle {
 
             Repeater {
                 model: [
-                    { icon: icons.settingsAlt, label: "Settings", sep: false, action: function() { tabViewModel.setCurrentById("settings"); menuViewModel.closeMenu() } },
+                    { icon: icons.settingsAlt, label: "Settings", sep: false, action: function() { settingsPanelViewModel.openPanel(); menuViewModel.closeMenu() } },
                     { icon: "",                label: "",          sep: true,  action: null },
                     { icon: icons.close,       label: "Sluiten",   sep: false, action: function() { root.close() } }
                 ]
@@ -139,89 +139,7 @@ Rectangle {
         height: menuDropdownCol.implicitHeight
     }
 
-    // ── Help dropdown ─────────────────────────────────────────────────────────
-
-    TitleDropdown {
-        id: helpDropdown
-        x: menuItemsRow.x + helpBtn.x
-        width: 200
-        opacity: menuViewModel.activePopup === "help" ? 1.0 : 0.0
-        visible: opacity > 0
-
-        Column {
-            id: helpCol
-            width: parent.width; spacing: 0
-
-            Repeater {
-                model: [
-                    { icon: icons.document,  label: "Snelstartgids",  sep: false, action: function() { menuViewModel.closeMenu() } },
-                    { icon: icons.book,      label: "Documentatie",    sep: false, action: function() { menuViewModel.closeMenu() } },
-                    { icon: icons.keyboard,  label: "Sneltoetsen",     sep: false, action: function() { menuViewModel.closeMenu() } },
-                    { icon: "",              label: "",                sep: true,  action: null },
-                    { icon: icons.bugReport, label: "Rapporteer bug",  sep: false, action: function() { menuViewModel.closeMenu() } },
-                    { icon: icons.feedback,  label: "Feedback geven",  sep: false, action: function() { menuViewModel.closeMenu() } },
-                    { icon: icons.group,     label: "Community",       sep: false, action: function() { menuViewModel.closeMenu() } }
-                ]
-                delegate: MenuItemDelegate {}
-            }
-        }
-        height: helpCol.implicitHeight
-    }
-
-    // ── About dropdown ────────────────────────────────────────────────────────
-
-    TitleDropdown {
-        id: aboutDropdown
-        x: menuItemsRow.x + aboutBtn.x
-        width: 200
-        opacity: menuViewModel.activePopup === "about" ? 1.0 : 0.0
-        visible: opacity > 0
-
-        Column {
-            id: aboutCol
-            width: parent.width; spacing: 0
-
-            // App-header
-            Rectangle {
-                width: parent.width; height: 40; color: "transparent"
-
-                Column {
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.left: parent.left; anchors.leftMargin: 12
-                    spacing: 2
-
-                    Text {
-                        text: appName
-                        color: theme.text
-                        font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
-                        font.weight: Font.DemiBold
-                    }
-                    Text {
-                        text: "v0.1.0"
-                        color: theme.textMuted
-                        font.pixelSize: theme.fontSizeSmall - 1; font.family: theme.fontFamily
-                    }
-                }
-            }
-
-            Rectangle { width: parent.width; height: 1; color: theme.border }
-
-            Repeater {
-                model: [
-                    { icon: icons.updates,  label: "Nieuwste updates", sep: false, action: function() { menuViewModel.closeMenu() } },
-                    { icon: icons.document, label: "Release notes",    sep: false, action: function() { menuViewModel.closeMenu() } },
-                    { icon: "",             label: "",                 sep: true,  action: null },
-                    { icon: icons.license,  label: "Licentie",         sep: false, action: function() { menuViewModel.closeMenu() } },
-                    { icon: icons.group,    label: "Bijdragers",       sep: false, action: function() { menuViewModel.closeMenu() } },
-                    { icon: icons.privacy,  label: "Privacy",          sep: false, action: function() { menuViewModel.closeMenu() } }
-                ]
-                delegate: MenuItemDelegate {}
-            }
-        }
-        height: aboutCol.implicitHeight
-    }
-
-    // ── Links: hamburger + app naam + menu items ──────────────────────────────
+    // ── Links: hamburger + app naam ───────────────────────────────────────────
 
     Row {
         id: leftRow
@@ -286,29 +204,6 @@ Rectangle {
             }
         }
 
-        Row {
-            id: menuItemsRow
-            height: parent.height
-            spacing: 0
-            opacity: menuViewModel.menuOpen ? 1.0 : 0.0
-            visible: opacity > 0
-
-            Behavior on opacity {
-                NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
-            }
-
-            MenuTextButton {
-                id: helpBtn
-                label: "Help"
-                popupKey: "help"
-            }
-
-            MenuTextButton {
-                id: aboutBtn
-                label: "About"
-                popupKey: "about"
-            }
-        }
     }
 
     // ── Rechts: venster knoppen (niet op Linux/macOS — native chrome levert die) ──

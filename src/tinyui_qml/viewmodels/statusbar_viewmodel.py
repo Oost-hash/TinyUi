@@ -30,10 +30,12 @@ class StatusBarViewModel(QObject):
     """Beheert de staat van de statusbalk en de plugin-dropdown."""
 
     pluginDropdownOpenChanged = Signal()
+    activePluginIndexChanged  = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._plugin_dropdown_open: bool = False
+        self._active_plugin_index:  int  = 0
 
     # ── Properties ────────────────────────────────────────────────────────
 
@@ -41,7 +43,18 @@ class StatusBarViewModel(QObject):
     def pluginDropdownOpen(self) -> bool:
         return self._plugin_dropdown_open
 
+    @Property(int, notify=activePluginIndexChanged)
+    def activePluginIndex(self) -> int:
+        return self._active_plugin_index
+
     # ── Slots ─────────────────────────────────────────────────────────────
+
+    @Slot(int)
+    def setActivePlugin(self, index: int) -> None:
+        log.ui("setActivePlugin", index=index)
+        if self._active_plugin_index != index:
+            self._active_plugin_index = index
+            self.activePluginIndexChanged.emit()
 
     @Slot()
     def togglePluginDropdown(self):

@@ -60,7 +60,7 @@ Rectangle {
 
     // ── Rechts: plugin naam knop ──────────────────────────────────────────
 
-    // Plugin naam knop — opent dropdown omhoog
+    // Plugin naam knop — opent dropdown omhoog; verborgen op de settings tab
     Item {
         id: pluginNameBtn
         anchors.right: parent.right
@@ -79,19 +79,11 @@ Rectangle {
         Row {
             id: pluginNameRow
             anchors.centerIn: parent
-            spacing: 6
+            spacing: 0
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: tabViewModel.tabIcons[tabViewModel.currentIndex] ?? ""
-                font.family: theme.iconFont
-                font.pixelSize: 12
-                color: "#FFFFFF"
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: tabViewModel.tabNames[tabViewModel.currentIndex] ?? ""
+                text: coreViewModel.pluginNames[statusBarViewModel.activePluginIndex] ?? ""
                 color: "#FFFFFF"
                 font.pixelSize: theme.fontSizeSmall
                 font.family: theme.fontFamily
@@ -126,35 +118,22 @@ Rectangle {
                 spacing: 0
 
                 Repeater {
-                    model: tabViewModel.tabNames
+                    model: coreViewModel.pluginNames
 
                     Rectangle {
                         width: parent.width
                         height: 28
                         color: dropItemHover.containsMouse ? theme.surfaceRaised : "transparent"
 
-                        Row {
+                        Text {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
-                            anchors.leftMargin: 8
-                            spacing: 6
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: tabViewModel.tabIcons[index] ?? ""
-                                font.family: theme.iconFont
-                                font.pixelSize: 12
-                                color: tabViewModel.currentIndex === index ? theme.accent : theme.textMuted
-                            }
-
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: modelData
-                                color: tabViewModel.currentIndex === index ? theme.accent : theme.text
-                                font.pixelSize: theme.fontSizeSmall
-                                font.family: theme.fontFamily
-                                font.weight: tabViewModel.currentIndex === index ? Font.DemiBold : Font.Normal
-                            }
+                            anchors.leftMargin: 12
+                            text: modelData
+                            color: statusBarViewModel.activePluginIndex === index ? theme.accent : theme.text
+                            font.pixelSize: theme.fontSizeSmall
+                            font.family: theme.fontFamily
+                            font.weight: statusBarViewModel.activePluginIndex === index ? Font.DemiBold : Font.Normal
                         }
 
                         MouseArea {
@@ -162,7 +141,7 @@ Rectangle {
                             anchors.fill: parent
                             hoverEnabled: true
                             onClicked: {
-                                tabViewModel.setCurrentIndex(index)
+                                statusBarViewModel.setActivePlugin(index)
                                 statusBarViewModel.closePluginDropdown()
                             }
                         }

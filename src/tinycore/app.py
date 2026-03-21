@@ -30,6 +30,7 @@ from .editor import EditorRegistry
 from .events.bus import EventBus
 from .plugin.registry import PluginRegistry
 from .providers.registry import ProviderRegistry
+from .settings import SettingsRegistry
 from .widget import WidgetRegistry
 
 
@@ -43,6 +44,7 @@ class App:
         self.events = EventBus()
         self.plugins = PluginRegistry()
         self.providers = ProviderRegistry()
+        self.settings = SettingsRegistry()
         self.widgets = WidgetRegistry()
 
     def start(self) -> None:

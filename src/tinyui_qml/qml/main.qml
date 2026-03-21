@@ -34,6 +34,23 @@ ApplicationWindow {
     minimumHeight: 300
     visible: true
 
+    // Minimum breedte eenmalig berekend op basis van langste description
+    TextMetrics {
+        id: _descMetrics
+        font.family: theme.fontFamily
+        font.pixelSize: theme.fontSizeSmall
+    }
+    function _minWidth(): int {
+        var max = 0
+        var widgets = coreViewModel.widgets
+        for (var i = 0; i < widgets.length; i++) {
+            _descMetrics.text = widgets[i].description
+            if (_descMetrics.advanceWidth > max) max = _descMetrics.advanceWidth
+        }
+        return Math.ceil(16 + 200 + max + 56)  // colPad + colName + desc + colToggle
+    }
+    Component.onCompleted: minimumWidth = _minWidth()
+
     title: appName
     // Windows: frameless + custom TitleBar + DWM chrome.
     // Linux/macOS: server-side decorations — compositor/AppKit verzorgt chrome.
@@ -92,30 +109,12 @@ ApplicationWindow {
             Layout.fillWidth: true
         }
 
-        // Tab content met fade-transitie.
-        // currentTabId === "settings" → SettingsTab, anders → plugin WidgetTab.
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            WidgetTab {
-                anchors.fill: parent
-                opacity: tabViewModel.currentTabId !== "settings" ? 1 : 0
-                enabled: tabViewModel.currentTabId !== "settings"
-                Behavior on opacity {
-                    NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
-                }
-            }
-
-            SettingsTab {
-                anchors.fill: parent
-                viewModel: settingsTabViewModel
-                opacity: tabViewModel.currentTabId === "settings" ? 1 : 0
-                enabled: tabViewModel.currentTabId === "settings"
-                Behavior on opacity {
-                    NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
-                }
-            }
+            WidgetTab { anchors.fill: parent }
+            SettingsPanel {}
         }
 
         StatusBar {

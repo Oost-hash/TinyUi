@@ -30,13 +30,11 @@ class TabViewModel(QObject):
         super().__init__(parent)
         self._ids: list[str] = []
         self._names: list[str] = []
-        self._icons: list[str] = []
         self._current_index: int = 0
 
-    def register(self, tab_id: str, name: str, icon: str = "") -> None:
+    def register(self, tab_id: str, name: str) -> None:
         self._ids.append(tab_id)
         self._names.append(name)
-        self._icons.append(icon)
         self.tabNamesChanged.emit()
 
     # ── Properties ────────────────────────────────────────────────────────────
@@ -45,25 +43,9 @@ class TabViewModel(QObject):
     def tabNames(self) -> list[str]:
         return self._names
 
-    @Property("QVariantList", notify=tabNamesChanged)
-    def tabIcons(self) -> list[str]:
-        return self._icons
-
     @Property(int, notify=currentIndexChanged)
     def currentIndex(self) -> int:
         return self._current_index
-
-    @Property(str, notify=currentIndexChanged)
-    def currentTabId(self) -> str:
-        if not self._ids:
-            return ""
-        return self._ids[self._current_index]
-
-    @Property(str, notify=currentIndexChanged)
-    def currentTabTitle(self) -> str:
-        if not self._names:
-            return ""
-        return self._names[self._current_index]
 
     # ── Slots ─────────────────────────────────────────────────────────────────
 
@@ -76,8 +58,3 @@ class TabViewModel(QObject):
         self._current_index = index
         self.currentIndexChanged.emit()
 
-    @Slot(str)
-    def setCurrentById(self, tab_id: str) -> None:
-        """Navigeer naar tab op id — handig voor acties vanuit menus."""
-        if tab_id in self._ids:
-            self.setCurrentIndex(self._ids.index(tab_id))

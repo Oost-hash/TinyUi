@@ -28,7 +28,6 @@ import QtQuick
 
 Item {
     anchors.fill: parent
-    visible: Qt.platform.os === "linux"
     z: 20
 
     readonly property int b: 8   // rand-breedte

@@ -27,6 +27,13 @@ from PySide6.QtCore import QObject, Property, Signal
 
 _ICON_FONT = "Segoe Fluent Icons" if _platform.system() == "Windows" else "Material Symbols Rounded"
 
+_sys = _platform.system()
+_FONT_FAMILY = (
+    "Segoe UI"           if _sys == "Windows" else
+    ".AppleSystemUIFont" if _sys == "Darwin"  else
+    ""                   # Qt system default op Linux
+)
+
 
 def _load_toml(name: str) -> dict:
     themes_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "themes")
@@ -68,7 +75,7 @@ class Theme(QObject):
     def fontSizeBase(self): return self._base
 
     @Property(str, constant=True)
-    def fontFamily(self): return "Segoe UI"
+    def fontFamily(self): return _FONT_FAMILY
 
     @Property(str, constant=True)
     def iconFont(self): return _ICON_FONT

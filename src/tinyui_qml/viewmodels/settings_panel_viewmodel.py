@@ -18,25 +18,42 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
+"""SettingsPanelViewModel — beheert de open/close staat van het settings panel."""
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
+from tinyui_qml.log import get_logger
 
-class SettingsTabViewModel(QObject):
-    darkModeChanged = Signal()
+log = get_logger(__name__)
 
-    def __init__(self, theme, parent: QObject | None = None) -> None:
+
+class SettingsPanelViewModel(QObject):
+    openChanged = Signal()
+
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._theme = theme
-        self._dark_mode = True
+        self._open: bool = False
 
-    @Property(bool, notify=darkModeChanged)
-    def darkMode(self) -> bool:
-        return self._dark_mode
+    @Property(bool, notify=openChanged)
+    def open(self) -> bool:
+        return self._open
 
-    @Slot(bool)
-    def setDarkMode(self, value: bool) -> None:
-        if self._dark_mode != value:
-            self._dark_mode = value
-            self._theme.load("dark" if value else "light")
-            self.darkModeChanged.emit()
+    @Slot()
+    def openPanel(self) -> None:
+        log.ui("openPanel")
+        self._set(True)
+
+    @Slot()
+    def closePanel(self) -> None:
+        log.ui("closePanel")
+        self._set(False)
+
+    @Slot()
+    def togglePanel(self) -> None:
+        log.ui("togglePanel", open=self._open)
+        self._set(not self._open)
+
+    def _set(self, val: bool) -> None:
+        if self._open != val:
+            self._open = val
+            self.openChanged.emit()

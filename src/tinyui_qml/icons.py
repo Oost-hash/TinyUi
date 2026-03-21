@@ -108,13 +108,6 @@ def load_font() -> None:
         _log.warning("Icon font niet gevonden: %s", font_path)
 
 
-# ── Python helper ─────────────────────────────────────────────────────────────
-
-def glyph(name: str) -> str:
-    """Platform-correct glyph voor gebruik in Python (bijv. tab-registratie)."""
-    return _G[name]
-
-
 # ── QML context object ────────────────────────────────────────────────────────
 
 class Icons(QObject):
