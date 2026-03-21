@@ -19,15 +19,12 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-import logging
 import os
 import sys
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s %(levelname)-7s %(name)s  %(message)s",
-    datefmt="%H:%M:%S",
-)
+# Logging vóór alle andere imports — configure() zet basicConfig in
+from qml_poc import log as app_log
+app_log.configure()
 
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
