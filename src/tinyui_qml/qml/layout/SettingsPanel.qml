@@ -32,11 +32,7 @@ Item {
         NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
     }
 
-    // Achtergrond
-    Rectangle {
-        anchors.fill: parent
-        color: theme.surface
-    }
+    Rectangle { anchors.fill: parent; color: theme.surface }
 
     // ── Header ────────────────────────────────────────────────────────────
 
@@ -49,8 +45,7 @@ Item {
         color: theme.surfaceAlt
 
         Text {
-            anchors.left: parent.left
-            anchors.leftMargin: 16
+            anchors.left: parent.left; anchors.leftMargin: 16
             anchors.verticalCenter: parent.verticalCenter
             text: "Settings"
             color: theme.text
@@ -61,272 +56,196 @@ Item {
 
         Item {
             anchors.right: parent.right
-            width: 40
-            height: parent.height
-
+            width: 40; height: parent.height
             Text {
                 anchors.centerIn: parent
                 text: icons.close
-                font.family: theme.iconFont
-                font.pixelSize: 10
+                font.family: theme.iconFont; font.pixelSize: 10
                 color: closeHover.containsMouse ? theme.text : theme.textMuted
                 Behavior on color { ColorAnimation { duration: 80 } }
             }
-
             MouseArea {
                 id: closeHover
-                anchors.fill: parent
-                hoverEnabled: true
+                anchors.fill: parent; hoverEnabled: true
                 onClicked: settingsPanelViewModel.closePanel()
             }
         }
 
-        Rectangle {
-            anchors.bottom: parent.bottom
-            width: parent.width
-            height: 1
-            color: theme.border
-        }
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
     }
 
     // ── Settings lijst ────────────────────────────────────────────────────
+    // Model: [{ plugin, sections: [{ name, settings: [{key,label,type,value,description,options}] }] }]
 
     ListView {
         anchors.top: panelHeader.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
+        anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
         clip: true
         model: coreViewModel.settingsByPlugin
-        spacing: 0
 
-        // Eén delegate per plugin — bevat een sectie-header + rijen
         delegate: Column {
-            id: pluginSection
-
-            required property var modelData   // { plugin, settings[] }
-            required property int index
-
+            id: pluginBlock
+            required property var modelData   // { plugin, sections[] }
             width: ListView.view.width
 
-            // Sectie-header
+            // Plugin header
             Rectangle {
-                width: parent.width
-                height: 28
-                color: theme.surfaceAlt
-
+                width: parent.width; height: 28; color: theme.surfaceAlt
                 Text {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 16
+                    anchors.left: parent.left; anchors.leftMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
-                    text: pluginSection.modelData.plugin
+                    text: pluginBlock.modelData.plugin
                     color: theme.textMuted
-                    font.pixelSize: theme.fontSizeSmall
-                    font.family: theme.fontFamily
+                    font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
                     font.weight: Font.Medium
                 }
-
-                Rectangle {
-                    anchors.bottom: parent.bottom
-                    width: parent.width
-                    height: 1
-                    color: theme.border
-                }
+                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
             }
 
-            // Setting rijen — met optionele sectie-header als sectie wisselt
+            // Secties — Python heeft al gegroepeerd
             Repeater {
-                model: pluginSection.modelData.settings
+                model: pluginBlock.modelData.sections
 
                 Column {
-                    id: settingItem
+                    id: sectionBlock
+                    required property var modelData   // { name, settings[] }
+                    width: pluginBlock.width
 
-                    required property var modelData   // { key, label, type, value, description, options[], section }
-                    required property int index
-
-                    width: pluginSection.width
-
-                    // Sectie-header — toon als eerste item van een nieuwe sectie
+                    // Sectie-header (leeg = geen header)
                     Rectangle {
                         width: parent.width
-                        height: showHeader ? 28 : 0
-                        visible: showHeader
+                        height: sectionBlock.modelData.name !== "" ? 28 : 0
+                        visible: height > 0
                         color: theme.surface
 
-                        property bool showHeader: {
-                            if (settingItem.modelData.section === "") return false
-                            if (settingItem.index === 0) return true
-                            return pluginSection.modelData.settings[settingItem.index - 1].section
-                                !== settingItem.modelData.section
-                        }
-
                         Text {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 24
+                            anchors.left: parent.left; anchors.leftMargin: 24
                             anchors.verticalCenter: parent.verticalCenter
-                            text: settingItem.modelData.section
+                            text: sectionBlock.modelData.name
                             color: theme.textSecondary
-                            font.pixelSize: theme.fontSizeSmall
-                            font.family: theme.fontFamily
+                            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
                         }
+                        Rectangle {
+                            anchors.bottom: parent.bottom; width: parent.width; height: 1
+                            color: theme.border; opacity: 0.4
+                        }
+                    }
+
+                    // Setting rijen
+                    Repeater {
+                        model: sectionBlock.modelData.settings
 
                         Rectangle {
-                            anchors.bottom: parent.bottom
-                            width: parent.width
-                            height: 1
-                            color: theme.border
-                            opacity: 0.4
-                        }
-                    }
+                            id: settingRow
+                            required property var modelData   // {key,label,type,value,description,options}
 
-                    Rectangle {
-                        id: settingRow
+                            width: sectionBlock.width; height: 44
+                            color: rowHover.hovered ? "#dec1841a" : "transparent"
+                            Behavior on color { ColorAnimation { duration: 80 } }
 
-                        width: pluginSection.width
-                        height: 44
-                        color: rowHover.hovered ? "#dec1841a" : "transparent"
-                        Behavior on color { ColorAnimation { duration: 80 } }
-
-                    Rectangle {
-                        anchors.bottom: parent.bottom
-                        width: parent.width
-                        height: 1
-                        color: theme.border
-                        opacity: 0.4
-                    }
-
-                    Row {
-                        anchors.fill: parent
-                        leftPadding: 16
-
-                        // Label + omschrijving
-                        Column {
-                            width: parent.width - 16 - 100
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 3
-
-                            Text {
-                                text: settingRow.modelData.label
-                                color: theme.text
-                                font.pixelSize: theme.fontSizeBase
-                                font.family: theme.fontFamily
-                            }
-
-                            Text {
-                                visible: settingRow.modelData.description !== ""
-                                text: settingRow.modelData.description
-                                color: rowHover.hovered ? "#dec184" : theme.textMuted
-                                font.pixelSize: theme.fontSizeSmall
-                                font.family: theme.fontFamily
-                                Behavior on color { ColorAnimation { duration: 120 } }
-                            }
-                        }
-
-                        // Control
-                        Item {
-                            width: 100
-                            height: parent.height
-
-                            // Bool → toggle
                             Rectangle {
-                                visible: settingRow.modelData.type === "bool"
-                                anchors.centerIn: parent
-                                width: 34
-                                height: 18
-                                radius: 9
-                                color: settingRow.modelData.value ? theme.accent : theme.surfaceFloating
-                                border.width: 1
-                                border.color: settingRow.modelData.value ? "transparent" : theme.border
-                                Behavior on color       { ColorAnimation { duration: 140 } }
-                                Behavior on border.color { ColorAnimation { duration: 140 } }
-
-                                Rectangle {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    x: settingRow.modelData.value ? parent.width - width - 2 : 2
-                                    width: 14; height: 14; radius: 7
-                                    color: "#FFFFFF"
-                                    Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: coreViewModel.setSettingValue(
-                                        pluginSection.modelData.plugin,
-                                        settingRow.modelData.key,
-                                        !settingRow.modelData.value
-                                    )
-                                }
+                                anchors.bottom: parent.bottom; width: parent.width; height: 1
+                                color: theme.border; opacity: 0.4
                             }
 
-                            // Enum → pijl-selector
                             Row {
-                                visible: settingRow.modelData.type === "enum"
-                                anchors.centerIn: parent
-                                spacing: 8
+                                anchors.fill: parent; leftPadding: 16
 
-                                Text {
+                                Column {
+                                    width: parent.width - 16 - 100
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: "\u2039"   // ‹
-                                    color: prevHover.containsMouse ? theme.text : theme.textMuted
-                                    font.pixelSize: theme.fontSizeBase
-                                    font.family: theme.fontFamily
-                                    Behavior on color { ColorAnimation { duration: 80 } }
-                                    MouseArea {
-                                        id: prevHover
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            var opts = settingRow.modelData.options
-                                            var idx  = opts.indexOf(settingRow.modelData.value)
-                                            coreViewModel.setSettingValue(
-                                                pluginSection.modelData.plugin,
-                                                settingRow.modelData.key,
-                                                opts[(idx - 1 + opts.length) % opts.length]
-                                            )
-                                        }
+                                    spacing: 3
+
+                                    Text {
+                                        text: settingRow.modelData.label
+                                        color: theme.text
+                                        font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+                                    }
+                                    Text {
+                                        visible: settingRow.modelData.description !== ""
+                                        text: settingRow.modelData.description
+                                        color: rowHover.hovered ? "#dec184" : theme.textMuted
+                                        font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                                        Behavior on color { ColorAnimation { duration: 120 } }
                                     }
                                 }
 
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: settingRow.modelData.value
-                                    color: theme.text
-                                    font.pixelSize: theme.fontSizeSmall
-                                    font.family: theme.fontFamily
-                                    width: 42
-                                    horizontalAlignment: Text.AlignHCenter
-                                }
+                                Item {
+                                    width: 100; height: parent.height
 
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: "\u203A"   // ›
-                                    color: nextHover.containsMouse ? theme.text : theme.textMuted
-                                    font.pixelSize: theme.fontSizeBase
-                                    font.family: theme.fontFamily
-                                    Behavior on color { ColorAnimation { duration: 80 } }
-                                    MouseArea {
-                                        id: nextHover
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            var opts = settingRow.modelData.options
-                                            var idx  = opts.indexOf(settingRow.modelData.value)
-                                            coreViewModel.setSettingValue(
-                                                pluginSection.modelData.plugin,
-                                                settingRow.modelData.key,
-                                                opts[(idx + 1) % opts.length]
-                                            )
+                                    // Bool → ToggleSwitch component
+                                    ToggleSwitch {
+                                        visible: settingRow.modelData.type === "bool"
+                                        anchors.centerIn: parent
+                                        checked: settingRow.modelData.value === true
+                                        onToggled: (newValue) => settingsPanelViewModel.setSetting(
+                                            pluginBlock.modelData.plugin,
+                                            settingRow.modelData.key,
+                                            newValue
+                                        )
+                                    }
+
+                                    // Enum → pijl-selector
+                                    Row {
+                                        visible: settingRow.modelData.type === "enum"
+                                        anchors.centerIn: parent; spacing: 8
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: "\u2039"
+                                            color: prevHover.containsMouse ? theme.text : theme.textMuted
+                                            font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+                                            Behavior on color { ColorAnimation { duration: 80 } }
+                                            MouseArea {
+                                                id: prevHover; anchors.fill: parent; hoverEnabled: true
+                                                onClicked: {
+                                                    var opts = settingRow.modelData.options
+                                                    var idx  = opts.indexOf(settingRow.modelData.value)
+                                                    settingsPanelViewModel.setSetting(
+                                                        pluginBlock.modelData.plugin,
+                                                        settingRow.modelData.key,
+                                                        opts[(idx - 1 + opts.length) % opts.length]
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: settingRow.modelData.value
+                                            color: theme.text
+                                            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                                            width: 42; horizontalAlignment: Text.AlignHCenter
+                                        }
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: "\u203A"
+                                            color: nextHover.containsMouse ? theme.text : theme.textMuted
+                                            font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+                                            Behavior on color { ColorAnimation { duration: 80 } }
+                                            MouseArea {
+                                                id: nextHover; anchors.fill: parent; hoverEnabled: true
+                                                onClicked: {
+                                                    var opts = settingRow.modelData.options
+                                                    var idx  = opts.indexOf(settingRow.modelData.value)
+                                                    settingsPanelViewModel.setSetting(
+                                                        pluginBlock.modelData.plugin,
+                                                        settingRow.modelData.key,
+                                                        opts[(idx + 1) % opts.length]
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
+
+                            HoverHandler { id: rowHover }
                         }
                     }
-
-                    HoverHandler { id: rowHover }
-                    }  // Rectangle settingRow
-                }  // Column settingItem
-            }  // Repeater
-        }  // Column pluginSection
-    }  // ListView
+                }
+            }
+        }
+    }
 }

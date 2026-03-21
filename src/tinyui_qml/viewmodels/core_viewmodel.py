@@ -74,22 +74,32 @@ class CoreViewModel(QObject):
 
     @Property("QVariantList", notify=settingsChanged)
     def settingsByPlugin(self) -> list[dict]:
-        """Settings gegroepeerd per plugin — voor de settings dialog."""
+        """Settings gegroepeerd per plugin én sectie — voor de settings dialog.
+
+        Structuur: [{ plugin, sections: [{ name, settings: [{key,label,type,value,...}] }] }]
+        """
         result = []
         for plugin_name, specs in self._core.settings.by_plugin().items():
+            sections: dict[str, list[dict]] = {}
+            section_order: list[str] = []
+            for s in specs:
+                sec = s.section or ""
+                if sec not in sections:
+                    sections[sec] = []
+                    section_order.append(sec)
+                sections[sec].append({
+                    "key":         s.key,
+                    "label":       s.label,
+                    "type":        s.type,
+                    "value":       self._core.settings.get_value(plugin_name, s.key),
+                    "description": s.description,
+                    "options":     s.options,
+                })
             result.append({
-                "plugin": plugin_name,
-                "settings": [
-                    {
-                        "key":         s.key,
-                        "label":       s.label,
-                        "type":        s.type,
-                        "value":       self._core.settings.get_value(plugin_name, s.key),
-                        "description": s.description,
-                        "options":     s.options,
-                        "section":     s.section,
-                    }
-                    for s in specs
+                "plugin":   plugin_name,
+                "sections": [
+                    {"name": name, "settings": sections[name]}
+                    for name in section_order
                 ],
             })
         return result

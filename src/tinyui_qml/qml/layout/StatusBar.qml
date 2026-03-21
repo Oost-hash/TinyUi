@@ -140,10 +140,7 @@ Rectangle {
                             id: dropItemHover
                             anchors.fill: parent
                             hoverEnabled: true
-                            onClicked: {
-                                statusBarViewModel.setActivePlugin(index)
-                                statusBarViewModel.closePluginDropdown()
-                            }
+                            onClicked: statusBarViewModel.selectPlugin(index)
                         }
                     }
                 }

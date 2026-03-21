@@ -150,33 +150,12 @@ Item {
                     width: widgetTab.colToggle
                     height: parent.height
 
-                    Rectangle {
+                    ToggleSwitch {
                         anchors.centerIn: parent
-                        width: 34
-                        height: 18
-                        radius: 9
-                        color: row.widgetEnabled ? theme.accent : theme.surfaceFloating
-                        border.width: 1
-                        border.color: row.widgetEnabled ? "transparent" : theme.border
-                        Behavior on color { ColorAnimation { duration: 140 } }
-                        Behavior on border.color { ColorAnimation { duration: 140 } }
-
-                        Rectangle {
-                            anchors.verticalCenter: parent.verticalCenter
-                            x: row.widgetEnabled ? parent.width - width - 2 : 2
-                            width: 14
-                            height: 14
-                            radius: 7
-                            color: "#FFFFFF"
-                            Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            row.widgetEnabled = !row.widgetEnabled
-                            coreViewModel.setWidgetEnabled(row.modelData.id, row.widgetEnabled)
+                        checked: row.widgetEnabled
+                        onToggled: (newValue) => {
+                            row.widgetEnabled = newValue
+                            coreViewModel.setWidgetEnabled(row.modelData.id, newValue)
                         }
                     }
                 }

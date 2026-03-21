@@ -28,7 +28,8 @@ log = get_logger(__name__)
 
 
 class SettingsPanelViewModel(QObject):
-    openChanged = Signal()
+    openChanged            = Signal()
+    settingChangeRequested = Signal(str, str, "QVariant")  # plugin, key, value
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -52,6 +53,12 @@ class SettingsPanelViewModel(QObject):
     def togglePanel(self) -> None:
         log.ui("togglePanel", open=self._open)
         self._set(not self._open)
+
+    @Slot(str, str, "QVariant")
+    def setSetting(self, plugin_name: str, key: str, value) -> None:
+        """Stuur een settingswijziging door — panel kent coreViewModel niet."""
+        log.ui("setSetting", plugin=plugin_name, key=key, value=value)
+        self.settingChangeRequested.emit(plugin_name, key, value)
 
     def _set(self, val: bool) -> None:
         if self._open != val:

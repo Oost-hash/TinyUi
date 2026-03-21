@@ -50,6 +50,15 @@ class StatusBarViewModel(QObject):
     # ── Slots ─────────────────────────────────────────────────────────────
 
     @Slot(int)
+    def selectPlugin(self, index: int) -> None:
+        """Selecteer plugin én sluit dropdown — één actie voor QML."""
+        log.ui("selectPlugin", index=index)
+        if self._active_plugin_index != index:
+            self._active_plugin_index = index
+            self.activePluginIndexChanged.emit()
+        self._set_open(False)
+
+    @Slot(int)
     def setActivePlugin(self, index: int) -> None:
         log.ui("setActivePlugin", index=index)
         if self._active_plugin_index != index:

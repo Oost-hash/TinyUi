@@ -99,6 +99,7 @@ def main():
 
     core_vm.settingsChanged.connect(_apply_tinyui_settings)
     core_vm.settingValueChanged.connect(core.settings.save)
+    settings_vm.settingChangeRequested.connect(core_vm.setSettingValue)
     _apply_tinyui_settings()                # pas opgeslagen theme direct toe bij opstart
 
     # Mutual exclusion: als één opent, sluit de andere
