@@ -19,24 +19,23 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-from PySide6.QtCore import QObject, Property, Signal, Slot
+from PySide6.QtCore import Property, QObject, Signal, Slot
 
 
 class SettingsTabViewModel(QObject):
     darkModeChanged = Signal()
 
-    def __init__(self, app_state, theme):
-        super().__init__()
-        self._app_state = app_state
+    def __init__(self, theme, parent: QObject | None = None) -> None:
+        super().__init__(parent)
         self._theme = theme
         self._dark_mode = True
 
     @Property(bool, notify=darkModeChanged)
-    def darkMode(self):
+    def darkMode(self) -> bool:
         return self._dark_mode
 
     @Slot(bool)
-    def setDarkMode(self, value: bool):
+    def setDarkMode(self, value: bool) -> None:
         if self._dark_mode != value:
             self._dark_mode = value
             self._theme.load("dark" if value else "light")

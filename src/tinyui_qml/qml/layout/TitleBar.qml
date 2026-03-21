@@ -129,7 +129,7 @@ Rectangle {
 
             Repeater {
                 model: [
-                    { icon: icons.settingsAlt, label: "Settings", sep: false, action: function() { tabViewModel.setCurrentIndex(1); menuViewModel.closeMenu() } },
+                    { icon: icons.settingsAlt, label: "Settings", sep: false, action: function() { tabViewModel.setCurrentById("settings"); menuViewModel.closeMenu() } },
                     { icon: "",                label: "",          sep: true,  action: null },
                     { icon: icons.close,       label: "Sluiten",   sep: false, action: function() { root.close() } }
                 ]

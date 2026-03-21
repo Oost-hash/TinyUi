@@ -48,14 +48,14 @@ Rectangle {
 
         StatusBarIconButton {
             iconText: icons.home
-            selected: tabViewModel.currentIndex === 0
+            selected: tabViewModel.currentTabId !== "settings"
             onClicked: tabViewModel.setCurrentIndex(0)
         }
 
         StatusBarIconButton {
             iconText: icons.settings
-            selected: tabViewModel.currentIndex === 1
-            onClicked: tabViewModel.setCurrentIndex(1)
+            selected: tabViewModel.currentTabId === "settings"
+            onClicked: tabViewModel.setCurrentById("settings")
         }
     }
 

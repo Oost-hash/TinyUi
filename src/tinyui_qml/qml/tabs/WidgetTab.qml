@@ -20,29 +20,32 @@
 //  licensed under GPLv3.
 
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import "../components"
 
-Item {
-    property var viewModel: null
+// Generieke plugin widget tab — toont de actieve widget naam + placeholder.
+// Wordt vervangen zodra het plugin widget systeem verder uitgewerkt is.
 
-    ColumnLayout {
+Item {
+    Column {
         anchors.centerIn: parent
-        spacing: 16
+        spacing: 12
 
         Text {
-            text: viewModel ? viewModel.greeting : ""
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: tabViewModel.currentTabTitle
             color: theme.text
             font.pixelSize: theme.fontSizeTitle
             font.family: theme.fontFamily
-            Layout.alignment: Qt.AlignHCenter
+            font.weight: Font.DemiBold
         }
 
-        AppButton {
-            text: "Go to Settings"
-            Layout.alignment: Qt.AlignHCenter
-            onClicked: tabViewModel.setCurrentIndex(1)
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: "Plugin widget — coming soon"
+            color: theme.textMuted
+            font.pixelSize: theme.fontSizeSmall
+            font.family: theme.fontFamily
         }
     }
 }

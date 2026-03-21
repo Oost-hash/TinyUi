@@ -92,16 +92,16 @@ ApplicationWindow {
             Layout.fillWidth: true
         }
 
-        // Tab content met fade-transitie
+        // Tab content met fade-transitie.
+        // currentTabId === "settings" → SettingsTab, anders → plugin WidgetTab.
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            HomeTab {
+            WidgetTab {
                 anchors.fill: parent
-                viewModel: homeTabViewModel
-                opacity: tabViewModel.currentIndex === 0 ? 1 : 0
-                enabled: tabViewModel.currentIndex === 0
+                opacity: tabViewModel.currentTabId !== "settings" ? 1 : 0
+                enabled: tabViewModel.currentTabId !== "settings"
                 Behavior on opacity {
                     NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
                 }
@@ -110,8 +110,8 @@ ApplicationWindow {
             SettingsTab {
                 anchors.fill: parent
                 viewModel: settingsTabViewModel
-                opacity: tabViewModel.currentIndex === 1 ? 1 : 0
-                enabled: tabViewModel.currentIndex === 1
+                opacity: tabViewModel.currentTabId === "settings" ? 1 : 0
+                enabled: tabViewModel.currentTabId === "settings"
                 Behavior on opacity {
                     NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
                 }
