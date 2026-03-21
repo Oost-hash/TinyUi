@@ -19,8 +19,15 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
+import logging
 import os
 import sys
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)-7s %(name)s  %(message)s",
+    datefmt="%H:%M:%S",
+)
 
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
@@ -31,6 +38,7 @@ from PySide6.QtQuickControls2 import QQuickStyle
 from qml_poc.app_state import AppState
 from qml_poc.const import APP_NAME, VERSION
 from qml_poc.theme import Theme
+from qml_poc.viewmodels.menu_viewmodel import MenuViewModel
 from qml_poc.viewmodels.tab_viewmodel import TabViewModel
 from qml_poc.viewmodels.home_tab_viewmodel import HomeTabViewModel
 from qml_poc.viewmodels.settings_tab_viewmodel import SettingsTabViewModel
@@ -46,16 +54,18 @@ def main():
     # Objecten op functie-niveau bewaren — outleven de engine
     state = AppState()
     theme = Theme()
+    menu_vm = MenuViewModel()
     home_vm = HomeTabViewModel(app_state=state)
     settings_vm = SettingsTabViewModel(app_state=state, theme=theme)
     tab_vm = TabViewModel(app_state=state)
-    tab_vm.register("home", "Home")
-    tab_vm.register("settings", "Settings")
+    tab_vm.register("home", "Home", "\uE80F")
+    tab_vm.register("settings", "Settings", "\uE74C")
 
     engine = QQmlApplicationEngine()
     ctx = engine.rootContext()
     ctx.setContextProperty("appName", APP_NAME)
     ctx.setContextProperty("theme", theme)
+    ctx.setContextProperty("menuViewModel", menu_vm)
     ctx.setContextProperty("tabViewModel", tab_vm)
     ctx.setContextProperty("homeTabViewModel", home_vm)
     ctx.setContextProperty("settingsTabViewModel", settings_vm)
@@ -103,6 +113,7 @@ def main():
     del tab_vm
     del settings_vm
     del home_vm
+    del menu_vm
     del theme
     del state
 

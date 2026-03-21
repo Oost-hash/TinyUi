@@ -31,16 +31,22 @@ class TabViewModel(QObject):
         self._app_state = app_state
         self._ids = []        # ordered list of tab ids
         self._names = []      # ordered list of tab names
+        self._icons = []      # ordered list of Segoe Fluent Icons glyphs
         self._current_index = 0
 
-    def register(self, tab_id: str, name: str):
+    def register(self, tab_id: str, name: str, icon: str = ""):
         self._ids.append(tab_id)
         self._names.append(name)
+        self._icons.append(icon)
         self.tabNamesChanged.emit()
 
     @Property("QVariantList", notify=tabNamesChanged)
     def tabNames(self):
         return self._names
+
+    @Property("QVariantList", notify=tabNamesChanged)
+    def tabIcons(self):
+        return self._icons
 
     @Property(int, notify=currentIndexChanged)
     def currentIndex(self):

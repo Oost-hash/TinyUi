@@ -29,9 +29,6 @@ Rectangle {
     bottomRightRadius: 8
     color: theme.surfaceRaised
 
-    // Icoontje per tab-index (zelfde volgorde als register() in main.py)
-    property var tabIcons: ["\uE80F", "\uE74C"]
-
     // Border-top
     Rectangle {
         anchors.top: parent.top
@@ -82,7 +79,7 @@ Rectangle {
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: statusBar.tabIcons[tabViewModel.currentIndex] ?? ""
+                text: tabViewModel.tabIcons[tabViewModel.currentIndex] ?? ""
                 font.family: "Segoe Fluent Icons"
                 font.pixelSize: 12
                 color: "#FFFFFF"
@@ -144,7 +141,7 @@ Rectangle {
 
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: statusBar.tabIcons[index] ?? ""
+                                text: tabViewModel.tabIcons[index] ?? ""
                                 font.family: "Segoe Fluent Icons"
                                 font.pixelSize: 12
                                 color: tabViewModel.currentIndex === index ? theme.accent : theme.textMuted
