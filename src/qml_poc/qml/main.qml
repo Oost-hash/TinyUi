@@ -36,12 +36,28 @@ ApplicationWindow {
     flags: Qt.Window | Qt.FramelessWindowHint
     color: theme.surface
 
+    // Vangt klikken buiten een open popup op — sluit popup, menu blijft open
+    MouseArea {
+        x: 0
+        y: theme.titleBarHeight
+        width: parent.width
+        height: parent.height - theme.titleBarHeight
+        z: 4
+        enabled: menuViewModel.activePopup !== ""
+        propagateComposedEvents: true
+        onClicked: mouse => {
+            menuViewModel.dismissActivePopup()
+            mouse.accepted = false
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
 
         TitleBar {
             Layout.fillWidth: true
+            z: 1  // dropdowns renderen boven StyledTabBar en content
         }
 
         StyledTabBar {

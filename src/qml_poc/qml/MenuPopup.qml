@@ -31,6 +31,8 @@ Popup {
     property bool slideDown: true
 
     padding: 0
+    dim: false                              // geen overlay — voorkomt dat hover gestolen wordt
+    closePolicy: Popup.NoAutoClose          // Python beheert visibility via property binding
 
     enter: Transition {
         ParallelAnimation {
