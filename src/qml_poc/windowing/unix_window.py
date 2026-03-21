@@ -20,11 +20,11 @@
 #  licensed under GPLv3.
 
 """
-Wayland vensterbesturing voor PySide6 op Linux.
+Vensterbesturing voor PySide6 op Unix (Linux/macOS).
 
-Qt delegeert move en resize aan de Wayland-compositor via
-startSystemMove() / startSystemResize(). De compositor handelt
-cursor-feedback, snap en animaties af — geen protocol-specifieke code nodig.
+Qt delegeert move en resize aan de compositor/AppKit via
+startSystemMove() / startSystemResize(). Het platform handelt
+cursor-feedback, snap en animaties af — geen platform-specifieke code nodig.
 
 QML initieert drag via DragHandler.onActiveChanged → startMove().
 Resize wordt gestart vanuit ResizeHandles.qml via startResize(edge).

@@ -128,7 +128,7 @@ def main():
         _win_ctrl = WindowController(hwnd, dpr=dpr, set_left_button_width=_set_left)
 
     elif sys.platform.startswith("linux") or sys.platform == "darwin":
-        from qml_poc.windowing.wayland_window import WindowController
+        from qml_poc.windowing.unix_window import WindowController
         _win_ctrl = WindowController(window)
 
     if _win_ctrl is not None:
