@@ -1,0 +1,25 @@
+# Light Theme
+
+[colors]
+surface = "#EFF1F5"
+surface-alt = "#E6E9EF"
+surface-raised = "#DCE0E8"
+surface-floating = "#CCD0DA"
+border = "#BCC0CC"
+border-strong = "#ACB0BE"
+text = "#4C4F69"
+text-secondary = "#6C6F85"
+text-muted = "#9CA0B0"
+accent = "#1E66F5"
+accent-hover = "#04A5E5"
+accent-pressed = "#1553C7"
+accent-text = "#FFFFFF"
+success = "#40A02B"
+warning = "#DF8E1D"
+danger = "#E81123"
+info = "#1E66F5"
+
+[font]
+scale-title = 1.3
+scale-button = 1.0
+scale-small = 0.85
