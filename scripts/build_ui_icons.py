@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Render UI SVG icons to DPI-aware PNGs.
 
-Leest SVGs uit src/qml_poc/images/src/ en schrijft PNGs naar:
-    src/qml_poc/images/16/   —  16×16  (100% DPI)
-    src/qml_poc/images/20/   —  20×20  (125% DPI)
-    src/qml_poc/images/24/   —  24×24  (150% DPI)
+Leest SVGs uit src/tinyui_qml/images/src/ en schrijft PNGs naar:
+    src/tinyui_qml/images/16/   —  16×16  (100% DPI)
+    src/tinyui_qml/images/20/   —  20×20  (125% DPI)
+    src/tinyui_qml/images/24/   —  24×24  (150% DPI)
 
 Usage:
     python scripts/build_ui_icons.py
@@ -13,14 +13,16 @@ Usage:
 import os
 import sys
 
-from PySide6.QtWidgets import QApplication
-from PySide6.QtSvg import QSvgRenderer
-from PySide6.QtGui import QImage, QPainter
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QImage, QPainter
+from PySide6.QtSvg import QSvgRenderer
+from PySide6.QtWidgets import QApplication
 
-IMAGES_DIR = os.path.join(os.path.dirname(__file__), "..", "src", "qml_poc", "images")
-SRC_DIR    = os.path.join(IMAGES_DIR, "src")
-SIZES      = [16, 20, 24]
+IMAGES_DIR = os.path.join(
+    os.path.dirname(__file__), "..", "src", "tinyui_qml", "images"
+)
+SRC_DIR = os.path.join(IMAGES_DIR, "src")
+SIZES = [16, 20, 24]
 
 
 def render_svg(svg_path: str, size: int) -> QImage:

@@ -41,17 +41,22 @@ _BANNER_BODY = [
 
 
 def _make_banner(prefix: str) -> str:
-    return "\n".join(f"{prefix}  {line}".rstrip() if line else prefix for line in _BANNER_BODY) + "\n"
+    return (
+        "\n".join(
+            f"{prefix}  {line}".rstrip() if line else prefix for line in _BANNER_BODY
+        )
+        + "\n"
+    )
 
 
 # Per-extension config: (banner, comment_char)
 _EXT_CONFIG: dict[str, tuple[str, str]] = {
-    ".py":  (_make_banner("#"),  "#"),
+    ".py": (_make_banner("#"), "#"),
     ".qml": (_make_banner("//"), "//"),
 }
 
 # Directories that contain our own source (relative to repo root)
-SRC_DIRS = ("src/tinyui", "src/tinycore", "src/plugins", "src/qml_poc")
+SRC_DIRS = ("src/tinyui", "src/tinycore", "src/plugins", "src/tinyui_qml")
 
 # Fingerprints: if any of these appear in the first 30 lines, it's a banner.
 _FINGERPRINTS = [
@@ -75,7 +80,9 @@ def _should_skip(content: str) -> bool:
     """Skip auto-generated and empty files."""
     if not content.strip():
         return True
-    return content.startswith("# Auto-generated") or content.startswith("// Auto-generated")
+    return content.startswith("# Auto-generated") or content.startswith(
+        "// Auto-generated"
+    )
 
 
 def _find_banner_end(lines: list[str], comment_char: str) -> int:
@@ -129,7 +136,7 @@ def fix_file(path: Path) -> bool:
         while lines and lines[0].strip() == "":
             lines = lines[1:]
 
-    rest = lines[_find_banner_end(lines, comment_char):]
+    rest = lines[_find_banner_end(lines, comment_char) :]
     while rest and rest[0].strip() == "":
         rest = rest[1:]
 

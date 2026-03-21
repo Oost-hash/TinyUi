@@ -19,9 +19,9 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-from PySide6.QtCore import QObject, Property, Signal, Slot, QTimer
+from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 
-from qml_poc.log import get_logger
+from tinyui_qml.log import get_logger
 
 log = get_logger(__name__)
 
@@ -42,10 +42,12 @@ class MenuViewModel(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._menu_open: bool = False
-        self._active_popup: str = ""   # "" | "help" | "about"
-        self._dropdown_open: bool = False  # alleen True bij expliciete open, niet bij popup-dismiss
-        self._dismissed: str = ""      # naam van de popup die de gebruiker bewust sloot
-        self._blocked: str = ""        # kort geblokkeerd na sluiten (QML overlay-hover guard)
+        self._active_popup: str = ""  # "" | "help" | "about"
+        self._dropdown_open: bool = (
+            False  # alleen True bij expliciete open, niet bij popup-dismiss
+        )
+        self._dismissed: str = ""  # naam van de popup die de gebruiker bewust sloot
+        self._blocked: str = ""  # kort geblokkeerd na sluiten (QML overlay-hover guard)
 
         self._close_timer = QTimer(self)
         self._close_timer.setSingleShot(True)
@@ -69,8 +71,9 @@ class MenuViewModel(QObject):
     # ── Slots (aangeroepen vanuit QML) ────────────────────────────────────
 
     def _snap(self) -> dict:
-        return dict(open=self._menu_open, active=self._active_popup,
-                    dismissed=self._dismissed)
+        return dict(
+            open=self._menu_open, active=self._active_popup, dismissed=self._dismissed
+        )
 
     @Slot()
     def toggleMenu(self):
@@ -92,7 +95,9 @@ class MenuViewModel(QObject):
     @Slot(str)
     def hoverPopup(self, name: str):
         """Muis beweegt over een menu-knop — open als niet dismissed of geblokkeerd."""
-        blocked = not self._menu_open or self._dismissed == name or self._blocked == name
+        blocked = (
+            not self._menu_open or self._dismissed == name or self._blocked == name
+        )
         log.mouse("hoverPopup", name=name, blocked=blocked, **self._snap())
         if not blocked:
             self._set_active(name)

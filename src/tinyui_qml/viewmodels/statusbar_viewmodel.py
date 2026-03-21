@@ -19,9 +19,9 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-from PySide6.QtCore import QObject, Property, Signal, Slot, QTimer
+from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 
-from qml_poc.log import get_logger
+from tinyui_qml.log import get_logger
 
 log = get_logger(__name__)
 

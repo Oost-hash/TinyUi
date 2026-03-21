@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Centrale logging voor qml_poc.
+"""Centrale logging voor tinyui_qml.
 
 Configuratie via TINYUI_DEBUG omgevingsvariabele:
 

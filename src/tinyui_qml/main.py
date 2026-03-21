@@ -25,7 +25,7 @@ import platform
 import sys
 
 # Logging vóór alle andere imports — configure() zet basicConfig in
-from qml_poc import log as app_log
+from tinyui_qml import log as app_log
 
 app_log.configure()
 
@@ -36,15 +36,15 @@ from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuick import QQuickWindow
 from PySide6.QtQuickControls2 import QQuickStyle
 
-from qml_poc.app_state import AppState
-from qml_poc.const import APP_NAME, VERSION
-from qml_poc.icons import Icons, glyph, load_font
-from qml_poc.theme import Theme
-from qml_poc.viewmodels.home_tab_viewmodel import HomeTabViewModel
-from qml_poc.viewmodels.menu_viewmodel import MenuViewModel
-from qml_poc.viewmodels.settings_tab_viewmodel import SettingsTabViewModel
-from qml_poc.viewmodels.statusbar_viewmodel import StatusBarViewModel
-from qml_poc.viewmodels.tab_viewmodel import TabViewModel
+from tinyui_qml.app_state import AppState
+from tinyui_qml.const import APP_NAME, VERSION
+from tinyui_qml.icons import Icons, glyph, load_font
+from tinyui_qml.theme import Theme
+from tinyui_qml.viewmodels.home_tab_viewmodel import HomeTabViewModel
+from tinyui_qml.viewmodels.menu_viewmodel import MenuViewModel
+from tinyui_qml.viewmodels.settings_tab_viewmodel import SettingsTabViewModel
+from tinyui_qml.viewmodels.statusbar_viewmodel import StatusBarViewModel
+from tinyui_qml.viewmodels.tab_viewmodel import TabViewModel
 
 
 def main():
@@ -106,29 +106,34 @@ def main():
 
     # ── Platform-specifieke vensterbesturing ──────────────────────────────────
     window = engine.rootObjects()[0]
-    dpr    = app.devicePixelRatio()
+    dpr = app.devicePixelRatio()
 
-    _wnd_proc  = None   # Windows only: MOET bewaard blijven — anders GC → crash
-    _win_ctrl  = None
+    _wnd_proc = None  # Windows only: MOET bewaard blijven — anders GC → crash
+    _win_ctrl = None
 
     if sys.platform == "win32":
-        from qml_poc.windowing.win_window import WindowController, apply_dwm_frame, install_wnd_proc
+        from tinyui_qml.windowing.win_window import (
+            WindowController,
+            apply_dwm_frame,
+            install_wnd_proc,
+        )
 
         hwnd = int(window.winId())
         # WndProc EERST installeren — apply_dwm_frame triggert WM_NCCALCSIZE
         _wnd_proc, _set_left = install_wnd_proc(
             hwnd,
-            title_bar_height   = round(theme.titleBarHeight * dpr),
-            resize_border      = round(8  * dpr),
-            resize_corner      = round(20 * dpr),
-            left_button_width  = round(300 * dpr),  # initiële waarde; QML werkt dit bij
-            right_button_width = round(142 * dpr),
+            title_bar_height=round(theme.titleBarHeight * dpr),
+            resize_border=round(8 * dpr),
+            resize_corner=round(20 * dpr),
+            left_button_width=round(300 * dpr),  # initiële waarde; QML werkt dit bij
+            right_button_width=round(142 * dpr),
         )
         apply_dwm_frame(hwnd)
         _win_ctrl = WindowController(hwnd, dpr=dpr, set_left_button_width=_set_left)
 
     elif sys.platform.startswith("linux") or sys.platform == "darwin":
-        from qml_poc.windowing.unix_window import WindowController
+        from tinyui_qml.windowing.unix_window import WindowController
+
         _win_ctrl = WindowController(window)
 
     if _win_ctrl is not None:
