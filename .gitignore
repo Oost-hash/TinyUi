@@ -40,3 +40,4 @@ dev_notes/
 *.zip
 *.log
 *.db
+.claude/
