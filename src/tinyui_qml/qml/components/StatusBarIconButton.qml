@@ -26,6 +26,7 @@ AbstractButton {
     id: btn
     property string iconText: ""
     property bool selected: false
+    property string textFont: theme.iconFont  // overschrijf voor gewone tekst
 
     width: 28
     height: parent.height
@@ -35,7 +36,7 @@ AbstractButton {
 
     contentItem: Text {
         text: btn.iconText
-        font.family: theme.iconFont
+        font.family: btn.textFont
         font.pixelSize: 14
         color: btn.selected ? theme.accent : "#FFFFFF"
         horizontalAlignment: Text.AlignHCenter

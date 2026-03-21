@@ -37,8 +37,7 @@ Rectangle {
         color: theme.border
     }
 
-    // ── Links: favorites bar ──────────────────────────────────────────────
-    // TODO: favorites bar — vaste shortcuts naar plugins/pagina's
+    // ── Links: editor snelkoppelingen (één knop per geregistreerde editor) ──
 
     Row {
         anchors.left: parent.left
@@ -46,16 +45,16 @@ Rectangle {
         anchors.bottom: parent.bottom
         anchors.leftMargin: 4
 
-        StatusBarIconButton {
-            iconText: icons.home
-            selected: tabViewModel.currentTabId !== "settings"
-            onClicked: tabViewModel.setCurrentIndex(0)
-        }
+        Repeater {
+            model: coreViewModel.editors
 
-        StatusBarIconButton {
-            iconText: icons.settings
-            selected: tabViewModel.currentTabId === "settings"
-            onClicked: tabViewModel.setCurrentById("settings")
+            StatusBarIconButton {
+                // Eerste letter als tijdelijk icoon — TODO: icon veld in editors.toml
+                iconText: modelData.title.charAt(0).toUpperCase()
+                textFont: theme.fontFamily
+                // TODO: opent editor dialog zodra QML editor beschikbaar is
+                onClicked: console.log("Open editor:", modelData.id)
+            }
         }
     }
 
