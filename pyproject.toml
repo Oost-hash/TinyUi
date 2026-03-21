@@ -9,7 +9,7 @@ dependencies = [
 
 [project.scripts]
 tinyui = "tinyui.main:run"
-tinyui-qml = "qml_poc.main:main"
+tinyui-qml = "tinyui-qml.main:main"
 
 [project.optional-dependencies]
 dev = [
