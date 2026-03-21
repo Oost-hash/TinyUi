@@ -134,20 +134,58 @@ Item {
                 }
             }
 
-            // Setting rijen
+            // Setting rijen — met optionele sectie-header als sectie wisselt
             Repeater {
                 model: pluginSection.modelData.settings
 
-                Rectangle {
-                    id: settingRow
+                Column {
+                    id: settingItem
 
-                    required property var modelData   // { key, label, type, value, description, options[] }
+                    required property var modelData   // { key, label, type, value, description, options[], section }
                     required property int index
 
                     width: pluginSection.width
-                    height: 44
-                    color: rowHover.hovered ? "#dec1841a" : "transparent"
-                    Behavior on color { ColorAnimation { duration: 80 } }
+
+                    // Sectie-header — toon als eerste item van een nieuwe sectie
+                    Rectangle {
+                        width: parent.width
+                        height: showHeader ? 28 : 0
+                        visible: showHeader
+                        color: theme.surface
+
+                        property bool showHeader: {
+                            if (settingItem.modelData.section === "") return false
+                            if (settingItem.index === 0) return true
+                            return pluginSection.modelData.settings[settingItem.index - 1].section
+                                !== settingItem.modelData.section
+                        }
+
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 24
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: settingItem.modelData.section
+                            color: theme.textSecondary
+                            font.pixelSize: theme.fontSizeSmall
+                            font.family: theme.fontFamily
+                        }
+
+                        Rectangle {
+                            anchors.bottom: parent.bottom
+                            width: parent.width
+                            height: 1
+                            color: theme.border
+                            opacity: 0.4
+                        }
+                    }
+
+                    Rectangle {
+                        id: settingRow
+
+                        width: pluginSection.width
+                        height: 44
+                        color: rowHover.hovered ? "#dec1841a" : "transparent"
+                        Behavior on color { ColorAnimation { duration: 80 } }
 
                     Rectangle {
                         anchors.bottom: parent.bottom
@@ -286,8 +324,9 @@ Item {
                     }
 
                     HoverHandler { id: rowHover }
-                }
-            }
-        }
-    }
+                    }  // Rectangle settingRow
+                }  // Column settingItem
+            }  // Repeater
+        }  // Column pluginSection
+    }  // ListView
 }

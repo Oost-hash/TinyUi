@@ -41,6 +41,7 @@ class SettingsSpec:
     default:     Any
     description: str        = ""
     options:     list[str]  = field(default_factory=list)  # for enum type
+    section:     str        = ""                            # grouping in UI
 
 
 class SettingsRegistry:

@@ -87,6 +87,7 @@ class CoreViewModel(QObject):
                         "value":       self._core.settings.get_value(plugin_name, s.key),
                         "description": s.description,
                         "options":     s.options,
+                        "section":     s.section,
                     }
                     for s in specs
                 ],

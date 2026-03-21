@@ -168,7 +168,32 @@ def main():
     if _win_ctrl is not None:
         engine.rootContext().setContextProperty("windowController", _win_ctrl)
 
+    # ── Window state restore ───────────────────────────────────────────────────
+    if core.settings.get_value("TinyUI", "remember_position"):
+        x = core.settings.get_value("TinyUI", "_position_x")
+        y = core.settings.get_value("TinyUI", "_position_y")
+        if x is not None and y is not None:
+            window.setX(int(x))
+            window.setY(int(y))
+
+    if core.settings.get_value("TinyUI", "remember_size"):
+        w = core.settings.get_value("TinyUI", "_window_width")
+        h = core.settings.get_value("TinyUI", "_window_height")
+        if w is not None and h is not None:
+            window.setWidth(int(w))
+            window.setHeight(int(h))
+
     # ── Run ───────────────────────────────────────────────────────────────────
+    def _save_window_state() -> None:
+        if core.settings.get_value("TinyUI", "remember_position"):
+            core.settings.set_value("TinyUI", "_position_x", window.x())
+            core.settings.set_value("TinyUI", "_position_y", window.y())
+        if core.settings.get_value("TinyUI", "remember_size"):
+            core.settings.set_value("TinyUI", "_window_width",  window.width())
+            core.settings.set_value("TinyUI", "_window_height", window.height())
+        core.settings.save("TinyUI")
+
+    app.aboutToQuit.connect(_save_window_state)
     app.aboutToQuit.connect(engine.deleteLater)
     app.aboutToQuit.connect(core.stop)
 

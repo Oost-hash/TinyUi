@@ -36,13 +36,35 @@ class TinyUIPlugin:
     name = "TinyUI"
 
     def register(self, app: App) -> None:
-        app.settings.register(self.name, SettingsSpec(
-            key="theme",
-            label="Theme",
-            type="enum",
-            default="dark",
-            options=["dark", "light"],
+        _r = app.settings.register
+        _n = self.name
+
+        # ── Application ───────────────────────────────────────────────────
+        _r(_n, SettingsSpec(
+            key="theme", label="Theme", type="enum",
+            default="dark", options=["dark", "light"],
             description="Application color theme",
+            section="Application",
+        ))
+        _r(_n, SettingsSpec(
+            key="language", label="Language", type="enum",
+            default="en", options=["en", "nl"],
+            description="Interface language (not yet implemented)",
+            section="Application",
+        ))
+
+        # ── Window ────────────────────────────────────────────────────────
+        _r(_n, SettingsSpec(
+            key="remember_position", label="Remember position", type="bool",
+            default=True,
+            description="Restore window position on startup",
+            section="Window",
+        ))
+        _r(_n, SettingsSpec(
+            key="remember_size", label="Remember size", type="bool",
+            default=True,
+            description="Restore window size on startup",
+            section="Window",
         ))
 
     def start(self) -> None:
