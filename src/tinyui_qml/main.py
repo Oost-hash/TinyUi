@@ -60,6 +60,7 @@ def main():
     # ── tinycore boot — EERST, vóór Qt ───────────────────────────────────────
     core = create_app(_config_dir(), TinyUIPlugin(), DemoPlugin())
     core.loaders.load_all(core.config)
+    core.settings.load_persisted()          # laad opgeslagen waarden vóór start()
     core.start()
 
     # ── Qt setup ──────────────────────────────────────────────────────────────
@@ -90,12 +91,15 @@ def main():
     # Vaste Widgets tab — plugins voegen later hun eigen tabs toe
     tab_vm.register("widgets", "Widgets")
 
-    # Settings verandering → theme toepassen
+    # Settings verandering → theme toepassen + opslaan
     def _apply_tinyui_settings():
         val = core.settings.get_value("TinyUI", "theme")
         if val:
             theme.load(val)
+
     core_vm.settingsChanged.connect(_apply_tinyui_settings)
+    core_vm.settingValueChanged.connect(core.settings.save)
+    _apply_tinyui_settings()                # pas opgeslagen theme direct toe bij opstart
 
     # Mutual exclusion: als één opent, sluit de andere
     menu_vm.menuOpenChanged.connect(

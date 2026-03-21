@@ -22,8 +22,13 @@
 
 from __future__ import annotations
 
+import json
+import logging
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -39,9 +44,10 @@ class SettingsSpec:
 
 
 class SettingsRegistry:
-    """Stores SettingsSpecs registered by plugins and their current values."""
+    """Stores SettingsSpecs registered by plugins, their current values, and JSON persistence."""
 
-    def __init__(self) -> None:
+    def __init__(self, config_dir: Path | None = None) -> None:
+        self._dir:    Path | None                    = config_dir
         self._specs:  list[tuple[str, SettingsSpec]] = []   # (plugin_name, spec)
         self._values: dict[str, dict[str, Any]]      = {}   # {plugin: {key: val}}
 
@@ -81,3 +87,48 @@ class SettingsRegistry:
     def dump_values(self, plugin_name: str) -> dict[str, Any]:
         """Return current values for a plugin (e.g. for JSON persistence)."""
         return dict(self._values.get(plugin_name, {}))
+
+    # ── Persistence ───────────────────────────────────────────────────────
+
+    def _json_path(self, plugin_name: str) -> Path | None:
+        return self._dir / plugin_name / "settings.json" if self._dir else None
+
+    def load_persisted(self) -> None:
+        """Laad opgeslagen JSON-waarden voor alle geregistreerde plugins.
+
+        Overschrijft spec-defaults met opgeslagen waarden.
+        Onbekende keys (verwijderde settings) worden genegeerd.
+        Roep aan ná register_all(), vóór start().
+        """
+        if not self._dir:
+            return
+        seen: set[str] = set()
+        for plugin_name, _ in self._specs:
+            if plugin_name in seen:
+                continue
+            seen.add(plugin_name)
+            path = self._json_path(plugin_name)
+            if path is None or not path.exists():
+                continue
+            try:
+                with path.open(encoding="utf-8") as f:
+                    values: dict = json.load(f)
+                self.load_values(plugin_name, values)
+                log.debug("Settings geladen: %s (%d waarden)", plugin_name, len(values))
+            except Exception as exc:
+                log.warning("Kon settings niet laden voor '%s': %s", plugin_name, exc)
+
+    def save(self, plugin_name: str) -> None:
+        """Sla huidige waarden voor één plugin direct op naar JSON."""
+        path = self._json_path(plugin_name)
+        if path is None:
+            log.debug("Geen config_dir — settings voor '%s' niet opgeslagen", plugin_name)
+            return
+        path.parent.mkdir(parents=True, exist_ok=True)
+        values = self.dump_values(plugin_name)
+        try:
+            with path.open("w", encoding="utf-8") as f:
+                json.dump(values, f, indent=2, ensure_ascii=False)
+            log.debug("Settings opgeslagen: %s → %s", plugin_name, path)
+        except Exception as exc:
+            log.warning("Kon settings niet opslaan voor '%s': %s", plugin_name, exc)

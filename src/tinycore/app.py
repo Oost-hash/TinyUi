@@ -44,7 +44,7 @@ class App:
         self.events = EventBus()
         self.plugins = PluginRegistry()
         self.providers = ProviderRegistry()
-        self.settings = SettingsRegistry()
+        self.settings = SettingsRegistry(config_dir)
         self.widgets = WidgetRegistry()
 
     def start(self) -> None:

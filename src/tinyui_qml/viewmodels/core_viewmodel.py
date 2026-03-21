@@ -29,7 +29,8 @@ from tinycore import App
 class CoreViewModel(QObject):
     """Brug tussen tinycore en QML — exposeert plugin widgets, editors en settings."""
 
-    settingsChanged = Signal()
+    settingsChanged    = Signal()
+    settingValueChanged = Signal(str)   # emits plugin_name — voor persistence
 
     def __init__(self, core: App, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -94,6 +95,7 @@ class CoreViewModel(QObject):
 
     @Slot(str, str, "QVariant")
     def setSettingValue(self, plugin_name: str, key: str, value) -> None:
-        """Sla een nieuwe settingswaarde op en notificeer QML."""
+        """Sla een nieuwe settingswaarde op en notificeer QML en persistence."""
         self._core.settings.set_value(plugin_name, key, value)
         self.settingsChanged.emit()
+        self.settingValueChanged.emit(plugin_name)
