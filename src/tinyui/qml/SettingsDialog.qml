@@ -250,7 +250,8 @@ BaseDialog {
                                     // Bool → ToggleSwitch
                                     ToggleSwitch {
                                         visible: settingRow.modelData.type === "bool"
-                                        anchors.centerIn: parent
+                                        anchors.right: parent.right; anchors.rightMargin: 12
+                                        anchors.verticalCenter: parent.verticalCenter
                                         checked: settingRow.effectiveValue === true
                                         onToggled: (v) => settingsDialog._setPending(
                                             settingRow._plugin, settingRow.modelData.key, v)
@@ -260,8 +261,9 @@ BaseDialog {
                                     ComboBox {
                                         id: enumCombo
                                         visible: settingRow.modelData.type === "enum"
-                                        anchors.centerIn: parent
-                                        width: 112; height: 28
+                                        anchors.right: parent.right; anchors.rightMargin: 12
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 120; height: 28
                                         model: settingRow.modelData.options
                                         currentIndex: {
                                             var idx = settingRow.modelData.options.indexOf(settingRow.effectiveValue)
@@ -341,7 +343,9 @@ BaseDialog {
                                         id: stepperRow
                                         visible: settingRow.modelData.type === "int"
                                                || settingRow.modelData.type === "float"
-                                        anchors.centerIn: parent; spacing: 6
+                                        anchors.right: parent.right; anchors.rightMargin: 12
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 6
 
                                         property bool _editing: false
                                         property real _step: settingRow.modelData.step != null
@@ -365,12 +369,16 @@ BaseDialog {
                                         }
 
                                         // − knop
-                                        Text {
+                                        Item {
+                                            width: 24; height: 26
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: "\u2212"
-                                            color: decArea.containsMouse ? theme.text : theme.textMuted
-                                            font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
-                                            Behavior on color { ColorAnimation { duration: 80 } }
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: "\u2212"
+                                                color: decArea.containsMouse ? theme.text : theme.textMuted
+                                                font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+                                                Behavior on color { ColorAnimation { duration: 80 } }
+                                            }
                                             MouseArea {
                                                 id: decArea; anchors.fill: parent; hoverEnabled: true
                                                 onClicked: settingsDialog._setPending(settingRow._plugin, settingRow.modelData.key,
@@ -380,7 +388,7 @@ BaseDialog {
 
                                         // Waarde: altijd een box, readOnly totdat je klikt
                                         Rectangle {
-                                            width: 52; height: 26
+                                            width: 72; height: 26
                                             anchors.verticalCenter: parent.verticalCenter
                                             radius: 3
                                             color: stepperRow._editing ? theme.surfaceFloating : "transparent"
@@ -424,9 +432,11 @@ BaseDialog {
                                                 cursorShape: Qt.IBeamCursor
                                             }
 
-                                            TapHandler {
+                                            MouseArea {
+                                                anchors.fill: parent
                                                 enabled: !stepperRow._editing
-                                                onTapped: {
+                                                acceptedButtons: Qt.LeftButton
+                                                onClicked: {
                                                     stepperRow._editing = true
                                                     stepEdit.forceActiveFocus()
                                                     stepEdit.selectAll()
@@ -435,12 +445,16 @@ BaseDialog {
                                         }
 
                                         // + knop
-                                        Text {
+                                        Item {
+                                            width: 24; height: 26
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: "+"
-                                            color: incArea.containsMouse ? theme.text : theme.textMuted
-                                            font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
-                                            Behavior on color { ColorAnimation { duration: 80 } }
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: "+"
+                                                color: incArea.containsMouse ? theme.text : theme.textMuted
+                                                font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+                                                Behavior on color { ColorAnimation { duration: 80 } }
+                                            }
                                             MouseArea {
                                                 id: incArea; anchors.fill: parent; hoverEnabled: true
                                                 onClicked: settingsDialog._setPending(settingRow._plugin, settingRow.modelData.key,
@@ -452,8 +466,9 @@ BaseDialog {
                                     // Str → tekst-invoervak
                                     Rectangle {
                                         visible: settingRow.modelData.type === "str"
-                                        anchors.centerIn: parent
-                                        width: 100; height: 28; radius: 4
+                                        anchors.right: parent.right; anchors.rightMargin: 12
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 120; height: 28; radius: 4
                                         color: theme.surfaceFloating
                                         border.width: 1
                                         border.color: strInput.activeFocus ? theme.accent : theme.border
@@ -474,44 +489,14 @@ BaseDialog {
                                         }
                                     }
 
-                                    // Color → kleur-swatch + hex-invoervak
-                                    Row {
+                                    // Color → color picker
+                                    ColorPicker {
                                         visible: settingRow.modelData.type === "color"
-                                        anchors.centerIn: parent; spacing: 6
-
-                                        Rectangle {
-                                            width: 20; height: 20; radius: 4
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            color: settingRow.effectiveValue
-                                            border.width: 1; border.color: theme.border
-                                        }
-
-                                        Rectangle {
-                                            width: 72; height: 28; radius: 4
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            color: theme.surfaceFloating
-                                            border.width: 1
-                                            border.color: colorInput.activeFocus ? theme.accent : theme.border
-                                            Behavior on border.color { ColorAnimation { duration: 80 } }
-
-                                            TextInput {
-                                                id: colorInput
-                                                anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8
-                                                verticalAlignment: TextInput.AlignVCenter
-                                                text: settingRow.effectiveValue
-                                                color: theme.text
-                                                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
-                                                maximumLength: 7; selectByMouse: true
-                                                Keys.onReturnPressed: {
-                                                    if (/^#[0-9A-Fa-f]{6}$/.test(text))
-                                                        settingsDialog._setPending(settingRow._plugin, settingRow.modelData.key, text)
-                                                    else
-                                                        text = settingRow.effectiveValue
-                                                }
-                                                Keys.onEscapePressed: { text = settingRow.effectiveValue; focus = false }
-                                                onActiveFocusChanged: if (!activeFocus) text = settingRow.effectiveValue
-                                            }
-                                        }
+                                        anchors.right: parent.right; anchors.rightMargin: 12
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        value: settingRow.effectiveValue
+                                        onColorPicked: (hex) => settingsDialog._setPending(
+                                            settingRow._plugin, settingRow.modelData.key, hex)
                                     }
                                 }
                             }
