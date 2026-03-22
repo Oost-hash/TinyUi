@@ -21,19 +21,17 @@
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import "components"
 
-Window {
+BaseDialog {
     id: settingsDialog
 
-    title: "Settings"
+    dialogTitle: "Settings"
     width: 720; height: 520
     minimumWidth: 540; minimumHeight: 380
     visible: settingsPanelViewModel.open
-    color: theme.surface
-
-    readonly property bool nativeChrome: Qt.platform.os === "linux" || Qt.platform.os === "osx"
-    flags: nativeChrome ? Qt.Dialog : Qt.Dialog | Qt.FramelessWindowHint
+    onCloseRequested: settingsPanelViewModel.closePanel()
 
     // ── Pending changes — lokaal beheerd in QML ───────────────────────────────
     // { pluginName: { key: newValue } }
@@ -51,8 +49,10 @@ Window {
     }
 
     function _setPending(plugin, key, value) {
-        var p = pendingChanges
-        if (!p[plugin]) p[plugin] = {}
+        // Object.assign maakt nieuwe referenties — anders detecteert QML geen wijziging
+        // en updaten bindings die afhangen van pendingChanges niet.
+        var p = Object.assign({}, pendingChanges)
+        p[plugin] = Object.assign({}, p[plugin] || {})
         p[plugin][key] = value
         pendingChanges = p
     }
@@ -66,10 +66,8 @@ Window {
         pendingChanges = ({})
     }
 
-    // Actieve plugin-tab (index in coreViewModel.settingsByPlugin)
     property int activeTab: 0
 
-    // Reset state wanneer dialog sluit
     onVisibleChanged: {
         if (!visible) {
             pendingChanges = ({})
@@ -77,56 +75,19 @@ Window {
         }
     }
 
-    // ── Layout ────────────────────────────────────────────────────────────────
+    // ── Content (via BaseDialog default alias → contentArea) ──────────────────
 
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
 
-        // Titlebar — alleen op Windows (CSD)
-        Rectangle {
-            id: dialogTitleBar
-            visible: !settingsDialog.nativeChrome
-            Layout.fillWidth: true
-            height: visible ? 36 : 0
-            color: theme.surfaceAlt
-
-            DragHandler {
-                onActiveChanged: if (active) settingsDialog.startSystemMove()
-            }
-
-            Text {
-                anchors.left: parent.left; anchors.leftMargin: 16
-                anchors.verticalCenter: parent.verticalCenter
-                text: "Settings"
-                color: theme.text
-                font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
-                font.weight: Font.DemiBold
-            }
-
-            Item {
-                anchors.right: parent.right
-                width: 40; height: parent.height
-                Text {
-                    anchors.centerIn: parent
-                    text: icons.close; font.family: theme.iconFont; font.pixelSize: 10
-                    color: tbCloseHov.containsMouse ? theme.text : theme.textMuted
-                    Behavior on color { ColorAnimation { duration: 80 } }
-                }
-                MouseArea { id: tbCloseHov; anchors.fill: parent; hoverEnabled: true
-                    onClicked: settingsPanelViewModel.closePanel() }
-            }
-
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
-        }
-
-        // Hoofdgebied: tabs links, content rechts
+        // ── Hoofdgebied: tabs links, instellingen rechts ──────────────────────
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 0
 
-            // ── Verticale tab lijst ───────────────────────────────────────
+            // Verticale tab lijst
             Rectangle {
                 Layout.preferredWidth: 160
                 Layout.fillHeight: true
@@ -144,10 +105,9 @@ Window {
 
                         width: tabList.width; height: 40
                         color: settingsDialog.activeTab === tabItem.index
-                            ? theme.surface : (tabHov.containsMouse ? "#ffffff08" : "transparent")
+                            ? theme.surface : (tabHov.containsMouse ? theme.surfaceRaised : "transparent")
                         Behavior on color { ColorAnimation { duration: 80 } }
 
-                        // Accent links voor actieve tab
                         Rectangle {
                             width: 2; height: parent.height
                             color: theme.accent
@@ -164,7 +124,6 @@ Window {
                             Behavior on color { ColorAnimation { duration: 80 } }
                         }
 
-                        // Pending indicator (● rechts)
                         Text {
                             anchors.right: parent.right; anchors.rightMargin: 12
                             anchors.verticalCenter: parent.verticalCenter
@@ -172,7 +131,7 @@ Window {
                             color: theme.accent
                             visible: {
                                 var pc = settingsDialog.pendingChanges[tabItem.modelData.plugin]
-                                return pc && Object.keys(pc).length > 0
+                                return pc ? Object.keys(pc).length > 0 : false
                             }
                         }
 
@@ -181,11 +140,10 @@ Window {
                     }
                 }
 
-                // Rechter border
                 Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: theme.border }
             }
 
-            // ── Content: secties + setting rijen ─────────────────────────
+            // ── Content: secties + setting rijen ─────────────────────────────
             ListView {
                 id: contentList
                 Layout.fillWidth: true
@@ -199,7 +157,6 @@ Window {
                     required property var modelData   // { name, settings[] }
                     width: contentList.width
 
-                    // Sectie header
                     Rectangle {
                         width: parent.width
                         height: sectionBlock.modelData.name !== "" ? 28 : 0
@@ -217,15 +174,13 @@ Window {
                         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
                     }
 
-                    // Setting rijen
                     Repeater {
                         model: sectionBlock.modelData.settings
 
                         Rectangle {
                             id: settingRow
-                            required property var modelData   // {key,label,type,value,description,options,min,max,step}
+                            required property var modelData
 
-                            // Actieve plugin naam — eenmalig berekend per rij
                             readonly property string _plugin: coreViewModel.settingsByPlugin.length > settingsDialog.activeTab
                                 ? coreViewModel.settingsByPlugin[settingsDialog.activeTab].plugin : ""
 
@@ -238,8 +193,20 @@ Window {
                             }
 
                             width: contentList.width; height: 44
-                            color: rowHov.hovered ? "#dec1841a" : "transparent"
-                            Behavior on color { ColorAnimation { duration: 80 } }
+                            color: "transparent"
+
+                            // Hover gradient — zelfde patroon als WidgetTab
+                            Rectangle {
+                                anchors.fill: parent
+                                opacity: rowHov.hovered ? 1 : 0
+                                Behavior on opacity { NumberAnimation { duration: 120 } }
+                                gradient: Gradient {
+                                    orientation: Gradient.Horizontal
+                                    GradientStop { position: 0.0; color: "transparent" }
+                                    GradientStop { position: 0.5; color: "transparent" }
+                                    GradientStop { position: 1.0; color: "#20dec184" }
+                                }
+                            }
 
                             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border; opacity: 0.4 }
 
@@ -248,7 +215,7 @@ Window {
 
                                 // Label + omschrijving
                                 Column {
-                                    width: parent.width - 16 - 120
+                                    width: parent.width - 16 - 128
                                     anchors.verticalCenter: parent.verticalCenter
                                     spacing: 3
 
@@ -276,131 +243,238 @@ Window {
                                     }
                                 }
 
-                                // Controls (120px breed)
+                                // ── Controls (128px) ──────────────────────────────────────────
                                 Item {
-                                    width: 120; height: parent.height
+                                    width: 128; height: parent.height
 
-                                    // Bool → toggle
+                                    // Bool → ToggleSwitch
                                     ToggleSwitch {
                                         visible: settingRow.modelData.type === "bool"
                                         anchors.centerIn: parent
                                         checked: settingRow.effectiveValue === true
-                                        onToggled: (v) => settingsDialog._setPending(settingRow._plugin, settingRow.modelData.key, v)
+                                        onToggled: (v) => settingsDialog._setPending(
+                                            settingRow._plugin, settingRow.modelData.key, v)
                                     }
 
-                                    // Enum → pijl-selector
-                                    Row {
-                                        id: enumRow
+                                    // Enum → ComboBox popup
+                                    ComboBox {
+                                        id: enumCombo
                                         visible: settingRow.modelData.type === "enum"
-                                        anchors.centerIn: parent; spacing: 8
+                                        anchors.centerIn: parent
+                                        width: 112; height: 28
+                                        model: settingRow.modelData.options
+                                        currentIndex: {
+                                            var idx = settingRow.modelData.options.indexOf(settingRow.effectiveValue)
+                                            return idx >= 0 ? idx : 0
+                                        }
+                                        onActivated: (idx) => settingsDialog._setPending(
+                                            settingRow._plugin, settingRow.modelData.key,
+                                            settingRow.modelData.options[idx])
 
-                                        Text {
-                                            anchors.verticalCenter: parent.verticalCenter; text: "\u2039"
-                                            color: enumPrev.containsMouse ? theme.text : theme.textMuted
-                                            font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
-                                            Behavior on color { ColorAnimation { duration: 80 } }
-                                            MouseArea {
-                                                id: enumPrev; anchors.fill: parent; hoverEnabled: true
-                                                onClicked: {
-                                                    var opts = settingRow.modelData.options
-                                                    var idx = opts.indexOf(settingRow.effectiveValue)
-                                                    settingsDialog._setPending(settingRow._plugin, settingRow.modelData.key,
-                                                        opts[(idx - 1 + opts.length) % opts.length])
-                                                }
+                                        contentItem: Text {
+                                            leftPadding: 8
+                                            rightPadding: enumCombo.indicator.width + 4
+                                            text: enumCombo.displayText
+                                            color: theme.text
+                                            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                                            verticalAlignment: Text.AlignVCenter
+                                            elide: Text.ElideRight
+                                        }
+
+                                        indicator: Text {
+                                            x: enumCombo.width - width - 8
+                                            anchors.verticalCenter: enumCombo.verticalCenter
+                                            text: "▾"
+                                            color: theme.textMuted
+                                            font.pixelSize: 10
+                                        }
+
+                                        background: Rectangle {
+                                            color: theme.surfaceFloating
+                                            border.width: 1
+                                            border.color: enumCombo.popup.opened ? theme.accent : theme.border
+                                            radius: 4
+                                            Behavior on border.color { ColorAnimation { duration: 80 } }
+                                        }
+
+                                        popup: Popup {
+                                            y: enumCombo.height + 2
+                                            width: enumCombo.width
+                                            padding: 0
+
+                                            contentItem: ListView {
+                                                clip: true
+                                                implicitHeight: Math.min(contentHeight, 200)
+                                                model: enumCombo.delegateModel
+                                                currentIndex: enumCombo.highlightedIndex
+                                            }
+
+                                            background: Rectangle {
+                                                color: theme.surfaceFloating
+                                                border.width: 1; border.color: theme.border
+                                                radius: 4
                                             }
                                         }
-                                        Text {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: settingRow.effectiveValue
-                                            color: theme.text; font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
-                                            width: 48; horizontalAlignment: Text.AlignHCenter
-                                        }
-                                        Text {
-                                            anchors.verticalCenter: parent.verticalCenter; text: "\u203A"
-                                            color: enumNext.containsMouse ? theme.text : theme.textMuted
-                                            font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
-                                            Behavior on color { ColorAnimation { duration: 80 } }
-                                            MouseArea {
-                                                id: enumNext; anchors.fill: parent; hoverEnabled: true
-                                                onClicked: {
-                                                    var opts = settingRow.modelData.options
-                                                    var idx = opts.indexOf(settingRow.effectiveValue)
-                                                    settingsDialog._setPending(settingRow._plugin, settingRow.modelData.key,
-                                                        opts[(idx + 1) % opts.length])
-                                                }
+
+                                        delegate: ItemDelegate {
+                                            width: enumCombo.popup.width
+                                            height: 32
+                                            highlighted: enumCombo.highlightedIndex === index
+
+                                            contentItem: Text {
+                                                text: modelData
+                                                color: highlighted ? "#dec184" : theme.text
+                                                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                                                verticalAlignment: Text.AlignVCenter
+                                                leftPadding: 8
+                                                Behavior on color { ColorAnimation { duration: 80 } }
+                                            }
+
+                                            background: Rectangle {
+                                                color: highlighted ? theme.surfaceRaised : "transparent"
                                             }
                                         }
                                     }
 
-                                    // Int / Float → stepper
+                                    // Int / Float → stepper met inline edit op klik
                                     Row {
                                         id: stepperRow
-                                        visible: settingRow.modelData.type === "int" || settingRow.modelData.type === "float"
-                                        anchors.centerIn: parent; spacing: 4
+                                        visible: settingRow.modelData.type === "int"
+                                               || settingRow.modelData.type === "float"
+                                        anchors.centerIn: parent; spacing: 6
 
+                                        property bool _editing: false
                                         property real _step: settingRow.modelData.step != null
                                             ? settingRow.modelData.step
                                             : (settingRow.modelData.type === "int" ? 1 : 0.1)
-                                        property real _min:  settingRow.modelData.min  != null ? settingRow.modelData.min  : -1e9
-                                        property real _max:  settingRow.modelData.max  != null ? settingRow.modelData.max  :  1e9
+                                        property real _min: settingRow.modelData.min != null ? settingRow.modelData.min : -1e9
+                                        property real _max: settingRow.modelData.max != null ? settingRow.modelData.max :  1e9
 
                                         function _clamp(v) { return Math.min(_max, Math.max(_min, v)) }
                                         function _round(v) {
                                             var dec = (_step.toString().split(".")[1] || "").length
                                             return parseFloat(v.toFixed(dec))
                                         }
+                                        function _commit(text) {
+                                            var val = settingRow.modelData.type === "int"
+                                                ? parseInt(text) : parseFloat(text)
+                                            if (!isNaN(val))
+                                                settingsDialog._setPending(settingRow._plugin, settingRow.modelData.key,
+                                                    _round(_clamp(val)))
+                                            _editing = false
+                                        }
 
+                                        // − knop
                                         Text {
-                                            anchors.verticalCenter: parent.verticalCenter; text: "\u2212"
-                                            color: stepDec.containsMouse ? theme.text : theme.textMuted
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: "\u2212"
+                                            color: decArea.containsMouse ? theme.text : theme.textMuted
                                             font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
                                             Behavior on color { ColorAnimation { duration: 80 } }
                                             MouseArea {
-                                                id: stepDec; anchors.fill: parent; hoverEnabled: true
+                                                id: decArea; anchors.fill: parent; hoverEnabled: true
                                                 onClicked: settingsDialog._setPending(settingRow._plugin, settingRow.modelData.key,
                                                     stepperRow._round(stepperRow._clamp(settingRow.effectiveValue - stepperRow._step)))
                                             }
                                         }
+
+                                        // Waarde: altijd een box, readOnly totdat je klikt
+                                        Rectangle {
+                                            width: 52; height: 26
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            radius: 3
+                                            color: stepperRow._editing ? theme.surfaceFloating : "transparent"
+                                            border.width: 1
+                                            border.color: stepperRow._editing ? theme.accent
+                                                        : numHov.hovered      ? theme.border
+                                                        : "transparent"
+                                            Behavior on border.color { ColorAnimation { duration: 80 } }
+                                            Behavior on color        { ColorAnimation { duration: 80 } }
+
+                                            TextInput {
+                                                id: stepEdit
+                                                anchors.fill: parent
+                                                anchors.leftMargin: 5; anchors.rightMargin: 5
+                                                horizontalAlignment: TextInput.AlignHCenter
+                                                verticalAlignment: TextInput.AlignVCenter
+                                                text: settingRow.effectiveValue.toString()
+                                                color: stepperRow._editing ? theme.accent : theme.text
+                                                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                                                selectByMouse: true
+                                                readOnly: !stepperRow._editing
+                                                inputMethodHints: Qt.ImhFormattedNumbersOnly
+                                                Behavior on color { ColorAnimation { duration: 80 } }
+
+                                                Keys.onReturnPressed: stepperRow._commit(text)
+                                                Keys.onEscapePressed: {
+                                                    text = settingRow.effectiveValue.toString()
+                                                    stepperRow._editing = false
+                                                }
+                                                onActiveFocusChanged: {
+                                                    if (!activeFocus && stepperRow._editing) {
+                                                        text = settingRow.effectiveValue.toString()
+                                                        stepperRow._editing = false
+                                                    }
+                                                }
+                                            }
+
+                                            HoverHandler {
+                                                id: numHov
+                                                enabled: !stepperRow._editing
+                                                cursorShape: Qt.IBeamCursor
+                                            }
+
+                                            TapHandler {
+                                                enabled: !stepperRow._editing
+                                                onTapped: {
+                                                    stepperRow._editing = true
+                                                    stepEdit.forceActiveFocus()
+                                                    stepEdit.selectAll()
+                                                }
+                                            }
+                                        }
+
+                                        // + knop
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: settingRow.effectiveValue
-                                            color: theme.text; font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
-                                            width: 38; horizontalAlignment: Text.AlignHCenter
-                                        }
-                                        Text {
-                                            anchors.verticalCenter: parent.verticalCenter; text: "+"
-                                            color: stepInc.containsMouse ? theme.text : theme.textMuted
+                                            text: "+"
+                                            color: incArea.containsMouse ? theme.text : theme.textMuted
                                             font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
                                             Behavior on color { ColorAnimation { duration: 80 } }
                                             MouseArea {
-                                                id: stepInc; anchors.fill: parent; hoverEnabled: true
+                                                id: incArea; anchors.fill: parent; hoverEnabled: true
                                                 onClicked: settingsDialog._setPending(settingRow._plugin, settingRow.modelData.key,
                                                     stepperRow._round(stepperRow._clamp(settingRow.effectiveValue + stepperRow._step)))
                                             }
                                         }
                                     }
 
-                                    // Str → tekst input
+                                    // Str → tekst-invoervak
                                     Rectangle {
                                         visible: settingRow.modelData.type === "str"
                                         anchors.centerIn: parent
-                                        width: 100; height: 24; radius: 4
+                                        width: 100; height: 28; radius: 4
                                         color: theme.surfaceFloating
                                         border.width: 1
                                         border.color: strInput.activeFocus ? theme.accent : theme.border
                                         Behavior on border.color { ColorAnimation { duration: 80 } }
+
                                         TextInput {
                                             id: strInput
-                                            anchors.fill: parent; anchors.leftMargin: 6; anchors.rightMargin: 6
+                                            anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8
                                             verticalAlignment: TextInput.AlignVCenter
                                             text: settingRow.effectiveValue
-                                            color: theme.text; font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                                            color: theme.text
+                                            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
                                             selectByMouse: true
-                                            onEditingFinished: settingsDialog._setPending(settingRow._plugin, settingRow.modelData.key, text)
+                                            Keys.onReturnPressed: settingsDialog._setPending(
+                                                settingRow._plugin, settingRow.modelData.key, text)
+                                            Keys.onEscapePressed: { text = settingRow.effectiveValue; focus = false }
+                                            onActiveFocusChanged: if (!activeFocus) text = settingRow.effectiveValue
                                         }
                                     }
 
-                                    // Color → swatch + hex input
+                                    // Color → kleur-swatch + hex-invoervak
                                     Row {
                                         visible: settingRow.modelData.type === "color"
                                         anchors.centerIn: parent; spacing: 6
@@ -411,26 +485,31 @@ Window {
                                             color: settingRow.effectiveValue
                                             border.width: 1; border.color: theme.border
                                         }
+
                                         Rectangle {
-                                            width: 68; height: 24; radius: 4
+                                            width: 72; height: 28; radius: 4
                                             anchors.verticalCenter: parent.verticalCenter
                                             color: theme.surfaceFloating
                                             border.width: 1
                                             border.color: colorInput.activeFocus ? theme.accent : theme.border
                                             Behavior on border.color { ColorAnimation { duration: 80 } }
+
                                             TextInput {
                                                 id: colorInput
-                                                anchors.fill: parent; anchors.leftMargin: 6; anchors.rightMargin: 6
+                                                anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8
                                                 verticalAlignment: TextInput.AlignVCenter
                                                 text: settingRow.effectiveValue
-                                                color: theme.text; font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                                                color: theme.text
+                                                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
                                                 maximumLength: 7; selectByMouse: true
-                                                onEditingFinished: {
+                                                Keys.onReturnPressed: {
                                                     if (/^#[0-9A-Fa-f]{6}$/.test(text))
                                                         settingsDialog._setPending(settingRow._plugin, settingRow.modelData.key, text)
                                                     else
                                                         text = settingRow.effectiveValue
                                                 }
+                                                Keys.onEscapePressed: { text = settingRow.effectiveValue; focus = false }
+                                                onActiveFocusChanged: if (!activeFocus) text = settingRow.effectiveValue
                                             }
                                         }
                                     }
@@ -444,64 +523,16 @@ Window {
             }
         }
 
-        // ── Bottom bar: Revert / Save / Close ────────────────────────────────
-        Rectangle {
+        // ── Footer: Revert / Save / Close ─────────────────────────────────────
+        DialogFooter {
             Layout.fillWidth: true
-            height: 48
-            color: theme.surfaceAlt
-
-            Rectangle { width: parent.width; height: 1; color: theme.border }
-
-            Row {
-                anchors.right: parent.right; anchors.rightMargin: 16
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 8
-                topPadding: 1  // border compensatie
-
-                // Revert
-                Rectangle {
-                    width: 80; height: 32; radius: 5
-                    color: revertHov.containsMouse ? theme.surfaceFloating : theme.surfaceRaised
-                    opacity: settingsDialog.hasPendingChanges ? 1 : 0.4
-                    Behavior on color       { ColorAnimation { duration: 80 } }
-                    Behavior on opacity     { NumberAnimation { duration: 120 } }
-                    Text {
-                        anchors.centerIn: parent; text: "Revert"
-                        color: theme.text; font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
-                    }
-                    MouseArea { id: revertHov; anchors.fill: parent; hoverEnabled: true
-                        onClicked: if (settingsDialog.hasPendingChanges) settingsDialog.pendingChanges = ({}) }
-                }
-
-                // Save
-                Rectangle {
-                    width: 80; height: 32; radius: 5
-                    color: saveHov.containsMouse ? theme.accentHover : theme.accent
-                    opacity: settingsDialog.hasPendingChanges ? 1 : 0.4
-                    Behavior on color       { ColorAnimation { duration: 80 } }
-                    Behavior on opacity     { NumberAnimation { duration: 120 } }
-                    Text {
-                        anchors.centerIn: parent; text: "Save"
-                        color: theme.accentText; font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
-                        font.weight: Font.Medium
-                    }
-                    MouseArea { id: saveHov; anchors.fill: parent; hoverEnabled: true
-                        onClicked: if (settingsDialog.hasPendingChanges) settingsDialog._applyAndSave() }
-                }
-
-                // Close
-                Rectangle {
-                    width: 80; height: 32; radius: 5
-                    color: closeHov.containsMouse ? theme.surfaceFloating : theme.surfaceRaised
-                    Behavior on color { ColorAnimation { duration: 80 } }
-                    Text {
-                        anchors.centerIn: parent; text: "Close"
-                        color: theme.text; font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
-                    }
-                    MouseArea { id: closeHov; anchors.fill: parent; hoverEnabled: true
-                        onClicked: settingsPanelViewModel.closePanel() }
-                }
-            }
+            showRevert: true
+            showSave:   true
+            revertEnabled: settingsDialog.hasPendingChanges
+            saveEnabled:   settingsDialog.hasPendingChanges
+            onRevertClicked: settingsDialog.pendingChanges = ({})
+            onSaveClicked:   settingsDialog._applyAndSave()
+            onCloseClicked:  settingsPanelViewModel.closePanel()
         }
     }
 }
