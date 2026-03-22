@@ -74,6 +74,11 @@ class TyreDemoViewModel(QObject):
         self._version      = "–"
         self._compound     = ("–", "–")  # (front, rear)
 
+        # Vorige state voor change-detection
+        self._prev_game_running = None
+        self._prev_active       = None
+        self._prev_game_phase   = None
+
         # 4 banden × 4 waarden: surface_temp, inner_temp, pressure, wear
         self._surface  = [0.0] * 4
         self._inner    = [0.0] * 4
@@ -99,7 +104,22 @@ class TyreDemoViewModel(QObject):
             # Game running = gameVersion is non-zero als LMU actief schrijft
             self._game_running = int(c._info.data.generic.gameVersion) != 0
 
-            self._active  = self._game_running and c.state.active()
+            self._active   = self._game_running and c.state.active()
+            game_phase     = int(c._info.data.scoring.scoringInfo.mGamePhase)
+
+            # Alleen loggen bij state wijziging
+            if (self._game_running != self._prev_game_running
+                    or self._active != self._prev_active
+                    or game_phase   != self._prev_game_phase):
+                log.connector("state changed",
+                    game_running=self._game_running,
+                    active=self._active,
+                    playerHasVehicle=bool(c._info.data.telemetry.playerHasVehicle),
+                    gamePhase=game_phase,
+                )
+                self._prev_game_running = self._game_running
+                self._prev_active       = self._active
+                self._prev_game_phase   = game_phase
             self._version = c.state.version() if self._game_running else "–"
 
             if self._game_running:

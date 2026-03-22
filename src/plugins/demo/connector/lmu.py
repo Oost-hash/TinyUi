@@ -77,8 +77,9 @@ class _State(State):
         self._info = info
 
     def active(self) -> bool:
-        # gamePhase 0=before session, 7=stopped, 8=over, 9=paused
         phase = int(self._info.data.scoring.scoringInfo.mGamePhase)
+        # gamePhase: 0=before session, 7=stopped, 8=over, 9=paused
+        # SME_ENTER/EXIT_REALTIME counters zijn gelijk in LMU — niet bruikbaar
         return bool(
             self._info.data.telemetry.playerHasVehicle
             and phase not in (0, 7, 8, 9)

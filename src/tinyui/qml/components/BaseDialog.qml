@@ -37,7 +37,8 @@ Window {
 
     // ── Platform chrome ───────────────────────────────────────────────────────
     readonly property bool nativeChrome: Qt.platform.os === "linux" || Qt.platform.os === "osx"
-    flags: nativeChrome ? Qt.Dialog : Qt.Dialog | Qt.FramelessWindowHint
+    flags: Qt.Window | Qt.FramelessWindowHint
+    transientParent: null   // eigen taskbar-entry, niet gebonden aan hoofdvenster
     color: theme.surface
 
     // Win32 DWM chrome: shadow, rounded corners, Alt+Tab thumbnail.

@@ -30,10 +30,8 @@ Rectangle {
     height: theme.titleBarHeight
     color: theme.surfaceAlt
 
-    // Windows: DWM handelt drag af via HTCAPTION (win_window.py).
-    // Linux:   DragHandler start compositor-move.
+    // startSystemMove() werkt op alle platforms in Qt 6
     DragHandler {
-        enabled: Qt.platform.os === "linux"
         target: null
         onActiveChanged: if (active) root.Window.window.startSystemMove()
     }
@@ -48,6 +46,27 @@ Rectangle {
     }
 
     TitleBarButton {
+        anchors.right: maximizeBtn.left
+        height: parent.height
+        iconText: icons.minimize
+        onClicked: root.Window.window.showMinimized()
+    }
+
+    TitleBarButton {
+        id: maximizeBtn
+        anchors.right: closeBtn.left
+        height: parent.height
+        iconText: root.Window.window.visibility === Window.Maximized ? icons.restore : icons.maximize
+        onClicked: {
+            if (root.Window.window.visibility === Window.Maximized)
+                root.Window.window.showNormal()
+            else
+                root.Window.window.showMaximized()
+        }
+    }
+
+    TitleBarButton {
+        id: closeBtn
         anchors.right: parent.right
         height: parent.height
         iconText: icons.close

@@ -315,8 +315,8 @@ class WindowChromeHelper(QObject):
             title_bar_height  = round(36 * self._dpr),
             resize_border     = round(6  * self._dpr),
             resize_corner     = round(12 * self._dpr),
-            left_button_width = 0,                        # geen linker zone voor dialog
-            right_button_width= round(46 * self._dpr),   # sluit-knop (TitleBarButton.width) → HTCLIENT
+            left_button_width = 0,                         # geen linker zone voor dialog
+            right_button_width= round(138 * self._dpr),   # 3 × TitleBarButton (min + max + close)
         )
         apply_dwm_frame(hwnd)
         self._wnd_procs.append(wnd_proc)
