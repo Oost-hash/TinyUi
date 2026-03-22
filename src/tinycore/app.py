@@ -38,19 +38,25 @@ class App:
     """Central application container — owns all registries."""
 
     def __init__(self, config_dir: Path):
-        self.config = ConfigStore()
-        self.loaders = LoaderRegistry(config_dir)
-        self.editors = EditorRegistry()
-        self.events = EventBus()
-        self.plugins = PluginRegistry()
-        self.providers = ProviderRegistry()
-        self.settings = SettingsRegistry(config_dir)
-        self.widgets = WidgetRegistry()
+        self.config        = ConfigStore()
+        self.loaders       = LoaderRegistry(config_dir)
+        self.editors       = EditorRegistry()
+        self.events        = EventBus()
+        self.plugins       = PluginRegistry()
+        self.providers     = ProviderRegistry()
+        self.settings      = SettingsRegistry(config_dir)   # plugin settings only
+        self.host_settings = SettingsRegistry(config_dir)   # host (TinyUI) — not visible to plugins
+        self.widgets       = WidgetRegistry()
 
-    def start(self) -> None:
-        """Start the application: emit events, start plugins."""
+    def start(self, *, plugins: bool = True) -> None:
+        """Start the application: emit events, optionally start all plugins.
+
+        Pass plugins=False when using PluginLifecycleManager — it handles
+        plugin start/stop on demand instead of starting everything at once.
+        """
         self.events.emit("app.starting")
-        self.plugins.start_all()
+        if plugins:
+            self.plugins.start_all()
         self.events.emit("app.started")
 
     def stop(self) -> None:

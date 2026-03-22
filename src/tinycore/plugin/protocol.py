@@ -25,7 +25,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
-    from tinycore.app import App
+    from tinycore.plugin.context import PluginContext
 
 
 @runtime_checkable
@@ -35,7 +35,7 @@ class Plugin(Protocol):
     @property
     def name(self) -> str: ...
 
-    def register(self, app: App) -> None:
+    def register(self, ctx: PluginContext) -> None:
         """Phase 1: register config loaders, providers, event handlers."""
         ...
 

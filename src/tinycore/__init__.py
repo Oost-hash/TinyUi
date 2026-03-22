@@ -25,8 +25,12 @@ from .config.loader import LoaderRegistry, read_json, write_json
 from .config.store import ConfigStore
 from .editor import ColumnDef, EditorRegistry, EditorSpec, load_editors_toml
 from .events.bus import EventBus
+from .plugin.context import PluginContext
+from .plugin.lifecycle import PluginLifecycleManager
 from .plugin.protocol import Plugin
 from .plugin.registry import PluginRegistry
+from .plugin.spec import PluginSpec
+from .plugin.subprocess_host import SubprocessPlugin
 from .providers.protocol import Provider
 from .providers.registry import ProviderRegistry
 from .settings import SettingsRegistry, SettingsSpec
@@ -45,7 +49,11 @@ __all__ = [
     "load_editors_toml",
     "EventBus",
     "Plugin",
+    "PluginContext",
     "PluginRegistry",
+    "PluginLifecycleManager",
+    "PluginSpec",
+    "SubprocessPlugin",
     "Provider",
     "ProviderRegistry",
     "SettingsRegistry",

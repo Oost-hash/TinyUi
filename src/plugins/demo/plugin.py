@@ -38,7 +38,7 @@ from tinycore.settings import SettingsSpec
 from tinycore.widget import load_widgets_toml
 
 if TYPE_CHECKING:
-    from tinycore.app import App
+    from tinycore.plugin.context import PluginContext
 
 
 # --- Default data (used when JSON files don't exist yet) ---
@@ -78,59 +78,56 @@ class DemoPlugin:
 
     name = "demo"
 
-    def register(self, app: App) -> None:
-        # 1. Register config files with defaults
-        app.loaders.register("heatmaps", "heatmaps.json", self.name, DEFAULT_HEATMAPS)
-        app.loaders.register(
-            "compounds", "compounds.json", self.name, DEFAULT_COMPOUNDS
-        )
+    def register(self, ctx: PluginContext) -> None:
+        # 1. Register config files with defaults (plugin_name automatisch gescoped)
+        ctx.loaders.register("heatmaps", "heatmaps.json", DEFAULT_HEATMAPS)
+        ctx.loaders.register("compounds", "compounds.json", DEFAULT_COMPOUNDS)
 
         # 2. Load from disk (creates JSON from defaults if missing)
-        app.loaders.load_all(app.config)
+        ctx.loaders.load_all(ctx.config)
 
         # 3. Load editor specs from editors.toml (lives with plugin source)
         plugin_dir = Path(__file__).parent
         for spec in load_editors_toml(plugin_dir / "editors.toml"):
-            app.editors.register(spec)
+            ctx.editors.register(spec)
 
         # 4. Load widget specs from widgets.toml
         for spec in load_widgets_toml(plugin_dir / "widgets.toml"):
-            app.widgets.register(spec)
+            ctx.widgets.register(spec)
 
         # 5. Settings — één per type zodat alle controls zichtbaar zijn in de settings dialog
-        _r = app.settings.register
-        _n = self.name
+        _r = ctx.settings.register
 
-        _r(_n, SettingsSpec(
+        _r(SettingsSpec(
             key="show_overlay", label="Show overlay", type="bool",
             default=True, description="Toggle the in-game overlay",
             section="Display",
         ))
-        _r(_n, SettingsSpec(
+        _r(SettingsSpec(
             key="overlay_opacity", label="Opacity", type="float",
             default=0.8, min=0.0, max=1.0, step=0.05,
             description="Overlay transparency (0 = invisible, 1 = solid)",
             section="Display",
         ))
-        _r(_n, SettingsSpec(
+        _r(SettingsSpec(
             key="font_size", label="Font size", type="int",
             default=14, min=8, max=48, step=1,
             description="Base font size for overlay text",
             section="Display",
         ))
-        _r(_n, SettingsSpec(
+        _r(SettingsSpec(
             key="units", label="Units", type="enum",
             default="metric", options=["metric", "imperial"],
             description="Speed and distance units",
             section="Display",
         ))
-        _r(_n, SettingsSpec(
+        _r(SettingsSpec(
             key="accent_color", label="Accent color", type="color",
             default="#4FC3F7",
             description="Highlight color used in the overlay",
             section="Appearance",
         ))
-        _r(_n, SettingsSpec(
+        _r(SettingsSpec(
             key="speed_label", label="Speed label", type="str",
             default="Speed",
             description="Label shown next to the speed value",

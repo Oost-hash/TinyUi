@@ -81,38 +81,42 @@ class CoreViewModel(QObject):
         """Settings gegroepeerd per plugin én sectie — voor de settings dialog.
 
         Structuur: [{ plugin, sections: [{ name, settings: [{key,label,type,value,...}] }] }]
+        Host settings (TinyUI) staan bovenaan; plugin settings daaronder.
         Resultaat wordt gecached; cache vervalt bij setSettingValue.
         """
         if self._settings_cache is not None:
             return self._settings_cache
 
         result = []
-        for plugin_name, specs in self._core.settings.by_plugin().items():
-            sections: dict[str, list[dict]] = {}
-            section_order: list[str] = []
-            for s in specs:
-                sec = s.section or ""
-                if sec not in sections:
-                    sections[sec] = []
-                    section_order.append(sec)
-                sections[sec].append({
-                    "key":         s.key,
-                    "label":       s.label,
-                    "type":        s.type,
-                    "value":       self._core.settings.get_value(plugin_name, s.key),
-                    "description": s.description,
-                    "options":     s.options,
-                    "min":         s.min,
-                    "max":         s.max,
-                    "step":        s.step,
+        # Host settings eerst (TinyUI), dan plugin settings
+        registries = [self._core.host_settings, self._core.settings]
+        for registry in registries:
+            for plugin_name, specs in registry.by_plugin().items():
+                sections: dict[str, list[dict]] = {}
+                section_order: list[str] = []
+                for s in specs:
+                    sec = s.section or ""
+                    if sec not in sections:
+                        sections[sec] = []
+                        section_order.append(sec)
+                    sections[sec].append({
+                        "key":         s.key,
+                        "label":       s.label,
+                        "type":        s.type,
+                        "value":       registry.get_value(plugin_name, s.key),
+                        "description": s.description,
+                        "options":     s.options,
+                        "min":         s.min,
+                        "max":         s.max,
+                        "step":        s.step,
+                    })
+                result.append({
+                    "plugin":   plugin_name,
+                    "sections": [
+                        {"name": name, "settings": sections[name]}
+                        for name in section_order
+                    ],
                 })
-            result.append({
-                "plugin":   plugin_name,
-                "sections": [
-                    {"name": name, "settings": sections[name]}
-                    for name in section_order
-                ],
-            })
 
         log.settings("settingsByPlugin",
                      plugins=len(result),
@@ -123,7 +127,12 @@ class CoreViewModel(QObject):
     @Slot(str, str, "QVariant")
     def setSettingValue(self, plugin_name: str, key: str, value) -> None:
         """Sla een nieuwe settingswaarde op en notificeer QML en persistence."""
-        self._core.settings.set_value(plugin_name, key, value)
+        registry = (
+            self._core.host_settings
+            if self._core.host_settings.has_plugin(plugin_name)
+            else self._core.settings
+        )
+        registry.set_value(plugin_name, key, value)
         self._settings_cache = None          # cache ongeldig — nieuwe waarden bij volgende read
         self.settingsChanged.emit()
         self.settingValueChanged.emit(plugin_name)

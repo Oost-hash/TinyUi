@@ -41,9 +41,10 @@ class PluginRegistry:
         self._plugins.append(plugin)
 
     def register_all(self, app: App) -> None:
-        """Phase 1: call register() on all plugins in order."""
+        """Phase 1: call register() on all plugins with a scoped PluginContext."""
+        from .context import PluginContext
         for plugin in self._plugins:
-            plugin.register(app)
+            plugin.register(PluginContext(app, plugin.name))
 
     def start_all(self) -> None:
         """Phase 2: call start() on all plugins in order."""
@@ -54,6 +55,13 @@ class PluginRegistry:
         """Teardown: call stop() on all plugins in reverse order."""
         for plugin in reversed(self._plugins):
             plugin.stop()
+
+    def get(self, name: str) -> Plugin:
+        """Return the plugin with the given name."""
+        for p in self._plugins:
+            if p.name == name:
+                return p
+        raise KeyError(f"Plugin '{name}' not registered")
 
     @property
     def plugins(self) -> list[Plugin]:

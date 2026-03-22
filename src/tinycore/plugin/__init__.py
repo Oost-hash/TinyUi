@@ -20,7 +20,14 @@
 #  licensed under GPLv3.
 """tinycore.plugin — plugin protocol and registry."""
 
+from .context import PluginContext
+from .lifecycle import PluginLifecycleManager
 from .protocol import Plugin
 from .registry import PluginRegistry
+from .spec import PluginSpec
+from .subprocess_host import SubprocessPlugin
 
-__all__ = ["Plugin", "PluginRegistry"]
+__all__ = [
+    "Plugin", "PluginContext", "PluginLifecycleManager",
+    "PluginRegistry", "PluginSpec", "SubprocessPlugin",
+]

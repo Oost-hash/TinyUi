@@ -69,6 +69,10 @@ class SettingsRegistry:
         """All (plugin_name, spec) pairs in registration order."""
         return list(self._specs)
 
+    def has_plugin(self, name: str) -> bool:
+        """Return True if any settings are registered under this plugin name."""
+        return any(pn == name for pn, _ in self._specs)
+
     def by_plugin(self) -> dict[str, list[SettingsSpec]]:
         """Specs grouped by plugin name, preserving registration order."""
         result: dict[str, list[SettingsSpec]] = {}

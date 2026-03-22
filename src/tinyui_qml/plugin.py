@@ -18,7 +18,11 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""TinyUIPlugin — registers TinyUI as a first-class plugin."""
+"""TinyUIPlugin — registers host settings directly on App.host_settings.
+
+TinyUI is the host application, not a plugin. It registers its settings
+on App.host_settings which is not exposed to plugins via PluginContext.
+"""
 
 from __future__ import annotations
 
@@ -31,12 +35,12 @@ if TYPE_CHECKING:
 
 
 class TinyUIPlugin:
-    """TinyUI registreert zichzelf als plugin zodat settings uniform data-driven zijn."""
+    """Registreert TinyUI host-settings buiten het plugin systeem."""
 
     name = "TinyUI"
 
     def register(self, app: App) -> None:
-        _r = app.settings.register
+        _r = app.host_settings.register
         _n = self.name
 
         # ── Application ───────────────────────────────────────────────────
