@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from tinycore.editor import load_editors_toml
+from tinycore.settings import SettingsSpec
 from tinycore.widget import load_widgets_toml
 
 if TYPE_CHECKING:
@@ -95,6 +96,46 @@ class DemoPlugin:
         # 4. Load widget specs from widgets.toml
         for spec in load_widgets_toml(plugin_dir / "widgets.toml"):
             app.widgets.register(spec)
+
+        # 5. Settings — één per type zodat alle controls zichtbaar zijn in de settings dialog
+        _r = app.settings.register
+        _n = self.name
+
+        _r(_n, SettingsSpec(
+            key="show_overlay", label="Show overlay", type="bool",
+            default=True, description="Toggle the in-game overlay",
+            section="Display",
+        ))
+        _r(_n, SettingsSpec(
+            key="overlay_opacity", label="Opacity", type="float",
+            default=0.8, min=0.0, max=1.0, step=0.05,
+            description="Overlay transparency (0 = invisible, 1 = solid)",
+            section="Display",
+        ))
+        _r(_n, SettingsSpec(
+            key="font_size", label="Font size", type="int",
+            default=14, min=8, max=48, step=1,
+            description="Base font size for overlay text",
+            section="Display",
+        ))
+        _r(_n, SettingsSpec(
+            key="units", label="Units", type="enum",
+            default="metric", options=["metric", "imperial"],
+            description="Speed and distance units",
+            section="Display",
+        ))
+        _r(_n, SettingsSpec(
+            key="accent_color", label="Accent color", type="color",
+            default="#4FC3F7",
+            description="Highlight color used in the overlay",
+            section="Appearance",
+        ))
+        _r(_n, SettingsSpec(
+            key="speed_label", label="Speed label", type="str",
+            default="Speed",
+            description="Label shown next to the speed value",
+            section="Labels",
+        ))
 
     def start(self) -> None:
         pass

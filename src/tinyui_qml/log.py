@@ -27,7 +27,7 @@ Configuratie via TINYUI_DEBUG omgevingsvariabele:
   TINYUI_DEBUG=menu,state    alleen menu en state
   (niet gezet)               productie-modus — alleen INFO en hoger
 
-Beschikbare categorieën: menu  state  mouse  win32  theme  ui
+Beschikbare categorieën: menu  state  mouse  win32  theme  ui  settings
 """
 
 import logging
@@ -118,6 +118,9 @@ class CategoryLogger:
 
     def ui(self, msg: str, **kw) -> None:
         self._cat("ui", msg, **kw)
+
+    def settings(self, msg: str, **kw) -> None:
+        self._cat("settings", msg, **kw)
 
     # ── Standaard niveaus (altijd actief) ──────────────────────────────────
     def info(self, msg, *a, **kw):

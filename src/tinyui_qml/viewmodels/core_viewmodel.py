@@ -24,6 +24,9 @@
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
 from tinycore import App
+from tinyui_qml.log import get_logger
+
+log = get_logger(__name__)
 
 
 class CoreViewModel(QObject):
@@ -94,6 +97,12 @@ class CoreViewModel(QObject):
                     "value":       self._core.settings.get_value(plugin_name, s.key),
                     "description": s.description,
                     "options":     s.options,
+                    "min":         s.min,
+                    "max":         s.max,
+                    "step":        s.step,
+                    "min":         s.min,
+                    "max":         s.max,
+                    "step":        s.step,
                 })
             result.append({
                 "plugin":   plugin_name,
@@ -102,6 +111,9 @@ class CoreViewModel(QObject):
                     for name in section_order
                 ],
             })
+        log.settings("settingsByPlugin",
+                     plugins=len(result),
+                     structure=[(r["plugin"], [s["name"] for s in r["sections"]]) for r in result])
         return result
 
     @Slot(str, str, "QVariant")

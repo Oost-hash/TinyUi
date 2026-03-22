@@ -20,6 +20,7 @@
 //  licensed under GPLv3.
 
 import QtQuick
+import "../components"
 
 Item {
     id: widgetTab

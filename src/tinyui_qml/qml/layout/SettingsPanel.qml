@@ -20,6 +20,7 @@
 //  licensed under GPLv3.
 
 import QtQuick
+import "../components"
 
 Item {
     id: panel
@@ -30,6 +31,16 @@ Item {
 
     Behavior on opacity {
         NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+    }
+
+    Component.onCompleted: {
+        console.log("[SettingsPanel] model count:", coreViewModel.settingsByPlugin.length)
+        console.log("[SettingsPanel] model:", JSON.stringify(coreViewModel.settingsByPlugin))
+    }
+
+    onVisibleChanged: {
+        if (visible)
+            console.log("[SettingsPanel] opened, model count:", coreViewModel.settingsByPlugin.length)
     }
 
     Rectangle { anchors.fill: parent; color: theme.surface }
@@ -183,6 +194,156 @@ Item {
                                             settingRow.modelData.key,
                                             newValue
                                         )
+                                    }
+
+                                    // Int / Float → stepper
+                                    Row {
+                                        visible: settingRow.modelData.type === "int"
+                                               || settingRow.modelData.type === "float"
+                                        anchors.centerIn: parent; spacing: 4
+
+                                        property real _step: settingRow.modelData.step != null
+                                            ? settingRow.modelData.step
+                                            : (settingRow.modelData.type === "int" ? 1 : 0.1)
+                                        property real _min: settingRow.modelData.min != null
+                                            ? settingRow.modelData.min : -1e9
+                                        property real _max: settingRow.modelData.max != null
+                                            ? settingRow.modelData.max :  1e9
+
+                                        function _clamp(v) {
+                                            return Math.min(_max, Math.max(_min, v))
+                                        }
+                                        function _rounded(v) {
+                                            // float precision: round to step's decimal places
+                                            var decimals = (_step.toString().split(".")[1] || "").length
+                                            return parseFloat(v.toFixed(decimals))
+                                        }
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: "\u2212"   // −
+                                            color: decHover.containsMouse ? theme.text : theme.textMuted
+                                            font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+                                            Behavior on color { ColorAnimation { duration: 80 } }
+                                            MouseArea {
+                                                id: decHover; anchors.fill: parent; hoverEnabled: true
+                                                onClicked: {
+                                                    var row = stepperRow
+                                                    settingsPanelViewModel.setSetting(
+                                                        pluginBlock.modelData.plugin,
+                                                        settingRow.modelData.key,
+                                                        row._rounded(row._clamp(settingRow.modelData.value - row._step))
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Text {
+                                            id: stepperRow
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: settingRow.modelData.value
+                                            color: theme.text
+                                            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                                            width: 38; horizontalAlignment: Text.AlignHCenter
+                                            // expose stepper helpers to siblings
+                                            property real _step: parent._step
+                                            property real _min:  parent._min
+                                            property real _max:  parent._max
+                                            function _clamp(v) { return parent._clamp(v) }
+                                            function _rounded(v) { return parent._rounded(v) }
+                                        }
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: "+"
+                                            color: incHover.containsMouse ? theme.text : theme.textMuted
+                                            font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+                                            Behavior on color { ColorAnimation { duration: 80 } }
+                                            MouseArea {
+                                                id: incHover; anchors.fill: parent; hoverEnabled: true
+                                                onClicked: {
+                                                    var row = stepperRow
+                                                    settingsPanelViewModel.setSetting(
+                                                        pluginBlock.modelData.plugin,
+                                                        settingRow.modelData.key,
+                                                        row._rounded(row._clamp(settingRow.modelData.value + row._step))
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Str → tekst input
+                                    Rectangle {
+                                        visible: settingRow.modelData.type === "str"
+                                        anchors.centerIn: parent
+                                        width: 90; height: 24; radius: 4
+                                        color: theme.surfaceFloating
+                                        border.width: 1
+                                        border.color: strInput.activeFocus ? theme.accent : theme.border
+                                        Behavior on border.color { ColorAnimation { duration: 80 } }
+
+                                        TextInput {
+                                            id: strInput
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 6; anchors.rightMargin: 6
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            verticalAlignment: TextInput.AlignVCenter
+                                            text: settingRow.modelData.value
+                                            color: theme.text
+                                            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                                            selectByMouse: true
+                                            onEditingFinished: settingsPanelViewModel.setSetting(
+                                                pluginBlock.modelData.plugin,
+                                                settingRow.modelData.key,
+                                                text
+                                            )
+                                        }
+                                    }
+
+                                    // Color → kleur-swatch + hex input
+                                    Row {
+                                        visible: settingRow.modelData.type === "color"
+                                        anchors.centerIn: parent; spacing: 6
+
+                                        Rectangle {
+                                            width: 20; height: 20; radius: 4
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            color: settingRow.modelData.value
+                                            border.width: 1; border.color: theme.border
+                                        }
+
+                                        Rectangle {
+                                            width: 68; height: 24; radius: 4
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            color: theme.surfaceFloating
+                                            border.width: 1
+                                            border.color: colorInput.activeFocus ? theme.accent : theme.border
+                                            Behavior on border.color { ColorAnimation { duration: 80 } }
+
+                                            TextInput {
+                                                id: colorInput
+                                                anchors.fill: parent
+                                                anchors.leftMargin: 6; anchors.rightMargin: 6
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                verticalAlignment: TextInput.AlignVCenter
+                                                text: settingRow.modelData.value
+                                                color: theme.text
+                                                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                                                maximumLength: 7
+                                                selectByMouse: true
+                                                onEditingFinished: {
+                                                    if (/^#[0-9A-Fa-f]{6}$/.test(text))
+                                                        settingsPanelViewModel.setSetting(
+                                                            pluginBlock.modelData.plugin,
+                                                            settingRow.modelData.key,
+                                                            text
+                                                        )
+                                                    else
+                                                        text = settingRow.modelData.value
+                                                }
+                                            }
+                                        }
                                     }
 
                                     // Enum → pijl-selector

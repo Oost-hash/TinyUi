@@ -109,13 +109,12 @@ ApplicationWindow {
             Layout.fillWidth: true
         }
 
-        Item {
+        WidgetTab {
             Layout.fillWidth: true
             Layout.fillHeight: true
-
-            WidgetTab { anchors.fill: parent }
-            SettingsPanel {}
         }
+
+        SettingsDialog {}
 
         StatusBar {
             Layout.fillWidth: true

@@ -37,11 +37,14 @@ class SettingsSpec:
 
     key:         str
     label:       str
-    type:        str        # "bool" | "enum" | "int" | "str"
+    type:        str               # "bool" | "enum" | "int" | "float" | "str" | "color"
     default:     Any
     description: str        = ""
     options:     list[str]  = field(default_factory=list)  # for enum type
     section:     str        = ""                            # grouping in UI
+    min:         float | None = None                        # for int / float
+    max:         float | None = None                        # for int / float
+    step:        float | None = None                        # for int / float (default: 1 / 0.1)
 
 
 class SettingsRegistry:
