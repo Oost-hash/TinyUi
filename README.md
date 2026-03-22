@@ -25,8 +25,6 @@ The idea is to restructure how data flows through the system so that UI componen
 
 This diagram illustrates a possible architectural direction, not a finalized design. Many aspects of the system are still undefined and may change as the project evolves.
 
-To explore different approaches, I am experimenting with AI agents that iterate on the concept and help generate prototype implementations. The goal is to rapidly test ideas and identify which patterns work well in practice.
-
 ```mermaid
 graph TB
 
@@ -67,7 +65,7 @@ graph TB
 
 I am looking for a community-contributed logo for **TinyUi**!
 
-The current placeholder is a modified version of the [TinyPedal](https://github.com/s-victor/TinyPedal) icon and is not a permanent solution. I'd love something that truly represents this project.
+The current placeholder is a dummy icon and is not a permanent solution. I'd love something that truly represents this project.
 
 ### How to contribute
 
