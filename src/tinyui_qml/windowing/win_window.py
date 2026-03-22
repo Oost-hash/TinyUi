@@ -46,6 +46,7 @@ import ctypes
 import ctypes.wintypes
 
 from PySide6.QtCore import QObject, Slot
+from PySide6.QtGui import QWindow
 
 # ── Win32 constanten ──────────────────────────────────────────────────────────
 
@@ -294,6 +295,42 @@ def install_wnd_proc(
     if result == 0:
         print(f"[win32] FOUT: SetWindowLongPtrW mislukt! LastError={ctypes.windll.kernel32.GetLastError()}")
     return wnd_proc, set_left_button_width  # wnd_proc BEWAREN — anders garbage collected → crash
+
+
+class WindowChromeHelper(QObject):
+    """Pas Win32 DWM chrome toe op secundaire vensters (dialogs)."""
+
+    def __init__(self, dpr: float, parent=None):
+        super().__init__(parent)
+        self._dpr        = dpr
+        self._applied:   set[int]  = set()
+        self._wnd_procs: list      = []    # BEWAREN — anders garbage collected → crash
+
+    def _apply(self, hwnd: int) -> None:
+        if hwnd in self._applied:
+            return
+        self._applied.add(hwnd)
+        wnd_proc, _ = install_wnd_proc(
+            hwnd,
+            title_bar_height  = round(36 * self._dpr),
+            resize_border     = round(6  * self._dpr),
+            resize_corner     = round(12 * self._dpr),
+            left_button_width = 0,                        # geen linker zone voor dialog
+            right_button_width= round(46 * self._dpr),   # sluit-knop (TitleBarButton.width) → HTCLIENT
+        )
+        apply_dwm_frame(hwnd)
+        self._wnd_procs.append(wnd_proc)
+
+    @Slot(QWindow)
+    def applyToWindow(self, window: QWindow) -> None:
+        """Aanroepen vanuit QML: windowChromeHelper.applyToWindow(someWindow).
+        QML Window-objecten erven van QWindow — winId() is hier beschikbaar."""
+        self._apply(int(window.winId()))
+
+    @Slot(int)
+    def applyTo(self, win_id: int) -> None:
+        """Aanroepen vanuit Python met een bekende HWND."""
+        self._apply(int(win_id))
 
 
 class WindowController(QObject):

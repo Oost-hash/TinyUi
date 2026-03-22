@@ -144,9 +144,12 @@ def main():
     _wnd_proc = None  # Windows only: MOET bewaard blijven — anders GC → crash
     _win_ctrl = None
 
+    _chrome_helper = None
+
     if sys.platform == "win32":
         from tinyui_qml.windowing.win_window import (
             WindowController,
+            WindowChromeHelper,
             apply_dwm_frame,
             install_wnd_proc,
         )
@@ -161,6 +164,8 @@ def main():
         )
         apply_dwm_frame(hwnd)
         _win_ctrl = WindowController(hwnd, dpr=dpr, set_left_button_width=_set_left)
+        _chrome_helper = WindowChromeHelper(dpr=dpr)
+        engine.rootContext().setContextProperty("windowChromeHelper", _chrome_helper)
 
     elif sys.platform.startswith("linux") or sys.platform == "darwin":
         from tinyui_qml.windowing.unix_window import WindowController
