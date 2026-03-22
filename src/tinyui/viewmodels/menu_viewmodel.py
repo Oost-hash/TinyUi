@@ -27,10 +27,10 @@ log = get_logger(__name__)
 
 
 class MenuViewModel(QObject):
-    """Beheert de staat van het hamburgermenu en bijbehorende popups.
+    """Manages the state of the hamburger menu and associated popups.
 
-    QML roept alleen slots aan en bindt aan properties — alle logica
-    (dismiss, overstap, auto-close timer) leeft hier.
+    QML only calls slots and binds to properties — all logic
+    (dismiss, transition, auto-close timer) lives here.
     """
 
     menuOpenChanged = Signal()
@@ -44,10 +44,10 @@ class MenuViewModel(QObject):
         self._menu_open: bool = False
         self._active_popup: str = ""  # "" | "help" | "about"
         self._dropdown_open: bool = (
-            False  # alleen True bij expliciete open, niet bij popup-dismiss
+            False  # only True on explicit open, not on popup dismiss
         )
-        self._dismissed: str = ""  # naam van de popup die de gebruiker bewust sloot
-        self._blocked: str = ""  # kort geblokkeerd na sluiten (QML overlay-hover guard)
+        self._dismissed: str = ""  # name of the popup the user deliberately closed
+        self._blocked: str = ""  # briefly blocked after closing (QML overlay-hover guard)
 
         self._close_timer = QTimer(self)
         self._close_timer.setSingleShot(True)
@@ -68,7 +68,7 @@ class MenuViewModel(QObject):
     def dropdownOpen(self) -> bool:
         return self._dropdown_open
 
-    # ── Slots (aangeroepen vanuit QML) ────────────────────────────────────
+    # ── Slots (called from QML) ───────────────────────────────────────────
 
     def _snap(self) -> dict:
         return dict(
@@ -77,7 +77,7 @@ class MenuViewModel(QObject):
 
     @Slot()
     def toggleMenu(self):
-        """Hamburger-knop of TinyUi-tekst geklikt."""
+        """Hamburger button or TinyUI label clicked."""
         log.menu("toggleMenu", **self._snap())
         if self._menu_open:
             self._close()
@@ -88,13 +88,13 @@ class MenuViewModel(QObject):
 
     @Slot()
     def closeMenu(self):
-        """Sluit menu en alle popups (bijv. na Settings navigatie)."""
+        """Close menu and all popups (e.g. after Settings navigation)."""
         log.menu("closeMenu", **self._snap())
         self._close()
 
     @Slot(str)
     def hoverPopup(self, name: str):
-        """Muis beweegt over een menu-knop — open als niet dismissed of geblokkeerd."""
+        """Mouse moves over a menu button — open if not dismissed or blocked."""
         blocked = (
             not self._menu_open or self._dismissed == name or self._blocked == name
         )
@@ -105,7 +105,7 @@ class MenuViewModel(QObject):
 
     @Slot(str)
     def clickPopup(self, name: str):
-        """Klik op een menu-knop — toggle; expliciete klik reset dismiss."""
+        """Click on a menu button — toggle; explicit click resets dismiss."""
         log.menu("clickPopup", name=name, **self._snap())
         if self._active_popup == name:
             self._dismissed = name
@@ -118,14 +118,14 @@ class MenuViewModel(QObject):
 
     @Slot()
     def closeActivePopup(self):
-        """Sluit huidige popup zonder dismiss (hover terug naar hamburger)."""
+        """Close current popup without dismiss (hover back to hamburger)."""
         log.menu("closeActivePopup", **self._snap())
         self._set_active("")
         self._set_dropdown_open(True)
 
     @Slot()
     def dismissActivePopup(self):
-        """Klik buiten menu-zone — sluit popup of dropdown, start timer."""
+        """Click outside menu zone — close popup or dropdown, start timer."""
         log.menu("dismissActivePopup", **self._snap())
         if self._active_popup:
             self._dismissed = self._active_popup
@@ -136,13 +136,13 @@ class MenuViewModel(QObject):
 
     @Slot()
     def mouseEnteredMenu(self):
-        """Muis is in de menu-zone — stop auto-close timer."""
+        """Mouse is in the menu zone — stop auto-close timer."""
         log.mouse("entered", **self._snap())
         self._close_timer.stop()
 
     @Slot()
     def mouseLeftMenu(self):
-        """Muis verlaat de menu-zone — start auto-close timer."""
+        """Mouse leaves the menu zone — start auto-close timer."""
         log.mouse("left", **self._snap())
         if self._menu_open:
             self._close_timer.start()
@@ -178,7 +178,7 @@ class MenuViewModel(QObject):
             self._blocked = ""
 
     def _close(self) -> None:
-        """Sluit alles en reset alle state voor de volgende sessie."""
+        """Close everything and reset all state for the next session."""
         log.menu("close")
         self._dismissed = ""
         self._blocked = ""

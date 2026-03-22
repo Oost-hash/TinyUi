@@ -33,7 +33,7 @@ BaseDialog {
     visible: settingsPanelViewModel.open
     onCloseRequested: settingsPanelViewModel.closePanel()
 
-    // ── Pending changes — lokaal beheerd in QML ───────────────────────────────
+    // ── Pending changes — managed locally in QML ──────────────────────────────
     // { pluginName: { key: newValue } }
     property var pendingChanges: ({})
 
@@ -49,8 +49,8 @@ BaseDialog {
     }
 
     function _setPending(plugin, key, value) {
-        // Object.assign maakt nieuwe referenties — anders detecteert QML geen wijziging
-        // en updaten bindings die afhangen van pendingChanges niet.
+        // Object.assign creates new references — without this QML won't detect the change
+        // and bindings on pendingChanges won't update.
         var p = Object.assign({}, pendingChanges)
         p[plugin] = Object.assign({}, p[plugin] || {})
         p[plugin][key] = value
@@ -81,13 +81,13 @@ BaseDialog {
         anchors.fill: parent
         spacing: 0
 
-        // ── Hoofdgebied: tabs links, instellingen rechts ──────────────────────
+        // ── Main area: tabs left, settings right ─────────────────────────────
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 0
 
-            // Verticale tab lijst
+            // Vertical tab list
             Rectangle {
                 Layout.preferredWidth: 160
                 Layout.fillHeight: true
@@ -143,7 +143,7 @@ BaseDialog {
                 Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: theme.border }
             }
 
-            // ── Content: secties + setting rijen ─────────────────────────────
+            // ── Content: sections + setting rows ─────────────────────────────
             ListView {
                 id: contentList
                 Layout.fillWidth: true
@@ -195,7 +195,7 @@ BaseDialog {
                             width: contentList.width; height: 44
                             color: "transparent"
 
-                            // Hover gradient — zelfde patroon als WidgetTab
+                            // Hover gradient — same pattern as WidgetTab
                             Rectangle {
                                 anchors.fill: parent
                                 opacity: rowHov.hovered ? 1 : 0
@@ -213,7 +213,7 @@ BaseDialog {
                             Row {
                                 anchors.fill: parent; leftPadding: 16
 
-                                // Label + omschrijving
+                                // Label + description
                                 Column {
                                     width: parent.width - 16 - 128
                                     anchors.verticalCenter: parent.verticalCenter
@@ -338,7 +338,7 @@ BaseDialog {
                                         }
                                     }
 
-                                    // Int / Float → stepper met inline edit op klik
+                                    // Int / Float → stepper with inline edit on click
                                     Row {
                                         id: stepperRow
                                         visible: settingRow.modelData.type === "int"
@@ -386,7 +386,7 @@ BaseDialog {
                                             }
                                         }
 
-                                        // Waarde: altijd een box, readOnly totdat je klikt
+                                        // Value: always a box, readOnly until clicked
                                         Rectangle {
                                             width: 72; height: 26
                                             anchors.verticalCenter: parent.verticalCenter
@@ -463,7 +463,7 @@ BaseDialog {
                                         }
                                     }
 
-                                    // Str → tekst-invoervak
+                                    // Str → text input
                                     Rectangle {
                                         visible: settingRow.modelData.type === "str"
                                         anchors.right: parent.right; anchors.rightMargin: 12

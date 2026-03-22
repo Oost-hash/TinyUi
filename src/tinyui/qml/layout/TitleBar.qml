@@ -48,15 +48,15 @@ Rectangle {
         onTapped: if (tapCount === 2) windowController.toggleMaximize()
     }
 
-    // ── Inline dropdown-component: gewone Item, geen Popup-overlay ────────────
-    // Popup steelt hover van onderliggende items zodra de overlay verschijnt.
-    // Een Item met z:10 rendert bovenop zonder overlay en laat hover intact.
+    // ── Inline dropdown component: plain Item, no Popup overlay ──────────────
+    // Popup captures hover from underlying items once the overlay appears.
+    // An Item with z:10 renders on top without an overlay and keeps hover intact.
 
     component TitleDropdown: Item {
         z: 10
         y: titleBar.height
 
-        // Achtergrond + 3-zijdige border (geen bovenkant)
+        // Background + 3-sided border (no top)
         Rectangle { anchors.fill: parent; color: theme.surfaceAlt }
         Rectangle { anchors.left: parent.left;   width: 1;  height: parent.height; color: theme.border }
         Rectangle { anchors.bottom: parent.bottom; height: 1; width: parent.width;  color: theme.border }
@@ -67,7 +67,7 @@ Rectangle {
         }
     }
 
-    // ── Delegate voor menu-items (gedeeld door alle dropdowns) ────────────────
+    // ── Delegate for menu items (shared by all dropdowns) ─────────────────────
 
     component MenuItemDelegate: Rectangle {
         required property var modelData
@@ -131,7 +131,7 @@ Rectangle {
                 model: [
                     { icon: icons.settingsAlt, label: "Settings", sep: false, action: function() { settingsPanelViewModel.openPanel(); menuViewModel.closeMenu() } },
                     { icon: "",                label: "",          sep: true,  action: null },
-                    { icon: icons.close,       label: "Sluiten",   sep: false, action: function() { root.close() } }
+                    { icon: icons.close,       label: "Close",     sep: false, action: function() { root.close() } }
                 ]
                 delegate: MenuItemDelegate {}
             }
@@ -206,7 +206,7 @@ Rectangle {
 
     }
 
-    // ── Rechts: venster knoppen (niet op Linux/macOS — native chrome levert die) ──
+    // ── Right: window buttons (not on Linux/macOS — native chrome provides them) ──
 
     Row {
         visible: !root.nativeChrome

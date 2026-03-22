@@ -37,7 +37,7 @@ Rectangle {
         color: theme.border
     }
 
-    // ── Links: editor snelkoppelingen (één knop per geregistreerde editor) ──
+    // ── Left: editor shortcuts (one button per registered editor) ────────────
 
     Row {
         anchors.left: parent.left
@@ -49,18 +49,18 @@ Rectangle {
             model: coreViewModel.editors
 
             StatusBarIconButton {
-                // Eerste letter als tijdelijk icoon — TODO: icon veld in editors.toml
+                // First letter as temporary icon — TODO: add icon field to editors.toml
                 iconText: modelData.title.charAt(0).toUpperCase()
                 textFont: theme.fontFamily
-                // TODO: opent editor dialog zodra QML editor beschikbaar is
+                // TODO: open editor dialog once QML editor is available
                 onClicked: console.log("Open editor:", modelData.id)
             }
         }
     }
 
-    // ── Rechts: plugin naam knop ──────────────────────────────────────────
+    // ── Right: plugin name button ─────────────────────────────────────────
 
-    // Plugin naam knop — opent dropdown omhoog; verborgen op de settings tab
+    // Plugin name button — opens dropdown upward; hidden on the settings tab
     Item {
         id: pluginNameBtn
         anchors.right: parent.right
@@ -97,7 +97,7 @@ Rectangle {
             onClicked: statusBarViewModel.togglePluginDropdown()
         }
 
-        // Inline dropdown — opent omhoog, rechtsuitgelijnd (plain Item, geen Popup)
+        // Inline dropdown — opens upward, right-aligned (plain Item, no Popup)
         Item {
             id: pluginDropdown
             z: 10

@@ -79,7 +79,7 @@ class _State(State):
     def active(self) -> bool:
         phase = int(self._info.data.scoring.scoringInfo.mGamePhase)
         # gamePhase: 0=before session, 7=stopped, 8=over, 9=paused
-        # SME_ENTER/EXIT_REALTIME counters zijn gelijk in LMU — niet bruikbaar
+        # SME_ENTER/EXIT_REALTIME counters are always equal in LMU — not usable
         return bool(
             self._info.data.telemetry.playerHasVehicle
             and phase not in (0, 7, 8, 9)

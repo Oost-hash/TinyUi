@@ -25,7 +25,7 @@ import QtQuick.Layouts
 Item {
     id: demoTab
 
-    // ── Status balk ───────────────────────────────────────────────────────────
+    // ── Status bar ────────────────────────────────────────────────────────────
 
     Rectangle {
         id: statusBar
@@ -40,7 +40,7 @@ Item {
             anchors.leftMargin: 16
             spacing: 16
 
-            // Connectie indicator
+            // Connection indicator
             Rectangle {
                 width: 8; height: 8
                 radius: 4
@@ -57,14 +57,14 @@ Item {
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: tyreDemoViewModel.active
-                    ? "LMU — actief  |  v" + tyreDemoViewModel.gameVersion
-                          + "  |  Voor: " + tyreDemoViewModel.compoundFront
-                          + "  Achter: " + tyreDemoViewModel.compoundRear
+                    ? "LMU — active  |  v" + tyreDemoViewModel.gameVersion
+                          + "  |  Front: " + tyreDemoViewModel.compoundFront
+                          + "  Rear: " + tyreDemoViewModel.compoundRear
                     : tyreDemoViewModel.gameRunning
-                        ? "LMU — wacht op sessie…"
+                        ? "LMU — waiting for session…"
                         : tyreDemoViewModel.connected
-                            ? "LMU — game niet gestart"
-                            : "LMU — niet gevonden"
+                            ? "LMU — game not running"
+                            : "LMU — not found"
                 color: theme.textSecondary
                 font.pixelSize: theme.fontSizeSmall
                 font.family: theme.fontFamily
@@ -78,7 +78,7 @@ Item {
         }
     }
 
-    // ── Bandenkaarten ─────────────────────────────────────────────────────────
+    // ── Tyre cards ────────────────────────────────────────────────────────────
 
     Row {
         anchors.top: statusBar.bottom
@@ -94,7 +94,7 @@ Item {
                 required property var modelData
                 required property int index
 
-                // Live data direct van de viewmodel — herbindt bij elke tyreDataChanged
+                // Live data directly from the viewmodel — rebinds on every tyreDataChanged
                 readonly property var live: tyreDemoViewModel.tyres[index]
 
                 width: 160
@@ -109,7 +109,7 @@ Item {
                     anchors.margins: 12
                     spacing: 0
 
-                    // Bandlabel (FL/FR/RL/RR)
+                    // Tyre label (FL/FR/RL/RR)
                     Text {
                         width: parent.width
                         text: card.modelData.label
@@ -121,7 +121,7 @@ Item {
                         bottomPadding: 10
                     }
 
-                    // Scheidingslijn
+                    // Separator
                     Rectangle {
                         width: parent.width; height: 1
                         color: theme.border
@@ -130,7 +130,7 @@ Item {
 
                     Item { width: 1; height: 8 }
 
-                    // Waarderijen — label is statisch, value bindt aan card.live
+                    // Value rows — label is static, value binds to card.live
                     Repeater {
                         model: ["Surface", "Inner", "Pressure", "Wear"]
 

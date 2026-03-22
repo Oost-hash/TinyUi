@@ -27,7 +27,7 @@ log = get_logger(__name__)
 
 
 class StatusBarViewModel(QObject):
-    """Beheert de staat van de statusbalk en de plugin-dropdown."""
+    """Manages the state of the status bar and the plugin dropdown."""
 
     pluginDropdownOpenChanged = Signal()
     activePluginIndexChanged  = Signal()
@@ -51,7 +51,7 @@ class StatusBarViewModel(QObject):
 
     @Slot(int)
     def selectPlugin(self, index: int) -> None:
-        """Selecteer plugin én sluit dropdown — één actie voor QML."""
+        """Select plugin and close dropdown — single action for QML."""
         log.ui("selectPlugin", index=index)
         if self._active_plugin_index != index:
             self._active_plugin_index = index
@@ -73,8 +73,8 @@ class StatusBarViewModel(QObject):
     @Slot()
     def closePluginDropdown(self):
         log.ui("closePluginDropdown")
-        # Defer één event-cyclus zodat een doorgepropageerde click het dropdown-item
-        # nog kan bereiken voordat visible=False de items uitschakelt.
+        # Defer one event cycle so a propagated click can still reach the dropdown
+        # item before visible=False disables the items.
         QTimer.singleShot(0, lambda: self._set_open(False))
 
     # ── Intern ────────────────────────────────────────────────────────────

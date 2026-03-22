@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""SettingsPanelViewModel — beheert de open/close staat van het settings panel."""
+"""SettingsPanelViewModel — manages the open/close state of the settings panel."""
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
@@ -56,7 +56,7 @@ class SettingsPanelViewModel(QObject):
 
     @Slot(str, str, "QVariant")
     def setSetting(self, plugin_name: str, key: str, value) -> None:
-        """Stuur een settingswijziging door — panel kent coreViewModel niet."""
+        """Forward a settings change — panel has no reference to coreViewModel."""
         log.ui("setSetting", plugin=plugin_name, key=key, value=value)
         self.settingChangeRequested.emit(plugin_name, key, value)
 

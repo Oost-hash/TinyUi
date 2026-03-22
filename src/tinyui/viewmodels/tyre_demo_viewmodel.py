@@ -18,10 +18,10 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""TyreDemoViewModel — exposeert live bandendata van de LMU connector aan QML.
+"""TyreDemoViewModel — exposes live tyre data from the LMU connector to QML.
 
-Probeert direct verbinding te maken met LMU shared memory.
-Toont '-' of 0 waardes wanneer het spel niet actief is.
+Attempts to connect directly to LMU shared memory.
+Shows '-' or 0 values when the game is not active.
 """
 
 from __future__ import annotations
@@ -37,25 +37,26 @@ from tinyui.log import get_logger
 
 log = get_logger(__name__)
 
-# LMU submodule op het pad zetten
+# Add LMU submodule to path
 _LMU_LIB = Path(__file__).resolve().parents[2] / "plugins" / "demo"
 if str(_LMU_LIB) not in sys.path:
     sys.path.insert(0, str(_LMU_LIB))
 
 
+# TODO: connector should be provided via the plugin context (ctx.connector), not instantiated directly
 def _load_connector():
-    """Laad de LMU connector — None als de library niet beschikbaar is."""
-    log.connector("LMU lib pad", path=str(_LMU_LIB), exists=_LMU_LIB.exists())
+    """Load the LMU connector — returns None if the library is not available."""
+    log.connector("LMU lib path", path=str(_LMU_LIB), exists=_LMU_LIB.exists())
     log.connector("sys.path check", in_path=str(_LMU_LIB) in sys.path)
     try:
         from plugins.demo.connector.lmu import LMUConnector  # type: ignore[import]
-        log.connector("LMUConnector geïmporteerd")
+        log.connector("LMUConnector imported")
         c = LMUConnector()
         c.open()
-        log.connector("shared memory geopend")
+        log.connector("shared memory opened")
         return c
     except Exception as exc:
-        log.warning("LMU connector niet beschikbaar: %s (%s)", exc, type(exc).__name__)
+        log.warning("LMU connector not available: %s (%s)", exc, type(exc).__name__)
         return None
 
 
@@ -63,7 +64,7 @@ _TYRE_LABELS = ("FL", "FR", "RL", "RR")
 
 
 class TyreDemoViewModel(QObject):
-    """Pollt de LMU connector elke 100 ms en exposeert bandendata aan QML."""
+    """Polls the LMU connector every 100 ms and exposes tyre data to QML."""
 
     tyreDataChanged = Signal()
 
@@ -76,15 +77,15 @@ class TyreDemoViewModel(QObject):
         self._version      = "–"
         self._compound     = ("–", "–")  # (front, rear)
 
-        # Vorige state voor change-detection
+        # Previous state for change detection
         self._prev_game_running = None
         self._prev_active       = None
         self._prev_game_phase   = None
 
-        # Process check elke 2s — psutil is te zwaar voor elke 100ms poll
+        # Process check every 2s — psutil is too heavy for every 100ms poll
         self._process_check_counter = 0
 
-        # 4 banden × 4 waarden: surface_temp, inner_temp, pressure, wear
+        # 4 tyres × 4 values: surface_temp, inner_temp, pressure, wear
         self._surface  = [0.0] * 4
         self._inner    = [0.0] * 4
         self._pressure = [0.0] * 4
@@ -95,7 +96,7 @@ class TyreDemoViewModel(QObject):
         self._timer.timeout.connect(self._poll)
         if self._connector is not None:
             self._timer.start()
-            log.info("TyreDemoViewModel: LMU connector actief — polling gestart")
+            log.info("TyreDemoViewModel: LMU connector active — polling started")
 
     # ── Poll ──────────────────────────────────────────────────────────────────
 
@@ -106,7 +107,7 @@ class TyreDemoViewModel(QObject):
         try:
             c.update()
 
-            # Process check elke 2s (20 × 100ms) — psutil is te zwaar voor elke poll
+            # Process check every 2s (20 × 100ms) — psutil is too heavy for every poll
             self._process_check_counter += 1
             if self._process_check_counter >= 20:
                 self._process_check_counter = 0
@@ -118,7 +119,7 @@ class TyreDemoViewModel(QObject):
             self._active   = self._game_running and c.state.active()
             game_phase     = int(c._info.data.scoring.scoringInfo.mGamePhase)
 
-            # Alleen loggen bij state wijziging
+            # Only log on state change
             if (self._game_running != self._prev_game_running
                     or self._active != self._prev_active
                     or game_phase   != self._prev_game_phase):
@@ -159,17 +160,17 @@ class TyreDemoViewModel(QObject):
 
     @Property(bool, notify=tyreDataChanged)
     def connected(self) -> bool:
-        """Shared memory bereikbaar (connector geladen)."""
+        """Shared memory reachable (connector loaded)."""
         return self._connector is not None
 
     @Property(bool, notify=tyreDataChanged)
     def gameRunning(self) -> bool:
-        """LMU is actief en schrijft naar shared memory."""
+        """LMU is active and writing to shared memory."""
         return self._game_running
 
     @Property(bool, notify=tyreDataChanged)
     def active(self) -> bool:
-        """Speler is op de baan en data is live."""
+        """Player is on track and data is live."""
         return self._active
 
     @Property(str, notify=tyreDataChanged)
@@ -186,7 +187,7 @@ class TyreDemoViewModel(QObject):
 
     @Property("QVariantList", notify=tyreDataChanged)
     def tyres(self) -> list[dict]:
-        """Lijst van 4 banden — elk een dict met label en waarden."""
+        """List of 4 tyres, each a dict with label and values."""
         return [
             {
                 "label":    _TYRE_LABELS[i],

@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""CoreViewModel — exposeert tinycore.App aan QML."""
+"""CoreViewModel — exposes tinycore.App to QML."""
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
@@ -30,7 +30,7 @@ log = get_logger(__name__)
 
 
 class CoreViewModel(QObject):
-    """Brug tussen tinycore en QML — exposeert plugin widgets, editors en settings."""
+    """Bridge between tinycore and QML — exposes plugin widgets, editors and settings."""
 
     settingsChanged    = Signal()
     settingValueChanged = Signal(str)   # emits plugin_name — voor persistence
@@ -42,7 +42,7 @@ class CoreViewModel(QObject):
 
     @Property("QVariantList", constant=True)
     def widgets(self) -> list[dict]:
-        """Alle geregistreerde widget specs (vanuit plugins)."""
+        """All registered widget specs (from plugins)."""
         return [
             {
                 "id":          w.id,
@@ -55,7 +55,7 @@ class CoreViewModel(QObject):
 
     @Property("QVariantList", constant=True)
     def editors(self) -> list[dict]:
-        """Alle geregistreerde editor specs (vanuit plugins)."""
+        """All registered editor specs (from plugins)."""
         return [
             {
                 "id":    e.id,
@@ -67,28 +67,28 @@ class CoreViewModel(QObject):
 
     @Slot(str, bool)
     def setWidgetEnabled(self, widget_id: str, enabled: bool) -> None:
-        """Zet de enable-staat van een widget in-memory. QML beheert de visuele state lokaal."""
+        """Set a widget's enabled state in memory. QML manages visual state locally."""
         if self._core.widgets.has(widget_id):
             self._core.widgets.get(widget_id).enable = enabled
 
     @Property("QVariantList", constant=True)
     def pluginNames(self) -> list[str]:
-        """Naam van elke geladen plugin — gebruikt door de statusbalk plugin-switcher."""
+        """Name of each loaded plugin — used by the status bar plugin switcher."""
         return [p.name for p in self._core.plugins.plugins]
 
     @Property("QVariantList", notify=settingsChanged)
     def settingsByPlugin(self) -> list[dict]:
-        """Settings gegroepeerd per plugin én sectie — voor de settings dialog.
+        """Settings grouped by plugin and section — for the settings dialog.
 
-        Structuur: [{ plugin, sections: [{ name, settings: [{key,label,type,value,...}] }] }]
-        Host settings (TinyUI) staan bovenaan; plugin settings daaronder.
-        Resultaat wordt gecached; cache vervalt bij setSettingValue.
+        Structure: [{ plugin, sections: [{ name, settings: [{key,label,type,value,...}] }] }]
+        Host settings (TinyUI) first; plugin settings below.
+        Result is cached; cache is invalidated on setSettingValue.
         """
         if self._settings_cache is not None:
             return self._settings_cache
 
         result = []
-        # Host settings eerst (TinyUI), dan plugin settings
+        # Host settings first (TinyUI), then plugin settings
         registries = [self._core.host_settings, self._core.settings]
         for registry in registries:
             for plugin_name, specs in registry.by_plugin().items():
@@ -126,13 +126,13 @@ class CoreViewModel(QObject):
 
     @Slot(str, str, "QVariant")
     def setSettingValue(self, plugin_name: str, key: str, value) -> None:
-        """Sla een nieuwe settingswaarde op en notificeer QML en persistence."""
+        """Persist a new setting value and notify QML."""
         registry = (
             self._core.host_settings
             if self._core.host_settings.has_plugin(plugin_name)
             else self._core.settings
         )
         registry.set_value(plugin_name, key, value)
-        self._settings_cache = None          # cache ongeldig — nieuwe waarden bij volgende read
+        self._settings_cache = None          # invalidate cache — fresh values on next read
         self.settingsChanged.emit()
         self.settingValueChanged.emit(plugin_name)

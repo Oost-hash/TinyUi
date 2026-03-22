@@ -21,8 +21,8 @@
 
 """Platform-aware icon glyphs.
 
-Windows gebruikt Segoe Fluent Icons (systeemfont).
-Linux gebruikt Material Symbols Rounded (gebundeld in assets/fonts/).
+Windows uses Segoe Fluent Icons (system font).
+Linux uses Material Symbols Rounded (bundled in assets/fonts/).
 """
 
 import logging
@@ -38,7 +38,7 @@ _WINDOWS = _platform.system() == "Windows"
 
 FONT = "Segoe Fluent Icons" if _WINDOWS else "Material Symbols Rounded"
 
-# ── Glyph tabellen ────────────────────────────────────────────────────────────
+# ── Glyph tables ──────────────────────────────────────────────────────────────
 
 _SEG: dict[str, str] = {
     # Window controls
@@ -46,12 +46,12 @@ _SEG: dict[str, str] = {
     "maximize":     "\uE922",
     "restore":      "\uE923",
     "close":        "\uE8BB",
-    # Navigatie
+    # Navigation
     "menu":         "\uE700",
     "menuOpen":     "\uE711",
     "home":         "\uE80F",
     "settings":     "\uE74C",
-    # Menu-item iconen
+    # Menu item icons
     "settingsAlt":  "\uE713",
     "document":     "\uE8A5",
     "book":         "\uE897",
@@ -66,17 +66,17 @@ _SEG: dict[str, str] = {
 
 _MAT: dict[str, str] = {
     # Window controls
-    "minimize":     "\uE15B",   # remove (horizontale lijn)
+    "minimize":     "\uE15B",   # remove (horizontal line)
     "maximize":     "\uE3C5",   # crop_square
-    "restore":      "\uE3E0",   # filter_none (twee overlappende vierkanten)
+    "restore":      "\uE3E0",   # filter_none (two overlapping squares)
     "close":        "\uE5CD",   # close
-    # Navigatie
+    # Navigation
     "menu":         "\uE5D2",   # menu (hamburger)
-    "menuOpen":     "\uE5CD",   # close (X — menu-open staat)
+    "menuOpen":     "\uE5CD",   # close (X — menu open state)
     "home":         "\uE88A",   # home
     "settings":     "\uE8B8",   # settings
-    # Menu-item iconen
-    "settingsAlt":  "\uE8B8",   # settings (zelfde op Linux)
+    # Menu item icons
+    "settingsAlt":  "\uE8B8",   # settings (same on Linux)
     "document":     "\uE873",   # description
     "book":         "\uE865",   # book
     "keyboard":     "\uE312",   # keyboard
@@ -91,27 +91,27 @@ _MAT: dict[str, str] = {
 _G = _SEG if _WINDOWS else _MAT
 
 
-# ── Font laden ────────────────────────────────────────────────────────────────
+# ── Font loading ──────────────────────────────────────────────────────────────
 
 def load_font() -> None:
-    """Registreer de gebundelde icon font (alleen nodig op niet-Windows)."""
+    """Register the bundled icon font."""
     if _WINDOWS:
         return
     font_path = Path(__file__).parent / "assets" / "fonts" / "MaterialSymbolsRounded.ttf"
     if font_path.exists():
         fid = QFontDatabase.addApplicationFont(str(font_path))
         if fid < 0:
-            _log.warning("Icon font laden mislukt: %s", font_path)
+            _log.warning("Icon font load failed: %s", font_path)
         else:
-            _log.debug("Icon font geladen: %s", font_path.name)
+            _log.debug("Icon font loaded: %s", font_path.name)
     else:
-        _log.warning("Icon font niet gevonden: %s", font_path)
+        _log.warning("Icon font not found: %s", font_path)
 
 
 # ── QML context object ────────────────────────────────────────────────────────
 
 class Icons(QObject):
-    """Exposeert platform-correcte icon glyphs als QML-properties."""
+    """Exposes platform-correct icon glyphs as QML properties."""
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -129,7 +129,7 @@ class Icons(QObject):
     @Property(str, constant=True)
     def close(self) -> str: return _G["close"]
 
-    # Navigatie
+    # Navigation
     @Property(str, constant=True)
     def menu(self) -> str: return _G["menu"]
 
@@ -142,7 +142,7 @@ class Icons(QObject):
     @Property(str, constant=True)
     def settings(self) -> str: return _G["settings"]
 
-    # Menu-item iconen
+    # Menu item icons
     @Property(str, constant=True)
     def settingsAlt(self) -> str: return _G["settingsAlt"]
 

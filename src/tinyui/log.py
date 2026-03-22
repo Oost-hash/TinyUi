@@ -19,15 +19,15 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Centrale logging voor tinyui.
+"""Central logging for tinyui.
 
-Configuratie via TINYUI_DEBUG omgevingsvariabele:
+Configuration via TINYUI_DEBUG environment variable:
 
-  TINYUI_DEBUG=all           alle debug-categorieën
-  TINYUI_DEBUG=menu,state    alleen menu en state
-  (niet gezet)               productie-modus — alleen INFO en hoger
+  TINYUI_DEBUG=all           all debug categories
+  TINYUI_DEBUG=menu,state    menu and state only
+  (unset)                production mode — INFO and above only
 
-Beschikbare categorieën: menu  state  mouse  win32  theme  ui  settings  connector  connector_polling
+Available categories: menu  state  mouse  win32  theme  ui  settings  connector  connector_polling
 """
 
 import logging
@@ -36,13 +36,13 @@ import pathlib
 import tomllib
 from typing import Optional
 
-# Module-niveau configuratie — ingesteld door configure() in main.py
+# Module-level configuration — set by configure() in main.py
 _dev_mode: bool = False
 _enabled: frozenset[str] = frozenset()
 
 
 def _read_pyproject_categories() -> Optional[str]:
-    """Lees [tool.tinyui.debug].categories uit pyproject.toml (dev-fallback)."""
+    """Read [tool.tinyui.debug].categories from pyproject.toml (dev fallback)."""
     current = pathlib.Path(__file__).resolve().parent
     for _ in range(6):
         candidate = current / "pyproject.toml"
@@ -60,14 +60,14 @@ def _read_pyproject_categories() -> Optional[str]:
 
 
 def configure() -> None:
-    """Bepaal logging-modus via env var of pyproject.toml.
+    """Determine logging mode via env var or pyproject.toml.
 
-    Prioriteit:
-      1. TINYUI_DEBUG env var  (bijv. ``TINYUI_DEBUG=menu,state``)
+    Priority:
+      1. TINYUI_DEBUG env var  (e.g. ``TINYUI_DEBUG=menu,state``)
       2. [tool.tinyui.debug] categories in pyproject.toml
-      3. Productie-modus — alleen INFO en hoger
+      3. Production mode — INFO and above only
 
-    Roep dit aan vóór alle andere imports in main.py.
+    Call this before all other imports in main.py.
     """
     global _dev_mode, _enabled
 
@@ -85,7 +85,7 @@ def configure() -> None:
 
 
 class CategoryLogger:
-    """Standaard logger met schakelbare debug-kanalen per categorie."""
+    """Standard logger with switchable debug channels per category."""
 
     __slots__ = ("_log",)
 
@@ -100,7 +100,7 @@ class CategoryLogger:
         detail = "  ".join(f"{k}={v!r}" for k, v in kwargs.items())
         self._log.debug("[%-5s] %s  %s", category, msg, detail)
 
-    # ── Debug-kanalen ──────────────────────────────────────────────────────
+    # ── Debug channels ─────────────────────────────────────────────────────
     def menu(self, msg: str, **kw) -> None:
         self._cat("menu", msg, **kw)
 
@@ -128,7 +128,7 @@ class CategoryLogger:
     def connector_polling(self, msg: str, **kw) -> None:
         self._cat("connector_polling", msg, **kw)
 
-    # ── Standaard niveaus (altijd actief) ──────────────────────────────────
+    # ── Standard levels (always active) ───────────────────────────────────
     def info(self, msg, *a, **kw):
         self._log.info(msg, *a, **kw)
 
@@ -143,5 +143,5 @@ class CategoryLogger:
 
 
 def get_logger(name: str) -> CategoryLogger:
-    """Geeft een CategoryLogger terug voor de gegeven module-naam."""
+    """Returns a CategoryLogger for the given module name."""
     return CategoryLogger(name)

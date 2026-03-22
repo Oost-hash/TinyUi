@@ -34,7 +34,7 @@ ApplicationWindow {
     minimumHeight: 300
     visible: true
 
-    // Minimum breedte eenmalig berekend op basis van langste description
+    // Minimum width computed once based on the longest description
     TextMetrics {
         id: _descMetrics
         font.family: theme.fontFamily
@@ -53,20 +53,20 @@ ApplicationWindow {
 
     title: appName
     // Windows: frameless + custom TitleBar + DWM chrome.
-    // Linux/macOS: server-side decorations — compositor/AppKit verzorgt chrome.
-    //              Onze TitleBar fungeert als menu bar onder de native chrome.
+    // Linux/macOS: server-side decorations — compositor/AppKit handles chrome.
+    //              Our TitleBar acts as a menu bar below the native chrome.
     readonly property bool nativeChrome: Qt.platform.os === "linux" || Qt.platform.os === "osx"
     flags: nativeChrome ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
     color: theme.surface
 
-    // Beide backdrops dekken alleen de content area (tussen titelbalk en statusbalk).
-    // Mutual exclusion wordt afgedwongen in Python — ze zijn nooit tegelijk actief.
-    // Op Linux: geen custom titelbalk, dus content begint op y:0.
+    // Both backdrops cover only the content area (between title bar and status bar).
+    // Mutual exclusion is enforced in Python — they are never open simultaneously.
+    // On Linux: no custom title bar, so content starts at y:0.
 
     readonly property int contentTop: Qt.platform.os === "linux" ? 0 : theme.titleBarHeight
 
-    // Vangt klikken buiten een open menu popup op — sluit popup, menu blijft open.
-    // Start ónder de tabbar (contentTop + 42) zodat tab-switching altijd werkt.
+    // Catches clicks outside an open menu popup — closes popup, menu stays open.
+    // Starts below the tab bar (contentTop + 42) so tab switching always works.
     MouseArea {
         x: 0; y: root.contentTop + 42
         width: parent.width
@@ -80,7 +80,7 @@ ApplicationWindow {
         }
     }
 
-    // Vangt klikken buiten de plugin dropdown op — sluit dropdown
+    // Catches clicks outside the plugin dropdown — closes dropdown
     MouseArea {
         x: 0; y: root.contentTop + 42
         width: parent.width
@@ -94,8 +94,8 @@ ApplicationWindow {
         }
     }
 
-    // Linux: compositor kent geen eigen resize voor frameless windows — QML handelt dat af.
-    // Windows: WndProc (win_window.py) verzorgt resize via HTTEST. macOS: native chrome.
+    // Linux: compositor has no built-in resize for frameless windows — QML handles it.
+    // Windows: WndProc (win_window.py) handles resize via HTTEST. macOS: native chrome.
     ResizeHandles { visible: Qt.platform.os === "linux" }
 
     ColumnLayout {
@@ -125,6 +125,6 @@ ApplicationWindow {
         }
     }
 
-    // SettingsDialog is een Window — buiten de ColumnLayout zodat het geen layout ruimte inneemt
+    // SettingsDialog is a Window — outside the ColumnLayout so it takes no layout space
     SettingsDialog {}
 }

@@ -28,31 +28,31 @@ Window {
     // ── API ───────────────────────────────────────────────────────────────────
     property string dialogTitle: ""
 
-    // Inhoud van de dialog — kinderen van de instantie komen hier terecht
+    // Dialog content — children of the instance end up here
     default property alias content: contentArea.data
 
-    // Consumers verbinden dit signaal om close te afhandelen.
-    // Standaard geen handler — consumer beslist (bijv. closePanel() op ViewModel).
+    // Consumers connect this signal to handle close.
+    // No handler by default — consumer decides (e.g. closePanel() on ViewModel).
     signal closeRequested()
 
     // ── Platform chrome ───────────────────────────────────────────────────────
     readonly property bool nativeChrome: Qt.platform.os === "linux" || Qt.platform.os === "osx"
     flags: Qt.Window | Qt.FramelessWindowHint
-    transientParent: null   // eigen taskbar-entry, niet gebonden aan hoofdvenster
+    transientParent: null   // own taskbar entry, not bound to main window
     color: theme.surface
 
     // Win32 DWM chrome: shadow, rounded corners, Alt+Tab thumbnail.
-    // applyToWindow() haalt winId() op via de Python QWindow API — winId() is niet
-    // beschikbaar als QML-methode. WindowChromeHelper is idempotent.
+    // applyToWindow() retrieves winId() via the Python QWindow API — winId() is not
+    // available as a QML method. WindowChromeHelper is idempotent.
     onVisibleChanged: {
         if (visible && Qt.platform.os === "windows" && typeof windowChromeHelper !== "undefined")
             windowChromeHelper.applyToWindow(baseDialog)
     }
 
     // ── Focus-clearer ─────────────────────────────────────────────────────────
-    // Klik ergens buiten het actieve invoerveld → focus wegnemen zodat de cursor verdwijnt.
-    // Controleert of de klik BUITEN het gefocuste item valt — als de gebruiker op het
-    // TextInput zelf klikt blijft de focus intact en gaat editing door.
+    // Click anywhere outside the active input — clear focus so the cursor disappears.
+    // Checks whether the click falls OUTSIDE the focused item — if the user clicks
+    // the TextInput itself, focus remains and editing continues.
     MouseArea {
         anchors.fill: parent
         z: 999
@@ -60,10 +60,10 @@ Window {
         hoverEnabled: false
         onPressed: (mouse) => {
             var focusItem = baseDialog.activeFocusItem
-            // contentItem (QQuickRootItem) heeft altijd "focus" als fallback — overslaan
+            // contentItem (QQuickRootItem) always has focus as fallback — skip it
             var isRealInput = focusItem && focusItem !== baseDialog.contentItem
             if (isRealInput) {
-                // mapFromItem(null, x, y) vertaalt vanuit scene-coördinaten
+                // mapFromItem(null, x, y) translates from scene coordinates
                 var local = focusItem.mapFromItem(null, mouse.x, mouse.y)
                 var outside = local.x < 0 || local.x > focusItem.width
                            || local.y < 0 || local.y > focusItem.height

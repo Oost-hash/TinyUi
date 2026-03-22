@@ -20,26 +20,26 @@
 #  licensed under GPLv3.
 
 """
-Win32/DWM custom window chrome voor PySide6 op Windows.
+Win32/DWM custom window chrome for PySide6 on Windows.
 
-Aanpak gebaseerd op de Microsoft DWM Custom Frame documentatie en
-FramelessHelper/QWindowKit referentie-implementaties:
+Approach based on the Microsoft DWM Custom Frame documentation and
+FramelessHelper/QWindowKit reference implementations:
 
-  - WM_NCCALCSIZE: verwijder left/right/bottom NC-borders maar laat top
-    intact → client-area bedekt de titelbalk visueel, DWM behoudt ruimte
-    voor caption-knoppen.
-  - WM_NCHITTEST: roep DwmDefWindowProc EERST aan — DWM herkent de knop-
-    zones zelf, tekent hover/pressed states en triggert de Win11 snap-layout
-    popup. Pas daarna eigen hit-test voor resize en drag-zone.
-  - WM_NCLBUTTONUP: klik-afhandeling voor caption-knoppen via ShowWindow
-    (native animaties).
+  - WM_NCCALCSIZE: remove left/right/bottom NC borders, keep top intact
+    for DWM caption → client area covers the title bar visually, DWM
+    reserves space for caption buttons.
+  - WM_NCHITTEST: call DwmDefWindowProc FIRST — DWM recognizes button
+    zones itself, draws hover/pressed states and triggers the Win11
+    snap-layout popup. Then apply own hit-test for resize and drag zone.
+  - WM_NCLBUTTONUP: click handling for caption buttons via ShowWindow
+    (native animations).
 
-Geeft:
-  - Aero snap + native maximize/restore/minimize animaties
-  - Native caption buttons (close/max/min) met DWM hover-effect en
+Provides:
+  - Aero snap + native maximize/restore/minimize animations
+  - Native caption buttons (close/max/min) with DWM hover effect and
     Windows 11 snap-layout popup
   - Resize via Windows native hit-testing
-  - Alt+Tab thumbnails / taskbalk preview
+  - Alt+Tab thumbnails / taskbar preview
 """
 
 import ctypes
@@ -48,7 +48,7 @@ import ctypes.wintypes
 from PySide6.QtCore import QObject, Slot
 from PySide6.QtGui import QWindow
 
-# ── Win32 constanten ──────────────────────────────────────────────────────────
+# ── Win32 constants ───────────────────────────────────────────────────────────
 
 GWL_STYLE        = -16
 GWLP_WNDPROC     = -4
@@ -96,7 +96,7 @@ HTMAXBUTTON   = 9
 HTCLOSE       = 20
 
 
-# ── ctypes structuren ─────────────────────────────────────────────────────────
+# ── ctypes structures ─────────────────────────────────────────────────────────
 
 class MARGINS(ctypes.Structure):
     _fields_ = [
@@ -133,13 +133,13 @@ _WndProcType = ctypes.WINFUNCTYPE(
 )
 
 
-# ── Publieke API ──────────────────────────────────────────────────────────────
+# ── Public API ────────────────────────────────────────────────────────────────
 
 def apply_dwm_frame(hwnd: int) -> None:
     """
-    Voeg window-stijlen toe zodat Windows native resize, snap en shadow regelt.
-    WndProc moet al geïnstalleerd zijn vóór deze aanroep zodat
-    WM_NCCALCSIZE (getriggerd door SWP_FRAMECHANGED) direct onderschept wordt.
+    Add window styles so Windows handles native resize, snap and shadow.
+    WndProc must be installed before this call so that WM_NCCALCSIZE
+    (triggered by SWP_FRAMECHANGED) is intercepted immediately.
     """
     user32 = ctypes.windll.user32
     dwmapi = ctypes.windll.dwmapi
@@ -153,7 +153,7 @@ def apply_dwm_frame(hwnd: int) -> None:
         SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOACTIVATE,
     )
 
-    # Afgeronde hoeken (Windows 11+, genegeerd op Win10)
+    # Rounded corners (Windows 11+, ignored on Win10)
     attr = ctypes.c_int(DWMWCP_ROUND)
     dwmapi.DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ctypes.byref(attr), ctypes.sizeof(attr))
 
@@ -168,23 +168,23 @@ def install_wnd_proc(
     right_button_width: int = 142,
 ):
     """
-    Subclasst de WndProc voor WM_NCCALCSIZE, WM_NCHITTEST en WM_NCLBUTTONDBLCLK.
+    Subclass the WndProc for WM_NCCALCSIZE, WM_NCHITTEST and WM_NCLBUTTONDBLCLK.
 
-    Geeft (wnd_proc, set_left_button_width) terug:
-      - wnd_proc               : MOET bewaard blijven, anders garbage collected → crash
-      - set_left_button_width  : callable(pixels: int) om de linker zone live bij te werken
+    Returns (wnd_proc, set_left_button_width):
+      - wnd_proc               : MUST be kept alive, otherwise garbage collected → crash
+      - set_left_button_width  : callable(pixels: int) to update the left zone at runtime
 
-    Parameters (fysieke pixels, dus DPI-geschaald):
-      title_bar_height   : hoogte van de titelbalk
-      resize_border      : breedte resize-rand langs randen
-      resize_corner      : grootte resize-zone in hoeken
-      left_button_width  : initiële breedte linker zone (hamburger + titel + menu → HTCLIENT)
-      right_button_width : breedte rechter zone (QML-knoppen → HTCLIENT)
+    Parameters (physical pixels, i.e. DPI-scaled):
+      title_bar_height   : height of the title bar
+      resize_border      : width of resize edge along the borders
+      resize_corner      : size of resize zone at corners
+      left_button_width  : initial width of left zone (hamburger + title + menu → HTCLIENT)
+      right_button_width : width of right zone (QML buttons → HTCLIENT)
     """
     user32  = ctypes.windll.user32
     dwmapi  = ctypes.windll.dwmapi
 
-    # DwmDefWindowProc signatuur
+    # DwmDefWindowProc signature
     dwmapi.DwmDefWindowProc.restype  = ctypes.c_bool
     dwmapi.DwmDefWindowProc.argtypes = [
         ctypes.c_size_t,                      # HWND
@@ -194,7 +194,7 @@ def install_wnd_proc(
         ctypes.POINTER(ctypes.c_ssize_t),     # LRESULT*
     ]
 
-    # Expliciete 64-bit signaturen voor SetWindowLongPtrW / CallWindowProcW
+    # Explicit 64-bit signatures for SetWindowLongPtrW / CallWindowProcW
     user32.GetWindowLongPtrW.restype  = ctypes.c_ssize_t
     user32.GetWindowLongPtrW.argtypes = [ctypes.c_size_t, ctypes.c_int]
 
@@ -212,14 +212,14 @@ def install_wnd_proc(
 
     old_proc = user32.GetWindowLongPtrW(hwnd, GWLP_WNDPROC)
 
-    # Mutable container zodat de linker zone live bijgewerkt kan worden vanuit QML
+    # Mutable container so the left zone can be updated at runtime from QML
     _left = [left_button_width]
 
     def set_left_button_width(pixels: int) -> None:
         _left[0] = pixels
 
     def _hit_test(h: int, lparam: int) -> int | None:
-        """Resize-borders en titelbalk. Caption-knoppen worden door DwmDefWindowProc afgehandeld."""
+        """Resize borders and title bar. Caption buttons are handled by DwmDefWindowProc."""
         x = ctypes.c_short(lparam & 0xFFFF).value
         y = ctypes.c_short((lparam >> 16) & 0xFFFF).value
 
@@ -231,14 +231,14 @@ def install_wnd_proc(
         w  = rect.right  - rect.left
         h_ = rect.bottom - rect.top
 
-        # Titelbalk-zone
+        # Title bar zone
         if ry < title_bar_height:
-            if rx < _left[0]:                 return HTCLIENT   # linker knoppen
-            if rx > w - right_button_width:   return HTCLIENT   # QML-knoppen
+            if rx < _left[0]:                 return HTCLIENT   # left buttons
+            if rx > w - right_button_width:   return HTCLIENT   # QML buttons
             return HTCAPTION                                    # drag zone
 
         if user32.IsZoomed(h):
-            return None            # geen resize als gemaximaliseerd
+            return None            # no resize when maximized
 
         rb = resize_border
         rc = resize_corner
@@ -257,17 +257,17 @@ def install_wnd_proc(
 
     @_WndProcType
     def wnd_proc(h: int, msg: int, wparam: int, lparam: int) -> int:
-        # ── DwmDefWindowProc eerst ────────────────────────────────────────────
-        # Vereist voor caption-knop hover, pressed-states en snap-layout popup.
+        # ── DwmDefWindowProc first ────────────────────────────────────────────
+        # Required for caption button hover, pressed states and snap-layout popup.
         dwm_result = ctypes.c_ssize_t(0)
         if dwmapi.DwmDefWindowProc(h, msg, wparam, lparam, ctypes.byref(dwm_result)):
             return dwm_result.value
 
-        # ── Eigen afhandeling ─────────────────────────────────────────────────
+        # ── Own handling ──────────────────────────────────────────────────────
         if msg == WM_NCCALCSIZE and wparam:
-            # Normaal venster: geen NC-aanpassing — client-area = volledig venster.
-            # Gemaximaliseerd: Windows plaatst het venster border_x/border_y buiten
-            # de schermrand; corrigeer alle zijden zodat content binnen het scherm blijft.
+            # Normal window: no NC adjustment — client area equals full window.
+            # Maximized: Windows places the window border_x/border_y outside the
+            # screen edge; correct all sides so content stays within the screen.
             if user32.IsZoomed(h):
                 nccsp    = ctypes.cast(lparam, ctypes.POINTER(NCCALCSIZE_PARAMS))
                 padding  = user32.GetSystemMetrics(SM_CXPADDEDBORDER)
@@ -293,18 +293,18 @@ def install_wnd_proc(
     wnd_proc_ptr = ctypes.cast(wnd_proc, ctypes.c_void_p).value
     result = user32.SetWindowLongPtrW(hwnd, GWLP_WNDPROC, wnd_proc_ptr)
     if result == 0:
-        print(f"[win32] FOUT: SetWindowLongPtrW mislukt! LastError={ctypes.windll.kernel32.GetLastError()}")
-    return wnd_proc, set_left_button_width  # wnd_proc BEWAREN — anders garbage collected → crash
+        print(f"[win32] ERROR: SetWindowLongPtrW failed! LastError={ctypes.windll.kernel32.GetLastError()}")
+    return wnd_proc, set_left_button_width  # wnd_proc MUST be kept alive — otherwise garbage collected → crash
 
 
 class WindowChromeHelper(QObject):
-    """Pas Win32 DWM chrome toe op secundaire vensters (dialogs)."""
+    """Apply Win32 DWM chrome to secondary windows (dialogs)."""
 
     def __init__(self, dpr: float, parent=None):
         super().__init__(parent)
         self._dpr        = dpr
         self._applied:   set[int]  = set()
-        self._wnd_procs: list      = []    # BEWAREN — anders garbage collected → crash
+        self._wnd_procs: list      = []    # MUST be kept alive — otherwise garbage collected → crash
 
     def _apply(self, hwnd: int) -> None:
         if hwnd in self._applied:
@@ -315,7 +315,7 @@ class WindowChromeHelper(QObject):
             title_bar_height  = round(36 * self._dpr),
             resize_border     = round(6  * self._dpr),
             resize_corner     = round(12 * self._dpr),
-            left_button_width = 0,                         # geen linker zone voor dialog
+            left_button_width = 0,                         # no left zone for dialog
             right_button_width= round(138 * self._dpr),   # 3 × TitleBarButton (min + max + close)
         )
         apply_dwm_frame(hwnd)
@@ -323,18 +323,18 @@ class WindowChromeHelper(QObject):
 
     @Slot(QWindow)
     def applyToWindow(self, window: QWindow) -> None:
-        """Aanroepen vanuit QML: windowChromeHelper.applyToWindow(someWindow).
-        QML Window-objecten erven van QWindow — winId() is hier beschikbaar."""
+        """Called from QML: windowChromeHelper.applyToWindow(someWindow).
+        QML Window objects inherit QWindow — winId() is available here."""
         self._apply(int(window.winId()))
 
     @Slot(int)
     def applyTo(self, win_id: int) -> None:
-        """Aanroepen vanuit Python met een bekende HWND."""
+        """Called from Python with a known HWND."""
         self._apply(int(win_id))
 
 
 class WindowController(QObject):
-    """Programmatische vensterbesturing via ShowWindow (native animaties)."""
+    """Programmatic window control via ShowWindow (native animations)."""
 
     def __init__(self, hwnd: int, dpr: float, set_left_button_width, parent=None):
         super().__init__(parent)
@@ -345,7 +345,7 @@ class WindowController(QObject):
 
     @Slot(float)
     def setLeftButtonWidth(self, logical_width: float) -> None:
-        """Wordt aangeroepen vanuit QML als de linker titelbalk-zone van breedte verandert."""
+        """Called from QML when the left title bar zone changes width."""
         self._set_left(round(logical_width * self._dpr))
 
     @Slot()

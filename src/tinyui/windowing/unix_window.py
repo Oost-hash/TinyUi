@@ -20,21 +20,21 @@
 #  licensed under GPLv3.
 
 """
-Vensterbesturing voor PySide6 op Unix (Linux/macOS).
+Window control for PySide6 on Unix (Linux/macOS).
 
-Qt delegeert move en resize aan de compositor/AppKit via
-startSystemMove() / startSystemResize(). Het platform handelt
-cursor-feedback, snap en animaties af — geen platform-specifieke code nodig.
+Qt delegates move and resize to the compositor/AppKit via
+startSystemMove() / startSystemResize(). The platform handles
+cursor feedback, snap and animations — no platform-specific code needed.
 
-QML initieert drag via DragHandler.onActiveChanged → startMove().
-Resize wordt gestart vanuit ResizeHandles.qml via startResize(edge).
+QML initiates drag via DragHandler.onActiveChanged → startMove().
+Resize is initiated from ResizeHandles.qml via startResize(edge).
 """
 
 from PySide6.QtCore import QObject, Qt, Slot
 
 
 class WindowController(QObject):
-    """Vensterbesturing voor Linux/Wayland."""
+    """Window control for Linux/Wayland."""
 
     def __init__(self, window, parent=None):
         super().__init__(parent)
@@ -42,7 +42,7 @@ class WindowController(QObject):
 
     @Slot(float)
     def setLeftButtonWidth(self, logical_width: float) -> None:
-        pass  # Niet van toepassing — Wayland gebruikt geen hit-test zones
+        pass  # Not applicable — Wayland does not use hit-test zones
 
     @Slot()
     def toggleMaximize(self):
@@ -57,10 +57,10 @@ class WindowController(QObject):
 
     @Slot()
     def startMove(self):
-        """Aangeroepen vanuit QML DragHandler — compositor handelt de drag af."""
+        """Called from QML DragHandler — compositor handles the drag."""
         self._window.startSystemMove()
 
     @Slot(int)
     def startResize(self, edge: int):
-        """Aangeroepen vanuit ResizeHandles.qml — compositor handelt de resize af."""
+        """Called from ResizeHandles.qml — compositor handles the resize."""
         self._window.startSystemResize(Qt.Edge(edge))

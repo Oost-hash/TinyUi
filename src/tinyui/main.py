@@ -26,7 +26,7 @@ import platform
 import sys
 from pathlib import Path
 
-# Logging vóór alle andere imports — configure() zet basicConfig in
+# Logging before all other imports — configure() sets up basicConfig
 from tinyui import log as app_log
 
 app_log.configure()
@@ -58,20 +58,20 @@ def _config_dir() -> Path:
 
 
 def main():
-    # ── tinycore boot — EERST, vóór Qt ───────────────────────────────────────
+    # ── tinycore boot — FIRST, before Qt ────────────────────────────────────
     core = create_app(
         _config_dir(),
         SubprocessPlugin(PluginSpec("plugins.demo",  "DemoPlugin")),
         SubprocessPlugin(PluginSpec("plugins.demo2", "Demo2Plugin")),
     )
-    TinyUIPlugin().register(core)           # host buiten plugin systeem
+    TinyUIPlugin().register(core)           # host outside plugin system
     core.loaders.load_all(core.config)
-    core.settings.load_persisted()          # plugin settings laden
-    core.host_settings.load_persisted()     # host settings laden
-    core.start(plugins=False)               # lifecycle manager beheert plugin starts
+    core.settings.load_persisted()          # load plugin settings
+    core.host_settings.load_persisted()     # load host settings
+    core.start(plugins=False)               # lifecycle manager controls plugin startup
 
     # ── Qt setup ──────────────────────────────────────────────────────────────
-    QQuickWindow.setDefaultAlphaBuffer(True)  # vóór app — alpha-kanaal
+    QQuickWindow.setDefaultAlphaBuffer(True)  # before app — alpha channel
     QQuickStyle.setStyle("Basic")
     app = QGuiApplication(sys.argv)
     load_font()
@@ -96,11 +96,11 @@ def main():
     tab_vm        = TabViewModel()
     tyre_demo_vm  = TyreDemoViewModel()
 
-    # Tabs — volgorde bepaalt StackLayout index
+    # Tabs — order determines StackLayout index
     tab_vm.register("widgets", "Widgets")
     tab_vm.register("demo",    "Demo")
 
-    # ── Plugin lifecycle — start on demand, stop na 30s grace period ──────────
+    # ── Plugin lifecycle — start on demand, stop after 30s grace period ──────
     _plugin_names = [p.name for p in core.plugins.plugins]
     lifecycle = PluginLifecycleManager(core.plugins, grace_seconds=30.0)
 
@@ -114,7 +114,7 @@ def main():
     if _plugin_names:
         lifecycle.activate(_plugin_names[0])   # start eerste plugin direct
 
-    # Settings verandering → theme toepassen + opslaan
+    # Settings change — apply theme and persist
     def _apply_tinyui_settings():
         val = core.host_settings.get_value("TinyUI", "theme")
         if val:
@@ -128,9 +128,9 @@ def main():
             core.settings.save(plugin_name)
     core_vm.settingValueChanged.connect(_save_setting)
     settings_vm.settingChangeRequested.connect(core_vm.setSettingValue)
-    _apply_tinyui_settings()                # pas opgeslagen theme direct toe bij opstart
+    _apply_tinyui_settings()                # apply persisted theme on startup
 
-    # Mutual exclusion: als één opent, sluit de andere
+    # Mutual exclusion: opening one closes the other
     menu_vm.menuOpenChanged.connect(
         lambda: statusbar_vm.closePluginDropdown() if menu_vm.menuOpen else None
     )
@@ -170,7 +170,7 @@ def main():
     window = engine.rootObjects()[0]
     dpr = app.devicePixelRatio()
 
-    _wnd_proc = None  # Windows only: MOET bewaard blijven — anders GC → crash
+    _wnd_proc = None  # Windows only: MUST be kept alive — otherwise GC → crash
     _win_ctrl = None
 
     _chrome_helper = None
@@ -250,5 +250,5 @@ def main():
 
 
 if __name__ == "__main__":
-    mp.freeze_support()   # vereist op Windows bij frozen/spawn
+    mp.freeze_support()   # required on Windows with frozen/spawn
     main()

@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 
 class TinyUIPlugin:
-    """Registreert TinyUI host-settings buiten het plugin systeem."""
+    """Registers TinyUI host settings outside the plugin system."""
 
     name = "TinyUI"
 
@@ -50,6 +50,7 @@ class TinyUIPlugin:
             description="Application color theme",
             section="Application",
         ))
+        # TODO: implement language switching
         _r(_n, SettingsSpec(
             key="language", label="Language", type="enum",
             default="en", options=["en", "nl"],
