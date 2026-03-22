@@ -38,6 +38,7 @@ class CoreViewModel(QObject):
     def __init__(self, core: App, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._core = core
+        self._settings_cache: list[dict] | None = None
 
     @Property("QVariantList", constant=True)
     def widgets(self) -> list[dict]:
@@ -80,7 +81,11 @@ class CoreViewModel(QObject):
         """Settings gegroepeerd per plugin én sectie — voor de settings dialog.
 
         Structuur: [{ plugin, sections: [{ name, settings: [{key,label,type,value,...}] }] }]
+        Resultaat wordt gecached; cache vervalt bij setSettingValue.
         """
+        if self._settings_cache is not None:
+            return self._settings_cache
+
         result = []
         for plugin_name, specs in self._core.settings.by_plugin().items():
             sections: dict[str, list[dict]] = {}
@@ -100,9 +105,6 @@ class CoreViewModel(QObject):
                     "min":         s.min,
                     "max":         s.max,
                     "step":        s.step,
-                    "min":         s.min,
-                    "max":         s.max,
-                    "step":        s.step,
                 })
             result.append({
                 "plugin":   plugin_name,
@@ -111,14 +113,17 @@ class CoreViewModel(QObject):
                     for name in section_order
                 ],
             })
+
         log.settings("settingsByPlugin",
                      plugins=len(result),
                      structure=[(r["plugin"], [s["name"] for s in r["sections"]]) for r in result])
+        self._settings_cache = result
         return result
 
     @Slot(str, str, "QVariant")
     def setSettingValue(self, plugin_name: str, key: str, value) -> None:
         """Sla een nieuwe settingswaarde op en notificeer QML en persistence."""
         self._core.settings.set_value(plugin_name, key, value)
+        self._settings_cache = None          # cache ongeldig — nieuwe waarden bij volgende read
         self.settingsChanged.emit()
         self.settingValueChanged.emit(plugin_name)
