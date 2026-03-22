@@ -3,6 +3,7 @@
 ![Version](https://img.shields.io/badge/version-0.1.0-purple)
 ![Status](https://img.shields.io/badge/status-work%20in%20progress-orange)
 ![License](https://img.shields.io/badge/license-GPLv3-green)
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-%23db61a2?logo=github)](https://github.com/sponsors/oost-hash)
 
 A modular overlay based on [TinyPedal](https://github.com/TinyPedal/TinyPedal), the open-source racing overlay application.
 
@@ -31,38 +32,43 @@ graph TB
 
     subgraph Core["tinycore — Core Engine"]
         direction TB
-        store[Configuration Store]
+        store[Config Store]
         bus[Event Bus]
-        pluginsys[Plugin System]
+        pluginsys[Plugin System\nlifecycle · isolation · subprocess]
         providers[Provider Registry]
+        telemetry[Telemetry ABCs\n🚧 in progress]
     end
 
-    subgraph UI["tinyui — UI Platform"]
+    subgraph UI["tinyui — UI Platform  •  PySide6"]
         direction TB
-        screens[Screen Renderers table form tree]
-        mvvm[MVVM Layer viewmodel to view]
+        screens[Screen Renderers\ntable · form · tree]
+        editors[Editors]
         theme[Theme Engine]
     end
 
-    subgraph Widget["tinywidget — Widget Renderer"]
+    subgraph QML["tinyui_qml — QML Overlay"]
         direction TB
-        layout[Layout Engine]
-        renderer[Widget Renderer]
-        cells[Cell System]
+        qmlviews[QML Views\ncomponents · layout · tabs]
+        viewmodels[ViewModels]
+        windowing[Windowing]
     end
 
-    subgraph Plugins["External Plugins"]
-        tp[TinyPedal Plugin]
-        other[Other Plugins]
+    subgraph Plugins["Plugins"]
+        direction TB
+        tp[tinypedal\nloaders · models]
+        demo[demo\nreference implementation]
+        connector[LMU Connector\n🚧 in progress]
     end
 
     Plugins -->|register providers| Core
     UI -->|uses core services| Core
-    Widget -->|uses core services| Core
+    QML -->|uses core services| Core
+    demo --> connector
+    connector -.->|implements| telemetry
 
     style Core fill:#2c3e50,color:#fff
     style UI fill:#27ae60,color:#fff
-    style Widget fill:#2980b9,color:#fff
+    style QML fill:#2980b9,color:#fff
     style Plugins fill:#e67e22,color:#fff
 ```
 
