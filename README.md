@@ -39,14 +39,7 @@ graph TB
         telemetry[Telemetry ABCs\n🚧 in progress]
     end
 
-    subgraph UI["tinyui — UI Platform  •  PySide6"]
-        direction TB
-        screens[Screen Renderers\ntable · form · tree]
-        editors[Editors]
-        theme[Theme Engine]
-    end
-
-    subgraph QML["tinyui_qml — QML Overlay"]
+    subgraph QML["tinyui_qml — UI Platform  •  QML"]
         direction TB
         qmlviews[QML Views\ncomponents · layout · tabs]
         viewmodels[ViewModels]
@@ -61,13 +54,11 @@ graph TB
     end
 
     Plugins -->|register providers| Core
-    UI -->|uses core services| Core
     QML -->|uses core services| Core
     demo --> connector
     connector -.->|implements| telemetry
 
     style Core fill:#2c3e50,color:#fff
-    style UI fill:#27ae60,color:#fff
     style QML fill:#2980b9,color:#fff
     style Plugins fill:#e67e22,color:#fff
 ```
