@@ -20,6 +20,7 @@
 #  licensed under GPLv3.
 
 import logging
+import multiprocessing as mp
 import os
 import platform
 import sys
@@ -37,8 +38,7 @@ from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuick import QQuickWindow
 from PySide6.QtQuickControls2 import QQuickStyle
 
-from plugins.demo import DemoPlugin
-from tinycore import create_app
+from tinycore import PluginLifecycleManager, PluginSpec, SubprocessPlugin, create_app
 from tinyui_qml.plugin import TinyUIPlugin
 from tinyui_qml.const import APP_NAME, VERSION
 from tinyui_qml.icons import Icons, load_font
@@ -58,10 +58,16 @@ def _config_dir() -> Path:
 
 def main():
     # ── tinycore boot — EERST, vóór Qt ───────────────────────────────────────
-    core = create_app(_config_dir(), TinyUIPlugin(), DemoPlugin())
+    core = create_app(
+        _config_dir(),
+        SubprocessPlugin(PluginSpec("plugins.demo",  "DemoPlugin")),
+        SubprocessPlugin(PluginSpec("plugins.demo2", "Demo2Plugin")),
+    )
+    TinyUIPlugin().register(core)           # host buiten plugin systeem
     core.loaders.load_all(core.config)
-    core.settings.load_persisted()          # laad opgeslagen waarden vóór start()
-    core.start()
+    core.settings.load_persisted()          # plugin settings laden
+    core.host_settings.load_persisted()     # host settings laden
+    core.start(plugins=False)               # lifecycle manager beheert plugin starts
 
     # ── Qt setup ──────────────────────────────────────────────────────────────
     QQuickWindow.setDefaultAlphaBuffer(True)  # vóór app — alpha-kanaal
@@ -91,14 +97,33 @@ def main():
     # Vaste Widgets tab — plugins voegen later hun eigen tabs toe
     tab_vm.register("widgets", "Widgets")
 
+    # ── Plugin lifecycle — start on demand, stop na 30s grace period ──────────
+    _plugin_names = [p.name for p in core.plugins.plugins]
+    lifecycle = PluginLifecycleManager(core.plugins, grace_seconds=30.0)
+
+    def _on_plugin_switch() -> None:
+        idx = statusbar_vm.activePluginIndex
+        if 0 <= idx < len(_plugin_names):
+            lifecycle.activate(_plugin_names[idx])
+
+    statusbar_vm.activePluginIndexChanged.connect(_on_plugin_switch)
+
+    if _plugin_names:
+        lifecycle.activate(_plugin_names[0])   # start eerste plugin direct
+
     # Settings verandering → theme toepassen + opslaan
     def _apply_tinyui_settings():
-        val = core.settings.get_value("TinyUI", "theme")
+        val = core.host_settings.get_value("TinyUI", "theme")
         if val:
             theme.load(val)
 
     core_vm.settingsChanged.connect(_apply_tinyui_settings)
-    core_vm.settingValueChanged.connect(core.settings.save)
+    def _save_setting(plugin_name: str) -> None:
+        if core.host_settings.has_plugin(plugin_name):
+            core.host_settings.save(plugin_name)
+        else:
+            core.settings.save(plugin_name)
+    core_vm.settingValueChanged.connect(_save_setting)
     settings_vm.settingChangeRequested.connect(core_vm.setSettingValue)
     _apply_tinyui_settings()                # pas opgeslagen theme direct toe bij opstart
 
@@ -175,32 +200,33 @@ def main():
         engine.rootContext().setContextProperty("windowController", _win_ctrl)
 
     # ── Window state restore ───────────────────────────────────────────────────
-    if core.settings.get_value("TinyUI", "remember_position"):
-        x = core.settings.get_value("TinyUI", "_position_x")
-        y = core.settings.get_value("TinyUI", "_position_y")
+    if core.host_settings.get_value("TinyUI", "remember_position"):
+        x = core.host_settings.get_value("TinyUI", "_position_x")
+        y = core.host_settings.get_value("TinyUI", "_position_y")
         if x is not None and y is not None:
             window.setX(int(x))
             window.setY(int(y))
 
-    if core.settings.get_value("TinyUI", "remember_size"):
-        w = core.settings.get_value("TinyUI", "_window_width")
-        h = core.settings.get_value("TinyUI", "_window_height")
+    if core.host_settings.get_value("TinyUI", "remember_size"):
+        w = core.host_settings.get_value("TinyUI", "_window_width")
+        h = core.host_settings.get_value("TinyUI", "_window_height")
         if w is not None and h is not None:
             window.setWidth(int(w))
             window.setHeight(int(h))
 
     # ── Run ───────────────────────────────────────────────────────────────────
     def _save_window_state() -> None:
-        if core.settings.get_value("TinyUI", "remember_position"):
-            core.settings.set_value("TinyUI", "_position_x", window.x())
-            core.settings.set_value("TinyUI", "_position_y", window.y())
-        if core.settings.get_value("TinyUI", "remember_size"):
-            core.settings.set_value("TinyUI", "_window_width",  window.width())
-            core.settings.set_value("TinyUI", "_window_height", window.height())
-        core.settings.save("TinyUI")
+        if core.host_settings.get_value("TinyUI", "remember_position"):
+            core.host_settings.set_value("TinyUI", "_position_x", window.x())
+            core.host_settings.set_value("TinyUI", "_position_y", window.y())
+        if core.host_settings.get_value("TinyUI", "remember_size"):
+            core.host_settings.set_value("TinyUI", "_window_width",  window.width())
+            core.host_settings.set_value("TinyUI", "_window_height", window.height())
+        core.host_settings.save("TinyUI")
 
     app.aboutToQuit.connect(_save_window_state)
     app.aboutToQuit.connect(engine.deleteLater)
+    app.aboutToQuit.connect(lifecycle.shutdown)
     app.aboutToQuit.connect(core.stop)
 
     exit_code = app.exec()
@@ -219,4 +245,5 @@ def main():
 
 
 if __name__ == "__main__":
+    mp.freeze_support()   # vereist op Windows bij frozen/spawn
     main()
