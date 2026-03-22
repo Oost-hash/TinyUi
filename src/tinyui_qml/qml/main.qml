@@ -93,8 +93,9 @@ ApplicationWindow {
         }
     }
 
-    // Op Linux/macOS: native chrome verzorgt resize
-    ResizeHandles { visible: !root.nativeChrome }
+    // Linux: compositor kent geen eigen resize voor frameless windows — QML handelt dat af.
+    // Windows: WndProc (win_window.py) verzorgt resize via HTTEST. macOS: native chrome.
+    ResizeHandles { visible: Qt.platform.os === "linux" }
 
     ColumnLayout {
         anchors.fill: parent
