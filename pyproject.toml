@@ -24,7 +24,7 @@ pythonpath = ["src"]
 where = ["src"]
 
 # ── TinyUi dev-instellingen ───────────────────────────────────────────────────
-# categories: menu | settings | state | mouse | win32 | theme | ui | all
+# categories: menu | settings | state | mouse | win32 | theme | ui | connector | connector_polling | all
 # Prioriteit: TINYUI_DEBUG env var > pyproject.toml > productie (geen debug)
 [tool.tinyui.debug]
-categories = "settings,ui"
+categories = "settings,ui,connector"

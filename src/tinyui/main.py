@@ -48,6 +48,7 @@ from tinyui.viewmodels.menu_viewmodel import MenuViewModel
 from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
 from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
 from tinyui.viewmodels.tab_viewmodel import TabViewModel
+from tinyui.viewmodels.tyre_demo_viewmodel import TyreDemoViewModel
 
 
 def _config_dir() -> Path:
@@ -93,9 +94,11 @@ def main():
     settings_vm   = SettingsPanelViewModel()
     core_vm       = CoreViewModel(core)
     tab_vm        = TabViewModel()
+    tyre_demo_vm  = TyreDemoViewModel()
 
-    # Vaste Widgets tab — plugins voegen later hun eigen tabs toe
+    # Tabs — volgorde bepaalt StackLayout index
     tab_vm.register("widgets", "Widgets")
+    tab_vm.register("demo",    "Demo")
 
     # ── Plugin lifecycle — start on demand, stop na 30s grace period ──────────
     _plugin_names = [p.name for p in core.plugins.plugins]
@@ -154,6 +157,7 @@ def main():
     ctx.setContextProperty("statusBarViewModel", statusbar_vm)
     ctx.setContextProperty("settingsPanelViewModel", settings_vm)
     ctx.setContextProperty("tabViewModel",           tab_vm)
+    ctx.setContextProperty("tyreDemoViewModel",      tyre_demo_vm)
 
     qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qml", "main.qml")
     engine.load(QUrl.fromLocalFile(qml_path))
@@ -225,6 +229,7 @@ def main():
         core.host_settings.save("TinyUI")
 
     app.aboutToQuit.connect(_save_window_state)
+    app.aboutToQuit.connect(tyre_demo_vm.shutdown)
     app.aboutToQuit.connect(engine.deleteLater)
     app.aboutToQuit.connect(lifecycle.shutdown)
     app.aboutToQuit.connect(core.stop)

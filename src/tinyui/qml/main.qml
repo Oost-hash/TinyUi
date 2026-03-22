@@ -65,11 +65,12 @@ ApplicationWindow {
 
     readonly property int contentTop: Qt.platform.os === "linux" ? 0 : theme.titleBarHeight
 
-    // Vangt klikken buiten een open menu popup op — sluit popup, menu blijft open
+    // Vangt klikken buiten een open menu popup op — sluit popup, menu blijft open.
+    // Start ónder de tabbar (contentTop + 42) zodat tab-switching altijd werkt.
     MouseArea {
-        x: 0; y: root.contentTop
+        x: 0; y: root.contentTop + 42
         width: parent.width
-        height: parent.height - root.contentTop - 32
+        height: parent.height - root.contentTop - 42 - 32
         z: 4
         enabled: menuViewModel.menuOpen
         propagateComposedEvents: true
@@ -81,9 +82,9 @@ ApplicationWindow {
 
     // Vangt klikken buiten de plugin dropdown op — sluit dropdown
     MouseArea {
-        x: 0; y: root.contentTop
+        x: 0; y: root.contentTop + 42
         width: parent.width
-        height: parent.height - root.contentTop - 32
+        height: parent.height - root.contentTop - 42 - 32
         z: 3
         enabled: statusBarViewModel.pluginDropdownOpen
         propagateComposedEvents: true
@@ -110,15 +111,20 @@ ApplicationWindow {
             Layout.fillWidth: true
         }
 
-        WidgetTab {
+        StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-        }
+            currentIndex: tabViewModel.currentIndex
 
-        SettingsDialog {}
+            WidgetTab {}
+            DemoTab {}
+        }
 
         StatusBar {
             Layout.fillWidth: true
         }
     }
+
+    // SettingsDialog is een Window — buiten de ColumnLayout zodat het geen layout ruimte inneemt
+    SettingsDialog {}
 }

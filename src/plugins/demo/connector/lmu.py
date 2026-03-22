@@ -35,7 +35,7 @@ import sys
 from pathlib import Path
 
 # pyLMUSharedMemory lives as a submodule next to this file
-_LIB = Path(__file__).parent.parent / "pyLMUSharedMemory"
+_LIB = Path(__file__).parent.parent
 if str(_LIB) not in sys.path:
     sys.path.insert(0, str(_LIB))
 
@@ -77,9 +77,11 @@ class _State(State):
         self._info = info
 
     def active(self) -> bool:
+        # gamePhase 0=before session, 7=stopped, 8=over, 9=paused
+        phase = int(self._info.data.scoring.scoringInfo.mGamePhase)
         return bool(
             self._info.data.telemetry.playerHasVehicle
-            and self._info.data.generic.appInfo.mOptionsLocation == 3
+            and phase not in (0, 7, 8, 9)
         )
 
     def paused(self) -> bool:
@@ -99,7 +101,7 @@ class _Brake(Brake):
 
     def _wheels(self, index: int | None) -> lmu_data.LMUVehicleTelemetry:
         idx = self._player_idx() if index is None else index
-        return self._info.data.telemetry.telemInfo[idx].mWheel
+        return self._info.data.telemetry.telemInfo[idx].mWheels
 
     def bias_front(self, index: int | None = None) -> float:
         idx = self._player_idx() if index is None else index
@@ -352,7 +354,7 @@ class _Tyre(Tyre):
 
     def _wheels(self, index: int | None) -> tuple:
         idx = self._info.data.telemetry.playerVehicleIdx if index is None else index
-        return self._info.data.telemetry.telemInfo[idx].mWheel
+        return self._info.data.telemetry.telemInfo[idx].mWheels
 
     def _scor(self, index: int | None) -> lmu_data.LMUVehicleScoring:
         idx = self._info.data.telemetry.playerVehicleIdx if index is None else index
@@ -446,7 +448,7 @@ class _Wheel(Wheel):
 
     def _wheels(self, index: int | None) -> tuple:
         idx = self._info.data.telemetry.playerVehicleIdx if index is None else index
-        return self._info.data.telemetry.telemInfo[idx].mWheel
+        return self._info.data.telemetry.telemInfo[idx].mWheels
 
     def camber(self, index: int | None = None) -> tuple[float, ...]:
         wheels = self._wheels(index)

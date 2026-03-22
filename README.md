@@ -31,8 +31,8 @@ The goal for 0.1 is a working foundation: the engine, the UI shell, and the firs
 - [x] Plugin system — lifecycle, isolation, subprocess support
 - [x] Data-driven config — TOML for plugin definitions, JSON for user data
 - [x] QML overlay — windowing, theming, tab layout
-- [ ] Telemetry ABCs — abstract connector contract in tinycore
-- [ ] LMU connector — first real game connector (Le Mans Ultimate / rFactor 2)
+- [x] Telemetry ABCs — abstract connector contract in tinycore
+- [x] LMU connector — first real game connector (Le Mans Ultimate / rFactor 2)
 
 ### 0.2.0 — Widget renderer
 Once the foundation is solid, the focus shifts to actually rendering data on screen.
