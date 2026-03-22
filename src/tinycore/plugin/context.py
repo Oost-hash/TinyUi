@@ -34,6 +34,20 @@ if TYPE_CHECKING:
     from tinycore.config.loader import LoaderRegistry
     from tinycore.config.store import ConfigStore
     from tinycore.settings import SettingsRegistry, SettingsSpec
+    from tinycore.telemetry.reader import TelemetryReader
+    from tinycore.telemetry.registry import ConnectorRegistry
+
+
+class ScopedConnector:
+    """Connector registry scoped to one plugin."""
+
+    def __init__(self, registry: ConnectorRegistry, plugin_name: str) -> None:
+        self._registry = registry
+        self._name = plugin_name
+
+    def register(self, connector: TelemetryReader) -> None:
+        """Register a TelemetryReader for this plugin."""
+        self._registry.register(self._name, connector)
 
 
 class ScopedSettings:
@@ -85,6 +99,7 @@ class PluginContext:
         self.name      = plugin_name
         self.settings  = ScopedSettings(app.settings, plugin_name)
         self.loaders   = ScopedLoaders(app.loaders, plugin_name)
+        self.connector = ScopedConnector(app.connectors, plugin_name)
         self.config    = app.config
         self.widgets   = app.widgets
         self.editors   = app.editors

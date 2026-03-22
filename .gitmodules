@@ -1,3 +1,9 @@
 [submodule "tinypedal_repo"]
 	path = tinypedal_repo
 	url = https://github.com/TinyPedal/TinyPedal.git
+[submodule "src/plugins/demo/pyLMUSharedMemory"]
+	path = src/plugins/demo/pyLMUSharedMemory
+	url = https://github.com/TinyPedal/pyLMUSharedMemory.git
+[submodule "src/plugins/demo/pyRfactor2SharedMemory"]
+	path = src/plugins/demo/pyRfactor2SharedMemory
+	url = https://github.com/TinyPedal/pyRfactor2SharedMemory.git

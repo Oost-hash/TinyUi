@@ -31,6 +31,7 @@ from .events.bus import EventBus
 from .plugin.registry import PluginRegistry
 from .providers.registry import ProviderRegistry
 from .settings import SettingsRegistry
+from .telemetry.registry import ConnectorRegistry
 from .widget import WidgetRegistry
 
 
@@ -40,6 +41,7 @@ class App:
     def __init__(self, config_dir: Path):
         self.config        = ConfigStore()
         self.loaders       = LoaderRegistry(config_dir)
+        self.connectors    = ConnectorRegistry()
         self.editors       = EditorRegistry()
         self.events        = EventBus()
         self.plugins       = PluginRegistry()
