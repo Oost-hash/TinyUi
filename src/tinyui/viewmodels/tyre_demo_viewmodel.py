@@ -29,6 +29,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import psutil
+
 from PySide6.QtCore import Property, QObject, QTimer, Signal
 
 from tinyui.log import get_logger
@@ -79,6 +81,9 @@ class TyreDemoViewModel(QObject):
         self._prev_active       = None
         self._prev_game_phase   = None
 
+        # Process check elke 2s — psutil is te zwaar voor elke 100ms poll
+        self._process_check_counter = 0
+
         # 4 banden × 4 waarden: surface_temp, inner_temp, pressure, wear
         self._surface  = [0.0] * 4
         self._inner    = [0.0] * 4
@@ -101,8 +106,14 @@ class TyreDemoViewModel(QObject):
         try:
             c.update()
 
-            # Game running = gameVersion is non-zero als LMU actief schrijft
-            self._game_running = int(c._info.data.generic.gameVersion) != 0
+            # Process check elke 2s (20 × 100ms) — psutil is te zwaar voor elke poll
+            self._process_check_counter += 1
+            if self._process_check_counter >= 20:
+                self._process_check_counter = 0
+                self._game_running = any(
+                    p.info["name"].lower() in ("lmu.exe", "rfactor2.exe")
+                    for p in psutil.process_iter(["name"])
+                )
 
             self._active   = self._game_running and c.state.active()
             game_phase     = int(c._info.data.scoring.scoringInfo.mGamePhase)
