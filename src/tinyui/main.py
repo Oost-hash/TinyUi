@@ -19,154 +19,231 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""TinyUi bootstrap — tinycore init, Qt init, single instance, start."""
-
 import logging
+import multiprocessing as mp
 import os
+import platform
 import sys
 from pathlib import Path
 
-import psutil
-from PySide6.QtCore import QLocale
-from PySide6.QtGui import QFont, QIcon, QPixmapCache
-from PySide6.QtWidgets import QApplication, QMessageBox
+# Logging vóór alle andere imports — configure() zet basicConfig in
+from tinyui import log as app_log
 
-from plugins.demo import DemoPlugin
-from tinycore import create_app
+app_log.configure()
+
+import PySide6
+from PySide6.QtCore import QUrl, qVersion
+from PySide6.QtGui import QGuiApplication
+from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQuick import QQuickWindow
+from PySide6.QtQuickControls2 import QQuickStyle
+
+from tinycore import PluginLifecycleManager, PluginSpec, SubprocessPlugin, create_app
+from tinyui.plugin import TinyUIPlugin
 from tinyui.const import APP_NAME, VERSION
+from tinyui.icons import Icons, load_font
+from tinyui.theme import Theme
+from tinyui.viewmodels.core_viewmodel import CoreViewModel
+from tinyui.viewmodels.menu_viewmodel import MenuViewModel
+from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
+from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
+from tinyui.viewmodels.tab_viewmodel import TabViewModel
 
-logger = logging.getLogger(APP_NAME)
 
-_ICON_PATH = Path(__file__).parent / "images" / "icon.png"
-_PID_FILE = Path.home() / ".tinyui" / "tinyui.pid"
-
-
-def _resolve_icon() -> str:
+def _config_dir() -> Path:
     if getattr(sys, "frozen", False):
-        return os.path.join(os.path.dirname(sys.executable), "images", "icon.png")
-    return str(_ICON_PATH)
+        return Path(sys.executable).parent / "config"
+    return Path(__file__).resolve().parents[2] / "data" / "plugin-config"
 
 
-def _load_icon() -> QIcon:
-    path = _resolve_icon()
-    if os.path.exists(path):
-        icon = QIcon(path)
-        if not icon.isNull():
-            return icon
-        logger.warning("Icon file exists but failed to load: %s", path)
-    logger.warning("No icon found at: %s", path)
-    return QIcon()
-
-
-def _save_pid():
-    _PID_FILE.parent.mkdir(parents=True, exist_ok=True)
-    pid = os.getpid()
-    create_time = psutil.Process(pid).create_time()
-    _PID_FILE.write_text(f"{pid},{create_time}", encoding="utf-8")
-
-
-def _is_already_running() -> bool:
-    try:
-        line = _PID_FILE.read_text(encoding="utf-8").strip()
-        pid_str, create_time_str = line.split(",")
-        pid = int(pid_str)
-        if psutil.pid_exists(pid):
-            if str(psutil.Process(pid).create_time()) == create_time_str:
-                return True
-    except (OSError, ValueError, psutil.Error):
-        pass
-    return False
-
-
-def _init_logging():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+def main():
+    # ── tinycore boot — EERST, vóór Qt ───────────────────────────────────────
+    core = create_app(
+        _config_dir(),
+        SubprocessPlugin(PluginSpec("plugins.demo",  "DemoPlugin")),
+        SubprocessPlugin(PluginSpec("plugins.demo2", "Demo2Plugin")),
     )
-    logger.info("=" * 50)
-    logger.info("TinyUi v%s starting...", VERSION)
+    TinyUIPlugin().register(core)           # host buiten plugin systeem
+    core.loaders.load_all(core.config)
+    core.settings.load_persisted()          # plugin settings laden
+    core.host_settings.load_persisted()     # host settings laden
+    core.start(plugins=False)               # lifecycle manager beheert plugin starts
 
-
-def _init_qt() -> QApplication:
-    loc = QLocale(QLocale.c())
-    loc.setNumberOptions(QLocale.NumberOption.RejectGroupSeparator)
-    QLocale.setDefault(loc)
-
-    QApplication.setStyle("Fusion")
-    app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)
+    # ── Qt setup ──────────────────────────────────────────────────────────────
+    QQuickWindow.setDefaultAlphaBuffer(True)  # vóór app — alpha-kanaal
+    QQuickStyle.setStyle("Basic")
+    app = QGuiApplication(sys.argv)
+    load_font()
     app.setApplicationName(APP_NAME)
-    app.setWindowIcon(_load_icon())
+    app.setApplicationVersion(VERSION)
 
-    font = app.font()
-    font.setFamily("sans-serif")
-    font.setPointSize(10)
-    font.setStyleHint(QFont.StyleHint.SansSerif)
-    app.setFont(font)
-    QPixmapCache.setCacheLimit(0)
+    log = logging.getLogger(__name__)
+    log.info("── %s %s ──────────────────────────────", APP_NAME, VERSION)
+    log.info("OS:      %s %s", platform.system(), platform.release())
+    log.info("Python:  %s", platform.python_version())
+    log.info("Qt:      %s  PySide6: %s", qVersion(), PySide6.__version__)
+    log.info("Backend: %s", app.platformName())
+    log.info("Plugins: %d widget(s), %d editor(s)",
+             len(core.widgets.all()), len(core.editors.all()))
 
-    # Apply theme
-    from tinyui.themes.style import load_theme
+    # ── ViewModels ────────────────────────────────────────────────────────────
+    theme         = Theme()
+    menu_vm       = MenuViewModel()
+    statusbar_vm  = StatusBarViewModel()
+    settings_vm   = SettingsPanelViewModel()
+    core_vm       = CoreViewModel(core)
+    tab_vm        = TabViewModel()
 
-    app.setStyleSheet(load_theme("dark", font.pointSize()))
-    qss_string = load_theme("dark", font.pointSize())
-    print("=== GELADEN QSS ===")
-    print(qss_string)
-    print("=== EINDE QSS ===")
+    # Vaste Widgets tab — plugins voegen later hun eigen tabs toe
+    tab_vm.register("widgets", "Widgets")
 
-    logger.info("Screen DPI: %s", app.devicePixelRatio())
-    logger.info("Platform: %s", app.platformName())
-    return app
+    # ── Plugin lifecycle — start on demand, stop na 30s grace period ──────────
+    _plugin_names = [p.name for p in core.plugins.plugins]
+    lifecycle = PluginLifecycleManager(core.plugins, grace_seconds=30.0)
 
+    def _on_plugin_switch() -> None:
+        idx = statusbar_vm.activePluginIndex
+        if 0 <= idx < len(_plugin_names):
+            lifecycle.activate(_plugin_names[idx])
 
-def _check_single_instance() -> bool:
-    if os.getenv("TINYUI_RESTART") == "TRUE":
-        os.environ.pop("TINYUI_RESTART", None)
-        _save_pid()
-        return True
-    if not _is_already_running():
-        _save_pid()
-        return True
-    return False
+    statusbar_vm.activePluginIndexChanged.connect(_on_plugin_switch)
 
+    if _plugin_names:
+        lifecycle.activate(_plugin_names[0])   # start eerste plugin direct
 
-def run():
-    """Main entry point."""
-    _init_logging()
+    # Settings verandering → theme toepassen + opslaan
+    def _apply_tinyui_settings():
+        val = core.host_settings.get_value("TinyUI", "theme")
+        if val:
+            theme.load(val)
 
-    # --- tinycore boot ---
-    if getattr(sys, "frozen", False):
-        # Frozen build: config/ next to .exe
-        config_dir = Path(sys.executable).parent / "config"
-    else:
-        # Development: data/plugin-config/ in repo root
-        config_dir = Path(__file__).resolve().parents[2] / "data" / "plugin-config"
-    core = create_app(config_dir, DemoPlugin())
-    core.start()
+    core_vm.settingsChanged.connect(_apply_tinyui_settings)
+    def _save_setting(plugin_name: str) -> None:
+        if core.host_settings.has_plugin(plugin_name):
+            core.host_settings.save(plugin_name)
+        else:
+            core.settings.save(plugin_name)
+    core_vm.settingValueChanged.connect(_save_setting)
+    settings_vm.settingChangeRequested.connect(core_vm.setSettingValue)
+    _apply_tinyui_settings()                # pas opgeslagen theme direct toe bij opstart
 
-    # --- Qt ---
-    qt_app = _init_qt()
+    # Mutual exclusion: als één opent, sluit de andere
+    menu_vm.menuOpenChanged.connect(
+        lambda: statusbar_vm.closePluginDropdown() if menu_vm.menuOpen else None
+    )
+    statusbar_vm.pluginDropdownOpenChanged.connect(
+        lambda: menu_vm.closeMenu() if statusbar_vm.pluginDropdownOpen else None
+    )
+    menu_vm.menuOpenChanged.connect(
+        lambda: settings_vm.closePanel() if menu_vm.menuOpen else None
+    )
+    settings_vm.openChanged.connect(
+        lambda: menu_vm.closeMenu() if settings_vm.open else None
+    )
 
-    if not _check_single_instance():
-        QMessageBox.warning(None, APP_NAME, "TinyUi is already running!")
+    icons = Icons()
+
+    # ── QML engine ────────────────────────────────────────────────────────────
+    engine = QQmlApplicationEngine()
+    ctx = engine.rootContext()
+    ctx.setContextProperty("appName",            APP_NAME)
+    ctx.setContextProperty("theme",              theme)
+    ctx.setContextProperty("icons",              icons)
+    ctx.setContextProperty("coreViewModel",      core_vm)
+    ctx.setContextProperty("menuViewModel",      menu_vm)
+    ctx.setContextProperty("statusBarViewModel", statusbar_vm)
+    ctx.setContextProperty("settingsPanelViewModel", settings_vm)
+    ctx.setContextProperty("tabViewModel",           tab_vm)
+
+    qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qml", "main.qml")
+    engine.load(QUrl.fromLocalFile(qml_path))
+
+    if not engine.rootObjects():
         core.stop()
-        return 1
+        sys.exit(-1)
 
-    # --- UI ---
-    from tinyui.ui.main_viewmodel import MainViewModel
-    from tinyui.ui.main_window import MainWindow
+    # ── Platform-specifieke vensterbesturing ──────────────────────────────────
+    window = engine.rootObjects()[0]
+    dpr = app.devicePixelRatio()
 
-    vm = MainViewModel(core)
-    window = MainWindow(vm)
-    window.setWindowIcon(qt_app.windowIcon())
-    window.show()
+    _wnd_proc = None  # Windows only: MOET bewaard blijven — anders GC → crash
+    _win_ctrl = None
 
-    logger.info("TinyUi ready!")
-    exit_code = qt_app.exec()
+    _chrome_helper = None
 
-    core.stop()
-    return exit_code
+    if sys.platform == "win32":
+        from tinyui.windowing.win_window import (
+            WindowController,
+            WindowChromeHelper,
+            apply_dwm_frame,
+            install_wnd_proc,
+        )
+        hwnd = int(window.winId())
+        _wnd_proc, _set_left = install_wnd_proc(
+            hwnd,
+            title_bar_height   = round(theme.titleBarHeight * dpr),
+            resize_border      = round(8  * dpr),
+            resize_corner      = round(20 * dpr),
+            left_button_width  = round(300 * dpr),
+            right_button_width = round(142 * dpr),
+        )
+        apply_dwm_frame(hwnd)
+        _win_ctrl = WindowController(hwnd, dpr=dpr, set_left_button_width=_set_left)
+        _chrome_helper = WindowChromeHelper(dpr=dpr)
+        engine.rootContext().setContextProperty("windowChromeHelper", _chrome_helper)
+
+    elif sys.platform.startswith("linux") or sys.platform == "darwin":
+        from tinyui.windowing.unix_window import WindowController
+        _win_ctrl = WindowController(window)
+
+    if _win_ctrl is not None:
+        engine.rootContext().setContextProperty("windowController", _win_ctrl)
+
+    # ── Window state restore ───────────────────────────────────────────────────
+    if core.host_settings.get_value("TinyUI", "remember_position"):
+        x = core.host_settings.get_value("TinyUI", "_position_x")
+        y = core.host_settings.get_value("TinyUI", "_position_y")
+        if x is not None and y is not None:
+            window.setX(int(x))
+            window.setY(int(y))
+
+    if core.host_settings.get_value("TinyUI", "remember_size"):
+        w = core.host_settings.get_value("TinyUI", "_window_width")
+        h = core.host_settings.get_value("TinyUI", "_window_height")
+        if w is not None and h is not None:
+            window.setWidth(int(w))
+            window.setHeight(int(h))
+
+    # ── Run ───────────────────────────────────────────────────────────────────
+    def _save_window_state() -> None:
+        if core.host_settings.get_value("TinyUI", "remember_position"):
+            core.host_settings.set_value("TinyUI", "_position_x", window.x())
+            core.host_settings.set_value("TinyUI", "_position_y", window.y())
+        if core.host_settings.get_value("TinyUI", "remember_size"):
+            core.host_settings.set_value("TinyUI", "_window_width",  window.width())
+            core.host_settings.set_value("TinyUI", "_window_height", window.height())
+        core.host_settings.save("TinyUI")
+
+    app.aboutToQuit.connect(_save_window_state)
+    app.aboutToQuit.connect(engine.deleteLater)
+    app.aboutToQuit.connect(lifecycle.shutdown)
+    app.aboutToQuit.connect(core.stop)
+
+    exit_code = app.exec()
+
+    del engine
+    del _win_ctrl
+    del tab_vm
+    del settings_vm
+    del core_vm
+    del menu_vm
+    del statusbar_vm
+    del icons
+    del theme
+
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
-    sys.exit(run())
+    mp.freeze_support()   # vereist op Windows bij frozen/spawn
+    main()

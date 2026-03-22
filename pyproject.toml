@@ -8,8 +8,7 @@ dependencies = [
 ]
 
 [project.scripts]
-tinyui = "tinyui.main:run"
-tinyui-qml = "tinyui_qml.main:main"
+tinyui = "tinyui.main:main"
 
 [project.optional-dependencies]
 dev = [
@@ -18,7 +17,7 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["src/tinyui/tests"]
+testpaths = ["src/tinyui/tests", "src/tinycore/tests"]
 pythonpath = ["src"]
 
 [tool.setuptools.packages.find]

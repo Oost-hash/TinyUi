@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""TinyUI constants — single source via pyproject.toml metadata."""
+"""QML POC constants — leest naam en versie uit pyproject.toml metadata."""
 
 from importlib.metadata import metadata
 

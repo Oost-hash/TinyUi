@@ -16,7 +16,7 @@ accent-pressed = "#457CAD"
 accent-text = "#FFFFFF"
 success = "#A1C181"
 warning = "#DEC184"
-danger = "#D07277"
+danger = "#E81123"
 info = "#74ADE8"
 
 [font]

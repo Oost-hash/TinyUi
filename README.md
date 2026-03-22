@@ -5,25 +5,52 @@
 ![License](https://img.shields.io/badge/license-GPLv3-green)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-%23db61a2?logo=github)](https://github.com/sponsors/oost-hash)
 
-A modular overlay based on [TinyPedal](https://github.com/TinyPedal/TinyPedal), the open-source racing overlay application.
+---
 
-While exploring how TinyPedal works internally, I noticed that the current architecture is very tightly coupled. Even small changes in one part of the codebase can have widespread effects across the project. This makes it difficult to extend or integrate new functionality without risking unintended side effects.
+## What is TinyUi?
 
-My original goal was to create an adapter layer that would allow TinyUI to plug into TinyPedal without modifying its core. However, due to the strong coupling between components, I couldn't find a clean or logical way to implement such an adapter.
+TinyUi is a modular overlay toolkit for sim racing. The goal is a platform where you can connect to any supported game, build or install plugins, and display live telemetry data as overlays on your screen — without any of those pieces being tangled up with each other.
 
-Because of this, I decided to take a different approach: breaking apart some of TinyPedal’s internal assumptions and moving toward a more data-driven architecture.
+It started as an attempt to extend [TinyPedal](https://github.com/TinyPedal/TinyPedal). When that turned out to be impossible without rewriting the core, that became the project.
 
-Current Direction
+The architecture is split into three hard layers:
 
-The idea is to restructure how data flows through the system so that UI components depend on structured data rather than tightly bound application logic. By separating data sources, processing, and presentation, the overlay system becomes:
+- **tinycore** — a generic engine with no domain knowledge. Plugin lifecycle, config store, event bus, provider registry.
+- **plugins** — where game-specific code lives. A plugin connects to a game, reads telemetry, and exposes it through the provider API. Plugins run in isolated subprocesses.
+- **tinyui** — the overlay UI, built in QML. Talks to tinycore, knows nothing about games.
 
-- more modular
-- easier to extend
-- safer to modify
+Nothing is set in stone yet. The design evolves as the project does.
 
-# Current idea
+---
 
-This diagram illustrates a possible architectural direction, not a finalized design. Many aspects of the system are still undefined and may change as the project evolves.
+## Roadmap
+
+### 0.1.0 — Foundation
+The goal for 0.1 is a working foundation: the engine, the UI shell, and the first real game connector.
+
+- [x] Plugin system — lifecycle, isolation, subprocess support
+- [x] Data-driven config — TOML for plugin definitions, JSON for user data
+- [x] QML overlay — windowing, theming, tab layout
+- [ ] Telemetry ABCs — abstract connector contract in tinycore
+- [ ] LMU connector — first real game connector (Le Mans Ultimate / rFactor 2)
+
+### 0.2.0 — Widget renderer
+Once the foundation is solid, the focus shifts to actually rendering data on screen.
+
+- [ ] Widget system — define and render overlay widgets from plugin data
+- [ ] Layout engine — position, resize, and stack widgets on screen
+- [ ] Widget config — per-widget settings via the data-driven config system
+
+### Later
+Ideas that are on the radar but not scheduled yet:
+
+- rF2 connector
+- More game support
+- Community plugin / overlay sharing
+
+---
+
+## Architecture
 
 ```mermaid
 graph TB
@@ -37,7 +64,7 @@ graph TB
         telemetry[Telemetry ABCs\n🚧 in progress]
     end
 
-    subgraph QML["tinyui_qml — UI Platform  •  QML"]
+    subgraph QML["tinyui — UI Platform  •  QML"]
         direction TB
         qmlviews[QML Views\ncomponents · layout · tabs]
         viewmodels[ViewModels]
@@ -61,36 +88,40 @@ graph TB
     style Plugins fill:#e67e22,color:#fff
 ```
 
+---
+
+## Plugin model
+
+Plugins are self-contained packages. A minimal plugin needs:
+
+- `plugin.py` — implements the `Plugin` protocol (`register`, `start`, `stop`)
+- `editors.toml` — declarative config UI definition
+- Default dicts — user config is auto-generated on first boot
+
+The `demo` plugin is the reference implementation and stays in sync with the current plugin API.
+
+---
+
 ## Help Wanted: TinyUi Logo
 
-I am looking for a community-contributed logo for **TinyUi**!
+Looking for a community-contributed logo for **TinyUi**!
 
-The current placeholder is a dummy icon and is not a permanent solution. I'd love something that truly represents this project.
+- Clean and recognizable at small sizes (32×32 up to 256×256)
+- Fits the vibe of a lightweight overlay tool
+- "Ui" or "TinyUi" in some form is a plus, not required
 
-### How to contribute
+Open an issue with `[logo-proposal]` and share your design. All submissions welcome — rough concepts, SVGs, PNGs, anything. Contributors get credited. ⭐
 
-1. Open a new **Issue** with the text `[logo-proposal]`
-2. Share your design idea, sketch, or finished logo in the issue
-3. All submissions are welcome — rough concepts, SVG files, PNG mockups, anything!
+Submitted logos are released under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
 
-### License
+---
 
-By submitting a logo, you agree to release it under the **[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)** license, keeping TinyUi open and its assets freely usable by the community.
+## Credits
 
-### What we're looking for
-
-- Something clean and recognizable at small sizes (32×32 up to 256×256)
-- Fits the vibe of a lightweight UI overlay tool
-- "Ui" or "TinyUi" incorporated in some way is a plus, but not required
-
-Contributors will of course be credited! ⭐
-
-*Feel free to comment on existing proposals too — feedback and votes help a lot.*
+Built on top of ideas and data models from [TinyPedal](https://github.com/TinyPedal/TinyPedal) by s-victor.
 
 ---
 
 ## License
 
 GPLv3 — see [LICENSE](LICENSE).
-
-TinyUi builds on [TinyPedal](https://github.com/TinyPedal/TinyPedal) by s-victor, which is also licensed under GPLv3.
