@@ -121,7 +121,6 @@ ApplicationWindow {
             currentIndex: tabViewModel.currentIndex
 
             WidgetTab {}
-            DemoTab {}
         }
 
         StatusBar {
