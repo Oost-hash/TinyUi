@@ -21,12 +21,14 @@
 """Composition root — the only place that knows about all layers.
 
 Boot order:
-  1. Build tinycore (plugins register their specs)
-  2. Each component registers its host settings
-  3. Load persisted config/settings from disk
-  4. Start core (emit app.started)
-  5. Create lifecycle manager, activate first plugin
-  6. Hand off to tinyui for the Qt event loop
+  1. Scan plugin manifests
+  2. Build tinycore with discovered plugins
+  3. Register host settings
+  4. Load persisted config/settings from disk
+  5. Start core
+  6. Activate plugins, register host-side connectors
+  7. Build widget overlay from manifest widget declarations
+  8. Hand off to tinyui for the Qt event loop
 """
 
 from __future__ import annotations
@@ -35,9 +37,8 @@ import multiprocessing as mp
 import sys
 from pathlib import Path
 
-from pathlib import Path
-
 from tinycore import PluginLifecycleManager, PluginSpec, SubprocessPlugin, create_app
+from tinycore.plugin.manifest import scan_plugins
 from tinyui import TinyUIPlugin, launch
 from tinywidgets.overlay import WidgetOverlay
 from tinywidgets.spec import load_widgets_toml
@@ -49,44 +50,56 @@ def _config_dir() -> Path:
     return Path(__file__).resolve().parents[2] / "data" / "plugin-config"
 
 
+def _plugins_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).parent / "plugins"
+    return Path(__file__).resolve().parents[1] / "plugins"
+
+
 def main() -> None:
-    # ── 1. Build tinycore ─────────────────────────────────────────────────────
+    # ── 1. Discover plugins via manifests ─────────────────────────────────────
+    manifests = scan_plugins(_plugins_dir())
+
+    # ── 2. Build tinycore ─────────────────────────────────────────────────────
     core = create_app(
         _config_dir(),
-        SubprocessPlugin(PluginSpec("plugins.demo", "DemoPlugin")),
+        *[SubprocessPlugin(PluginSpec(m.module, m.class_name)) for m in manifests],
     )
 
-    # ── 2. Register host settings ─────────────────────────────────────────────
-    # Must happen before load_persisted so specs exist when values are loaded.
+    # ── 3. Register host settings ─────────────────────────────────────────────
     TinyUIPlugin().register(core)
 
-    # ── 3. Load persisted config + settings ───────────────────────────────────
+    # ── 4. Load persisted config + settings ───────────────────────────────────
     core.loaders.load_all(core.config)
     core.settings.load_persisted()
     core.host_settings.load_persisted()
 
-    # ── 4. Start core ─────────────────────────────────────────────────────────
+    # ── 5. Start core ─────────────────────────────────────────────────────────
     core.start(plugins=False)
 
-    # ── 5. Lifecycle — activate first plugin immediately ──────────────────────
+    # ── 6. Activate plugins + register host-side connectors ───────────────────
     lifecycle = PluginLifecycleManager(core.plugins, grace_seconds=30.0)
     plugin_names = [p.name for p in core.plugins.plugins]
     if plugin_names:
         lifecycle.activate(plugin_names[0])
 
-    # ── 6. Register connectors (host-side — cannot cross the subprocess pipe) ─
-    from plugins.demo.connector.lmu import LMUConnector
-    _lmu = LMUConnector()
-    _lmu.open()
-    core.connectors.register("demo", _lmu)
+    for m in manifests:
+        if m.connector is None:
+            continue
+        connector = m.connector.create()
+        connector.open()
+        core.connectors.register(m.name, connector)
 
     # ── 7. Build widget overlay ───────────────────────────────────────────────
-    overlay = WidgetOverlay(core.connectors)
-    _demo_widgets = Path(__file__).resolve().parents[1] / "plugins" / "demo" / "widgets.toml"
-    overlay.load(load_widgets_toml(_demo_widgets), plugin_name="demo")
+    overlay = WidgetOverlay(core.connectors, config_dir=_config_dir())
+    for m in manifests:
+        wp = m.widgets_path()
+        if wp and wp.exists():
+            overlay.load(load_widgets_toml(wp), plugin_name=m.name)
 
     # ── 8. Hand off to tinyui ─────────────────────────────────────────────────
-    exit_code = launch(core, lifecycle, pre_run=overlay.start)
+    exit_code = launch(core, lifecycle, pre_run=overlay.start,
+                       extra_context={"widgetModel": overlay.model})
     overlay.stop()
     sys.exit(exit_code)
 

@@ -36,6 +36,8 @@ class _QtLogHandler(logging.Handler):
         self._callback = callback
 
     def emit(self, record: logging.LogRecord) -> None:
+        if self._callback is None:
+            return
         try:
             import time as _time
             t = _time.strftime("%H:%M:%S", _time.localtime(record.created))
@@ -69,3 +71,4 @@ class LogViewModel(QObject):
 
     def shutdown(self) -> None:
         logging.getLogger().removeHandler(self._handler)
+        self._handler._callback = None

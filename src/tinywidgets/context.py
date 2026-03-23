@@ -34,6 +34,7 @@ from PySide6.QtCore import (
 
 from .runner import WidgetState
 from .spec import WidgetSpec
+from .threshold import ThresholdEntry
 
 if TYPE_CHECKING:
     pass
@@ -43,11 +44,12 @@ class WidgetContext(QObject):
     """Live state of one widget, exposed as QML properties.
 
     The runner calls update() whenever state changes.
-    QML binds to text, color, visible, label, widgetX, widgetY.
+    QML binds to text, color, visible, label, widgetX, widgetY, thresholds, etc.
     """
 
     stateChanged    = Signal()
     positionChanged = Signal()
+    configChanged   = Signal()
 
     def __init__(self, spec: WidgetSpec, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -71,6 +73,34 @@ class WidgetContext(QObject):
         self._spec.y = y
         self.positionChanged.emit()
 
+    # ── Edit slots ────────────────────────────────────────────────────────────
+
+    @Slot(str)
+    def setLabel(self, label: str) -> None:
+        self._spec.label = label
+        self.configChanged.emit()
+
+    @Slot(float)
+    def setFlashBelow(self, value: float) -> None:
+        self._spec.flash_below = value if value >= 0 else None
+        self.configChanged.emit()
+
+    @Slot(int, str)
+    def setThresholdColor(self, index: int, color: str) -> None:
+        if 0 <= index < len(self._spec.thresholds):
+            entry = self._spec.thresholds[index]
+            self._spec.thresholds[index] = ThresholdEntry(entry.value, color)
+            self.configChanged.emit()
+
+    @Slot(int, float)
+    def setThresholdValue(self, index: int, value: float) -> None:
+        if 0 <= index < len(self._spec.thresholds):
+            entry = self._spec.thresholds[index]
+            self._spec.thresholds[index] = ThresholdEntry(value, entry.color)
+            self.configChanged.emit()
+
+    # ── Live state properties ─────────────────────────────────────────────────
+
     @Property(str, notify=stateChanged)
     def text(self) -> str:
         return self._text
@@ -87,13 +117,45 @@ class WidgetContext(QObject):
     def textVisible(self) -> bool:
         return self._text_visible
 
-    @Property(str, constant=True)
-    def label(self) -> str:
-        return self._spec.label
+    # ── Identity properties (constant) ────────────────────────────────────────
 
     @Property(str, constant=True)
     def widgetId(self) -> str:
         return self._spec.id
+
+    @Property(str, constant=True)
+    def title(self) -> str:
+        return self._spec.title
+
+    @Property(str, constant=True)
+    def description(self) -> str:
+        return self._spec.description
+
+    @Property(str, constant=True)
+    def source(self) -> str:
+        return self._spec.source
+
+    @Property(str, constant=True)
+    def formatStr(self) -> str:
+        return self._spec.format
+
+    # ── User-editable config properties ──────────────────────────────────────
+
+    @Property(str, notify=configChanged)
+    def label(self) -> str:
+        return self._spec.label
+
+    @Property(float, notify=configChanged)
+    def flashBelow(self) -> float:
+        """Returns -1 when flash is disabled."""
+        return self._spec.flash_below if self._spec.flash_below is not None else -1.0
+
+    @Property("QVariantList", notify=configChanged)
+    def thresholds(self) -> list:
+        """Each entry: {"value": float, "color": str}."""
+        return [{"value": t.value, "color": t.color} for t in self._spec.thresholds]
+
+    # ── Position properties ───────────────────────────────────────────────────
 
     @Property(int, notify=positionChanged)
     def widgetX(self) -> int:

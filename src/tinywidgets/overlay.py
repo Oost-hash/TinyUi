@@ -37,6 +37,7 @@ from PySide6.QtCore import QUrl
 from tinycore.log import get_logger
 from tinycore.qt import create_engine
 from tinycore.qt.loop import PollLoop
+from .config_store import WidgetConfigStore
 from .context import WidgetContext, WidgetModel
 from .runner import ConnectorUpdater, TextWidgetRunner
 from .spec import WidgetSpec
@@ -52,26 +53,71 @@ class WidgetOverlay:
     """Creates and manages all widget windows.
 
     Usage (from composition root):
-        overlay = WidgetOverlay(connectors)
+        overlay = WidgetOverlay(connectors, config_dir=_config_dir())
         overlay.load(specs, plugin_name="demo")
-        exit_code = tinyui.launch(core, lifecycle, pre_run=overlay.start)
+        exit_code = tinyui.launch(core, lifecycle, pre_run=overlay.start,
+                                  extra_context={"widgetModel": overlay.model})
     """
 
-    def __init__(self, connectors: ConnectorRegistry) -> None:
+    def __init__(self, connectors: ConnectorRegistry,
+                 config_dir: Path | None = None) -> None:
         self._connectors = connectors
+        self._config_dir = config_dir
         self._poll_loop  = PollLoop(interval_ms=100)
         self._model      = WidgetModel()
         self._engine     = None
 
         self._poll_loop.register(ConnectorUpdater(connectors))
 
+    @property
+    def model(self) -> WidgetModel:
+        """The widget model — can be registered in any QML engine."""
+        return self._model
+
     def load(self, specs: list[WidgetSpec], plugin_name: str) -> None:
         """Create a runner + context for every enabled widget spec."""
+        store = (
+            WidgetConfigStore(self._config_dir, plugin_name)
+            if self._config_dir else None
+        )
+
         for spec in specs:
             if not spec.enable or not spec.source:
                 continue
+
+            # Override spec defaults with persisted user config
+            if store:
+                saved = store.get(spec.id)
+                if saved:
+                    spec.x           = saved.get("x", spec.x)
+                    spec.y           = saved.get("y", spec.y)
+                    spec.label       = saved.get("label", spec.label)
+                    spec.flash_below = saved.get("flash_below", spec.flash_below)
+                    if "thresholds" in saved:
+                        from .threshold import ThresholdEntry
+                        spec.thresholds = [
+                            ThresholdEntry(t["value"], t["color"])
+                            for t in saved["thresholds"]
+                        ]
+
             ctx    = WidgetContext(spec)
             runner = TextWidgetRunner(spec, self._connectors, plugin_name, ctx.update)
+
+            if store:
+                def _save(cx: WidgetContext = ctx, s: WidgetConfigStore = store) -> None:
+                    flash = cx.flashBelow
+                    s.save(
+                        cx.widgetId,
+                        cx.widgetX,
+                        cx.widgetY,
+                        cx.label,
+                        flash if flash >= 0 else None,
+                        cx.thresholds,
+                    )
+
+                ctx.positionChanged.connect(_save)
+                ctx.configChanged.connect(_save)
+
             self._model.add(ctx)
             self._poll_loop.register(runner)
             _log.overlay("loaded widget", id=spec.id, source=spec.source)

@@ -1,0 +1,10 @@
+name   = "demo"
+module = "plugins.demo"
+class  = "DemoPlugin"
+
+[connector]
+module = "plugins.demo.connector.lmu"
+class  = "LMUConnector"
+
+[widgets]
+file = "widgets.toml"

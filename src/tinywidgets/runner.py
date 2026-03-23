@@ -127,7 +127,10 @@ class TextWidgetRunner:
             text  = self._spec.format.format(raw)
             color = evaluate(self._spec.thresholds, raw) or _FALLBACK_COLOR
 
-            if self._flash is not None and raw <= self._spec.flash_below:
+            flash_below = self._spec.flash_below
+            if flash_below is not None and raw <= flash_below:
+                if self._flash is None:
+                    self._flash = FlashState()
                 self._flash.tick()
                 text_visible = self._flash.visible
             else:

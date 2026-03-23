@@ -62,7 +62,8 @@ def _qt_message_handler(mode, context, message):
 
 
 def launch(core: App, lifecycle: PluginLifecycleManager,
-           *, pre_run: Callable[[], None] | None = None) -> int:
+           *, pre_run: Callable[[], None] | None = None,
+           extra_context: dict | None = None) -> int:
     """Initialize and run the tinyui main window.
 
     Called by the composition root after tinycore is fully booted.
@@ -152,6 +153,10 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     ctx.setContextProperty("settingsPanelViewModel", settings_vm)
     ctx.setContextProperty("tabViewModel",           tab_vm)
     ctx.setContextProperty("logViewModel",           log_vm)
+
+    if extra_context:
+        for key, value in extra_context.items():
+            ctx.setContextProperty(key, value)
 
     if getattr(sys, "frozen", False):
         qml_dir = Path(sys._MEIPASS) / "tinyui" / "qml"
