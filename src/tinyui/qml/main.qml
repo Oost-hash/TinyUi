@@ -69,11 +69,12 @@ ApplicationWindow {
     readonly property int contentTop: Qt.platform.os === "linux" ? 0 : theme.titleBarHeight
 
     // Catches clicks outside an open menu popup — closes popup, menu stays open.
-    // Starts below the tab bar (contentTop + 42) so tab switching always works.
+    // Covers from tab bar downward so clicking a tab while the dropdown is open
+    // both dismisses the popup and switches the tab (propagateComposedEvents).
     MouseArea {
-        x: 0; y: root.contentTop + 42
+        x: 0; y: root.contentTop
         width: parent.width
-        height: parent.height - root.contentTop - 42 - 32
+        height: parent.height - root.contentTop - 32
         z: 4
         enabled: menuViewModel.menuOpen
         propagateComposedEvents: true
@@ -133,8 +134,7 @@ ApplicationWindow {
     ConsoleWindow { id: consoleWindow }
 
     // F12 — toggle console, just like browser devtools
-    // TODO: replace hardcoded shortcuts with a dedicated hotkey system
-    //       (configurable bindings, conflict detection, user-facing key mapping UI)
+    // TODO: make keyboard shortcuts configurable in settings
     Shortcut {
         sequence: "F12"
         onActivated: consoleWindow.visible ? consoleWindow.hide() : consoleWindow.show()

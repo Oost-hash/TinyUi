@@ -52,8 +52,7 @@ Rectangle {
                 // First letter as temporary icon — TODO: add icon field to editors.toml
                 iconText: modelData.title.charAt(0).toUpperCase()
                 textFont: theme.fontFamily
-                // TODO: open editor dialog once QML editor is available
-                onClicked: console.log("Open editor:", modelData.id)
+                onClicked: settingsPanelViewModel.openPanel()
             }
         }
     }

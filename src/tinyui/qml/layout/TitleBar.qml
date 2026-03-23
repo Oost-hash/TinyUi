@@ -36,6 +36,21 @@ Rectangle {
         color: theme.border
     }
 
+    // Keep WndProc left zone in sync — expand to cover open dropdown so
+    // the drag zone doesn't overlap the visible menu items.
+    function _updateLeftZone() {
+        if (typeof windowController === "undefined") return
+        var zone = menuViewModel.dropdownOpen
+                   ? Math.max(leftRow.width, menuDropdown.width)
+                   : leftRow.width
+        windowController.setLeftButtonWidth(zone)
+    }
+
+    Connections {
+        target: menuViewModel
+        function onDropdownOpenChanged() { titleBar._updateLeftZone() }
+    }
+
     // Windows: drag en dubbelklik-maximize via WM_NCHITTEST → HTCAPTION (win_window.py).
     // Linux:   DragHandler start compositor-move; TapHandler handelt dubbeltik af.
     DragHandler {
@@ -150,10 +165,8 @@ Rectangle {
         anchors.bottom: parent.bottom
         spacing: 0
 
-        onWidthChanged: {
-            if (typeof windowController !== "undefined")
-                windowController.setLeftButtonWidth(width)
-        }
+        onWidthChanged: _updateLeftZone()
+        Component.onCompleted: _updateLeftZone()
 
         HoverHandler {
             onHoveredChanged: {
