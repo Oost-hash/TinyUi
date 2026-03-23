@@ -32,7 +32,7 @@ from tinyui import log as app_log
 app_log.configure()
 
 import PySide6
-from PySide6.QtCore import QUrl, qVersion
+from PySide6.QtCore import QUrl, QtMsgType, qInstallMessageHandler, qVersion
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuick import QQuickWindow
@@ -48,7 +48,18 @@ from tinyui.viewmodels.menu_viewmodel import MenuViewModel
 from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
 from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
 from tinyui.viewmodels.tab_viewmodel import TabViewModel
+from tinyui.viewmodels.log_viewmodel import LogViewModel
 from tinyui.viewmodels.tyre_demo_viewmodel import TyreDemoViewModel
+
+
+def _qt_message_handler(mode, context, message):
+    _qt_log = logging.getLogger("qt")
+    if mode == QtMsgType.QtFatalMsg or mode == QtMsgType.QtCriticalMsg:
+        _qt_log.error("Qt: %s", message)
+    elif mode == QtMsgType.QtWarningMsg:
+        _qt_log.warning("Qt: %s", message)
+    else:
+        _qt_log.debug("Qt: %s", message)
 
 
 def _config_dir() -> Path:
@@ -58,6 +69,8 @@ def _config_dir() -> Path:
 
 
 def main():
+    qInstallMessageHandler(_qt_message_handler)
+
     # ── tinycore boot — FIRST, before Qt ────────────────────────────────────
     core = create_app(
         _config_dir(),
@@ -88,6 +101,7 @@ def main():
              len(core.widgets.all()), len(core.editors.all()))
 
     # ── ViewModels ────────────────────────────────────────────────────────────
+    log_vm        = LogViewModel()   # install early — captures all subsequent log output
     theme         = Theme()
     menu_vm       = MenuViewModel()
     statusbar_vm  = StatusBarViewModel()
@@ -158,9 +172,13 @@ def main():
     ctx.setContextProperty("settingsPanelViewModel", settings_vm)
     ctx.setContextProperty("tabViewModel",           tab_vm)
     ctx.setContextProperty("tyreDemoViewModel",      tyre_demo_vm)
+    ctx.setContextProperty("logViewModel",           log_vm)
 
-    qml_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qml", "main.qml")
-    engine.load(QUrl.fromLocalFile(qml_path))
+    if getattr(sys, "frozen", False):
+        qml_dir = Path(sys._MEIPASS) / "tinyui" / "qml"
+    else:
+        qml_dir = Path(__file__).resolve().parent / "qml"
+    engine.load(QUrl.fromLocalFile(str(qml_dir / "main.qml")))
 
     if not engine.rootObjects():
         core.stop()
@@ -229,6 +247,7 @@ def main():
         core.host_settings.save("TinyUI")
 
     app.aboutToQuit.connect(_save_window_state)
+    app.aboutToQuit.connect(log_vm.shutdown)
     app.aboutToQuit.connect(tyre_demo_vm.shutdown)
     app.aboutToQuit.connect(engine.deleteLater)
     app.aboutToQuit.connect(lifecycle.shutdown)

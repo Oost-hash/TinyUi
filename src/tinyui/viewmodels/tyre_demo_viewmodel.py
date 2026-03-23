@@ -43,7 +43,9 @@ if str(_LMU_LIB) not in sys.path:
     sys.path.insert(0, str(_LMU_LIB))
 
 
-# TODO: connector should be provided via the plugin context (ctx.connector), not instantiated directly
+# TODO: move connector lifecycle into the plugin system — the connector should be instantiated and
+# owned by the demo plugin, then passed to this viewmodel via the plugin context (ctx.connector).
+# Direct instantiation here is a temporary shortcut for the demo phase.
 def _load_connector():
     """Load the LMU connector — returns None if the library is not available."""
     log.connector("LMU lib path", path=str(_LMU_LIB), exists=_LMU_LIB.exists())
@@ -112,7 +114,7 @@ class TyreDemoViewModel(QObject):
             if self._process_check_counter >= 20:
                 self._process_check_counter = 0
                 self._game_running = any(
-                    p.info["name"].lower() in ("lmu.exe", "rfactor2.exe")
+                    p.info["name"].lower() in ("le mans ultimate.exe", "rfactor2.exe")
                     for p in psutil.process_iter(["name"])
                 )
 

@@ -131,6 +131,8 @@ Rectangle {
                 model: [
                     { icon: icons.settingsAlt, label: "Settings", sep: false, action: function() { settingsPanelViewModel.openPanel(); menuViewModel.closeMenu() } },
                     { icon: "",                label: "",          sep: true,  action: null },
+                    { icon: icons.console,     label: "Console",  sep: false, action: function() { root.openConsole(); menuViewModel.closeMenu() } },
+                    { icon: "",                label: "",          sep: true,  action: null },
                     { icon: icons.close,       label: "Close",     sep: false, action: function() { root.close() } }
                 ]
                 delegate: MenuItemDelegate {}

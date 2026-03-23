@@ -62,6 +62,7 @@ _SEG: dict[str, str] = {
     "updates":      "\uE787",
     "license":      "\uE946",
     "privacy":      "\uE8B6",
+    "console":      "\uE756",   # Command Prompt
 }
 
 _MAT: dict[str, str] = {
@@ -86,6 +87,7 @@ _MAT: dict[str, str] = {
     "updates":      "\uE923",   # update
     "license":      "\uE90E",   # gavel
     "privacy":      "\uE904",   # privacy_tip
+    "console":      "\uE86F",   # terminal
 }
 
 _G = _SEG if _WINDOWS else _MAT
@@ -172,3 +174,6 @@ class Icons(QObject):
 
     @Property(str, constant=True)
     def privacy(self) -> str: return _G["privacy"]
+
+    @Property(str, constant=True)
+    def console(self) -> str: return _G["console"]

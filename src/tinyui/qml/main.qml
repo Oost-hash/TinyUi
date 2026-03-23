@@ -24,6 +24,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "layout"
 import "tabs"
+import "."
 
 ApplicationWindow {
     id: root
@@ -56,6 +57,8 @@ ApplicationWindow {
     // Linux/macOS: server-side decorations — compositor/AppKit handles chrome.
     //              Our TitleBar acts as a menu bar below the native chrome.
     readonly property bool nativeChrome: Qt.platform.os === "linux" || Qt.platform.os === "osx"
+
+    function openConsole() { consoleWindow.show() }
     flags: nativeChrome ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
     color: theme.surface
 
@@ -125,6 +128,15 @@ ApplicationWindow {
         }
     }
 
-    // SettingsDialog is a Window — outside the ColumnLayout so it takes no layout space
+    // SettingsDialog and ConsoleWindow are Windows — outside ColumnLayout
     SettingsDialog {}
+    ConsoleWindow { id: consoleWindow }
+
+    // F12 — toggle console, just like browser devtools
+    // TODO: replace hardcoded shortcuts with a dedicated hotkey system
+    //       (configurable bindings, conflict detection, user-facing key mapping UI)
+    Shortcut {
+        sequence: "F12"
+        onActivated: consoleWindow.visible ? consoleWindow.hide() : consoleWindow.show()
+    }
 }
