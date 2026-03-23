@@ -257,13 +257,11 @@ BaseDialog {
                                             settingRow._plugin, settingRow.modelData.key, v)
                                     }
 
-                                    // Enum → ComboBox popup
-                                    ComboBox {
-                                        id: enumCombo
+                                    // Enum → ThemedComboBox
+                                    ThemedComboBox {
                                         visible: settingRow.modelData.type === "enum"
                                         anchors.right: parent.right; anchors.rightMargin: 12
                                         anchors.verticalCenter: parent.verticalCenter
-                                        width: 120; height: 28
                                         model: settingRow.modelData.options
                                         currentIndex: {
                                             var idx = settingRow.modelData.options.indexOf(settingRow.effectiveValue)
@@ -272,195 +270,22 @@ BaseDialog {
                                         onActivated: (idx) => settingsDialog._setPending(
                                             settingRow._plugin, settingRow.modelData.key,
                                             settingRow.modelData.options[idx])
-
-                                        contentItem: Text {
-                                            leftPadding: 8
-                                            rightPadding: enumCombo.indicator.width + 4
-                                            text: enumCombo.displayText
-                                            color: theme.text
-                                            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
-                                            verticalAlignment: Text.AlignVCenter
-                                            elide: Text.ElideRight
-                                        }
-
-                                        indicator: Text {
-                                            x: enumCombo.width - width - 8
-                                            anchors.verticalCenter: enumCombo.verticalCenter
-                                            text: "▾"
-                                            color: theme.textMuted
-                                            font.pixelSize: 10
-                                        }
-
-                                        background: Rectangle {
-                                            color: theme.surfaceFloating
-                                            border.width: 1
-                                            border.color: enumCombo.popup.opened ? theme.accent : theme.border
-                                            radius: 4
-                                            Behavior on border.color { ColorAnimation { duration: 80 } }
-                                        }
-
-                                        popup: Popup {
-                                            y: enumCombo.height + 2
-                                            width: enumCombo.width
-                                            padding: 0
-
-                                            contentItem: ListView {
-                                                clip: true
-                                                implicitHeight: Math.min(contentHeight, 200)
-                                                model: enumCombo.delegateModel
-                                                currentIndex: enumCombo.highlightedIndex
-                                            }
-
-                                            background: Rectangle {
-                                                color: theme.surfaceFloating
-                                                border.width: 1; border.color: theme.border
-                                                radius: 4
-                                            }
-                                        }
-
-                                        delegate: ItemDelegate {
-                                            width: enumCombo.popup.width
-                                            height: 32
-                                            highlighted: enumCombo.highlightedIndex === index
-
-                                            contentItem: Text {
-                                                text: modelData
-                                                color: highlighted ? "#dec184" : theme.text
-                                                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
-                                                verticalAlignment: Text.AlignVCenter
-                                                leftPadding: 8
-                                                Behavior on color { ColorAnimation { duration: 80 } }
-                                            }
-
-                                            background: Rectangle {
-                                                color: highlighted ? theme.surfaceRaised : "transparent"
-                                            }
-                                        }
                                     }
 
-                                    // Int / Float → stepper with inline edit on click
-                                    Row {
-                                        id: stepperRow
+                                    // Int / Float → NumberStepper
+                                    NumberStepper {
                                         visible: settingRow.modelData.type === "int"
                                                || settingRow.modelData.type === "float"
                                         anchors.right: parent.right; anchors.rightMargin: 12
                                         anchors.verticalCenter: parent.verticalCenter
-                                        spacing: 6
-
-                                        property bool _editing: false
-                                        property real _step: settingRow.modelData.step != null
+                                        value: settingRow.effectiveValue
+                                        step: settingRow.modelData.step != null
                                             ? settingRow.modelData.step
                                             : (settingRow.modelData.type === "int" ? 1 : 0.1)
-                                        property real _min: settingRow.modelData.min != null ? settingRow.modelData.min : -1e9
-                                        property real _max: settingRow.modelData.max != null ? settingRow.modelData.max :  1e9
-
-                                        function _clamp(v) { return Math.min(_max, Math.max(_min, v)) }
-                                        function _round(v) {
-                                            var dec = (_step.toString().split(".")[1] || "").length
-                                            return parseFloat(v.toFixed(dec))
-                                        }
-                                        function _commit(text) {
-                                            var val = settingRow.modelData.type === "int"
-                                                ? parseInt(text) : parseFloat(text)
-                                            if (!isNaN(val))
-                                                settingsDialog._setPending(settingRow._plugin, settingRow.modelData.key,
-                                                    _round(_clamp(val)))
-                                            _editing = false
-                                        }
-
-                                        // − knop
-                                        Item {
-                                            width: 24; height: 26
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "\u2212"
-                                                color: decArea.containsMouse ? theme.text : theme.textMuted
-                                                font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
-                                                Behavior on color { ColorAnimation { duration: 80 } }
-                                            }
-                                            MouseArea {
-                                                id: decArea; anchors.fill: parent; hoverEnabled: true
-                                                onClicked: settingsDialog._setPending(settingRow._plugin, settingRow.modelData.key,
-                                                    stepperRow._round(stepperRow._clamp(settingRow.effectiveValue - stepperRow._step)))
-                                            }
-                                        }
-
-                                        // Value: always a box, readOnly until clicked
-                                        Rectangle {
-                                            width: 72; height: 26
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            radius: 3
-                                            color: stepperRow._editing ? theme.surfaceFloating : "transparent"
-                                            border.width: 1
-                                            border.color: stepperRow._editing ? theme.accent
-                                                        : numHov.hovered      ? theme.border
-                                                        : "transparent"
-                                            Behavior on border.color { ColorAnimation { duration: 80 } }
-                                            Behavior on color        { ColorAnimation { duration: 80 } }
-
-                                            TextInput {
-                                                id: stepEdit
-                                                anchors.fill: parent
-                                                anchors.leftMargin: 5; anchors.rightMargin: 5
-                                                horizontalAlignment: TextInput.AlignHCenter
-                                                verticalAlignment: TextInput.AlignVCenter
-                                                text: settingRow.effectiveValue.toString()
-                                                color: stepperRow._editing ? theme.accent : theme.text
-                                                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
-                                                selectByMouse: true
-                                                readOnly: !stepperRow._editing
-                                                inputMethodHints: Qt.ImhFormattedNumbersOnly
-                                                Behavior on color { ColorAnimation { duration: 80 } }
-
-                                                Keys.onReturnPressed: stepperRow._commit(text)
-                                                Keys.onEscapePressed: {
-                                                    text = settingRow.effectiveValue.toString()
-                                                    stepperRow._editing = false
-                                                }
-                                                onActiveFocusChanged: {
-                                                    if (!activeFocus && stepperRow._editing) {
-                                                        text = settingRow.effectiveValue.toString()
-                                                        stepperRow._editing = false
-                                                    }
-                                                }
-                                            }
-
-                                            HoverHandler {
-                                                id: numHov
-                                                enabled: !stepperRow._editing
-                                                cursorShape: Qt.IBeamCursor
-                                            }
-
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                enabled: !stepperRow._editing
-                                                acceptedButtons: Qt.LeftButton
-                                                onClicked: {
-                                                    stepperRow._editing = true
-                                                    stepEdit.forceActiveFocus()
-                                                    stepEdit.selectAll()
-                                                }
-                                            }
-                                        }
-
-                                        // + knop
-                                        Item {
-                                            width: 24; height: 26
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "+"
-                                                color: incArea.containsMouse ? theme.text : theme.textMuted
-                                                font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
-                                                Behavior on color { ColorAnimation { duration: 80 } }
-                                            }
-                                            MouseArea {
-                                                id: incArea; anchors.fill: parent; hoverEnabled: true
-                                                onClicked: settingsDialog._setPending(settingRow._plugin, settingRow.modelData.key,
-                                                    stepperRow._round(stepperRow._clamp(settingRow.effectiveValue + stepperRow._step)))
-                                            }
-                                        }
+                                        min: settingRow.modelData.min != null ? settingRow.modelData.min : -1e9
+                                        max: settingRow.modelData.max != null ? settingRow.modelData.max :  1e9
+                                        onCommit: (v) => settingsDialog._setPending(
+                                            settingRow._plugin, settingRow.modelData.key, v)
                                     }
 
                                     // Str → text input

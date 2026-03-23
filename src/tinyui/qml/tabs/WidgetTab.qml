@@ -30,7 +30,6 @@ Item {
     readonly property int colToggle:  56
     readonly property int colPad:     16
 
-    // Currently selected widget context — null when nothing selected
     property var selectedContext: null
 
     // ── Left: widget list ──────────────────────────────────────────────────────
@@ -55,23 +54,18 @@ Item {
                 leftPadding: widgetTab.colPad
 
                 Text {
-                    width: widgetTab.colName
-                    height: parent.height
+                    width: widgetTab.colName; height: parent.height
                     verticalAlignment: Text.AlignVCenter
-                    text: "Widget"
-                    color: theme.text
-                    font.pixelSize: theme.fontSizeSmall
-                    font.family: theme.fontFamily
+                    text: "Widget"; color: theme.text
+                    font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
                 }
 
                 Text {
                     width: parent.width - widgetTab.colPad - widgetTab.colName - widgetTab.colToggle
                     height: parent.height
                     verticalAlignment: Text.AlignVCenter
-                    text: "Description"
-                    color: theme.text
-                    font.pixelSize: theme.fontSizeSmall
-                    font.family: theme.fontFamily
+                    text: "Description"; color: theme.text
+                    font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
                 }
             }
 
@@ -104,19 +98,13 @@ Item {
                     && widgetContext !== null
                     && widgetTab.selectedContext.widgetId === widgetContext.widgetId
 
-                width: ListView.view.width
-                height: 40
+                width: ListView.view.width; height: 40
                 color: isSelected
                     ? theme.surfaceRaised
                     : (index % 2 === 0 ? theme.surfaceAlt : "transparent")
-
                 Behavior on color { ColorAnimation { duration: 80 } }
 
-                Rectangle {
-                    width: 2; height: parent.height
-                    color: theme.accent
-                    visible: row.isSelected
-                }
+                Rectangle { width: 2; height: parent.height; color: theme.accent; visible: row.isSelected }
 
                 Rectangle {
                     anchors.fill: parent
@@ -142,13 +130,11 @@ Item {
                     Behavior on leftPadding { NumberAnimation { duration: 120 } }
 
                     Text {
-                        width: widgetTab.colName
-                        height: parent.height
+                        width: widgetTab.colName; height: parent.height
                         verticalAlignment: Text.AlignVCenter
                         text: row.widgetContext ? row.widgetContext.title : ""
                         color: row.isSelected ? theme.accent : theme.text
-                        font.pixelSize: theme.fontSizeBase
-                        font.family: theme.fontFamily
+                        font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
                         font.weight: row.isSelected ? Font.DemiBold : Font.Normal
                         Behavior on color { ColorAnimation { duration: 80 } }
                     }
@@ -159,29 +145,24 @@ Item {
                         verticalAlignment: Text.AlignVCenter
                         text: row.widgetContext ? row.widgetContext.description : ""
                         color: rowHover.hovered ? "#dec184" : theme.textMuted
-                        font.pixelSize: theme.fontSizeSmall
-                        font.family: theme.fontFamily
+                        font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
                         elide: Text.ElideRight
                         Behavior on color { ColorAnimation { duration: 120 } }
                     }
 
                     Item {
-                        width: widgetTab.colToggle
-                        height: parent.height
-
+                        width: widgetTab.colToggle; height: parent.height
                         ToggleSwitch {
                             anchors.centerIn: parent
                             checked: row.widgetEnabled
-                            onToggled: (newValue) => { row.widgetEnabled = newValue }
+                            onToggled: (v) => { row.widgetEnabled = v }
                         }
                     }
                 }
 
                 MouseArea {
-                    anchors.fill: parent
-                    acceptedButtons: Qt.LeftButton
-                    onClicked: widgetTab.selectedContext =
-                        row.isSelected ? null : row.widgetContext
+                    anchors.fill: parent; acceptedButtons: Qt.LeftButton
+                    onClicked: widgetTab.selectedContext = row.isSelected ? null : row.widgetContext
                 }
 
                 HoverHandler { id: rowHover }
@@ -192,31 +173,25 @@ Item {
     // ── Divider ───────────────────────────────────────────────────────────────
     Rectangle {
         visible: widgetTab.selectedContext !== null
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        x: listPane.width
-        width: 1
+        anchors.top: parent.top; anchors.bottom: parent.bottom
+        x: listPane.width; width: 1
         color: theme.border
     }
 
-    // ── Right: widget detail / edit panel ─────────────────────────────────────
+    // ── Right: edit panel ─────────────────────────────────────────────────────
     Item {
         id: detailPane
         visible: widgetTab.selectedContext !== null
         anchors.top: parent.top
-        anchors.left: listPane.right
-        anchors.leftMargin: 1
+        anchors.left: listPane.right; anchors.leftMargin: 1
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         clip: true
 
         Rectangle {
             id: detailHeader
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 56
-            color: "transparent"
+            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
+            height: 56; color: "transparent"
 
             Column {
                 anchors.left: parent.left; anchors.leftMargin: 16
@@ -226,40 +201,29 @@ Item {
                 Text {
                     text: widgetTab.selectedContext ? widgetTab.selectedContext.title : ""
                     color: theme.text
-                    font.pixelSize: theme.fontSizeBase
-                    font.family: theme.fontFamily
+                    font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
                     font.weight: Font.DemiBold
                 }
-
                 Text {
                     text: widgetTab.selectedContext ? widgetTab.selectedContext.description : ""
                     color: theme.textMuted
-                    font.pixelSize: theme.fontSizeSmall
-                    font.family: theme.fontFamily
+                    font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
                 }
             }
 
-            Rectangle {
-                anchors.bottom: parent.bottom
-                width: parent.width; height: 1
-                color: theme.border
-            }
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
         }
 
         Flickable {
             anchors.top: detailHeader.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
+            anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
             contentHeight: editColumn.implicitHeight + 16
             clip: true
 
             Column {
                 id: editColumn
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.topMargin: 8
+                anchors.left: parent.left; anchors.right: parent.right
+                anchors.top: parent.top; anchors.topMargin: 8
                 spacing: 0
 
                 // ── Label ─────────────────────────────────────────────────────
@@ -273,13 +237,11 @@ Item {
 
                         TextInput {
                             id: labelInput
-                            anchors.fill: parent
-                            anchors.leftMargin: 8; anchors.rightMargin: 8
+                            anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8
                             verticalAlignment: TextInput.AlignVCenter
                             text: widgetTab.selectedContext ? widgetTab.selectedContext.label : ""
                             color: theme.text
-                            font.pixelSize: theme.fontSizeSmall
-                            font.family: theme.fontFamily
+                            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
                             selectByMouse: true
 
                             onActiveFocusChanged: {
@@ -287,13 +249,11 @@ Item {
                                     widgetTab.selectedContext.setLabel(text)
                             }
                             Keys.onReturnPressed: {
-                                if (widgetTab.selectedContext)
-                                    widgetTab.selectedContext.setLabel(text)
+                                if (widgetTab.selectedContext) widgetTab.selectedContext.setLabel(text)
                                 focus = false
                             }
                             Keys.onEscapePressed: {
-                                if (widgetTab.selectedContext)
-                                    text = widgetTab.selectedContext.label
+                                if (widgetTab.selectedContext) text = widgetTab.selectedContext.label
                                 focus = false
                             }
 
@@ -312,36 +272,22 @@ Item {
                 EditRow { label: "Position X"
                     NumberStepper {
                         value: widgetTab.selectedContext ? widgetTab.selectedContext.widgetX : 0
+                        step: 1
                         onCommit: (v) => {
                             if (widgetTab.selectedContext)
                                 widgetTab.selectedContext.move(v, widgetTab.selectedContext.widgetY)
                         }
-                        Connections {
-                            target: widgetTab.selectedContext
-                            function onPositionChanged() {
-                                if (widgetTab.selectedContext)
-                                    posXStepper.syncValue(widgetTab.selectedContext.widgetX)
-                            }
-                        }
-                        id: posXStepper
                     }
                 }
 
                 // ── Position Y ────────────────────────────────────────────────
                 EditRow { label: "Position Y"
                     NumberStepper {
-                        id: posYStepper
                         value: widgetTab.selectedContext ? widgetTab.selectedContext.widgetY : 0
+                        step: 1
                         onCommit: (v) => {
                             if (widgetTab.selectedContext)
                                 widgetTab.selectedContext.move(widgetTab.selectedContext.widgetX, v)
-                        }
-                        Connections {
-                            target: widgetTab.selectedContext
-                            function onPositionChanged() {
-                                if (widgetTab.selectedContext)
-                                    posYStepper.syncValue(widgetTab.selectedContext.widgetY)
-                            }
                         }
                     }
                 }
@@ -351,27 +297,18 @@ Item {
                     label: "Flash below"
                     tooltip: "Value flashes when it drops to or below this number. Set to -1 to disable."
                     NumberStepper {
-                        id: flashStepper
                         value: widgetTab.selectedContext ? widgetTab.selectedContext.flashBelow : -1
-                        decimals: 1
+                        step: 0.1
                         onCommit: (v) => {
                             if (widgetTab.selectedContext)
                                 widgetTab.selectedContext.setFlashBelow(v)
-                        }
-                        Connections {
-                            target: widgetTab.selectedContext
-                            function onConfigChanged() {
-                                if (widgetTab.selectedContext)
-                                    flashStepper.syncValue(widgetTab.selectedContext.flashBelow)
-                            }
                         }
                     }
                 }
 
                 // ── Thresholds ────────────────────────────────────────────────
                 Rectangle {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
+                    anchors.left: parent.left; anchors.right: parent.right
                     implicitHeight: thresholdCol.implicitHeight + 16
                     color: "transparent"
 
@@ -385,24 +322,20 @@ Item {
                         Text {
                             text: "Thresholds"
                             color: theme.textSecondary
-                            font.pixelSize: theme.fontSizeSmall
-                            font.family: theme.fontFamily
+                            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
                             font.weight: Font.Medium
                         }
 
                         Text {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
+                            anchors.left: parent.left; anchors.right: parent.right
                             wrapMode: Text.WordWrap
                             text: "Color changes based on the live value. Each threshold sets the color when the value is at or above that number."
                             color: theme.textMuted
-                            font.pixelSize: theme.fontSizeSmall - 1
-                            font.family: theme.fontFamily
+                            font.pixelSize: theme.fontSizeSmall - 1; font.family: theme.fontFamily
                         }
 
                         Repeater {
-                            model: widgetTab.selectedContext
-                                ? widgetTab.selectedContext.thresholds : []
+                            model: widgetTab.selectedContext ? widgetTab.selectedContext.thresholds : []
 
                             delegate: Row {
                                 required property var modelData
@@ -411,17 +344,15 @@ Item {
 
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: 24
-                                    text: "≥"
+                                    width: 24; text: "≥"
                                     color: theme.textMuted
-                                    font.pixelSize: theme.fontSizeSmall
-                                    font.family: theme.fontFamily
+                                    font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
                                     horizontalAlignment: Text.AlignRight
                                 }
 
                                 NumberStepper {
                                     value: modelData.value
-                                    decimals: 1
+                                    step: 0.1
                                     onCommit: (v) => {
                                         if (widgetTab.selectedContext)
                                             widgetTab.selectedContext.setThresholdValue(index, v)
@@ -474,8 +405,7 @@ Item {
             width: 100
             text: editRowRoot.label
             color: theme.textSecondary
-            font.pixelSize: theme.fontSizeSmall
-            font.family: theme.fontFamily
+            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
             font.weight: Font.Medium
         }
 
@@ -492,97 +422,5 @@ Item {
         ToolTip.delay: 600
 
         HoverHandler { id: editRowHover }
-    }
-
-    // ── NumberStepper: − [value] + ────────────────────────────────────────────
-    component NumberStepper: Row {
-        id: stepperRoot
-        property real value: 0
-        property int  decimals: 0
-        signal commit(real v)
-
-        function syncValue(v) { stepperField.text = _fmt(v) }
-        function _fmt(v) {
-            return decimals > 0 ? v.toFixed(decimals) : Math.round(v).toString()
-        }
-        function _step() { return decimals > 0 ? Math.pow(10, -decimals) : 1 }
-
-        spacing: 0
-
-        Rectangle {
-            width: 24; height: 28; radius: 4
-            color: minusArea.containsMouse ? theme.surfaceRaised : theme.surfaceFloating
-            border.width: 1; border.color: theme.border
-            Behavior on color { ColorAnimation { duration: 60 } }
-            Text {
-                anchors.centerIn: parent; text: "−"
-                color: theme.text
-                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
-            }
-            MouseArea {
-                id: minusArea; anchors.fill: parent; hoverEnabled: true
-                onClicked: {
-                    var v = parseFloat(stepperField.text) - stepperRoot._step()
-                    stepperField.text = stepperRoot._fmt(v)
-                    stepperRoot.commit(v)
-                }
-            }
-        }
-
-        Rectangle {
-            width: 80; height: 28
-            color: theme.surfaceFloating
-            border.width: 1
-            border.color: stepperField.activeFocus ? theme.accent : theme.border
-            Behavior on border.color { ColorAnimation { duration: 80 } }
-
-            TextInput {
-                id: stepperField
-                anchors.fill: parent; anchors.leftMargin: 6; anchors.rightMargin: 6
-                verticalAlignment: TextInput.AlignVCenter
-                horizontalAlignment: TextInput.AlignHCenter
-                text: stepperRoot._fmt(stepperRoot.value)
-                color: theme.text
-                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
-                selectByMouse: true
-                validator: DoubleValidator {}
-
-                Keys.onReturnPressed: {
-                    var v = parseFloat(text)
-                    if (!isNaN(v)) stepperRoot.commit(v)
-                    focus = false
-                }
-                Keys.onEscapePressed: {
-                    text = stepperRoot._fmt(stepperRoot.value); focus = false
-                }
-                onActiveFocusChanged: {
-                    if (!activeFocus) {
-                        var v = parseFloat(text)
-                        if (!isNaN(v)) stepperRoot.commit(v)
-                        else text = stepperRoot._fmt(stepperRoot.value)
-                    }
-                }
-            }
-        }
-
-        Rectangle {
-            width: 24; height: 28; radius: 4
-            color: plusArea.containsMouse ? theme.surfaceRaised : theme.surfaceFloating
-            border.width: 1; border.color: theme.border
-            Behavior on color { ColorAnimation { duration: 60 } }
-            Text {
-                anchors.centerIn: parent; text: "+"
-                color: theme.text
-                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
-            }
-            MouseArea {
-                id: plusArea; anchors.fill: parent; hoverEnabled: true
-                onClicked: {
-                    var v = parseFloat(stepperField.text) + stepperRoot._step()
-                    stepperField.text = stepperRoot._fmt(v)
-                    stepperRoot.commit(v)
-                }
-            }
-        }
     }
 }
