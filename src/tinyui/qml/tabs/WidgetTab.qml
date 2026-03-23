@@ -42,7 +42,6 @@ Item {
         width: selectedContext ? parent.width * 0.4 : parent.width
         Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
-        // Header
         Rectangle {
             id: tableHeader
             anchors.top: parent.top
@@ -211,7 +210,6 @@ Item {
         anchors.bottom: parent.bottom
         clip: true
 
-        // Header
         Rectangle {
             id: detailHeader
             anchors.top: parent.top
@@ -248,7 +246,6 @@ Item {
             }
         }
 
-        // Scrollable edit area
         Flickable {
             anchors.top: detailHeader.bottom
             anchors.left: parent.left
@@ -266,9 +263,8 @@ Item {
                 spacing: 0
 
                 // ── Label ─────────────────────────────────────────────────────
-                _EditRow {
-                    label: "Label"
-                    content: Rectangle {
+                EditRow { label: "Label"
+                    Rectangle {
                         width: 160; height: 28; radius: 4
                         color: theme.surfaceFloating
                         border.width: 1
@@ -313,48 +309,62 @@ Item {
                 }
 
                 // ── Position X ────────────────────────────────────────────────
-                _EditRow {
-                    label: "Position X"
-                    content: _NumberInput {
+                EditRow { label: "Position X"
+                    NumberStepper {
                         value: widgetTab.selectedContext ? widgetTab.selectedContext.widgetX : 0
                         onCommit: (v) => {
                             if (widgetTab.selectedContext)
-                                widgetTab.selectedContext.move(
-                                    v, widgetTab.selectedContext.widgetY)
+                                widgetTab.selectedContext.move(v, widgetTab.selectedContext.widgetY)
                         }
-                        contextTarget: widgetTab.selectedContext
-                        contextProp: "widgetX"
+                        Connections {
+                            target: widgetTab.selectedContext
+                            function onPositionChanged() {
+                                if (widgetTab.selectedContext)
+                                    posXStepper.syncValue(widgetTab.selectedContext.widgetX)
+                            }
+                        }
+                        id: posXStepper
                     }
                 }
 
                 // ── Position Y ────────────────────────────────────────────────
-                _EditRow {
-                    label: "Position Y"
-                    content: _NumberInput {
+                EditRow { label: "Position Y"
+                    NumberStepper {
+                        id: posYStepper
                         value: widgetTab.selectedContext ? widgetTab.selectedContext.widgetY : 0
                         onCommit: (v) => {
                             if (widgetTab.selectedContext)
-                                widgetTab.selectedContext.move(
-                                    widgetTab.selectedContext.widgetX, v)
+                                widgetTab.selectedContext.move(widgetTab.selectedContext.widgetX, v)
                         }
-                        contextTarget: widgetTab.selectedContext
-                        contextProp: "widgetY"
+                        Connections {
+                            target: widgetTab.selectedContext
+                            function onPositionChanged() {
+                                if (widgetTab.selectedContext)
+                                    posYStepper.syncValue(widgetTab.selectedContext.widgetY)
+                            }
+                        }
                     }
                 }
 
                 // ── Flash below ───────────────────────────────────────────────
-                _EditRow {
+                EditRow {
                     label: "Flash below"
-                    tooltip: "Widget value flashes when it drops at or below this number.\nSet to -1 to disable."
-                    content: _NumberInput {
+                    tooltip: "Value flashes when it drops to or below this number. Set to -1 to disable."
+                    NumberStepper {
+                        id: flashStepper
                         value: widgetTab.selectedContext ? widgetTab.selectedContext.flashBelow : -1
                         decimals: 1
                         onCommit: (v) => {
                             if (widgetTab.selectedContext)
                                 widgetTab.selectedContext.setFlashBelow(v)
                         }
-                        contextTarget: widgetTab.selectedContext
-                        contextProp: "flashBelow"
+                        Connections {
+                            target: widgetTab.selectedContext
+                            function onConfigChanged() {
+                                if (widgetTab.selectedContext)
+                                    flashStepper.syncValue(widgetTab.selectedContext.flashBelow)
+                            }
+                        }
                     }
                 }
 
@@ -362,11 +372,11 @@ Item {
                 Rectangle {
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    height: thresholdSection.implicitHeight + 16
+                    implicitHeight: thresholdCol.implicitHeight + 16
                     color: "transparent"
 
                     Column {
-                        id: thresholdSection
+                        id: thresholdCol
                         anchors.left: parent.left; anchors.leftMargin: 16
                         anchors.right: parent.right; anchors.rightMargin: 16
                         anchors.top: parent.top; anchors.topMargin: 8
@@ -395,13 +405,13 @@ Item {
                                 ? widgetTab.selectedContext.thresholds : []
 
                             delegate: Row {
-                                spacing: 8
                                 required property var modelData
                                 required property int index
+                                spacing: 8
 
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: 40
+                                    width: 24
                                     text: "≥"
                                     color: theme.textMuted
                                     font.pixelSize: theme.fontSizeSmall
@@ -409,15 +419,13 @@ Item {
                                     horizontalAlignment: Text.AlignRight
                                 }
 
-                                _NumberInput {
+                                NumberStepper {
                                     value: modelData.value
                                     decimals: 1
                                     onCommit: (v) => {
                                         if (widgetTab.selectedContext)
                                             widgetTab.selectedContext.setThresholdValue(index, v)
                                     }
-                                    contextTarget: widgetTab.selectedContext
-                                    contextProp: ""
                                 }
 
                                 ColorPicker {
@@ -442,13 +450,12 @@ Item {
         }
     }
 
-    // ── Internal helpers ──────────────────────────────────────────────────────
-
-    // Single property row: label on left, content item on right
-    component _EditRow: Rectangle {
+    // ── EditRow: label left, children right ───────────────────────────────────
+    component EditRow: Rectangle {
+        id: editRowRoot
         property string label: ""
         property string tooltip: ""
-        property Item content: null
+        default property alias rightContent: rightSlot.data
 
         anchors.left: parent ? parent.left : undefined
         anchors.right: parent ? parent.right : undefined
@@ -465,93 +472,59 @@ Item {
             anchors.left: parent.left; anchors.leftMargin: 16
             anchors.verticalCenter: parent.verticalCenter
             width: 100
-            text: parent.label
+            text: editRowRoot.label
             color: theme.textSecondary
             font.pixelSize: theme.fontSizeSmall
             font.family: theme.fontFamily
             font.weight: Font.Medium
         }
 
-        // Mount the content item
         Item {
+            id: rightSlot
             anchors.left: parent.left; anchors.leftMargin: 116
             anchors.right: parent.right; anchors.rightMargin: 16
             anchors.verticalCenter: parent.verticalCenter
-            height: parent.content ? parent.content.implicitHeight : 0
-
-            Component.onCompleted: {
-                if (parent.parent && parent.parent.content) {
-                    parent.parent.content.parent = this
-                    parent.parent.content.anchors.verticalCenter = this.verticalCenter
-                }
-            }
+            height: 28
         }
 
-        ToolTip.visible: tooltip !== "" && rowHover.hovered
+        ToolTip.visible: tooltip !== "" && editRowHover.hovered
         ToolTip.text: tooltip
         ToolTip.delay: 600
 
-        HoverHandler { id: rowHover }
+        HoverHandler { id: editRowHover }
     }
 
-    // Integer / decimal input field with stepper buttons
-    component _NumberInput: Row {
-        id: numInput
+    // ── NumberStepper: − [value] + ────────────────────────────────────────────
+    component NumberStepper: Row {
+        id: stepperRoot
         property real value: 0
         property int  decimals: 0
-        property var  contextTarget: null
-        property string contextProp: ""
-
         signal commit(real v)
 
-        spacing: 0
-
+        function syncValue(v) { stepperField.text = _fmt(v) }
         function _fmt(v) {
             return decimals > 0 ? v.toFixed(decimals) : Math.round(v).toString()
         }
-
         function _step() { return decimals > 0 ? Math.pow(10, -decimals) : 1 }
 
-        // Sync field when context or property changes
-        Connections {
-            target: numInput.contextTarget
-            function onPositionChanged() {
-                if (numInput.contextProp === "widgetX" || numInput.contextProp === "widgetY")
-                    numInputField.text = numInput._fmt(
-                        numInput.contextProp === "widgetX"
-                            ? numInput.contextTarget.widgetX
-                            : numInput.contextTarget.widgetY)
-            }
-            function onConfigChanged() {
-                if (numInput.contextProp === "flashBelow")
-                    numInputField.text = numInput._fmt(numInput.contextTarget.flashBelow)
-            }
-        }
+        spacing: 0
 
-        // Minus button
         Rectangle {
-            width: 24; height: 28
-            radius: 4
+            width: 24; height: 28; radius: 4
             color: minusArea.containsMouse ? theme.surfaceRaised : theme.surfaceFloating
             border.width: 1; border.color: theme.border
             Behavior on color { ColorAnimation { duration: 60 } }
-
             Text {
-                anchors.centerIn: parent
-                text: "−"
+                anchors.centerIn: parent; text: "−"
                 color: theme.text
-                font.pixelSize: theme.fontSizeSmall
-                font.family: theme.fontFamily
+                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
             }
-
             MouseArea {
-                id: minusArea
-                anchors.fill: parent
-                hoverEnabled: true
+                id: minusArea; anchors.fill: parent; hoverEnabled: true
                 onClicked: {
-                    var v = parseFloat(numInputField.text) - numInput._step()
-                    numInputField.text = numInput._fmt(v)
-                    numInput.commit(v)
+                    var v = parseFloat(stepperField.text) - stepperRoot._step()
+                    stepperField.text = stepperRoot._fmt(v)
+                    stepperRoot.commit(v)
                 }
             }
         }
@@ -560,66 +533,54 @@ Item {
             width: 80; height: 28
             color: theme.surfaceFloating
             border.width: 1
-            border.color: numInputField.activeFocus ? theme.accent : theme.border
+            border.color: stepperField.activeFocus ? theme.accent : theme.border
             Behavior on border.color { ColorAnimation { duration: 80 } }
 
             TextInput {
-                id: numInputField
-                anchors.fill: parent
-                anchors.leftMargin: 6; anchors.rightMargin: 6
+                id: stepperField
+                anchors.fill: parent; anchors.leftMargin: 6; anchors.rightMargin: 6
                 verticalAlignment: TextInput.AlignVCenter
                 horizontalAlignment: TextInput.AlignHCenter
-                text: numInput._fmt(numInput.value)
+                text: stepperRoot._fmt(stepperRoot.value)
                 color: theme.text
-                font.pixelSize: theme.fontSizeSmall
-                font.family: theme.fontFamily
+                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
                 selectByMouse: true
-
                 validator: DoubleValidator {}
 
                 Keys.onReturnPressed: {
                     var v = parseFloat(text)
-                    if (!isNaN(v)) numInput.commit(v)
+                    if (!isNaN(v)) stepperRoot.commit(v)
                     focus = false
                 }
                 Keys.onEscapePressed: {
-                    text = numInput._fmt(numInput.value)
-                    focus = false
+                    text = stepperRoot._fmt(stepperRoot.value); focus = false
                 }
                 onActiveFocusChanged: {
                     if (!activeFocus) {
                         var v = parseFloat(text)
-                        if (!isNaN(v)) numInput.commit(v)
-                        else text = numInput._fmt(numInput.value)
+                        if (!isNaN(v)) stepperRoot.commit(v)
+                        else text = stepperRoot._fmt(stepperRoot.value)
                     }
                 }
             }
         }
 
-        // Plus button
         Rectangle {
-            width: 24; height: 28
-            radius: 4
+            width: 24; height: 28; radius: 4
             color: plusArea.containsMouse ? theme.surfaceRaised : theme.surfaceFloating
             border.width: 1; border.color: theme.border
             Behavior on color { ColorAnimation { duration: 60 } }
-
             Text {
-                anchors.centerIn: parent
-                text: "+"
+                anchors.centerIn: parent; text: "+"
                 color: theme.text
-                font.pixelSize: theme.fontSizeSmall
-                font.family: theme.fontFamily
+                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
             }
-
             MouseArea {
-                id: plusArea
-                anchors.fill: parent
-                hoverEnabled: true
+                id: plusArea; anchors.fill: parent; hoverEnabled: true
                 onClicked: {
-                    var v = parseFloat(numInputField.text) + numInput._step()
-                    numInputField.text = numInput._fmt(v)
-                    numInput.commit(v)
+                    var v = parseFloat(stepperField.text) + stepperRoot._step()
+                    stepperField.text = stepperRoot._fmt(v)
+                    stepperRoot.commit(v)
                 }
             }
         }
