@@ -122,6 +122,12 @@ Built on top of ideas and data models from [TinyPedal](https://github.com/TinyPe
 
 ---
 
+## AI use
+
+This project was developed with AI assistance to move fast from idea to MVP as a one-person team. The code is curated and adjusted where needed — AI is a tool, not the author.
+
+---
+
 ## License
 
 GPLv3 — see [LICENSE](LICENSE).
