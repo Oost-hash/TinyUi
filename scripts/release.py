@@ -21,8 +21,8 @@ from pathlib import Path
 
 ROOT         = Path(__file__).parent.parent
 PYPROJECT    = ROOT / "pyproject.toml"
-CHANGELOG    = ROOT / "CHANGELOG.md"
-UNRELEASED   = ROOT / "unreleased_changelog.md"
+CHANGELOG    = ROOT / "docs" / "CHANGELOG.md"
+UNRELEASED   = ROOT / "docs" / "unreleased_changelog.md"
 
 # Which sections to include per release type (cumulative)
 SECTIONS = {
