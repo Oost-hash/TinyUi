@@ -50,13 +50,6 @@ class TinyUIPlugin:
             description="Application color theme",
             section="Application",
         ))
-        # TODO: implement language switching
-        _r(_n, SettingsSpec(
-            key="language", label="Language", type="enum",
-            default="en", options=["en", "nl"],
-            description="Interface language (not yet implemented)",
-            section="Application",
-        ))
 
         # ── Window ────────────────────────────────────────────────────────
         _r(_n, SettingsSpec(
