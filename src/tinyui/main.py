@@ -30,7 +30,7 @@ import logging
 import platform
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 import PySide6
 from PySide6.QtCore import QUrl, QtMsgType, qInstallMessageHandler, qVersion
@@ -61,7 +61,8 @@ def _qt_message_handler(mode, context, message):
         _qt_log.debug("Qt: %s", message)
 
 
-def launch(core: App, lifecycle: PluginLifecycleManager) -> int:
+def launch(core: App, lifecycle: PluginLifecycleManager,
+           *, pre_run: Callable[[], None] | None = None) -> int:
     """Initialize and run the tinyui main window.
 
     Called by the composition root after tinycore is fully booted.
@@ -72,6 +73,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager) -> int:
 
     # ── Qt setup ──────────────────────────────────────────────────────────────
     app = create_application(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
     load_font()
     app.setApplicationName(APP_NAME)
     app.setApplicationVersion(VERSION)
@@ -227,6 +229,13 @@ def launch(core: App, lifecycle: PluginLifecycleManager) -> int:
     app.aboutToQuit.connect(engine.deleteLater)
     app.aboutToQuit.connect(lifecycle.shutdown)
     app.aboutToQuit.connect(core.stop)
+
+    # Closing the main window must explicitly quit so aboutToQuit fires
+    # even when other windows (widget overlay) are still open.
+    window.closing.connect(lambda: app.quit())
+
+    if pre_run is not None:
+        pre_run()
 
     exit_code = app.exec()
 

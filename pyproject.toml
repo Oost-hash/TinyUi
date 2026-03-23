@@ -27,4 +27,4 @@ where = ["src"]
 # categories: menu | settings | state | mouse | win32 | theme | ui | connector | connector_polling | all
 # Prioriteit: TINYUI_DEBUG env var > pyproject.toml > productie (geen debug)
 [tool.tinyui.debug]
-categories = "settings,ui,connector"
+categories = "widget, overlay, connector"

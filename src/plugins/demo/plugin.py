@@ -77,18 +77,13 @@ class DemoPlugin:
     name = "demo"
 
     def register(self, ctx: PluginContext) -> None:
-        # 1. Register config files with defaults (plugin_name automatisch gescoped)
-        ctx.loaders.register("heatmaps", "heatmaps.json", DEFAULT_HEATMAPS)
+        ctx.loaders.register("heatmaps",  "heatmaps.json",  DEFAULT_HEATMAPS)
         ctx.loaders.register("compounds", "compounds.json", DEFAULT_COMPOUNDS)
-
-        # 2. Load from disk (creates JSON from defaults if missing)
         ctx.loaders.load_all(ctx.config)
 
-        # 3. Load editor specs from editors.toml (lives with plugin source)
         plugin_dir = Path(__file__).parent
         for spec in load_editors_toml(plugin_dir / "editors.toml"):
             ctx.editors.register(spec)
-
 
     def start(self) -> None:
         pass

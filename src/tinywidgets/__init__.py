@@ -20,11 +20,25 @@
 #  licensed under GPLv3.
 """tinywidgets — self-contained overlay widget system."""
 
+from .context import WidgetContext, WidgetModel
+from .flash import FlashState
+from .overlay import WidgetOverlay
 from .registry import WidgetRegistry
+from .runner import ConnectorUpdater, TextWidgetRunner, WidgetState
 from .spec import WidgetSpec, load_widgets_toml
+from .threshold import ThresholdEntry, evaluate
 
 __all__ = [
+    "ConnectorUpdater",
+    "FlashState",
+    "TextWidgetRunner",
+    "ThresholdEntry",
+    "WidgetContext",
+    "WidgetModel",
+    "WidgetOverlay",
     "WidgetRegistry",
     "WidgetSpec",
+    "WidgetState",
+    "evaluate",
     "load_widgets_toml",
 ]

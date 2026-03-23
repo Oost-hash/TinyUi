@@ -35,8 +35,12 @@ import multiprocessing as mp
 import sys
 from pathlib import Path
 
+from pathlib import Path
+
 from tinycore import PluginLifecycleManager, PluginSpec, SubprocessPlugin, create_app
 from tinyui import TinyUIPlugin, launch
+from tinywidgets.overlay import WidgetOverlay
+from tinywidgets.spec import load_widgets_toml
 
 
 def _config_dir() -> Path:
@@ -70,8 +74,20 @@ def main() -> None:
     if plugin_names:
         lifecycle.activate(plugin_names[0])
 
-    # ── 6. Hand off to tinyui ─────────────────────────────────────────────────
-    exit_code = launch(core, lifecycle)
+    # ── 6. Register connectors (host-side — cannot cross the subprocess pipe) ─
+    from plugins.demo.connector.lmu import LMUConnector
+    _lmu = LMUConnector()
+    _lmu.open()
+    core.connectors.register("demo", _lmu)
+
+    # ── 7. Build widget overlay ───────────────────────────────────────────────
+    overlay = WidgetOverlay(core.connectors)
+    _demo_widgets = Path(__file__).resolve().parents[1] / "plugins" / "demo" / "widgets.toml"
+    overlay.load(load_widgets_toml(_demo_widgets), plugin_name="demo")
+
+    # ── 8. Hand off to tinyui ─────────────────────────────────────────────────
+    exit_code = launch(core, lifecycle, pre_run=overlay.start)
+    overlay.stop()
     sys.exit(exit_code)
 
 

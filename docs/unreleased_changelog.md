@@ -17,6 +17,10 @@ Run `python scripts/release.py patch|minor|major` to create a release.
 - `WidgetRegistry` and `WidgetSpec` removed from `tinycore` and `PluginContext`
 - Removed `plugins/demo2` and `plugins/tinypedal`
 - Removed `TyreDemoViewModel` — connector lifecycle will be managed by the plugin system
+- Central logger moved from `tinyui.log` to `tinycore.log` — now shared across all layers
+- First working widget: `TextWidget` with live telemetry, threshold colors, flash effect, and drag-to-position
+- Each widget is an independent `Qt.Tool` window — transparent background is click-through by default
+- Widget windows close automatically when tinyui closes
 
 ### patch
 <!-- Bug fixes and small improvements -->
