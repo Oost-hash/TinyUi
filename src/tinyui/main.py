@@ -179,11 +179,11 @@ def launch(core: App, lifecycle: PluginLifecycleManager) -> int:
         hwnd = int(window.winId())
         _wnd_proc, _set_left = install_wnd_proc(
             hwnd,
-            title_bar_height   = round(theme.titleBarHeight * dpr),
-            resize_border      = round(8  * dpr),
-            resize_corner      = round(20 * dpr),
-            left_button_width  = round(300 * dpr),
-            right_button_width = round(142 * dpr),
+            title_bar_height   = round(theme.titleBarHeight   * dpr),
+            resize_border      = round(theme.resizeBorder      * dpr),
+            resize_corner      = round(theme.resizeCorner      * dpr),
+            left_button_width  = round(theme.leftButtonWidth   * dpr),
+            right_button_width = round(theme.rightButtonWidth  * dpr),
         )
         apply_dwm_frame(hwnd)
         _win_ctrl      = WindowController(hwnd, dpr=dpr, set_left_button_width=_set_left)

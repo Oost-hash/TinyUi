@@ -66,10 +66,22 @@ class Theme(QObject):
     def _font_size(self, scale_key: str) -> int:
         return round(self._font.get(scale_key, 1.0) * self._base)
 
-    # ── Window chrome (statisch) ──────────────────────────────────────────
+    # ── Window chrome (static) ────────────────────────────────────────────
 
     @Property(int, constant=True)
     def titleBarHeight(self): return 36
+
+    @Property(int, constant=True)
+    def resizeBorder(self): return 8
+
+    @Property(int, constant=True)
+    def resizeCorner(self): return 20
+
+    @Property(int, constant=True)
+    def leftButtonWidth(self): return 300
+
+    @Property(int, constant=True)
+    def rightButtonWidth(self): return 142
 
     @Property(int, constant=True)
     def fontSizeBase(self): return self._base
