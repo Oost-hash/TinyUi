@@ -9,35 +9,42 @@ no Python code needed to add a new numeric overlay widget.
 
 ```
 src/
-├── tinycore/               # generic engine — minimal changes (see below)
+├── tinycore/                   # generic engine + shared Qt foundation
+│   ├── qt/                     # ← the ONLY Qt code in tinycore
+│   │   ├── app.py              # QApplication lifecycle
+│   │   └── engine.py           # QQmlApplicationEngine factory
 │   ├── poll/
-│   │   ├── loop.py         # PollLoop — owns the tick cycle
-│   │   └── tickable.py     # Tickable protocol
-│   └── ...existing files unchanged...
+│   │   ├── loop.py             # PollLoop — owns the tick cycle
+│   │   └── tickable.py         # Tickable protocol (pure Python)
+│   └── ...existing files unchanged (pure Python)...
 │
-├── tinywidgets/            # new — self-contained: logic + QML in one package
+├── tinywidgets/                # self-contained: logic + QML + own overlay window
 │   ├── __init__.py
-│   ├── spec.py             # WidgetSpec, load_widgets_toml
-│   ├── registry.py         # WidgetRegistry
-│   ├── paths.py            # telemetry path resolver
-│   ├── threshold.py        # ThresholdEntry + evaluate()
-│   ├── flash.py            # FlashState
-│   ├── runner.py           # TextWidgetRunner, WidgetState
+│   ├── spec.py                 # WidgetSpec, load_widgets_toml
+│   ├── registry.py             # WidgetRegistry
+│   ├── paths.py                # telemetry path resolver
+│   ├── threshold.py            # ThresholdEntry + evaluate()
+│   ├── flash.py                # FlashState
+│   ├── runner.py               # TextWidgetRunner, WidgetState
+│   ├── context.py              # WidgetContext — subscribes to state_store, exposes to QML
+│   ├── overlay.py              # transparent overlay window (own QQmlApplicationEngine)
 │   └── qml/
-│       └── TextWidget.qml # owned by tinywidgets, not tinyui
+│       └── TextWidget.qml
 │
 ├── plugins/
 │   └── demo/
-│       └── widgets.toml    # extended with source/format/thresholds
+│       └── widgets.toml        # extended with source/format/thresholds
 │
-└── tinyui/                 # pure UI host — no widget QML of its own
+└── tinyui/                     # application shell — main window + settings UI
+    └── ...no widget code...
 ```
 
-**Import rules:**
-- `tinycore` never imports from `tinywidgets` or `tinyui`
-- `tinywidgets` imports only `tinycore.telemetry.reader` (the connector contract)
-  and `tinycore.poll.tickable` (the Tickable protocol)
-- `tinyui` imports both `tinycore` and `tinywidgets`
+**Import rules — no spaghetti:**
+- `tinycore` has no imports from `tinywidgets` or `tinyui`
+- `tinycore.qt` is the only Qt-dependent code in tinycore — the rest is pure Python
+- `tinywidgets` imports `tinycore.qt.engine` (engine factory) and `tinycore.poll.tickable`
+- `tinyui` imports `tinycore.qt.app` (QApplication) and has no knowledge of `tinywidgets`
+- `tinywidgets` and `tinyui` never import each other — both build on `tinycore.qt` independently
 
 `tinycore/widget.py` (the old WidgetSpec/WidgetRegistry) is removed.
 Plugins no longer register widgets via `ctx` — `widgets.toml` is enough.
@@ -283,21 +290,26 @@ flowchart TD
         TOML["widgets.toml\n(source, format, thresholds)"]
     end
 
+    subgraph tinycore["tinycore"]
+        subgraph coreqt["tinycore.qt  ← shared Qt foundation"]
+            APP["QApplication"]
+            ENGINE["QQmlApplicationEngine\nfactory"]
+        end
+        LOOP["PollLoop\n(QTimer)"]
+        CONNECTOR["ConnectorRegistry\nLMUConnector"]
+        STATE["state_store\nemits signal on change"]
+    end
+
     subgraph tinywidgets["tinywidgets"]
         SCAN["scan plugin dirs\nload widgets.toml"]
         RUNNER["TextWidgetRunner\nimplements Tickable"]
-        STATE["state_store\ndict[widget_id, WidgetState]"]
-        QML["TextWidget.qml"]
-    end
-
-    subgraph tinycore["tinycore"]
-        LOOP["PollLoop\n(QTimer)"]
-        CONNECTOR["ConnectorRegistry\nLMUConnector"]
+        CTX["WidgetContext\nsubscribes to state_store"]
+        OVERLAY["overlay window\nown QML engine"]
+        QML["TextWidget.qml\nbinds to WidgetContext"]
     end
 
     subgraph tinyui["tinyui"]
-        VM["ViewModel\nreads state_store"]
-        OVERLAY["QML Overlay\nLoads TextWidget.qml"]
+        MAIN["main window\nown QML engine"]
     end
 
     TOML --> SCAN
@@ -306,9 +318,13 @@ flowchart TD
     LOOP -- "each tick:\nconnector.update()" --> CONNECTOR
     CONNECTOR -- "tick(connector)" --> RUNNER
     RUNNER -- "write on change" --> STATE
-    STATE --> VM
-    VM -- "emit signal" --> OVERLAY
-    OVERLAY -- "loads" --> QML
+    STATE -- "signal" --> CTX
+    CTX -- "property update" --> QML
+    QML --> OVERLAY
+    ENGINE -. "used by" .-> OVERLAY
+    ENGINE -. "used by" .-> MAIN
+    APP -. "shared" .-> MAIN
+    APP -. "shared" .-> OVERLAY
 ```
 
 ---
