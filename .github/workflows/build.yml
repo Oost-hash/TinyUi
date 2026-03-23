@@ -10,6 +10,10 @@ on:
         description: "Release version (e.g. v0.1.0)"
         required: true
         default: "v0.1.0"
+      dry_run:
+        description: "Dry run — build only, skip release"
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -60,6 +64,7 @@ jobs:
 
   release:
     needs: build
+    if: github.event_name == 'push' || github.event.inputs.dry_run != 'true'
     runs-on: ubuntu-latest
 
     permissions:
