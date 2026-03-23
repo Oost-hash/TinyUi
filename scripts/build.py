@@ -1,25 +1,34 @@
-"""Build standalone .exe with PyInstaller."""
+"""Build standalone app with PyInstaller — Windows and Linux."""
 
-import os
+import platform
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).parent
-ENTRY = ROOT / "src" / "tinyui" / "main.py"
-DIST = ROOT / "dist"
-APP_DIR = DIST / "TinyUi"
-BUILD = ROOT / "build"
-ICON = ROOT / "src" / "tinyui" / "images" / "icon.ico"
-SPEC = ROOT / "TinyUi.spec"
+ROOT    = Path(__file__).resolve().parents[1]   # scripts/ -> repo root
+ENTRY   = ROOT / "src" / "tinyui" / "main.py"
+DIST    = ROOT / "dist"
+BUILD   = ROOT / "build"
+SPEC    = ROOT / "TinyUi.spec"
 EGG_INFO = ROOT / "src" / "tinyui.egg-info"
 
-# User-facing folders to place next to exe
+IS_WINDOWS = platform.system() == "Windows"
+IS_LINUX   = platform.system() == "Linux"
+
+EXE_NAME = "TinyUi.exe" if IS_WINDOWS else "TinyUi"
+APP_DIR  = DIST / "TinyUi"
+
+ICON = (
+    ROOT / "src" / "tinyui" / "images" / "icon.ico"
+    if IS_WINDOWS else
+    ROOT / "src" / "tinyui" / "images" / "icon.png"
+)
+
+# User-facing folders to place next to the executable
 USER_DIRS = {
-    "config": ROOT / "data" / "plugin-config",
-    "themes": ROOT / "src" / "tinyui" / "themes",
-    "images": ROOT / "src" / "tinyui" / "images",
+    "config":  ROOT / "data" / "plugin-config",
+    "themes":  ROOT / "src" / "tinyui" / "themes",
     "plugins": ROOT / "src" / "plugins",
 }
 
@@ -40,9 +49,7 @@ def _copy_user_dir(name: str, src: Path):
     dst = APP_DIR / name
     if dst.exists():
         shutil.rmtree(dst)
-    shutil.copytree(src, dst, ignore=shutil.ignore_patterns(
-        "__pycache__", "*.pyc",
-    ))
+    shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
 
 
 def build():
@@ -53,18 +60,14 @@ def build():
         "--name", "TinyUi",
         "--onedir",
         "--windowed",
-        # Put runtime in lib/
         "--contents-directory", "lib",
-        # Packages to collect
         "--collect-all", "tinycore",
         "--collect-all", "plugins",
         "--collect-all", "tinyui",
-        # Paths
         "--paths", str(ROOT / "src"),
         "--distpath", str(DIST),
         "--workpath", str(BUILD),
         "--specpath", str(ROOT),
-        # Overwrite
         "--noconfirm",
     ]
 
@@ -73,10 +76,10 @@ def build():
 
     cmd.append(str(ENTRY))
 
-    print("Building TinyUi .exe ...")
+    print(f"Building TinyUi for {platform.system()} ...")
     result = subprocess.run(cmd)
 
-    # Clean up build artifacts, keep only dist
+    # Remove intermediate build artifacts
     for path in (BUILD, SPEC, EGG_INFO):
         if path.is_dir():
             shutil.rmtree(path)
@@ -84,7 +87,6 @@ def build():
             path.unlink()
 
     if result.returncode == 0:
-        # Copy user-facing dirs next to exe
         for name, src in USER_DIRS.items():
             if src.exists():
                 _copy_user_dir(name, src)
@@ -92,14 +94,14 @@ def build():
         print(f"\nBuild complete: {APP_DIR}")
         print("Structure:")
         print("  TinyUi/")
-        print("  ├── TinyUi.exe")
-        print("  ├── config/")
-        print("  ├── themes/")
-        print("  ├── images/")
-        print("  ├── plugins/")
-        print("  └── lib/")
+        print(f"  +-- {EXE_NAME}")
+        print("  +-- config/")
+        print("  +-- themes/")
+        print("  +-- plugins/")
+        print("  +-- lib/")
     else:
         print(f"\nBuild failed with code {result.returncode}")
+
     return result.returncode
 
 
