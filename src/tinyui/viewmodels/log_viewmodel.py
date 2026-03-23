@@ -29,7 +29,7 @@ from PySide6.QtCore import QObject, Signal, Slot
 
 
 class _QtLogHandler(logging.Handler):
-    """Logging handler that calls a callback for each formatted record."""
+    """Logging handler that calls a callback for each log record."""
 
     def __init__(self, callback):
         super().__init__()
@@ -37,7 +37,11 @@ class _QtLogHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         try:
-            self._callback(self.format(record))
+            import time as _time
+            t = _time.strftime("%H:%M:%S", _time.localtime(record.created))
+            ms = int(record.msecs)
+            self._callback(f"{t}.{ms:03d}", record.levelname, record.name,
+                           record.getMessage())
         except Exception:
             self.handleError(record)
 
@@ -45,21 +49,18 @@ class _QtLogHandler(logging.Handler):
 class LogViewModel(QObject):
     """Exposes Python log output to QML.
 
-    Connect to ``lineAdded(str)`` in QML to receive new log lines.
+    Connect to ``recordAdded(time, level, name, message)`` in QML.
     Call ``clear()`` to reset the console.
     """
 
-    lineAdded = Signal(str)
-    cleared   = Signal()
+    # time, level, logger name, message
+    recordAdded = Signal(str, str, str, str)
+    cleared     = Signal()
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
 
-        self._handler = _QtLogHandler(self.lineAdded.emit)
-        self._handler.setFormatter(logging.Formatter(
-            "%(asctime)s %(levelname)-7s  %(name)s: %(message)s",
-            datefmt="%H:%M:%S",
-        ))
+        self._handler = _QtLogHandler(self.recordAdded.emit)
         logging.getLogger().addHandler(self._handler)
 
     @Slot()

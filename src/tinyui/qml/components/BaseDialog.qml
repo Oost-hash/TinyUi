@@ -67,7 +67,7 @@ Window {
                 var local = focusItem.mapFromItem(null, mouse.x, mouse.y)
                 var outside = local.x < 0 || local.x > focusItem.width
                            || local.y < 0 || local.y > focusItem.height
-if (outside)
+                           if (outside)
                     focusItem.focus = false
             }
             mouse.accepted = false

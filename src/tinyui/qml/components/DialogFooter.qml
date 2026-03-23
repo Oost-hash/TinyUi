@@ -43,7 +43,7 @@ Rectangle {
         anchors.right: parent.right; anchors.rightMargin: 16
         anchors.verticalCenter: parent.verticalCenter
         spacing: 8
-        topPadding: 1   // border compensatie
+        topPadding: 1
 
         Rectangle {
             visible: showRevert

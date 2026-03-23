@@ -31,7 +31,7 @@ TabBar {
     background: Rectangle {
         color: theme.surfaceAlt
 
-        // Border-bottom (de lijn waarop de tabs staan)
+        // Bottom border — the line the tabs sit on
         Rectangle {
             anchors.bottom: parent.bottom
             width: parent.width

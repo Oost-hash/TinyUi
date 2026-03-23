@@ -21,10 +21,10 @@
 
 import QtQuick
 
-// Resize-zones voor Linux/Wayland. Elke zone start een compositor-resize
-// via windowController.startResize(edge) zodra de DragHandler actief wordt.
-// Op Windows worden resize en hit-testing afgehandeld door WndProc — dit
-// component is dan onzichtbaar en inactief.
+// Resize zones for Linux/Wayland. Each zone starts a compositor-driven resize
+// via windowController.startResize(edge) as soon as the DragHandler activates.
+// On Windows, resize and hit-testing are handled by WndProc — this component
+// is invisible and inactive there.
 
 Item {
     anchors.fill: parent

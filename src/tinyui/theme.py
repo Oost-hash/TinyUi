@@ -127,4 +127,13 @@ class Theme(QObject):
     def accentText(self): return self._c("accent-text")
 
     @Property(str, notify=changed)
+    def success(self): return self._c("success")
+
+    @Property(str, notify=changed)
+    def warning(self): return self._c("warning")
+
+    @Property(str, notify=changed)
     def danger(self): return self._c("danger")
+
+    @Property(str, notify=changed)
+    def info(self): return self._c("info")

@@ -110,7 +110,7 @@ Item {
 
     function _openPicker() {
         root._syncFromValue()
-        // Positie: boven de swatch, pijl wijst naar beneden richting swatch
+        // Position: above the swatch, arrow points down toward the swatch
         var arrowH  = 10
         var winW    = pickerWin.width
         var winH    = pickerWin.height
@@ -121,9 +121,9 @@ Item {
         pickerWin.requestActivate()
     }
 
-    // ── Picker venster ────────────────────────────────────────────────────────
-    // Qt.Tool = geen taskbar, altijd boven het parent venster
-    // Transparant zodat de pijl buiten de rechthoekige bounds kan tekenen
+    // ── Picker window ─────────────────────────────────────────────────────────
+    // Qt.Tool = no taskbar entry, always on top of the parent window
+    // Transparent so the arrow tip can draw outside the rectangular bounds
     Window {
         id: pickerWin
         flags:  Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
@@ -131,10 +131,10 @@ Item {
         width:  244
         height: pickerContent.height + arrow.height
 
-        // Sluit bij klik buiten het venster
+        // Close when focus is lost (click outside the window)
         onActiveChanged: if (!active) pickerWin.hide()
 
-        // Sluit bij move/resize van het parent venster
+        // Close when the parent window moves or resizes
         Connections {
             target: root.Window.window
             function onXChanged() { pickerWin.hide() }
@@ -147,7 +147,7 @@ Item {
         readonly property int _arrowW: 18
         readonly property int _radius: 8
 
-        // ── Pijl (druppel) ────────────────────────────────────────────────────
+        // ── Arrow ────────────────────────────────────────────────────
         Canvas {
             id: arrow
             anchors.bottom: parent.bottom
@@ -165,7 +165,6 @@ Item {
                 ctx.lineTo(width / 2, height)
                 ctx.lineTo(width, 0)
                 ctx.fill()
-                // Binnenste vul (borderkleur 1px kleiner)
                 ctx.fillStyle = theme.surfaceFloating
                 ctx.beginPath()
                 ctx.moveTo(1, 0)

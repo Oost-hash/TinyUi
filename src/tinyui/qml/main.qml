@@ -107,7 +107,7 @@ ApplicationWindow {
 
         TitleBar {
             Layout.fillWidth: true
-            z: 1  // dropdowns renderen boven StyledTabBar en content
+            z: 1  // dropdowns render above StyledTabBar and content
         }
 
         StyledTabBar {

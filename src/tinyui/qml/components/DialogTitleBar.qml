@@ -30,7 +30,7 @@ Rectangle {
     height: theme.titleBarHeight
     color: theme.surfaceAlt
 
-    // startSystemMove() werkt op alle platforms in Qt 6
+    // startSystemMove() works on all platforms in Qt 6
     DragHandler {
         target: null
         onActiveChanged: if (active) root.Window.window.startSystemMove()
