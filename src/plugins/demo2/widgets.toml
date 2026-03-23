@@ -1,9 +1,0 @@
-[lap_time]
-title = "Lap Time"
-description = "Current and best lap time"
-enable = true
-
-[delta]
-title = "Delta"
-description = "Time delta to best lap"
-enable = true

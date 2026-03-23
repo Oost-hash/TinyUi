@@ -18,10 +18,8 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-import multiprocessing as mp
+"""tinycore.poll — central tick loop infrastructure."""
 
-from app.main import main
+from .tickable import Tickable
 
-if __name__ == "__main__":
-    mp.freeze_support()
-    main()
+__all__ = ["Tickable"]

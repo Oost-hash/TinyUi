@@ -35,7 +35,6 @@ from typing import TYPE_CHECKING
 
 from tinycore.editor import load_editors_toml
 from tinycore.settings import SettingsSpec
-from tinycore.widget import load_widgets_toml
 
 if TYPE_CHECKING:
     from tinycore.plugin.context import PluginContext
@@ -91,11 +90,7 @@ class DemoPlugin:
         for spec in load_editors_toml(plugin_dir / "editors.toml"):
             ctx.editors.register(spec)
 
-        # 4. Load widget specs from widgets.toml
-        for spec in load_widgets_toml(plugin_dir / "widgets.toml"):
-            ctx.widgets.register(spec)
-
-        # 5. Settings — één per type zodat alle controls zichtbaar zijn in de settings dialog
+        # 4. Settings — één per type zodat alle controls zichtbaar zijn in de settings dialog
         _r = ctx.settings.register
 
         _r(SettingsSpec(

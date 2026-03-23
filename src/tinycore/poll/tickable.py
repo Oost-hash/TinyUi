@@ -18,10 +18,20 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-import multiprocessing as mp
+"""Tickable protocol — pure Python, no Qt dependency.
 
-from app.main import main
+Any object that implements tick() can be registered with PollLoop.
+tinywidgets runners implement this; tinycore drives them without knowing
+what they are.
+"""
 
-if __name__ == "__main__":
-    mp.freeze_support()
-    main()
+from __future__ import annotations
+
+from typing import Protocol, runtime_checkable
+
+
+@runtime_checkable
+class Tickable(Protocol):
+    """Anything that can be driven by the central PollLoop."""
+
+    def tick(self) -> None: ...

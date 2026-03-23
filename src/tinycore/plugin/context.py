@@ -21,8 +21,8 @@
 """PluginContext — scoped application context for a single plugin.
 
 Each plugin receives a PluginContext instead of the full App, creating
-a VLAN-like boundary: plugins share infrastructure (events, widgets,
-editors, providers) but cannot see each other's settings or loaders.
+a VLAN-like boundary: plugins share infrastructure (events, editors,
+providers) but cannot see each other's settings or loaders.
 """
 
 from __future__ import annotations
@@ -101,7 +101,6 @@ class PluginContext:
         self.loaders   = ScopedLoaders(app.loaders, plugin_name)
         self.connector = ScopedConnector(app.connectors, plugin_name)
         self.config    = app.config
-        self.widgets   = app.widgets
         self.editors   = app.editors
         self.events    = app.events
         self.providers = app.providers

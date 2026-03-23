@@ -18,10 +18,9 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-import multiprocessing as mp
+"""app — composition root.
 
-from app.main import main
-
-if __name__ == "__main__":
-    mp.freeze_support()
-    main()
+This package is the only place that knows about all layers:
+tinycore, tinywidgets, tinyui and plugins. It wires them together.
+Nothing else imports from here.
+"""

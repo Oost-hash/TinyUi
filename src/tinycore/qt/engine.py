@@ -18,10 +18,17 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-import multiprocessing as mp
+"""QQmlApplicationEngine factory."""
 
-from app.main import main
+from __future__ import annotations
 
-if __name__ == "__main__":
-    mp.freeze_support()
-    main()
+from PySide6.QtQml import QQmlApplicationEngine
+
+
+def create_engine() -> QQmlApplicationEngine:
+    """Create a QQmlApplicationEngine.
+
+    Each package that needs QML (tinyui, tinywidgets) calls this
+    to get its own engine instance.
+    """
+    return QQmlApplicationEngine()

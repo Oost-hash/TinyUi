@@ -32,7 +32,6 @@ from .plugin.registry import PluginRegistry
 from .providers.registry import ProviderRegistry
 from .settings import SettingsRegistry
 from .telemetry.registry import ConnectorRegistry
-from .widget import WidgetRegistry
 
 
 class App:
@@ -48,7 +47,6 @@ class App:
         self.providers     = ProviderRegistry()
         self.settings      = SettingsRegistry(config_dir)   # plugin settings only
         self.host_settings = SettingsRegistry(config_dir)   # host (TinyUI) — not visible to plugins
-        self.widgets       = WidgetRegistry()
 
     def start(self, *, plugins: bool = True) -> None:
         """Start the application: emit events, optionally start all plugins.

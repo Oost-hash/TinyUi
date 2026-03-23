@@ -18,10 +18,18 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-import multiprocessing as mp
+"""tinycore.qt — shared Qt bootstrap layer.
 
-from app.main import main
+The only Qt code in tinycore. Both tinyui and tinywidgets build on this.
+tinycore itself (outside this subpackage) has no Qt dependency.
+"""
 
-if __name__ == "__main__":
-    mp.freeze_support()
-    main()
+from .app import create_application
+from .engine import create_engine
+from .loop import PollLoop
+
+__all__ = [
+    "create_application",
+    "create_engine",
+    "PollLoop",
+]

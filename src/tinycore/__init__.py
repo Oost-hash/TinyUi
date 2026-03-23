@@ -34,7 +34,6 @@ from .plugin.subprocess_host import SubprocessPlugin
 from .providers.protocol import Provider
 from .providers.registry import ProviderRegistry
 from .settings import SettingsRegistry, SettingsSpec
-from .widget import WidgetRegistry, WidgetSpec, load_widgets_toml
 
 __all__ = [
     "App",
@@ -58,7 +57,4 @@ __all__ = [
     "ProviderRegistry",
     "SettingsRegistry",
     "SettingsSpec",
-    "WidgetRegistry",
-    "WidgetSpec",
-    "load_widgets_toml",
 ]

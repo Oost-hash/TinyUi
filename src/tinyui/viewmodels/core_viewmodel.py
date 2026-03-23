@@ -42,16 +42,8 @@ class CoreViewModel(QObject):
 
     @Property("QVariantList", constant=True)
     def widgets(self) -> list[dict]:
-        """All registered widget specs (from plugins)."""
-        return [
-            {
-                "id":          w.id,
-                "title":       w.title,
-                "description": w.description,
-                "enable":      w.enable,
-            }
-            for w in self._core.widgets.all()
-        ]
+        """Widget list — managed by tinywidgets, not tinycore."""
+        return []
 
     @Property("QVariantList", constant=True)
     def editors(self) -> list[dict]:
@@ -67,9 +59,8 @@ class CoreViewModel(QObject):
 
     @Slot(str, bool)
     def setWidgetEnabled(self, widget_id: str, enabled: bool) -> None:
-        """Set a widget's enabled state in memory. QML manages visual state locally."""
-        if self._core.widgets.has(widget_id):
-            self._core.widgets.get(widget_id).enable = enabled
+        """Widget enable/disable is handled by tinywidgets."""
+        pass
 
     @Property("QVariantList", constant=True)
     def pluginNames(self) -> list[str]:

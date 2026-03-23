@@ -18,10 +18,27 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-import multiprocessing as mp
+"""WidgetRegistry — stores WidgetSpecs registered by plugins."""
 
-from app.main import main
+from __future__ import annotations
 
-if __name__ == "__main__":
-    mp.freeze_support()
-    main()
+from .spec import WidgetSpec
+
+
+class WidgetRegistry:
+    """Stores WidgetSpecs registered by plugins."""
+
+    def __init__(self) -> None:
+        self._specs: dict[str, WidgetSpec] = {}
+
+    def register(self, spec: WidgetSpec) -> None:
+        self._specs[spec.id] = spec
+
+    def get(self, widget_id: str) -> WidgetSpec:
+        return self._specs[widget_id]
+
+    def all(self) -> list[WidgetSpec]:
+        return list(self._specs.values())
+
+    def has(self, widget_id: str) -> bool:
+        return widget_id in self._specs

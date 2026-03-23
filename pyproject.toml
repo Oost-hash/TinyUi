@@ -8,7 +8,7 @@ dependencies = [
 ]
 
 [project.scripts]
-tinyui = "tinyui.main:main"
+tinyui = "app.main:main"
 
 [project.optional-dependencies]
 dev = [

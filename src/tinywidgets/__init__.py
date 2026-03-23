@@ -18,10 +18,13 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-import multiprocessing as mp
+"""tinywidgets — self-contained overlay widget system."""
 
-from app.main import main
+from .registry import WidgetRegistry
+from .spec import WidgetSpec, load_widgets_toml
 
-if __name__ == "__main__":
-    mp.freeze_support()
-    main()
+__all__ = [
+    "WidgetRegistry",
+    "WidgetSpec",
+    "load_widgets_toml",
+]

@@ -18,10 +18,27 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-import multiprocessing as mp
+"""Qt application bootstrap — shared by tinyui and tinywidgets.
 
-from app.main import main
+Call create_application() exactly once, before creating any windows or engines.
+"""
 
-if __name__ == "__main__":
-    mp.freeze_support()
-    main()
+from __future__ import annotations
+
+import sys
+
+from PySide6.QtGui import QGuiApplication
+from PySide6.QtQuick import QQuickWindow
+from PySide6.QtQuickControls2 import QQuickStyle
+
+
+def create_application(argv: list[str] | None = None) -> QGuiApplication:
+    """Create and configure the QGuiApplication.
+
+    Must be called before any QML engine or window is created.
+    """
+    if argv is None:
+        argv = sys.argv
+    QQuickWindow.setDefaultAlphaBuffer(True)
+    QQuickStyle.setStyle("Basic")
+    return QGuiApplication(argv)
