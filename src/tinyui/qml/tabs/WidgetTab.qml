@@ -230,8 +230,63 @@ Item {
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
         }
 
-        Flickable {
+        // ── Demo settings — slides in below the header when active ───────────────
+        Rectangle {
+            id: demoSection
+            readonly property bool _on: typeof mockViewModel !== "undefined" && mockViewModel.active
             anchors.top: detailHeader.bottom
+            anchors.left: parent.left; anchors.right: parent.right
+            height: _on ? demoSectionInner.implicitHeight : 0
+            Behavior on height { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+            clip: true
+            color: theme.surfaceAlt
+            visible: height > 0
+
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
+
+            Column {
+                id: demoSectionInner
+                anchors.left: parent.left; anchors.right: parent.right
+                spacing: 0
+
+                EditRow {
+                    label: "Min"
+                    description: "Lowest value in the sweep"
+                    NumberStepper {
+                        anchors.right: parent.right; anchors.rightMargin: 0
+                        anchors.verticalCenter: parent.verticalCenter
+                        value: typeof mockViewModel !== "undefined" ? mockViewModel.demoMin : 0
+                        step: 1
+                        onCommit: (v) => { if (typeof mockViewModel !== "undefined") mockViewModel.setMin(v) }
+                    }
+                }
+                EditRow {
+                    label: "Max"
+                    description: "Starting value; sweep resets here"
+                    NumberStepper {
+                        anchors.right: parent.right; anchors.rightMargin: 0
+                        anchors.verticalCenter: parent.verticalCenter
+                        value: typeof mockViewModel !== "undefined" ? mockViewModel.demoMax : 100
+                        step: 1
+                        onCommit: (v) => { if (typeof mockViewModel !== "undefined") mockViewModel.setMax(v) }
+                    }
+                }
+                EditRow {
+                    label: "Speed"
+                    description: "Decrease per tick (100 ms)"
+                    NumberStepper {
+                        anchors.right: parent.right; anchors.rightMargin: 0
+                        anchors.verticalCenter: parent.verticalCenter
+                        value: typeof mockViewModel !== "undefined" ? mockViewModel.demoSpeed : 0.5
+                        step: 0.1
+                        onCommit: (v) => { if (typeof mockViewModel !== "undefined") mockViewModel.setSpeed(v) }
+                    }
+                }
+            }
+        }
+
+        Flickable {
+            anchors.top: demoSection.bottom
             anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
             contentHeight: editColumn.implicitHeight + 16
             clip: true
@@ -337,51 +392,6 @@ Item {
                             if (widgetTab.selectedContext)
                                 widgetTab.selectedContext.setFlashTarget(_opts[i])
                         }
-                    }
-                }
-
-                // ── Section: Demo ──────────────────────────────────────────────
-                SectionHeader {
-                    text: "Demo"
-                    visible: typeof mockViewModel !== "undefined"
-                }
-
-                EditRow {
-                    visible: typeof mockViewModel !== "undefined"
-                    label: "Min"
-                    description: "Lowest value in the sweep"
-                    NumberStepper {
-                        anchors.right: parent.right; anchors.rightMargin: 0
-                        anchors.verticalCenter: parent.verticalCenter
-                        value: typeof mockViewModel !== "undefined" ? mockViewModel.demoMin : 0
-                        step: 1
-                        onCommit: (v) => { if (typeof mockViewModel !== "undefined") mockViewModel.setMin(v) }
-                    }
-                }
-
-                EditRow {
-                    visible: typeof mockViewModel !== "undefined"
-                    label: "Max"
-                    description: "Starting value; sweep resets here"
-                    NumberStepper {
-                        anchors.right: parent.right; anchors.rightMargin: 0
-                        anchors.verticalCenter: parent.verticalCenter
-                        value: typeof mockViewModel !== "undefined" ? mockViewModel.demoMax : 100
-                        step: 1
-                        onCommit: (v) => { if (typeof mockViewModel !== "undefined") mockViewModel.setMax(v) }
-                    }
-                }
-
-                EditRow {
-                    visible: typeof mockViewModel !== "undefined"
-                    label: "Speed"
-                    description: "Decrease per tick (100 ms)"
-                    NumberStepper {
-                        anchors.right: parent.right; anchors.rightMargin: 0
-                        anchors.verticalCenter: parent.verticalCenter
-                        value: typeof mockViewModel !== "undefined" ? mockViewModel.demoSpeed : 0.5
-                        step: 0.1
-                        onCommit: (v) => { if (typeof mockViewModel !== "undefined") mockViewModel.setSpeed(v) }
                     }
                 }
 
