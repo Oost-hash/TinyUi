@@ -78,12 +78,16 @@ In this update I want too introduce a new system and add globals too widgets
 - [ ] implement widget global settings
 - [ ] implement tinyHotkey
 - [ ] add indicators: hotkey, game connection
+- [ ] improve debugging
 
 ### Later
 Ideas that are on the radar but not scheduled yet:
 
+- Separate connector from plugin and make it a dependecy
 - Reimplement processing of data (modules, plugin layer?) 
 - Spotter?
+- Custom widgets (this one is far in the future, but the way i am building it, it should be possible)
+- Grouping widgets
 
 ---
 
