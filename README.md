@@ -83,6 +83,7 @@ In this update I want too introduce a new system and add globals too widgets
 ### Later
 Ideas that are on the radar but not scheduled yet:
 
+- Separate connector from plugin and make it a dependecy
 - Reimplement processing of data (modules, plugin layer?) 
 - Spotter?
 
