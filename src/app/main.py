@@ -116,13 +116,17 @@ def main() -> None:
 
     # ── 9. Hand off to tinyui ─────────────────────────────────────────────────
     extra: dict = {
-        "widgetModel":        overlay.model,
+        "widgetModel":           overlay.model,
         "stateMonitorViewModel": state_monitor,
     }
     if mock_vms:
         extra["mockViewModel"] = mock_vms[0]
 
-    exit_code = launch(core, lifecycle, pre_run=overlay.start, extra_context=extra)
+    def _pre_run() -> None:
+        overlay.start()
+        state_monitor.start()   # QApplication exists here — safe to start QTimer
+
+    exit_code = launch(core, lifecycle, pre_run=_pre_run, extra_context=extra)
     state_monitor.shutdown()
     overlay.stop()
     sys.exit(exit_code)

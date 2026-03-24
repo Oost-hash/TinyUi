@@ -81,11 +81,14 @@ class StateMonitorViewModel(QObject):
 
     def setup(self, connectors: ConnectorRegistry,
               sources: list[tuple[str, str]]) -> None:
-        """Start monitoring the given (plugin_name, source_path) pairs."""
+        """Register sources and connectors.  Call start() once QApplication exists."""
         self._connectors = connectors
         self._sources    = sources
+
+    def start(self) -> None:
+        """Start the poll timer.  Must be called after QApplication is created."""
         self._timer.start()
-        _log.debug("state monitor started, watching %d sources", len(sources))
+        _log.info("state monitor started, watching %d sources", len(self._sources))
 
     def shutdown(self) -> None:
         self._timer.stop()
