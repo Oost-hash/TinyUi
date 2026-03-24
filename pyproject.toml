@@ -23,8 +23,12 @@ pythonpath = ["src"]
 [tool.setuptools.packages.find]
 where = ["src"]
 
-# ── TinyUi dev-instellingen ───────────────────────────────────────────────────
-# categories: menu | settings | state | mouse | win32 | theme | ui | connector | connector_polling | all
-# Prioriteit: TINYUI_DEBUG env var > pyproject.toml > productie (geen debug)
+# ── TinyUI debug settings ─────────────────────────────────────────────────────
+# categories:    connector | menu | mouse | overlay | settings | ui | widget | all
+#                Leave empty to start silent; toggle categories in Dev Tools.
+# console_level: minimum level shown in the terminal (PowerShell / bash).
+#                DEBUG | INFO | WARNING | ERROR
+#                Omit to suppress all terminal output (Dev Tools still works).
 [tool.tinyui.debug]
-categories = "widget, overlay, connector"
+categories    = "all"
+console_level = "INFO"

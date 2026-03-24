@@ -24,7 +24,7 @@
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
 from tinycore import App
-from tinyui.log import get_logger
+from tinycore.log import get_logger
 
 log = get_logger(__name__)
 

@@ -20,7 +20,11 @@ Running a release:
 <!-- Breaking changes that affect existing plugins or config -->
 
 ### minor
-<!-- New features and additions -->
+- Log output to terminal and Dev Tools console can now be controlled independently — set `console_level = "INFO"` (or `"DEBUG"`, `"WARNING"`) in `[tool.tinyui.debug]` to attach a terminal handler at that level; omit the key to suppress terminal output entirely
+- Debug categories can be toggled at runtime from Dev Tools without restarting; `ALL_CATEGORIES` constant lists all available channels
+- Dev Tools State tab now has a source selector — choose a widget context or connector to inspect; widget context properties are read live via QMetaObject introspection
+- LMU connector logs game state transitions with full session context: session type, track, driver, car, class, car count, track temperature, ambient temperature, and game version
 
 ### patch
-<!-- Bug fixes, small improvements, and cleanup -->
+- Removed `tinyui/log.py` re-export shim — all layers import directly from `tinycore.log`
+- Dutch comments in `ColorPicker.qml` translated to English

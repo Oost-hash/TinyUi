@@ -21,7 +21,7 @@
 
 from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 
-from tinyui.log import get_logger
+from tinycore.log import get_logger
 
 log = get_logger(__name__)
 
@@ -163,7 +163,7 @@ class MenuViewModel(QObject):
         if self._active_popup != name:
             prev = self._active_popup
             self._active_popup = name
-            log.state("activePopup", prev=prev, new=name)
+            log.menu("activePopup", prev=prev, new=name)
             self.activePopupChanged.emit()
             if name:
                 self._close_timer.stop()

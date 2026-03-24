@@ -32,6 +32,10 @@ Item {
 
     property var selectedContext: null
 
+    // True when a mock connector was registered (dev/demo builds only).
+    // Centralises the typeof guard so inner elements can just test hasMock.
+    readonly property bool hasMock: hasMock
+
     // ── Left: widget list ──────────────────────────────────────────────────────
     Item {
         id: listPane
@@ -197,23 +201,23 @@ Item {
             // Demo toggle button — only shown when mockViewModel is available
             Rectangle {
                 id: demoBtn
-                visible: typeof mockViewModel !== "undefined"
+                visible: hasMock
                 anchors.right: parent.right; anchors.rightMargin: 12
                 anchors.verticalCenter: parent.verticalCenter
                 width: 64; height: 26; radius: 4
-                color: (typeof mockViewModel !== "undefined" && mockViewModel.active)
+                color: (hasMock && mockViewModel.active)
                        ? theme.accent
                        : (demoBtnArea.containsMouse ? theme.surfaceRaised : "transparent")
                 border.width: 1
-                border.color: (typeof mockViewModel !== "undefined" && mockViewModel.active)
+                border.color: (hasMock && mockViewModel.active)
                               ? theme.accent : theme.border
                 Behavior on color { ColorAnimation { duration: 80 } }
 
                 Text {
                     anchors.centerIn: parent
-                    text: (typeof mockViewModel !== "undefined" && mockViewModel.active)
+                    text: (hasMock && mockViewModel.active)
                           ? "■ Demo" : "▶ Demo"
-                    color: (typeof mockViewModel !== "undefined" && mockViewModel.active)
+                    color: (hasMock && mockViewModel.active)
                            ? theme.accentText : (demoBtnArea.containsMouse ? theme.text : theme.textMuted)
                     font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
                     font.weight: Font.Medium
@@ -223,7 +227,7 @@ Item {
                 MouseArea {
                     id: demoBtnArea
                     anchors.fill: parent; hoverEnabled: true
-                    onClicked: if (typeof mockViewModel !== "undefined") mockViewModel.toggle()
+                    onClicked: if (hasMock) mockViewModel.toggle()
                 }
             }
 
@@ -233,7 +237,7 @@ Item {
         // ── Demo settings — slides in below the header when active ───────────────
         Rectangle {
             id: demoSection
-            readonly property bool _on: typeof mockViewModel !== "undefined" && mockViewModel.active
+            readonly property bool _on: hasMock && mockViewModel.active
             anchors.top: detailHeader.bottom
             anchors.left: parent.left; anchors.right: parent.right
             height: _on ? demoSectionInner.implicitHeight : 0
@@ -255,9 +259,9 @@ Item {
                     NumberStepper {
                         anchors.right: parent.right; anchors.rightMargin: 0
                         anchors.verticalCenter: parent.verticalCenter
-                        value: typeof mockViewModel !== "undefined" ? mockViewModel.demoMin : 0
+                        value: hasMock ? mockViewModel.demoMin : 0
                         step: 1
-                        onCommit: (v) => { if (typeof mockViewModel !== "undefined") mockViewModel.setMin(v) }
+                        onCommit: (v) => { if (hasMock) mockViewModel.setMin(v) }
                     }
                 }
                 EditRow {
@@ -266,9 +270,9 @@ Item {
                     NumberStepper {
                         anchors.right: parent.right; anchors.rightMargin: 0
                         anchors.verticalCenter: parent.verticalCenter
-                        value: typeof mockViewModel !== "undefined" ? mockViewModel.demoMax : 100
+                        value: hasMock ? mockViewModel.demoMax : 100
                         step: 1
-                        onCommit: (v) => { if (typeof mockViewModel !== "undefined") mockViewModel.setMax(v) }
+                        onCommit: (v) => { if (hasMock) mockViewModel.setMax(v) }
                     }
                 }
                 EditRow {
@@ -277,9 +281,9 @@ Item {
                     NumberStepper {
                         anchors.right: parent.right; anchors.rightMargin: 0
                         anchors.verticalCenter: parent.verticalCenter
-                        value: typeof mockViewModel !== "undefined" ? mockViewModel.demoSpeed : 0.5
+                        value: hasMock ? mockViewModel.demoSpeed : 0.5
                         step: 0.1
-                        onCommit: (v) => { if (typeof mockViewModel !== "undefined") mockViewModel.setSpeed(v) }
+                        onCommit: (v) => { if (hasMock) mockViewModel.setSpeed(v) }
                     }
                 }
             }
@@ -370,30 +374,8 @@ Item {
                     }
                 }
 
-                // ── Section: Flash ─────────────────────────────────────────────
-                SectionHeader { text: "Flash" }
-
                 // ── Section: Thresholds ────────────────────────────────────────
                 SectionHeader { text: "Thresholds" }
-
-                // Description row
-                Rectangle {
-                    anchors.left: parent.left; anchors.right: parent.right
-                    height: descText.implicitHeight + 16
-                    color: "transparent"
-
-                    Text {
-                        id: descText
-                        anchors.left: parent.left; anchors.leftMargin: 16
-                        anchors.right: parent.right; anchors.rightMargin: 16
-                        anchors.verticalCenter: parent.verticalCenter
-                        wrapMode: Text.WordWrap
-                        text: "Each entry is an upper bound — the widget uses that color while the value is at or below that number. Above all thresholds the default color is used. Enable flash per threshold to blink when in that range."
-                        color: theme.textMuted
-                        font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
-                    }
-                    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border; opacity: 0.4 }
-                }
 
                 ThresholdEditor {
                     context: widgetTab.selectedContext

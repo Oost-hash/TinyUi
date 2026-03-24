@@ -63,6 +63,7 @@ class LogViewModel(QObject):
         super().__init__(parent)
 
         self._handler = _QtLogHandler(self.recordAdded.emit)
+        self._handler.setLevel(logging.DEBUG)  # capture everything the root passes
         logging.getLogger().addHandler(self._handler)
 
     @Slot()

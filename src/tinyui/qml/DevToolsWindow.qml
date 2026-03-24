@@ -113,142 +113,217 @@ BaseDialog {
             property real currentTime: Date.now()
             Timer { interval: 500; running: true; repeat: true; onTriggered: parent.currentTime = Date.now() }
 
-            // Column headers
-            Rectangle {
-                id: stateHeader
-                anchors.top:   parent.top
-                anchors.left:  parent.left
-                anchors.right: parent.right
-                height: 24
-                color: theme.surfaceAlt
+            readonly property var _vm: stateMonitorViewModel ?? null
 
-                Rectangle {
-                    anchors.bottom: parent.bottom
-                    width: parent.width; height: 1
-                    color: theme.border
-                }
-
-                Row {
-                    anchors.fill: parent
-                    anchors.leftMargin:  12
-                    anchors.rightMargin: 12
-
-                    Text {
-                        width: parent.width * 0.65
-                        height: parent.height
-                        verticalAlignment: Text.AlignVCenter
-                        text: "Source"
-                        color: theme.textMuted
-                        font.pixelSize: 10
-                        font.family: "Consolas, Courier New, monospace"
-                        font.weight: Font.DemiBold
-                    }
-                    Text {
-                        width: parent.width * 0.35
-                        height: parent.height
-                        verticalAlignment: Text.AlignVCenter
-                        text: "Value"
-                        color: theme.textMuted
-                        font.pixelSize: 10
-                        font.family: "Consolas, Courier New, monospace"
-                        font.weight: Font.DemiBold
-                    }
-                }
-            }
-
-            ListView {
-                anchors.top:    stateHeader.bottom
-                anchors.left:   parent.left
-                anchors.right:  parent.right
-                anchors.bottom: parent.bottom
-                clip: true
-                model: stateMonitorViewModel ? stateMonitorViewModel.entries : []
+            ColumnLayout {
+                anchors.fill: parent
                 spacing: 0
-                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
-                delegate: Item {
-                    id: stateRow
-                    required property var modelData
-                    required property int index
+                // ── Source selector ───────────────────────────────────────────
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 34
+                    color: theme.surfaceAlt
 
-                    width: ListView.view.width
-                    height: 22
-
-                    // Flash overlay — animates from yellow to transparent on change
                     Rectangle {
-                        id: flashRect
-                        anchors.fill: parent
-                        color: "#50FFD700"
-                        opacity: 0
+                        anchors.bottom: parent.bottom
+                        width: parent.width; height: 1
+                        color: theme.border
                     }
 
-                    // Alternating row background
-                    Rectangle {
+                    Flickable {
                         anchors.fill: parent
-                        color: index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.02)
-                        z: -1
+                        contentWidth: sourceRow.implicitWidth + 16
+                        contentHeight: height
+                        clip: true
+                        flickableDirection: Flickable.HorizontalFlick
+                        ScrollBar.horizontal: ScrollBar { policy: ScrollBar.AsNeeded; height: 3 }
+
+                        Row {
+                            id: sourceRow
+                            x: 8
+                            height: parent.height
+                            spacing: 4
+
+                            Repeater {
+                                model: stateTab._vm ? stateTab._vm.sources : []
+
+                                delegate: Rectangle {
+                                    required property var modelData
+
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    implicitWidth: srcLabel.implicitWidth + 16
+                                    height: 22; radius: 3
+
+                                    readonly property bool active:
+                                        stateTab._vm && stateTab._vm.selectedIndex === modelData.index
+
+                                    color: active
+                                           ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.15)
+                                           : (srcArea.containsMouse ? theme.surfaceRaised : "transparent")
+                                    border.width: 1
+                                    border.color: active ? theme.accent : theme.border
+
+                                    Behavior on color        { ColorAnimation { duration: 80 } }
+                                    Behavior on border.color { ColorAnimation { duration: 80 } }
+
+                                    Text {
+                                        id: srcLabel
+                                        anchors.centerIn: parent
+                                        text: modelData.label
+                                        color: parent.active ? theme.accent : theme.textMuted
+                                        font.pixelSize: theme.fontSizeSmall
+                                        font.family: theme.fontFamily
+                                        Behavior on color { ColorAnimation { duration: 80 } }
+                                    }
+
+                                    MouseArea {
+                                        id: srcArea
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        onClicked: {
+                                            if (stateTab._vm)
+                                                stateTab._vm.selectSource(modelData.index)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ── Column headers ────────────────────────────────────────────
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 24
+                    color: theme.surfaceAlt
+
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        width: parent.width; height: 1
+                        color: theme.border
                     }
 
                     Row {
-                        anchors.fill:        parent
-                        anchors.leftMargin:  12
+                        anchors.fill: parent
+                        anchors.leftMargin: 26
                         anchors.rightMargin: 12
-                        spacing: 6
-
-                        // Active dot — green while changed within last 2 s, grey otherwise
-                        Rectangle {
-                            width: 6; height: 6; radius: 3
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: (stateTab.currentTime - stateRow.modelData.changedAt) < 2000
-                                   ? "#44FF88" : theme.border
-                            Behavior on color { ColorAnimation { duration: 300 } }
-                        }
 
                         Text {
-                            width:  parent.width * 0.60
+                            width: parent.width * 0.60
                             height: parent.height
                             verticalAlignment: Text.AlignVCenter
-                            text:  stateRow.modelData.key
+                            text: "Property"
                             color: theme.textMuted
-                            font.pixelSize: 11
+                            font.pixelSize: 10
                             font.family: "Consolas, Courier New, monospace"
-                            elide: Text.ElideLeft
+                            font.weight: Font.DemiBold
                         }
                         Text {
-                            width:  parent.width * 0.35
+                            width: parent.width * 0.40
                             height: parent.height
                             verticalAlignment: Text.AlignVCenter
-                            text:  stateRow.modelData.value
-                            color: theme.text
-                            font.pixelSize: 11
+                            text: "Value"
+                            color: theme.textMuted
+                            font.pixelSize: 10
                             font.family: "Consolas, Courier New, monospace"
-                            elide: Text.ElideRight
+                            font.weight: Font.DemiBold
                         }
-                    }
-
-                    NumberAnimation {
-                        id: flashAnim
-                        target: flashRect
-                        property: "opacity"
-                        from: 1.0; to: 0.0
-                        duration: 600
-                        easing.type: Easing.OutQuad
-                    }
-
-                    Component.onCompleted: {
-                        if (stateRow.modelData.changed) flashAnim.start()
                     }
                 }
-            }
 
-            // Empty state
-            Text {
-                anchors.centerIn: parent
-                visible: !stateMonitorViewModel || stateMonitorViewModel.entries.length === 0
-                text: "No sources — load a plugin with widgets to start monitoring."
-                color: theme.textMuted
-                font.pixelSize: theme.fontSizeSmall
-                font.family: theme.fontFamily
+                // ── Property list ─────────────────────────────────────────────
+                ListView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    model: stateTab._vm ? stateTab._vm.entries : []
+                    spacing: 0
+                    ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+                    delegate: Item {
+                        id: stateRow
+                        required property var modelData
+                        required property int index
+
+                        width: ListView.view.width
+                        height: 22
+
+                        // Flash overlay — fades from yellow on change
+                        Rectangle {
+                            id: flashRect
+                            anchors.fill: parent
+                            color: "#50FFD700"
+                            opacity: 0
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            color: index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.02)
+                            z: -1
+                        }
+
+                        Row {
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            spacing: 6
+
+                            // Heartbeat dot — green within 2 s of last change
+                            Rectangle {
+                                width: 6; height: 6; radius: 3
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: (stateTab.currentTime - stateRow.modelData.changedAt) < 2000
+                                       ? "#44FF88" : theme.border
+                                Behavior on color { ColorAnimation { duration: 300 } }
+                            }
+
+                            Text {
+                                width: parent.width * 0.60
+                                height: parent.height
+                                verticalAlignment: Text.AlignVCenter
+                                text: stateRow.modelData.key
+                                color: theme.textMuted
+                                font.pixelSize: 11
+                                font.family: "Consolas, Courier New, monospace"
+                                elide: Text.ElideLeft
+                            }
+                            Text {
+                                width: parent.width * 0.35
+                                height: parent.height
+                                verticalAlignment: Text.AlignVCenter
+                                text: stateRow.modelData.value
+                                color: theme.text
+                                font.pixelSize: 11
+                                font.family: "Consolas, Courier New, monospace"
+                                elide: Text.ElideRight
+                            }
+                        }
+
+                        NumberAnimation {
+                            id: flashAnim
+                            target: flashRect; property: "opacity"
+                            from: 1.0; to: 0.0
+                            duration: 600; easing.type: Easing.OutQuad
+                        }
+
+                        Component.onCompleted: {
+                            if (stateRow.modelData.changed) flashAnim.start()
+                        }
+                    }
+
+                    // Empty state
+                    Text {
+                        anchors.centerIn: parent
+                        visible: !stateTab._vm || stateTab._vm.entries.length === 0
+                        text: stateTab._vm && stateTab._vm.sources.length === 0
+                              ? "No sources — load a plugin with widgets to start monitoring."
+                              : "Select a source above."
+                        color: theme.textMuted
+                        font.pixelSize: theme.fontSizeSmall
+                        font.family: theme.fontFamily
+                    }
+                }
             }
         }
 
@@ -380,6 +455,112 @@ BaseDialog {
                             MouseArea {
                                 id: clearMouse; anchors.fill: parent; hoverEnabled: true
                                 onClicked: { logModel.clear(); logViewModel.clear() }
+                            }
+                        }
+                    }
+                }
+
+                // Category filter bar — dev mode toggle + per-category chips
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 30
+                    color: theme.surface
+
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        width: parent.width; height: 1
+                        color: theme.border
+                    }
+
+                    Flickable {
+                        anchors.fill: parent
+                        contentWidth: catChips.implicitWidth + 16
+                        contentHeight: height
+                        clip: true
+                        flickableDirection: Flickable.HorizontalFlick
+                        ScrollBar.horizontal: ScrollBar { policy: ScrollBar.AsNeeded; height: 4 }
+
+                        Row {
+                            id: catChips
+                            x: 8
+                            height: parent.height
+                            spacing: 4
+
+                            // ── Dev mode master toggle ─────────────────────────
+                            Rectangle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 44; height: 20; radius: 3
+                                readonly property bool on: logSettingsViewModel
+                                                           ? logSettingsViewModel.devMode : false
+                                color:        on ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.18)
+                                                 : "transparent"
+                                border.color: on ? theme.accent : theme.border
+                                border.width: 1
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "DEV"
+                                    color: parent.on ? theme.accent : theme.textMuted
+                                    font.pixelSize: 10
+                                    font.family: "Consolas, Courier New, monospace"
+                                    font.weight: Font.Bold
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        if (logSettingsViewModel)
+                                            logSettingsViewModel.setDevMode(!logSettingsViewModel.devMode)
+                                    }
+                                }
+                            }
+
+                            // Divider
+                            Rectangle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 1; height: 14
+                                color: theme.border
+                            }
+
+                            // ── Per-category chips ─────────────────────────────
+                            Repeater {
+                                model: logSettingsViewModel ? logSettingsViewModel.categories : []
+
+                                delegate: Rectangle {
+                                    required property var modelData
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    implicitWidth:  catLabel.implicitWidth + 12
+                                    height: 20; radius: 3
+
+                                    readonly property bool devOn: logSettingsViewModel
+                                                                  ? logSettingsViewModel.devMode : false
+                                    readonly property bool catOn: modelData.enabled && devOn
+
+                                    color:        catOn ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.12)
+                                                        : "transparent"
+                                    border.color: catOn ? theme.accent : theme.border
+                                    border.width: 1
+                                    opacity: devOn ? 1.0 : 0.4
+
+                                    Behavior on opacity { NumberAnimation { duration: 120 } }
+
+                                    Text {
+                                        id: catLabel
+                                        anchors.centerIn: parent
+                                        text: modelData.name
+                                        color: parent.catOn ? theme.accent : theme.textMuted
+                                        font.pixelSize: 10
+                                        font.family: "Consolas, Courier New, monospace"
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        enabled: parent.devOn
+                                        onClicked: {
+                                            if (logSettingsViewModel)
+                                                logSettingsViewModel.setCategoryEnabled(
+                                                    modelData.name, !modelData.enabled)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

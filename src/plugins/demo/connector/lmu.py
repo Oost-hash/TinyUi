@@ -34,6 +34,12 @@ import math
 import sys
 from pathlib import Path
 
+from tinycore.log import get_logger
+
+_log = get_logger(__name__)
+
+_SESSION_NAMES = {0: "test", 1: "practice", 2: "qualify", 3: "warmup", 4: "race"}
+
 # pyLMUSharedMemory lives as a submodule next to this file
 _LIB = Path(__file__).parent.parent
 if str(_LIB) not in sys.path:
@@ -497,6 +503,11 @@ class LMUConnector(TelemetryReader):
         self._tyre           = _Tyre(self._info)
         self._vehicle        = _Vehicle(self._info)
         self._wheel          = _Wheel(self._info)
+        # State transition tracking
+        self._prev_active: bool | None = None
+        self._prev_paused: bool | None = None
+        self._prev_session_type: int | None = None
+        self._prev_track: str | None = None
 
     def open(self) -> None:
         self._info.create()
@@ -506,6 +517,66 @@ class LMUConnector(TelemetryReader):
 
     def update(self) -> None:
         self._info.update()
+        self._log_transitions()
+
+    def _log_transitions(self) -> None:
+        try:
+            active = self._state.active()
+            paused = self._state.paused()
+        except Exception:
+            return
+
+        # active transition
+        if active != self._prev_active:
+            if active:
+                self._log_session_start()
+            elif self._prev_active is not None:
+                _log.info("game stopped")
+            self._prev_active = active
+
+        # session / track changes while active
+        if active:
+            try:
+                stype = self._session.session_type()
+                track = self._session.track_name()
+                if self._prev_session_type is not None and stype != self._prev_session_type:
+                    _log.info("session changed  session=%s", _SESSION_NAMES.get(stype, stype))
+                if self._prev_track is not None and track != self._prev_track:
+                    _log.info("track changed  track=%s", track)
+                self._prev_session_type = stype
+                self._prev_track = track
+            except Exception:
+                pass
+        else:
+            self._prev_session_type = None
+            self._prev_track = None
+
+        # paused transition
+        if paused != self._prev_paused and self._prev_paused is not None:
+            _log.info("game %s", "paused" if paused else "resumed")
+        self._prev_paused = paused
+
+    def _log_session_start(self) -> None:
+        try:
+            stype   = self._session.session_type()
+            track   = self._session.track_name()
+            driver  = self._vehicle.driver_name()
+            car     = self._vehicle.vehicle_name()
+            cls     = self._vehicle.class_name()
+            cars    = self._vehicle.total_vehicles()
+            t_track = self._session.track_temperature()
+            t_amb   = self._session.ambient_temperature()
+            version = self._state.version()
+            _log.info(
+                "game started  session=%s  track=%s  driver=%s  car=%s  class=%s"
+                "  cars=%d  t_track=%.1f°C  t_amb=%.1f°C  version=%s",
+                _SESSION_NAMES.get(stype, stype), track, driver, car, cls,
+                cars, t_track, t_amb, version,
+            )
+            self._prev_session_type = stype
+            self._prev_track = track
+        except Exception as exc:
+            _log.info("game started  (context unavailable: %s)", exc)
 
     @property
     def state(self) -> State:

@@ -292,12 +292,7 @@ Column {
             MouseArea {
                 id: addArea
                 anchors.fill: parent; hoverEnabled: true
-                onClicked: {
-                    if (!root.context) return
-                    var ts      = root.context.thresholds
-                    var nextVal = ts.length > 0 ? ts[ts.length - 1].value + 10 : 10
-                    root.context.addThreshold(nextVal, "#E0E0E0")
-                }
+                onClicked: { if (root.context) root.context.addDefaultThreshold() }
             }
         }
     }

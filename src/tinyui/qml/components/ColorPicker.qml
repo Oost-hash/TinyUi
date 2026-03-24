@@ -31,7 +31,7 @@ Item {
     implicitWidth:  swatchRow.implicitWidth
     implicitHeight: swatchRow.implicitHeight
 
-    // ── Interne HSV staat ─────────────────────────────────────────────────────
+    // ── Internal HSV state ────────────────────────────────────────────────────
     property real _h: 0
     property real _s: 1
     property real _v: 1
@@ -175,7 +175,7 @@ Item {
 
         }
 
-        // ── Picker inhoud ─────────────────────────────────────────────────────
+        // ── Picker content ────────────────────────────────────────────────────
         Rectangle {
             id: pickerContent
             anchors.top: parent.top
@@ -316,7 +316,7 @@ Item {
                     }
                 }
 
-                // ── OK knop ───────────────────────────────────────────────────
+                // ── OK button ────────────────────────────────────────────────
                 Rectangle {
                     width: parent.width; height: 28; radius: 4
                     color: okArea.containsMouse ? theme.accent : theme.surfaceRaised

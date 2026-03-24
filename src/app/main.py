@@ -38,12 +38,16 @@ import sys
 from pathlib import Path
 
 from tinycore import PluginLifecycleManager, PluginSpec, SubprocessPlugin, create_app
+from tinycore.log import get_logger
 from tinycore.plugin.manifest import scan_plugins
 from tinyui import TinyUIPlugin, launch
 from tinyui.viewmodels.state_monitor_viewmodel import StateMonitorViewModel
 from tinywidgets.mock_viewmodel import MockViewModel
 from tinywidgets.overlay import WidgetOverlay
 from tinywidgets.spec import load_widgets_toml
+
+
+_log = get_logger(__name__)
 
 
 def _config_dir() -> Path:
@@ -92,6 +96,7 @@ def main() -> None:
         real = m.connector.create()
         real.open()
         core.connectors.register(m.name, real)
+        _log.connector("registered", plugin=m.name, type=type(real).__name__)
 
         # If the plugin ships a mock connector, create a MockViewModel for it
         mock_cls = m.mock_connector
@@ -99,6 +104,7 @@ def main() -> None:
             mock = mock_cls.create()
             mock.open()
             mock_vms.append(MockViewModel(core.connectors, m.name, real, mock))
+            _log.connector("mock registered", plugin=m.name, type=type(mock).__name__)
 
     # ── 7. Build widget overlay ───────────────────────────────────────────────
     overlay = WidgetOverlay(core.connectors, config_dir=_config_dir())
@@ -113,6 +119,8 @@ def main() -> None:
     # ── 8. State monitor for Dev Tools ────────────────────────────────────────
     state_monitor = StateMonitorViewModel()
     state_monitor.setup(core.connectors, sources)
+    for ctx in overlay.model.contexts:
+        state_monitor.register_object(f"Widget: {ctx.title}", ctx)
 
     # ── 9. Hand off to tinyui ─────────────────────────────────────────────────
     extra: dict = {

@@ -36,11 +36,12 @@ import PySide6
 from PySide6.QtCore import QUrl, QtMsgType, qInstallMessageHandler, qVersion
 
 from tinycore.qt import create_application, create_engine
-from tinyui import log as app_log
+import tinycore.log as app_log
 from tinyui.const import APP_NAME, VERSION
 from tinyui.icons import Icons, load_font
 from tinyui.theme import Theme
 from tinyui.viewmodels.core_viewmodel import CoreViewModel
+from tinyui.viewmodels.log_settings_viewmodel import LogSettingsViewModel
 from tinyui.viewmodels.log_viewmodel import LogViewModel
 from tinyui.viewmodels.menu_viewmodel import MenuViewModel
 from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
@@ -88,7 +89,8 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     log.info("Editors: %d", len(core.editors.all()))
 
     # ── ViewModels ────────────────────────────────────────────────────────────
-    log_vm       = LogViewModel()   # install early — captures all subsequent log output
+    log_vm          = LogViewModel()          # install early — captures all subsequent log output
+    log_settings_vm = LogSettingsViewModel()
     theme        = Theme()
     menu_vm      = MenuViewModel()
     statusbar_vm = StatusBarViewModel()
@@ -153,6 +155,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     ctx.setContextProperty("settingsPanelViewModel", settings_vm)
     ctx.setContextProperty("tabViewModel",           tab_vm)
     ctx.setContextProperty("logViewModel",           log_vm)
+    ctx.setContextProperty("logSettingsViewModel",   log_settings_vm)
 
     if extra_context:
         for key, value in extra_context.items():
@@ -246,6 +249,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
 
     del engine
     del _win_ctrl
+    del log_settings_vm
     del tab_vm
     del settings_vm
     del core_vm

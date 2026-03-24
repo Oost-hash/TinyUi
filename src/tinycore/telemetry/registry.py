@@ -39,3 +39,7 @@ class ConnectorRegistry:
 
     def all(self) -> list[TelemetryReader]:
         return list(self._connectors.values())
+
+    def items(self) -> list[tuple[str, TelemetryReader]]:
+        """All (plugin_name, connector) pairs in registration order."""
+        return list(self._connectors.items())

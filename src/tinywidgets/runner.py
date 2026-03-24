@@ -81,19 +81,53 @@ class WidgetState:
 class ConnectorUpdater:
     """Calls connector.update() once per tick for every registered connector.
 
+    Also tracks active/paused state transitions per connector and logs them
+    via the ``connector`` debug category.
+
     Register this as the FIRST Tickable in the PollLoop so that all runners
     see a fresh frame on every cycle.
     """
 
     def __init__(self, connectors: ConnectorRegistry) -> None:
         self._connectors = connectors
+        # {plugin_name: {"active": bool|None, "paused": bool|None}}
+        self._prev: dict[str, dict[str, bool | None]] = {}
 
     def tick(self) -> None:
-        for connector in self._connectors.all():
+        for name, connector in self._connectors.items():
             try:
                 connector.update()
-            except Exception:
-                pass
+                self._check_state(name, connector)
+            except Exception as exc:
+                _log.connector("update error", plugin=name, error=str(exc))
+
+    def _check_state(self, name: str, connector) -> None:
+        """Detect and log active/paused transitions for one connector."""
+        try:
+            active = connector.state.active()
+            paused = connector.state.paused()
+        except Exception:
+            return  # connector doesn't support state — skip
+
+        prev = self._prev.get(name)
+        if prev is None:
+            # First observation — record without logging (no "previous" to compare)
+            self._prev[name] = {"active": active, "paused": paused}
+            return
+
+        if active != prev["active"]:
+            prev["active"] = active
+            if active:
+                _log.connector("game started", plugin=name)
+            else:
+                _log.connector("game stopped", plugin=name)
+
+        if paused != prev["paused"]:
+            prev["paused"] = paused
+            if paused:
+                _log.connector("game paused", plugin=name)
+            else:
+                _log.connector("game resumed", plugin=name)
 
 
 # ---------------------------------------------------------------------------

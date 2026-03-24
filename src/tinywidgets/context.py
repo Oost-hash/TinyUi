@@ -122,6 +122,14 @@ class WidgetContext(QObject):
         self._spec.thresholds.append(ThresholdEntry(value, color, False, 5, "value"))
         self.configChanged.emit()
 
+    @Slot()
+    def addDefaultThreshold(self) -> None:
+        """Append a new threshold whose value is 10 above the current last entry (or 10 if empty)."""
+        ts = self._spec.thresholds
+        next_val = (ts[-1].value + 10) if ts else 10
+        self._spec.thresholds.append(ThresholdEntry(next_val, "#E0E0E0", False, 5, "value"))
+        self.configChanged.emit()
+
     @Slot(int)
     def removeThreshold(self, index: int) -> None:
         if 0 <= index < len(self._spec.thresholds):
@@ -220,6 +228,11 @@ class WidgetModel(QAbstractListModel):
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._widgets: list[WidgetContext] = []
+
+    @property
+    def contexts(self) -> list[WidgetContext]:
+        """Return all registered widget contexts (Python-side access only)."""
+        return list(self._widgets)
 
     def add(self, ctx: WidgetContext) -> None:
         self.beginInsertRows(QModelIndex(), len(self._widgets), len(self._widgets))
