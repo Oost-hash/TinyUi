@@ -1,6 +1,6 @@
 # TinyUi
 
-![Version](https://img.shields.io/badge/version-0.1.0-purple)
+[![Version](https://img.shields.io/badge/version-0.2.0-purple)](https://github.com/Oost-hash/TinyUi/releases/tag/v0.2.0)
 ![Status](https://img.shields.io/badge/status-work%20in%20progress-orange)
 ![License](https://img.shields.io/badge/license-GPLv3-green)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-%23db61a2?logo=github)](https://github.com/sponsors/oost-hash)
