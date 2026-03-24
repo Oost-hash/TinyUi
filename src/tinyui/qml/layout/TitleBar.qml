@@ -100,24 +100,13 @@ Rectangle {
             height: 1; color: theme.border
         }
 
-        Row {
+        Text {
             visible: !modelData.sep
             anchors.verticalCenter: parent.verticalCenter
-            anchors.left: parent.left; anchors.leftMargin: 8
-            spacing: 6
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: modelData.icon
-                font.family: theme.iconFont; font.pixelSize: 12
-                color: theme.textMuted
-            }
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: modelData.label
-                color: theme.text
-                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
-            }
+            anchors.left: parent.left; anchors.leftMargin: 12
+            text: modelData.label
+            color: theme.text
+            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
         }
 
         MouseArea {
@@ -144,11 +133,11 @@ Rectangle {
 
             Repeater {
                 model: [
-                    { icon: icons.settingsAlt, label: "Settings", sep: false, action: function() { settingsPanelViewModel.openPanel(); menuViewModel.closeMenu() } },
-                    { icon: "",                label: "",          sep: true,  action: null },
-                    { icon: icons.console,     label: "Console",  sep: false, action: function() { root.openConsole(); menuViewModel.closeMenu() } },
-                    { icon: "",                label: "",          sep: true,  action: null },
-                    { icon: icons.close,       label: "Close",     sep: false, action: function() { root.close() } }
+                    { label: "Settings",  sep: false, action: function() { settingsPanelViewModel.openPanel(); menuViewModel.closeMenu() } },
+                    { label: "",          sep: true,  action: null },
+                    { label: "Dev Tools", sep: false, action: function() { root.openDevTools(); menuViewModel.closeMenu() } },
+                    { label: "",          sep: true,  action: null },
+                    { label: "Close",     sep: false, action: function() { root.close() } }
                 ]
                 delegate: MenuItemDelegate {}
             }

@@ -40,6 +40,7 @@ from pathlib import Path
 from tinycore import PluginLifecycleManager, PluginSpec, SubprocessPlugin, create_app
 from tinycore.plugin.manifest import scan_plugins
 from tinyui import TinyUIPlugin, launch
+from tinyui.viewmodels.state_monitor_viewmodel import StateMonitorViewModel
 from tinywidgets.mock_viewmodel import MockViewModel
 from tinywidgets.overlay import WidgetOverlay
 from tinywidgets.spec import load_widgets_toml
@@ -101,18 +102,28 @@ def main() -> None:
 
     # ── 7. Build widget overlay ───────────────────────────────────────────────
     overlay = WidgetOverlay(core.connectors, config_dir=_config_dir())
+    sources: list[tuple[str, str]] = []
     for m in manifests:
         wp = m.widgets_path()
         if wp and wp.exists():
-            overlay.load(load_widgets_toml(wp), plugin_name=m.name)
+            specs = load_widgets_toml(wp)
+            overlay.load(specs, plugin_name=m.name)
+            sources.extend((m.name, s.source) for s in specs if s.source)
 
-    # ── 8. Hand off to tinyui ─────────────────────────────────────────────────
-    # First MockViewModel is exposed as mockViewModel (demo plugin)
-    extra: dict = {"widgetModel": overlay.model}
+    # ── 8. State monitor for Dev Tools ────────────────────────────────────────
+    state_monitor = StateMonitorViewModel()
+    state_monitor.setup(core.connectors, sources)
+
+    # ── 9. Hand off to tinyui ─────────────────────────────────────────────────
+    extra: dict = {
+        "widgetModel":        overlay.model,
+        "stateMonitorViewModel": state_monitor,
+    }
     if mock_vms:
         extra["mockViewModel"] = mock_vms[0]
 
     exit_code = launch(core, lifecycle, pre_run=overlay.start, extra_context=extra)
+    state_monitor.shutdown()
     overlay.stop()
     sys.exit(exit_code)
 

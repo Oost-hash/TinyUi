@@ -58,7 +58,7 @@ ApplicationWindow {
     //              Our TitleBar acts as a menu bar below the native chrome.
     readonly property bool nativeChrome: Qt.platform.os === "linux" || Qt.platform.os === "osx"
 
-    function openConsole() { consoleWindow.show() }
+    function openDevTools() { devToolsWindow.show() }
     flags: nativeChrome ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
     color: theme.surface
 
@@ -128,14 +128,14 @@ ApplicationWindow {
         }
     }
 
-    // SettingsDialog and ConsoleWindow are Windows — outside ColumnLayout
+    // SettingsDialog and DevToolsWindow are Windows — outside ColumnLayout
     SettingsDialog {}
-    ConsoleWindow { id: consoleWindow }
+    DevToolsWindow { id: devToolsWindow }
 
-    // F12 — toggle console, just like browser devtools
+    // F12 — open Dev Tools, just like browser devtools
     // TODO: make keyboard shortcuts configurable in settings
     Shortcut {
         sequence: "F12"
-        onActivated: consoleWindow.visible ? consoleWindow.hide() : consoleWindow.show()
+        onActivated: devToolsWindow.visible ? devToolsWindow.hide() : devToolsWindow.show()
     }
 }
