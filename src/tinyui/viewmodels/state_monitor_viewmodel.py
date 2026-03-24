@@ -82,6 +82,50 @@ class _ConnectorSource(_Source):
             return f"err: {exc}"
 
 
+_STATE_FIELDS: list[tuple[str, object]] = [
+    ("state.active",          lambda c: str(c.state.active())),
+    ("state.paused",          lambda c: str(c.state.paused())),
+    ("state.version",         lambda c: c.state.version()),
+    ("session.track",         lambda c: c.session.track_name()),
+    ("session.type",          lambda c: str(c.session.session_type())),
+    ("session.elapsed",       lambda c: f"{c.session.elapsed():.1f} s"),
+    ("session.remaining",     lambda c: f"{c.session.remaining():.1f} s"),
+    ("session.t_track",       lambda c: f"{c.session.track_temperature():.1f} °C"),
+    ("session.t_amb",         lambda c: f"{c.session.ambient_temperature():.1f} °C"),
+    ("vehicle.driver",        lambda c: c.vehicle.driver_name()),
+    ("vehicle.car",           lambda c: c.vehicle.vehicle_name()),
+    ("vehicle.class",         lambda c: c.vehicle.class_name()),
+    ("vehicle.place",         lambda c: str(c.vehicle.place())),
+    ("vehicle.in_pits",       lambda c: str(c.vehicle.in_pits())),
+    ("vehicle.fuel",          lambda c: f"{c.vehicle.fuel():.2f} L"),
+    ("vehicle.speed",         lambda c: f"{c.vehicle.speed() * 3.6:.1f} km/h"),
+    ("lap.number",            lambda c: str(c.lap.number())),
+    ("lap.completed",         lambda c: str(c.lap.completed_laps())),
+    ("lap.progress",          lambda c: f"{c.lap.progress() * 100:.1f} %"),
+    ("engine.gear",           lambda c: str(c.engine.gear())),
+    ("engine.rpm",            lambda c: f"{c.engine.rpm():.0f}"),
+    ("engine.rpm_max",        lambda c: f"{c.engine.rpm_max():.0f}"),
+]
+
+
+class _ConnectorStateSource(_Source):
+    """Shows full connector state: active/session/vehicle/lap/engine."""
+
+    def __init__(self, label: str, connector) -> None:
+        super().__init__(label)
+        self._connector = connector
+
+    def snapshot(self) -> list[tuple[str, str]]:
+        result = []
+        for key, getter in _STATE_FIELDS:
+            try:
+                val = getter(self._connector)  # type: ignore[operator]
+            except Exception as exc:
+                val = f"err: {exc}"
+            result.append((key, val))
+        return result
+
+
 class _QObjectSource(_Source):
     """Reads all Qt-registered properties from a QObject via QMetaObject."""
 
@@ -160,8 +204,10 @@ class StateMonitorViewModel(QObject):
         for plugin_name, paths in by_plugin.items():
             connector = connectors.get(plugin_name)
             if connector is not None:
-                label = f"Connector: {plugin_name}"
-                self._sources.append(_ConnectorSource(label, connector, paths))
+                self._sources.append(_ConnectorStateSource(
+                    f"State: {plugin_name}", connector))
+                self._sources.append(_ConnectorSource(
+                    f"Polling: {plugin_name}", connector, paths))
 
         if self._selected < 0 and self._sources:
             self._selected = 0
