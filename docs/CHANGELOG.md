@@ -19,7 +19,8 @@ from here.
 into the widget renderer, and adding more effects and customization where it makes sense.
 
 Honest note on Linux: the build runs in CI but the overlay widgets are untested on Linux.
-If you're running this on Linux and something doesn't work, please open an issue.
+If you're running this on Linux and something doesn't work, please open an issue. 
+For now linux stays best effort because it subtracts from the goal of having the whole platform up and running.
 
 ### Added
 - Introduced `tinywidgets` package — self-contained widget system with its own QML engine, separated from `tinycore`
