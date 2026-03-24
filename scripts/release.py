@@ -10,6 +10,13 @@ Changes are read from unreleased_changelog.md:
   - minor  : takes ### patch + ### minor entries
   - major  : takes all entries (### patch + ### minor + ### major)
 
+Entries are automatically sorted into ### Added / ### Changed / ### Fixed /
+### Removed based on keywords in the entry text:
+  - Removed  : starts with "Removed" or contains "removed from"
+  - Fixed    : contains " now " (was broken, now works) or starts with "Fixed"
+  - Added    : minor/major entry that is not Removed or Changed
+  - Changed  : everything else
+
 Used sections are cleared from unreleased_changelog.md after release.
 """
 
@@ -24,7 +31,17 @@ PYPROJECT    = ROOT / "pyproject.toml"
 CHANGELOG    = ROOT / "docs" / "CHANGELOG.md"
 UNRELEASED   = ROOT / "docs" / "unreleased_changelog.md"
 
-# Which sections to include per release type (cumulative)
+CHANGELOG_HEADER = """\
+# Changelog
+
+All notable changes to TinyUI are documented here.
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+---
+
+"""
+
+# Which unreleased sections to include per release type (cumulative)
 SECTIONS = {
     "patch": ["patch"],
     "minor": ["minor", "patch"],
@@ -84,31 +101,76 @@ def _parse_unreleased() -> dict[str, list[str]]:
     return result
 
 
-def _format_section(title: str, lines: list[str]) -> str:
-    if not lines:
-        return ""
-    return f"### {title}\n" + "\n".join(lines) + "\n"
+def _categorize(line: str, source_section: str) -> str:
+    """Return 'Added', 'Changed', 'Fixed', or 'Removed' based on keywords."""
+    text = line.lstrip("- ").strip()
+
+    # Removed — explicit keyword
+    if re.match(r"Removed\b", text) or "removed from" in text.lower():
+        return "Removed"
+
+    # Fixed — "now" indicates something that was previously broken
+    if re.search(r"\bnow\b", text) or re.match(r"Fixed\b", text, re.IGNORECASE):
+        return "Fixed"
+
+    # Changed — refactoring / moves / structural work
+    changed_words = ("moved", "refactored", "extracted", "aligned",
+                     "changed from", "bumped", "replaced", "renamed", "updated")
+    if any(w in text.lower() for w in changed_words):
+        return "Changed"
+
+    # minor / major entries that aren't Removed/Fixed/Changed → Added
+    if source_section in ("minor", "major"):
+        return "Added"
+
+    # Remaining patch entries → Changed
+    return "Changed"
 
 
 def _build_release_body(sections: dict[str, list[str]], include: list[str]) -> str:
+    """Categorize all included entries and format into Added/Changed/Fixed/Removed."""
+    buckets: dict[str, list[str]] = {
+        "Added": [], "Changed": [], "Fixed": [], "Removed": [],
+    }
+
+    for section_name in ["major", "minor", "patch"]:
+        if section_name not in include:
+            continue
+        for line in sections[section_name]:
+            cat = _categorize(line, section_name)
+            buckets[cat].append(line)
+
     parts = []
-    for name in ["major", "minor", "patch"]:
-        if name in include:
-            part = _format_section(name, sections[name])
-            if part:
-                parts.append(part)
-    return "\n".join(parts).strip()
+    for cat in ("Added", "Changed", "Fixed", "Removed"):
+        if buckets[cat]:
+            parts.append(f"### {cat}\n" + "\n".join(buckets[cat]))
+
+    return "\n\n".join(parts).strip()
 
 
 def _prepend_changelog(version_str: str, body: str):
     today = date.today().isoformat()
-    header = f"## [{version_str}] - {today}\n\n{body}\n"
-    existing = CHANGELOG.read_text(encoding="utf-8") if CHANGELOG.exists() else ""
-    CHANGELOG.write_text(header + "\n" + existing, encoding="utf-8")
+    new_entry = f"## [{version_str}] — {today}\n\n{body}\n"
+
+    existing = ""
+    if CHANGELOG.exists():
+        raw = CHANGELOG.read_text(encoding="utf-8")
+        # Strip our own header so we don't duplicate it
+        if raw.startswith("# Changelog"):
+            # Find the first ## entry and keep everything from there
+            m = re.search(r"^## \[", raw, re.MULTILINE)
+            existing = raw[m.start():] if m else ""
+        else:
+            existing = raw
+
+    CHANGELOG.write_text(
+        CHANGELOG_HEADER + new_entry + "\n" + existing,
+        encoding="utf-8",
+    )
 
 
 def _clear_unreleased_sections(include: list[str]):
-    """Remove used sections from unreleased_changelog.md."""
+    """Remove used content lines from unreleased_changelog.md."""
     text = UNRELEASED.read_text(encoding="utf-8")
     lines = text.splitlines(keepends=True)
     result = []
@@ -123,7 +185,6 @@ def _clear_unreleased_sections(include: list[str]):
             skip = False
         if not skip or not line.strip() or line.strip().startswith("<!--"):
             result.append(line)
-        # Drop content lines in used sections
     UNRELEASED.write_text("".join(result), encoding="utf-8")
 
 
@@ -140,7 +201,7 @@ def _commit_and_tag(version_str: str):
     _run(["git", "add",
           str(PYPROJECT), str(CHANGELOG), str(UNRELEASED)])
     _run(["git", "commit", "-m", f"chore: release {tag}"])
-    _run(["git", "tag", tag])
+    _run(["git", "tag", "-f", tag])
     print(f"\nTagged {tag}. Push with:")
     print(f"  git push && git push origin {tag}")
 
@@ -155,7 +216,6 @@ def main():
     bump_type = sys.argv[1]
     include   = SECTIONS[bump_type]
 
-    # Read and validate unreleased entries
     sections = _parse_unreleased()
     body = _build_release_body(sections, include)
     if not body:
@@ -163,7 +223,6 @@ def main():
         print("Add entries to unreleased_changelog.md first.")
         sys.exit(1)
 
-    # Bump version
     old_version = _read_version()
     new_version = _bump(old_version, bump_type)
     version_str = _write_version(new_version)
@@ -176,11 +235,8 @@ def main():
     print(body)
     print("-" * 40)
 
-    # Update changelogs
     _prepend_changelog(version_str, body)
     _clear_unreleased_sections(include)
-
-    # Commit and tag
     _commit_and_tag(version_str)
 
 

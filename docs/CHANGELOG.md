@@ -1,16 +1,19 @@
-## [0.2.0] - 2026-03-24
+# Changelog
 
-### minor
+All notable changes to TinyUI are documented here.
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+---
+
+## [0.2.0] — 2026-03-24
+
+### Added
 - Introduced `tinywidgets` package — self-contained widget system with its own QML engine, separated from `tinycore`
 - Introduced `tinycore/qt/` — shared Qt bootstrap (`create_application`, `create_engine`, `PollLoop`)
 - Introduced `tinycore/poll/` — `Tickable` protocol, pure Python, no Qt dependency
 - Introduced `src/app/` composition root — single place that wires all layers together
-- Entry point changed from `tinyui.main:main` to `app.main:main`
-- `tinyui.main` refactored into `launch(core, lifecycle)` — boot sequence moved to composition root
-- Central logger moved from `tinyui.log` to `tinycore.log` — now shared across all layers
 - First working overlay widget: `TextWidget` with live LMU telemetry, threshold colors, flash effect, and drag-to-position
 - Each widget is an independent `Qt.Tool` window — transparent background is click-through by default
-- Widget windows close automatically when the main window closes
 - Widget settings panel in the Widgets tab — edit label, position, flash target, and thresholds live
 - Threshold colors editable via built-in color picker; add and remove thresholds at runtime
 - Flash configured per threshold entry (with per-entry speed) — blinks when the value enters that band
@@ -20,23 +23,26 @@
 - Demo button in the widget settings header — switches between live and mock connector on the fly
 - Demo settings (min, max, speed) slide in directly below the widget header when demo is active
 
-### patch
-- `WidgetRegistry` and `WidgetSpec` removed from `tinycore` and `PluginContext` — now live in `tinywidgets`
-- Removed `plugins/demo2` and `plugins/tinypedal` placeholders
-- Removed `TyreDemoViewModel` — connector lifecycle managed by the plugin system
-- Removed `DemoTab` from the UI
-- Removed placeholder settings that had no working implementation (`language`, demo overlay settings)
-- Editor buttons in the status bar now open the settings panel instead of logging to console
-- Title bar left zone now syncs when the dropdown menu opens, preventing drag zone overlap with menu items
-- Menu dismiss area now covers the tab bar so switching tabs while a menu is open works correctly
+### Changed
+- Entry point changed from `tinyui.main:main` to `app.main:main`
+- `tinyui.main` refactored into `launch(core, lifecycle)` — boot sequence moved to composition root
+- Central logger moved from `tinyui.log` to `tinycore.log` — now shared across all layers
+- `WidgetRegistry` and `WidgetSpec` moved from `tinycore`/`PluginContext` to `tinywidgets`
 - Window chrome dimensions moved from inline literals to `Theme` constants
 - `NumberStepper` and `ThemedComboBox` extracted as shared QML components reused across settings and widget panel
 - Widget settings panel layout aligned with the SettingsDialog style (same row heights, label/control columns)
 
-# Changelog
+### Fixed
+- Editor buttons in the status bar now open the settings panel instead of logging to console
+- Title bar left zone now syncs when the dropdown menu opens, preventing drag zone overlap with menu items
+- Menu dismiss area now covers the tab bar so switching tabs while a menu is open works correctly
+- Widget windows now close automatically when the main window closes
 
-All notable changes to TinyUI are documented here.
-Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+### Removed
+- Removed `plugins/demo2` and `plugins/tinypedal` placeholders
+- Removed `TyreDemoViewModel` — connector lifecycle managed by the plugin system
+- Removed `DemoTab` from the UI
+- Removed placeholder settings that had no working implementation (`language`, demo overlay settings)
 
 ---
 
