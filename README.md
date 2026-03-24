@@ -86,6 +86,7 @@ Ideas that are on the radar but not scheduled yet:
 - Separate connector from plugin and make it a dependecy
 - Reimplement processing of data (modules, plugin layer?) 
 - Spotter?
+- Custom widgets (this one is far in the future, but the way i am building it, it should be possible)
 
 ---
 
