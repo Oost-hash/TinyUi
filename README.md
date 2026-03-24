@@ -44,9 +44,9 @@ Once the foundation is solid, the focus shifts to actually rendering data on scr
 ### Later
 Ideas that are on the radar but not scheduled yet:
 
-- rF2 connector
-- More game support
-- Community plugin / overlay sharing
+- Reimplement Hotkey
+- Reimplement processing of data (modules, plugin layer?) 
+- Spotter?
 
 ---
 
