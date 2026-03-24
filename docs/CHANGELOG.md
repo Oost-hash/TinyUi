@@ -7,6 +7,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.2.0] — 2026-03-24
 
+The main goal of this release was to get a first widget on screen and figure out what a widget
+actually needs end-to-end: telemetry source, threshold coloring, flash effects, persistence,
+and a settings panel to control it all at runtime. That foundation is now in place.
+
+A lot of internal structure was cleaned up along the way — the codebase is significantly more
+layered than it was in 0.1.0, and adding new widget types or connectors should be straightforward
+from here.
+
+**What's next:** global widget settings (font, background, opacity and similar), translating those
+into the widget renderer, and adding more effects and customization where it makes sense.
+
+Honest note on Linux: the build runs in CI but the overlay widgets are untested on Linux.
+If you're running this on Linux and something doesn't work, please open an issue.
+
 ### Added
 - Introduced `tinywidgets` package — self-contained widget system with its own QML engine, separated from `tinycore`
 - Introduced `tinycore/qt/` — shared Qt bootstrap (`create_application`, `create_engine`, `PollLoop`)
