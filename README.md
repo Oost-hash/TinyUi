@@ -10,6 +10,7 @@
 ## Table of Contents
 
 - [What is TinyUi?](#what-is-tinyui)
+- [Supported platforms](#supported-platforms)
 - [Roadmap](#roadmap---will-be-moved-to-project)
 - [Architecture](#architecture)
 - [Plugin model](#plugin-model)
@@ -33,6 +34,23 @@ The architecture is split into three hard layers:
 - **tinyui** — the overlay UI, built in QML. Talks to tinycore, knows nothing about games.
 
 Nothing is set in stone yet. The design evolves as the project does.
+
+---
+
+## Supported platforms
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| Windows 10 / 11 | ✅ Supported | Primary development and test platform |
+| Linux | ⚠️ Builds, end-to-end untested | Overlay and widget behavior not verified — issues welcome |
+| macOS | ❌ Not supported | No builds, no hardware to test on |
+
+**Supported games:**
+
+| Game | Connector | Status |
+|------|-----------|--------|
+| Le Mans Ultimate | LMU shared memory | ✅ Working |
+| rFactor 2 | LMU shared memory | ✅ Should work (same API) |
 
 ---
 
