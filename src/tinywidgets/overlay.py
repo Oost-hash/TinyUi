@@ -98,9 +98,9 @@ class WidgetOverlay:
                             ThresholdEntry(
                                 t["value"],
                                 t["color"],
-                                t.get("flash",        False),
-                                t.get("flash_speed",  5),
-                                t.get("flash_target", "value"),
+                                t.get("flash",                        False),
+                                t.get("flashSpeed",  t.get("flash_speed",  5)),
+                                t.get("flashTarget", t.get("flash_target", "value")),
                             )
                             for t in saved["thresholds"]
                         ]
