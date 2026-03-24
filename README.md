@@ -7,6 +7,19 @@
 
 ---
 
+## Table of Contents
+
+- [What is TinyUi?](#what-is-tinyui)
+- [Roadmap](#roadmap---will-be-moved-to-project)
+- [Architecture](#architecture)
+- [Plugin model](#plugin-model)
+- [Help Wanted: Logo](#help-wanted-tinyui-logo)
+- [Credits](#credits)
+- [AI use](#ai-use)
+- [License](#license)
+
+---
+
 ## What is TinyUi?
 
 TinyUi is a modular overlay toolkit for sim racing. The goal is a platform where you can connect to any supported game, build or install plugins, and display live telemetry data as overlays on your screen — without any of those pieces being tangled up with each other.
