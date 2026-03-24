@@ -23,7 +23,7 @@ Nothing is set in stone yet. The design evolves as the project does.
 
 ---
 
-## Roadmap
+## Roadmap - (will be moved to project)
 
 ### 0.1.0 — Foundation
 The goal for 0.1 is a working foundation: the engine, the UI shell, and the first real game connector.
