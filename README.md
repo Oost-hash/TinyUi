@@ -46,7 +46,7 @@ In this update I want too introduce a new system and add globals too widgets
 
 - [ ] implement widget global settings
 - [ ] implement tinyHotkey
-
+- [ ] add indicators: hotkey, game connection
 
 ### Later
 Ideas that are on the radar but not scheduled yet:
