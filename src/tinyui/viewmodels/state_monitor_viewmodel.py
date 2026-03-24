@@ -27,6 +27,7 @@ least one value has changed since the previous cycle.  Each entry carries a
 
 from __future__ import annotations
 
+import time
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Property, QObject, QTimer, Signal
@@ -69,10 +70,11 @@ class StateMonitorViewModel(QObject):
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._connectors: ConnectorRegistry | None = None
-        self._sources: list[tuple[str, str]] = []
-        self._prev:    dict[str, str]        = {}
-        self._entries: list[dict]            = []
+        self._connectors:  ConnectorRegistry | None = None
+        self._sources:     list[tuple[str, str]]   = []
+        self._prev:        dict[str, str]           = {}
+        self._changed_at:  dict[str, int]           = {}  # ms timestamp of last change
+        self._entries:     list[dict]               = []
         self._timer = QTimer(self)
         self._timer.setInterval(200)
         self._timer.timeout.connect(self._refresh)
@@ -103,11 +105,18 @@ class StateMonitorViewModel(QObject):
             value     = _read(connector, path) if connector is not None else "—"
             changed   = value != self._prev.get(key)
 
+            now_ms = int(time.time() * 1000)
             if changed:
-                changed_any      = True
-                self._prev[key]  = value
+                changed_any           = True
+                self._prev[key]       = value
+                self._changed_at[key] = now_ms
 
-            entries.append({"key": key, "value": value, "changed": changed})
+            entries.append({
+                "key":        key,
+                "value":      value,
+                "changed":    changed,
+                "changedAt":  self._changed_at.get(key, 0),
+            })
 
         self._entries = entries
         if changed_any:

@@ -62,15 +62,13 @@ class WidgetConfigStore:
         x: int,
         y: int,
         label: str,
-        flash_target: str,
         thresholds: list[dict],
     ) -> None:
         """Persist all user-editable fields for widget_id."""
         self._data[widget_id] = {
-            "x": x,
-            "y": y,
-            "label": label,
-            "flash_target": flash_target,
+            "x":          x,
+            "y":          y,
+            "label":      label,
             "thresholds": thresholds,
         }
         try:

@@ -104,9 +104,14 @@ BaseDialog {
         // ── State tab ─────────────────────────────────────────────────────────
 
         Item {
+            id: stateTab
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: devTools.currentTab === 0
+
+            // Refreshes "active" dot colors without requiring Python to re-emit
+            property real currentTime: Date.now()
+            Timer { interval: 500; running: true; repeat: true; onTriggered: parent.currentTime = Date.now() }
 
             // Column headers
             Rectangle {
@@ -188,9 +193,19 @@ BaseDialog {
                         anchors.fill:        parent
                         anchors.leftMargin:  12
                         anchors.rightMargin: 12
+                        spacing: 6
+
+                        // Active dot — green while changed within last 2 s, grey otherwise
+                        Rectangle {
+                            width: 6; height: 6; radius: 3
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: (stateTab.currentTime - stateRow.modelData.changedAt) < 2000
+                                   ? "#44FF88" : theme.border
+                            Behavior on color { ColorAnimation { duration: 300 } }
+                        }
 
                         Text {
-                            width:  parent.width * 0.65
+                            width:  parent.width * 0.60
                             height: parent.height
                             verticalAlignment: Text.AlignVCenter
                             text:  stateRow.modelData.key

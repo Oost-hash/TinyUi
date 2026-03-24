@@ -373,28 +373,6 @@ Item {
                 // ── Section: Flash ─────────────────────────────────────────────
                 SectionHeader { text: "Flash" }
 
-                EditRow {
-                    label: "Target"
-                    description: "Which part blinks: value, label + value, or whole widget"
-                    ThemedComboBox {
-                        id: flashTargetCombo
-                        readonly property var _opts: ["value", "text", "widget"]
-                        anchors.right: parent.right; anchors.rightMargin: 0
-                        anchors.verticalCenter: parent.verticalCenter
-                        model: _opts
-                        currentIndex: {
-                            var t = widgetTab.selectedContext
-                                ? widgetTab.selectedContext.flashTarget : "value"
-                            var i = _opts.indexOf(t)
-                            return i >= 0 ? i : 0
-                        }
-                        onActivated: (i) => {
-                            if (widgetTab.selectedContext)
-                                widgetTab.selectedContext.setFlashTarget(_opts[i])
-                        }
-                    }
-                }
-
                 // ── Section: Thresholds ────────────────────────────────────────
                 SectionHeader { text: "Thresholds" }
 
@@ -444,7 +422,7 @@ Item {
                         }
                         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border; opacity: 0.4 }
 
-                        // Left: ≥ symbol + value stepper
+                        // Left: ≤ symbol + value stepper
                         Row {
                             id: tLeft
                             anchors.left: parent.left; anchors.leftMargin: 16
@@ -453,7 +431,7 @@ Item {
 
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: "≥"
+                                text: "≤"
                                 color: theme.textSecondary
                                 font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
                             }
@@ -480,6 +458,23 @@ Item {
                                 onColorPicked: (hex) => {
                                     if (widgetTab.selectedContext)
                                         widgetTab.selectedContext.setThresholdColor(tRow.index, hex)
+                                }
+                            }
+
+                            // Flash target — only visible when flash is on
+                            ThemedComboBox {
+                                visible: tRow.modelData.flash
+                                anchors.verticalCenter: parent.verticalCenter
+                                readonly property var _opts: ["value", "text", "widget"]
+                                model: _opts
+                                implicitWidth: 72
+                                currentIndex: {
+                                    var i = _opts.indexOf(tRow.modelData.flashTarget)
+                                    return i >= 0 ? i : 0
+                                }
+                                onActivated: (i) => {
+                                    if (widgetTab.selectedContext)
+                                        widgetTab.selectedContext.setThresholdFlashTarget(tRow.index, _opts[i])
                                 }
                             }
 

@@ -10,18 +10,18 @@ format      = "{:.1f}"
 label       = "FUEL"
 x           = 100
 y           = 100
+[[fuel.thresholds]]
+value        = 2.0
+color        = "#FF4444"   # red — fuel <= 2 L (critical)
+flash        = true
+flash_speed  = 3           # fast blink when critical
 flash_target = "value"
 
 [[fuel.thresholds]]
-value       = 2.0
-color       = "#FF4444"   # red — fuel <= 2 L (critical)
-flash       = true
-flash_speed = 3            # fast blink when critical
-
-[[fuel.thresholds]]
-value       = 10.0
-color       = "#FF8C00"   # orange — fuel <= 10 L
-flash       = false
-flash_speed = 5
+value        = 10.0
+color        = "#FF8C00"   # orange — fuel <= 10 L
+flash        = false
+flash_speed  = 5
+flash_target = "value"
 
 # above 10 L → default color (no entry needed)

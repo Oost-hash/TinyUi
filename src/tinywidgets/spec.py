@@ -50,11 +50,8 @@ class WidgetSpec:
     x: int = 100
     y: int = 100
 
-    # Threshold coloring — each entry has an upper bound; flash per entry
+    # Threshold coloring — each entry carries its own flash, speed, and target
     thresholds: list[ThresholdEntry] = field(default_factory=list)
-
-    # Flash target — which part of the widget blinks (speed is per ThresholdEntry)
-    flash_target: str = "value"  # "value" | "text" | "widget"
 
 
 def load_widgets_toml(path: Path) -> list[WidgetSpec]:
@@ -69,24 +66,24 @@ def load_widgets_toml(path: Path) -> list[WidgetSpec]:
         raw_thresholds = widget_data.get("thresholds", [])
         thresholds = [
             ThresholdEntry(
-                value       = t["value"],
-                color       = t["color"],
-                flash       = t.get("flash", False),
-                flash_speed = t.get("flash_speed", 5),
+                value        = t["value"],
+                color        = t["color"],
+                flash        = t.get("flash",        False),
+                flash_speed  = t.get("flash_speed",  5),
+                flash_target = t.get("flash_target", "value"),
             )
             for t in raw_thresholds
         ]
         specs.append(WidgetSpec(
-            id           = widget_id,
-            title        = widget_data.get("title", widget_id),
-            description  = widget_data.get("description", ""),
-            enable       = widget_data.get("enable", True),
-            source       = widget_data.get("source", ""),
-            format       = widget_data.get("format", "{}"),
-            label        = widget_data.get("label", ""),
-            x            = widget_data.get("x", 100),
-            y            = widget_data.get("y", 100),
-            thresholds   = thresholds,
-            flash_target = widget_data.get("flash_target", "value"),
+            id          = widget_id,
+            title       = widget_data.get("title",       widget_id),
+            description = widget_data.get("description", ""),
+            enable      = widget_data.get("enable",      True),
+            source      = widget_data.get("source",      ""),
+            format      = widget_data.get("format",      "{}"),
+            label       = widget_data.get("label",       ""),
+            x           = widget_data.get("x",           100),
+            y           = widget_data.get("y",           100),
+            thresholds  = thresholds,
         ))
     return specs

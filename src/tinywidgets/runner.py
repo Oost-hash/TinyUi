@@ -63,14 +63,16 @@ class WidgetState:
     visible:      bool   # whole widget on/off (e.g. session inactive)
     text_visible: bool   # value text on/off (flash effect)
     label:        str
+    flash_target: str = "value"  # "value" | "text" | "widget"
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, WidgetState):
             return False
-        return (self.text == other.text
-                and self.color == other.color
-                and self.visible == other.visible
-                and self.text_visible == other.text_visible)
+        return (self.text         == other.text
+                and self.color        == other.color
+                and self.visible      == other.visible
+                and self.text_visible == other.text_visible
+                and self.flash_target == other.flash_target)
 
 
 # ---------------------------------------------------------------------------
@@ -132,6 +134,7 @@ class TextWidgetRunner:
                  if raw <= e.value),
                 None,
             )
+            flash_target = active.flash_target if active is not None else "value"
             if active is not None and active.flash:
                 self._flash.interval = active.flash_speed
                 self._flash.tick()
@@ -141,7 +144,8 @@ class TextWidgetRunner:
                 text_visible = True
 
             state = WidgetState(text=text, color=color, visible=True,
-                                text_visible=text_visible, label=self._spec.label)
+                                text_visible=text_visible, label=self._spec.label,
+                                flash_target=flash_target)
             if state != self._last:
                 self._last = state
                 _log.widget("state change", id=self._spec.id,

@@ -58,12 +58,14 @@ class WidgetContext(QObject):
         self._color        = "#E0E0E0"
         self._visible      = True
         self._text_visible = True
+        self._flash_target = "value"
 
     def update(self, state: WidgetState) -> None:
         self._text         = state.text
         self._color        = state.color
         self._visible      = state.visible
         self._text_visible = state.text_visible
+        self._flash_target = state.flash_target
         self.stateChanged.emit()
 
     @Slot(int, int)
@@ -80,43 +82,44 @@ class WidgetContext(QObject):
         self._spec.label = label
         self.configChanged.emit()
 
-    @Slot(str)
-    def setFlashTarget(self, target: str) -> None:
-        if target in ("value", "text", "widget"):
-            self._spec.flash_target = target
-            self.configChanged.emit()
-
     @Slot(int, str)
     def setThresholdColor(self, index: int, color: str) -> None:
         if 0 <= index < len(self._spec.thresholds):
             e = self._spec.thresholds[index]
-            self._spec.thresholds[index] = ThresholdEntry(e.value, color, e.flash, e.flash_speed)
+            self._spec.thresholds[index] = ThresholdEntry(e.value, color, e.flash, e.flash_speed, e.flash_target)
             self.configChanged.emit()
 
     @Slot(int, float)
     def setThresholdValue(self, index: int, value: float) -> None:
         if 0 <= index < len(self._spec.thresholds):
             e = self._spec.thresholds[index]
-            self._spec.thresholds[index] = ThresholdEntry(value, e.color, e.flash, e.flash_speed)
+            self._spec.thresholds[index] = ThresholdEntry(value, e.color, e.flash, e.flash_speed, e.flash_target)
             self.configChanged.emit()
 
     @Slot(int, bool)
     def setThresholdFlash(self, index: int, flash: bool) -> None:
         if 0 <= index < len(self._spec.thresholds):
             e = self._spec.thresholds[index]
-            self._spec.thresholds[index] = ThresholdEntry(e.value, e.color, flash, e.flash_speed)
+            self._spec.thresholds[index] = ThresholdEntry(e.value, e.color, flash, e.flash_speed, e.flash_target)
             self.configChanged.emit()
 
     @Slot(int, int)
     def setThresholdFlashSpeed(self, index: int, ticks: int) -> None:
         if 0 <= index < len(self._spec.thresholds):
             e = self._spec.thresholds[index]
-            self._spec.thresholds[index] = ThresholdEntry(e.value, e.color, e.flash, max(1, ticks))
+            self._spec.thresholds[index] = ThresholdEntry(e.value, e.color, e.flash, max(1, ticks), e.flash_target)
+            self.configChanged.emit()
+
+    @Slot(int, str)
+    def setThresholdFlashTarget(self, index: int, target: str) -> None:
+        if target in ("value", "text", "widget") and 0 <= index < len(self._spec.thresholds):
+            e = self._spec.thresholds[index]
+            self._spec.thresholds[index] = ThresholdEntry(e.value, e.color, e.flash, e.flash_speed, target)
             self.configChanged.emit()
 
     @Slot(float, str)
     def addThreshold(self, value: float, color: str) -> None:
-        self._spec.thresholds.append(ThresholdEntry(value, color, False))
+        self._spec.thresholds.append(ThresholdEntry(value, color, False, 5, "value"))
         self.configChanged.emit()
 
     @Slot(int)
@@ -171,15 +174,19 @@ class WidgetContext(QObject):
     def label(self) -> str:
         return self._spec.label
 
-    @Property(str, notify=configChanged)
+    @Property(str, notify=stateChanged)
     def flashTarget(self) -> str:
-        return self._spec.flash_target
+        """Current flash target — driven by the active threshold, updates on stateChanged."""
+        return self._flash_target
 
     @Property("QVariantList", notify=configChanged)
     def thresholds(self) -> list:
-        """Each entry: {"value": float, "color": str, "flash": bool}."""
-        return [{"value": t.value, "color": t.color,
-                 "flash": t.flash, "flashSpeed": t.flash_speed}
+        """Each entry: {value, color, flash, flashSpeed, flashTarget}."""
+        return [{"value":       t.value,
+                 "color":       t.color,
+                 "flash":       t.flash,
+                 "flashSpeed":  t.flash_speed,
+                 "flashTarget": t.flash_target}
                 for t in self._spec.thresholds]
 
     # ── Position properties ───────────────────────────────────────────────────
