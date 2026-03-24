@@ -37,14 +37,20 @@ The goal for 0.1 is a working foundation: the engine, the UI shell, and the firs
 ### 0.2.0 — Widget renderer
 Once the foundation is solid, the focus shifts to actually rendering data on screen.
 
-- [ ] Widget system — define and render overlay widgets from plugin data
-- [ ] Layout engine — position, resize, and stack widgets on screen
-- [ ] Widget config — per-widget settings via the data-driven config system
+- [x] Widget system — define and render overlay widgets from plugin data
+- [x] Layout engine — position, resize, and stack widgets on screen
+- [x] Widget config — per-widget settings via the data-driven config system
+
+### 0.3.0 - Widget globals and hotkeys
+In this update I want too introduce a new system and add globals too widgets
+
+- [ ] implement widget global settings
+- [ ] implement tinyHotkey
+
 
 ### Later
 Ideas that are on the radar but not scheduled yet:
 
-- Reimplement Hotkey
 - Reimplement processing of data (modules, plugin layer?) 
 - Spotter?
 
