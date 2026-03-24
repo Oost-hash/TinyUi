@@ -36,7 +36,6 @@ import PySide6
 from PySide6.QtCore import QUrl, QtMsgType, qInstallMessageHandler, qVersion
 
 from tinycore.qt import create_application, create_engine
-import tinycore.log as app_log
 from tinyui.const import APP_NAME, VERSION
 from tinyui.icons import Icons, load_font
 from tinyui.theme import Theme
@@ -70,7 +69,6 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     Called by the composition root after tinycore is fully booted.
     Returns the Qt exit code.
     """
-    app_log.configure()
     qInstallMessageHandler(_qt_message_handler)
 
     # ── Qt setup ──────────────────────────────────────────────────────────────

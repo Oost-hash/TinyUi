@@ -37,6 +37,9 @@ import multiprocessing as mp
 import sys
 from pathlib import Path
 
+import tinycore.log as _log_mod
+_log_mod.configure()  # must run before any other import emits log records
+
 from tinycore import PluginLifecycleManager, PluginSpec, SubprocessPlugin, create_app
 from tinycore.log import get_logger
 from tinycore.plugin.manifest import scan_plugins
@@ -96,7 +99,7 @@ def main() -> None:
         real = m.connector.create()
         real.open()
         core.connectors.register(m.name, real)
-        _log.connector("registered", plugin=m.name, type=type(real).__name__)
+        _log.info("connector registered  plugin=%s  type=%s", m.name, type(real).__name__)
 
         # If the plugin ships a mock connector, create a MockViewModel for it
         mock_cls = m.mock_connector
@@ -104,7 +107,7 @@ def main() -> None:
             mock = mock_cls.create()
             mock.open()
             mock_vms.append(MockViewModel(core.connectors, m.name, real, mock))
-            _log.connector("mock registered", plugin=m.name, type=type(mock).__name__)
+            _log.info("mock connector registered  plugin=%s  type=%s", m.name, type(mock).__name__)
 
     # ── 7. Build widget overlay ───────────────────────────────────────────────
     overlay = WidgetOverlay(core.connectors, config_dir=_config_dir())

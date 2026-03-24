@@ -511,9 +511,11 @@ class LMUConnector(TelemetryReader):
 
     def open(self) -> None:
         self._info.create()
+        _log.info("LMU shared memory opened  version=%s", self._state.version())
 
     def close(self) -> None:
         self._info.close()
+        _log.info("LMU shared memory closed")
 
     def update(self) -> None:
         self._info.update()
