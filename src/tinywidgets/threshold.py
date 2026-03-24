@@ -20,16 +20,18 @@
 #  licensed under GPLv3.
 """Threshold evaluation.
 
-Thresholds are sorted ascending. The last entry whose value <= current wins.
+Each threshold defines the UPPER BOUND of a color band.
+Sorted ascending — first entry where value <= threshold wins.
+Values above all thresholds return None (caller uses the default/widget color).
 
 Example for fuel (liters):
-    ThresholdEntry(0.0, "#FF4444")   # red   — fuel >= 0
-    ThresholdEntry(2.0, "#FF8C00")   # orange — fuel >= 2
-    ThresholdEntry(5.0, "#E0E0E0")   # white  — fuel >= 5
+    ThresholdEntry(10.0, "#FF4444")  # red    — fuel <= 10
+    ThresholdEntry(30.0, "#FF8C00")  # orange — fuel <= 30
+    # no entry needed for normal (> 30) — returns None → default color
 
-    evaluate(thresholds, 1.5)  → "#FF4444"  (red)
-    evaluate(thresholds, 3.0)  → "#FF8C00"  (orange)
-    evaluate(thresholds, 10.0) → "#E0E0E0"  (white)
+    evaluate(thresholds, 5.0)  → "#FF4444"  (red)
+    evaluate(thresholds, 15.0) → "#FF8C00"  (orange)
+    evaluate(thresholds, 50.0) → None       (default)
 """
 
 from __future__ import annotations
@@ -41,14 +43,13 @@ from dataclasses import dataclass
 class ThresholdEntry:
     value: float
     color: str
+    flash: bool = False
+    flash_speed: int = 5  # PollLoop ticks per toggle (1 tick = 100 ms)
 
 
 def evaluate(thresholds: list[ThresholdEntry], value: float) -> str | None:
-    """Return the color for the current value, or None if thresholds is empty."""
-    if not thresholds:
-        return None
-    result: str | None = None
+    """Return the color for the current value, or None if above all thresholds."""
     for entry in sorted(thresholds, key=lambda e: e.value):
-        if value >= entry.value:
-            result = entry.color
-    return result
+        if value <= entry.value:
+            return entry.color
+    return None

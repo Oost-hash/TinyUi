@@ -62,7 +62,7 @@ class WidgetConfigStore:
         x: int,
         y: int,
         label: str,
-        flash_below: float | None,
+        flash_target: str,
         thresholds: list[dict],
     ) -> None:
         """Persist all user-editable fields for widget_id."""
@@ -70,7 +70,7 @@ class WidgetConfigStore:
             "x": x,
             "y": y,
             "label": label,
-            "flash_below": flash_below,
+            "flash_target": flash_target,
             "thresholds": thresholds,
         }
         try:

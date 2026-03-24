@@ -37,6 +37,12 @@ Window {
     y:       widgetContext ? widgetContext.widgetY : 0
     visible: widgetContext ? widgetContext.visible : false
 
+    readonly property bool _flashVisible: widgetContext ? widgetContext.textVisible : true
+    readonly property string _flashTarget: widgetContext ? widgetContext.flashTarget : "value"
+
+    // "widget" target: whole window fades in/out
+    opacity: _flashTarget === "widget" ? (_flashVisible ? 1.0 : 0.0) : 1.0
+
     Rectangle {
         anchors.fill: parent
         color:        "#CC000000"
@@ -46,6 +52,8 @@ Window {
     Column {
         anchors.centerIn: parent
         spacing:          2
+        // "text" target: label + value together fade
+        opacity: win._flashTarget === "text" ? (win._flashVisible ? 1.0 : 0.0) : 1.0
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -59,7 +67,8 @@ Window {
             anchors.horizontalCenter: parent.horizontalCenter
             text:           win.widgetContext ? win.widgetContext.text  : ""
             color:          win.widgetContext ? win.widgetContext.color : "#E0E0E0"
-            opacity:        win.widgetContext ? (win.widgetContext.textVisible ? 1.0 : 0.0) : 1.0
+            // "value" target: only the number fades
+            opacity:        win._flashTarget === "value" ? (win._flashVisible ? 1.0 : 0.0) : 1.0
             font.pixelSize: 22
             font.bold:      true
             font.family:    "Segoe UI"

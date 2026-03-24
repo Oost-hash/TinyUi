@@ -46,6 +46,14 @@ class FlashState:
             self._visible = not self._visible
 
     @property
+    def interval(self) -> int:
+        return self._interval
+
+    @interval.setter
+    def interval(self, v: int) -> None:
+        self._interval = max(1, v)
+
+    @property
     def visible(self) -> bool:
         return self._visible
 

@@ -114,7 +114,7 @@ class TextWidgetRunner:
         self._connectors  = connectors
         self._plugin_name = plugin_name
         self._on_update   = on_update
-        self._flash       = FlashState() if spec.flash_below is not None else None
+        self._flash       = FlashState()
         self._last:       WidgetState | None = None
 
     def tick(self) -> None:
@@ -127,15 +127,17 @@ class TextWidgetRunner:
             text  = self._spec.format.format(raw)
             color = evaluate(self._spec.thresholds, raw) or _FALLBACK_COLOR
 
-            flash_below = self._spec.flash_below
-            if flash_below is not None and raw <= flash_below:
-                if self._flash is None:
-                    self._flash = FlashState()
+            active = next(
+                (e for e in sorted(self._spec.thresholds, key=lambda e: e.value)
+                 if raw <= e.value),
+                None,
+            )
+            if active is not None and active.flash:
+                self._flash.interval = active.flash_speed
                 self._flash.tick()
                 text_visible = self._flash.visible
             else:
-                if self._flash is not None:
-                    self._flash.reset()
+                self._flash.reset()
                 text_visible = True
 
             state = WidgetState(text=text, color=color, visible=True,

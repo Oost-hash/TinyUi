@@ -21,6 +21,13 @@ Run `python scripts/release.py patch|minor|major` to create a release.
 - First working widget: `TextWidget` with live telemetry, threshold colors, flash effect, and drag-to-position
 - Each widget is an independent `Qt.Tool` window — transparent background is click-through by default
 - Widget windows close automatically when tinyui closes
+- Widget settings panel in the Widgets tab — edit label, position, flash target, and thresholds live
+- Threshold colors editable via built-in color picker; add and remove thresholds at runtime
+- Flash is now configured per threshold entry (with per-entry speed), not as a global widget setting
+- Threshold logic: each entry is an upper bound — color applies while value is at or below that number
+- `plugin.toml` supports `[mock_connector]` section to declare a test connector per plugin
+- `MockConnector` sweep is configurable: min, max, and step settable at runtime
+- Demo button in the widget settings header — switches between live and mock connector on the fly
 
 ### patch
 <!-- Bug fixes and small improvements -->
@@ -30,3 +37,5 @@ Run `python scripts/release.py patch|minor|major` to create a release.
 - Removed `DemoTab` from the UI
 - Removed placeholder settings that had no working implementation (`language`, demo overlay settings)
 - Window chrome dimensions moved from inline literals to `Theme` constants
+- `NumberStepper` and `ThemedComboBox` extracted as shared QML components
+- Widget settings panel layout aligned with the SettingsDialog style (same row heights, label/control columns)

@@ -40,6 +40,7 @@ from pathlib import Path
 from tinycore import PluginLifecycleManager, PluginSpec, SubprocessPlugin, create_app
 from tinycore.plugin.manifest import scan_plugins
 from tinyui import TinyUIPlugin, launch
+from tinywidgets.mock_viewmodel import MockViewModel
 from tinywidgets.overlay import WidgetOverlay
 from tinywidgets.spec import load_widgets_toml
 
@@ -83,12 +84,20 @@ def main() -> None:
     if plugin_names:
         lifecycle.activate(plugin_names[0])
 
+    mock_vms: list[MockViewModel] = []
     for m in manifests:
         if m.connector is None:
             continue
-        connector = m.connector.create()
-        connector.open()
-        core.connectors.register(m.name, connector)
+        real = m.connector.create()
+        real.open()
+        core.connectors.register(m.name, real)
+
+        # If the plugin ships a mock connector, create a MockViewModel for it
+        mock_cls = m.mock_connector
+        if mock_cls is not None:
+            mock = mock_cls.create()
+            mock.open()
+            mock_vms.append(MockViewModel(core.connectors, m.name, real, mock))
 
     # ── 7. Build widget overlay ───────────────────────────────────────────────
     overlay = WidgetOverlay(core.connectors, config_dir=_config_dir())
@@ -98,8 +107,12 @@ def main() -> None:
             overlay.load(load_widgets_toml(wp), plugin_name=m.name)
 
     # ── 8. Hand off to tinyui ─────────────────────────────────────────────────
-    exit_code = launch(core, lifecycle, pre_run=overlay.start,
-                       extra_context={"widgetModel": overlay.model})
+    # First MockViewModel is exposed as mockViewModel (demo plugin)
+    extra: dict = {"widgetModel": overlay.model}
+    if mock_vms:
+        extra["mockViewModel"] = mock_vms[0]
+
+    exit_code = launch(core, lifecycle, pre_run=overlay.start, extra_context=extra)
     overlay.stop()
     sys.exit(exit_code)
 

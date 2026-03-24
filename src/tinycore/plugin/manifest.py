@@ -63,12 +63,13 @@ class ConnectorDecl:
 @dataclass
 class PluginManifest:
     """Parsed contents of a plugin.toml."""
-    name:       str
-    module:     str
-    class_name: str
-    plugin_dir: Path
-    connector:  ConnectorDecl | None = field(default=None)
-    widgets_file: str | None         = field(default=None)
+    name:           str
+    module:         str
+    class_name:     str
+    plugin_dir:     Path
+    connector:      ConnectorDecl | None = field(default=None)
+    mock_connector: ConnectorDecl | None = field(default=None)
+    widgets_file:   str | None           = field(default=None)
 
     def widgets_path(self) -> Path | None:
         """Absolute path to the widgets TOML file, or None if not declared."""
@@ -85,10 +86,12 @@ def load_manifest(path: Path) -> PluginManifest:
     connector = None
     if "connector" in data:
         c = data["connector"]
-        connector = ConnectorDecl(
-            module=c["module"],
-            class_name=c["class"],
-        )
+        connector = ConnectorDecl(module=c["module"], class_name=c["class"])
+
+    mock_connector = None
+    if "mock_connector" in data:
+        mc = data["mock_connector"]
+        mock_connector = ConnectorDecl(module=mc["module"], class_name=mc["class"])
 
     return PluginManifest(
         name=data["name"],
@@ -96,6 +99,7 @@ def load_manifest(path: Path) -> PluginManifest:
         class_name=data["class"],
         plugin_dir=path.parent,
         connector=connector,
+        mock_connector=mock_connector,
         widgets_file=data.get("widgets", {}).get("file"),
     )
 

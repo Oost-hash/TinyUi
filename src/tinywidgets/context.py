@@ -80,23 +80,49 @@ class WidgetContext(QObject):
         self._spec.label = label
         self.configChanged.emit()
 
-    @Slot(float)
-    def setFlashBelow(self, value: float) -> None:
-        self._spec.flash_below = value if value >= 0 else None
-        self.configChanged.emit()
+    @Slot(str)
+    def setFlashTarget(self, target: str) -> None:
+        if target in ("value", "text", "widget"):
+            self._spec.flash_target = target
+            self.configChanged.emit()
 
     @Slot(int, str)
     def setThresholdColor(self, index: int, color: str) -> None:
         if 0 <= index < len(self._spec.thresholds):
-            entry = self._spec.thresholds[index]
-            self._spec.thresholds[index] = ThresholdEntry(entry.value, color)
+            e = self._spec.thresholds[index]
+            self._spec.thresholds[index] = ThresholdEntry(e.value, color, e.flash, e.flash_speed)
             self.configChanged.emit()
 
     @Slot(int, float)
     def setThresholdValue(self, index: int, value: float) -> None:
         if 0 <= index < len(self._spec.thresholds):
-            entry = self._spec.thresholds[index]
-            self._spec.thresholds[index] = ThresholdEntry(value, entry.color)
+            e = self._spec.thresholds[index]
+            self._spec.thresholds[index] = ThresholdEntry(value, e.color, e.flash, e.flash_speed)
+            self.configChanged.emit()
+
+    @Slot(int, bool)
+    def setThresholdFlash(self, index: int, flash: bool) -> None:
+        if 0 <= index < len(self._spec.thresholds):
+            e = self._spec.thresholds[index]
+            self._spec.thresholds[index] = ThresholdEntry(e.value, e.color, flash, e.flash_speed)
+            self.configChanged.emit()
+
+    @Slot(int, int)
+    def setThresholdFlashSpeed(self, index: int, ticks: int) -> None:
+        if 0 <= index < len(self._spec.thresholds):
+            e = self._spec.thresholds[index]
+            self._spec.thresholds[index] = ThresholdEntry(e.value, e.color, e.flash, max(1, ticks))
+            self.configChanged.emit()
+
+    @Slot(float, str)
+    def addThreshold(self, value: float, color: str) -> None:
+        self._spec.thresholds.append(ThresholdEntry(value, color, False))
+        self.configChanged.emit()
+
+    @Slot(int)
+    def removeThreshold(self, index: int) -> None:
+        if 0 <= index < len(self._spec.thresholds):
+            self._spec.thresholds.pop(index)
             self.configChanged.emit()
 
     # ── Live state properties ─────────────────────────────────────────────────
@@ -145,15 +171,16 @@ class WidgetContext(QObject):
     def label(self) -> str:
         return self._spec.label
 
-    @Property(float, notify=configChanged)
-    def flashBelow(self) -> float:
-        """Returns -1 when flash is disabled."""
-        return self._spec.flash_below if self._spec.flash_below is not None else -1.0
+    @Property(str, notify=configChanged)
+    def flashTarget(self) -> str:
+        return self._spec.flash_target
 
     @Property("QVariantList", notify=configChanged)
     def thresholds(self) -> list:
-        """Each entry: {"value": float, "color": str}."""
-        return [{"value": t.value, "color": t.color} for t in self._spec.thresholds]
+        """Each entry: {"value": float, "color": str, "flash": bool}."""
+        return [{"value": t.value, "color": t.color,
+                 "flash": t.flash, "flashSpeed": t.flash_speed}
+                for t in self._spec.thresholds]
 
     # ── Position properties ───────────────────────────────────────────────────
 

@@ -92,11 +92,15 @@ class WidgetOverlay:
                     spec.x           = saved.get("x", spec.x)
                     spec.y           = saved.get("y", spec.y)
                     spec.label       = saved.get("label", spec.label)
-                    spec.flash_below = saved.get("flash_below", spec.flash_below)
+                    spec.flash_target = saved.get("flash_target", spec.flash_target)
                     if "thresholds" in saved:
                         from .threshold import ThresholdEntry
                         spec.thresholds = [
-                            ThresholdEntry(t["value"], t["color"])
+                            ThresholdEntry(
+                                t["value"], t["color"],
+                                t.get("flash", False),
+                                t.get("flash_speed", 5),
+                            )
                             for t in saved["thresholds"]
                         ]
 
@@ -105,13 +109,12 @@ class WidgetOverlay:
 
             if store:
                 def _save(cx: WidgetContext = ctx, s: WidgetConfigStore = store) -> None:
-                    flash = cx.flashBelow
                     s.save(
                         cx.widgetId,
                         cx.widgetX,
                         cx.widgetY,
                         cx.label,
-                        flash if flash >= 0 else None,
+                        cx.flashTarget,
                         cx.thresholds,
                     )
 

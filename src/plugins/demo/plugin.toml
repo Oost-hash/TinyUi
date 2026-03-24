@@ -6,5 +6,9 @@ class  = "DemoPlugin"
 module = "plugins.demo.connector.lmu"
 class  = "LMUConnector"
 
+[mock_connector]
+module = "plugins.demo.connector.mock"
+class  = "MockConnector"
+
 [widgets]
 file = "widgets.toml"
