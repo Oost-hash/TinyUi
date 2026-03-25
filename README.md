@@ -28,10 +28,10 @@ It started as an attempt to extend [TinyPedal](https://github.com/TinyPedal/Tiny
 The architecture is split into three hard layers:
 
 - **tinycore** — a generic engine with no domain knowledge. Plugin lifecycle, config store, event bus, provider registry.
-- **plugins** — where game-specific code lives. A plugin connects to a game, reads telemetry, and exposes it through the provider API. Plugins run in isolated subprocesses.
+- **plugins** — where game-specific and runtime-facing plugin code lives. Plugins run in isolated subprocesses and will move toward explicit provider and consumer roles.
 - **tinyui** — the overlay UI, built in QML. Talks to tinycore, knows nothing about games.
 
-Nothing is set in stone yet. The design evolves as the project does.
+The shape is still evolving, but the direction is clear.
 
 ---
 
@@ -52,10 +52,10 @@ Nothing is set in stone yet. The design evolves as the project does.
 
 ---
 
-## Roadmap - (will be moved to project)
+## Roadmap
 
 ### 0.1.0 — Foundation
-The goal for 0.1 is a working foundation: the engine, the UI shell, and the first real game connector.
+This release laid down the base: the runtime, the UI shell, and the first working telemetry connector.
 
 - [x] Plugin system — lifecycle, isolation, subprocess support
 - [x] Data-driven config — TOML for plugin definitions, JSON for user data
@@ -64,33 +64,40 @@ The goal for 0.1 is a working foundation: the engine, the UI shell, and the firs
 - [x] LMU connector — first real game connector (Le Mans Ultimate / rFactor 2)
 
 ### 0.2.0 — Widget renderer
-Once the foundation is solid, the focus shifts to actually rendering data on screen.
+This release got live data onto the screen with the first usable widget workflow.
 
 - [x] Widget system — define and render overlay widgets from plugin data
 - [x] Layout engine — position, resize, and stack widgets on screen
 - [x] Widget config — per-widget settings via the data-driven config system
 
-### 0.3.0 Seperate game connector and restructure plugin
-I hit a wall, the demo plugin is mess, and has no clear definition of what it should be.
+### 0.3.0 — Runtime contracts and plugin split
+This release is about defining the runtime properly: clear plugin roles, explicit requirements, and a host that binds providers and consumers through contracts instead of plugin-specific wiring.
 
-- [ ] a lot of small things
-- [ ] improve debugging
+- [ ] Define the new plugin manifest shape around explicit roles and `requires`
+- [ ] Separate provider-side plugins from consumer-side plugins
+- [ ] Replace plugin-name-based connector lookup with capability-based binding
+- [ ] Define the session/runtime services that own activation, binding, and health state
+- [ ] Improve debugging around runtime state, active bindings, and provider health
 
-### 0.4.0 - Widget globals and hotkeys
-In this update I want too introduce a new system and add globals too widgets
+### 0.4.0 — UI contracts, widget globals, and interaction
+Once the runtime contracts are in place, the focus shifts to stable UI-facing data contracts and better day-to-day usability.
 
-- [ ] implement widget global settings
-- [ ] implement tinyHotkey
-- [ ] add indicators: hotkey, game connection
+- [ ] Define the widget-facing data contract model
+- [ ] Move widget data flow away from direct connector traversal
+- [ ] Implement widget global settings
+- [ ] Implement hotkey support
+- [ ] Add clear indicators for runtime state such as hotkeys and game connection
 
 
 ### Later
-Ideas that are on the radar but not scheduled yet:
+These are on the radar, but not tied to a release yet:
 
-- Reimplement processing of data (modules, plugin layer?) 
+- Processing / derived data layer
 - Spotter?
-- Custom widgets (this one is far in the future, but the way i am building it, it should be possible)
+- Custom widgets
 - Grouping widgets
+- Provider selection UI
+- More connectors and capability coverage
 
 ---
 
