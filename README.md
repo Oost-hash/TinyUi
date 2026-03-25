@@ -73,6 +73,7 @@ Once the foundation is solid, the focus shifts to actually rendering data on scr
 - [x] Widget config — per-widget settings via the data-driven config system
 
 ### 0.3.0 Seperate game connector and restructure plugin
+I hit a wall, the demo plugin is mess, and has no clear definition of what it should be.
 
 - [ ] a lot of small things
 - [ ] improve debugging
