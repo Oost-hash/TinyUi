@@ -1,0 +1,18 @@
+name = "lmu_connector"
+type = "plugin.provider"
+version = "0.1.0"
+
+exports = [
+  "telemetry.state.v1",
+  "telemetry.session.v1",
+  "telemetry.track.v1",
+  "telemetry.car.v1",
+  "telemetry.tyre.v1",
+  "telemetry.timing.v1",
+  "telemetry.opponents.v1",
+  "telemetry.inputs.v1"
+]
+
+[provider]
+module = "plugins.lmu_connector.connector.lmu"
+class  = "LMUConnector"

@@ -1,14 +1,17 @@
-name   = "demo"
-module = "plugins.demo"
+name = "demo"
+type = "plugin.consumer"
+version = "0.1.0"
+
+requires = [
+  "telemetry.car.v1"
+]
+
+[logic]
+module = "plugins.demo.plugin"
 class  = "DemoPlugin"
 
-[connector]
-module = "plugins.demo.connector.lmu"
-class  = "LMUConnector"
+[ui]
+widgets = "widgets.toml"
 
-[mock_connector]
-module = "plugins.demo.connector.mock"
-class  = "MockConnector"
-
-[widgets]
-file = "widgets.toml"
+[editors]
+file = "editors.toml"

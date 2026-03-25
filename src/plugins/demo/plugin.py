@@ -18,14 +18,16 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""DemoPlugin — sample data + editor registrations for development.
+"""DemoPlugin — consumer-side development plugin.
 
-This is the reference example of how a plugin works:
-1. Provide default config data (written to JSON if files don't exist)
-2. Provide editors.toml (declares what editors the UI should offer)
+The demo plugin is intended to become the reference shape for a consumer-side
+plugin:
+1. register local config data
+2. register editor definitions
+3. provide UI-facing assets such as widgets
 
-The plugin only provides data — tinycore handles loading, saving, and paths.
-Config files live in: data/plugin-config/demo/
+It no longer owns a connector in its manifest. Runtime data should come from
+required capabilities instead of plugin-owned data sources.
 """
 
 from __future__ import annotations
@@ -72,7 +74,7 @@ DEFAULT_COMPOUNDS = {
 
 
 class DemoPlugin:
-    """Development plugin — registers config + editors via TOML."""
+    """Development consumer plugin — registers config and editors."""
 
     name = "demo"
 

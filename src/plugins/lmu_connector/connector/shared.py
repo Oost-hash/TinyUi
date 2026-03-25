@@ -18,3 +18,25 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
+"""Shared LMU connector helpers and imports."""
+
+from __future__ import annotations
+
+from plugins.lmu_connector.pyLMUSharedMemory import lmu_data
+from plugins.lmu_connector.pyLMUSharedMemory.lmu_data import LMUConstants
+from plugins.lmu_connector.pyLMUSharedMemory.lmu_mmap import MMapControl
+
+_KELVIN = 273.15
+
+_SESSION_NAMES = {
+    0: "test",
+    1: "practice",
+    2: "qualify",
+    3: "warmup",
+    4: "race",
+}
+
+
+def decode_bytes(raw: bytes) -> str:
+    """Decode LMU shared memory bytes into text."""
+    return raw.rstrip(b"\x00").decode("utf-8", errors="replace")
