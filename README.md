@@ -12,8 +12,6 @@
 - [What is TinyUi?](#what-is-tinyui)
 - [Supported platforms](#supported-platforms)
 - [Roadmap](#roadmap---will-be-moved-to-project)
-- [Architecture](#architecture)
-- [Plugin model](#plugin-model)
 - [Help Wanted: Logo](#help-wanted-tinyui-logo)
 - [Credits](#credits)
 - [AI use](#ai-use)
