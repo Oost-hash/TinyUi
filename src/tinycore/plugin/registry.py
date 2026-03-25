@@ -44,7 +44,8 @@ class PluginRegistry:
         """Phase 1: call register() on all plugins with a scoped PluginContext."""
         from .context import PluginContext
         for plugin in self._plugins:
-            plugin.register(PluginContext(app, plugin.name))
+            requires = getattr(plugin, "requires", ())
+            plugin.register(PluginContext(app, plugin.name, requires))
 
     def start_all(self) -> None:
         """Phase 2: call start() on all plugins in order."""

@@ -38,6 +38,7 @@ from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 from tinycore.log import get_logger
 
 if TYPE_CHECKING:
+    from tinycore.session.runtime import SessionRuntime
     from tinycore.telemetry.registry import ConnectorRegistry
 
 _log = get_logger(__name__)
@@ -81,6 +82,16 @@ class _ConnectorSource(_Source):
                 return str(val)
         except Exception as exc:
             return f"err: {exc}"
+
+
+def _binding_for_source(session: "SessionRuntime", consumer_name: str, capability: str):
+    """Resolve one provider binding for the state monitor."""
+    bindings = session.bindings_for(consumer_name)
+    if capability:
+        return bindings.get(capability)
+    if len(bindings.resolved) == 1:
+        return next(iter(bindings.resolved.values()))
+    return None
 
 
 _STATE_FIELDS: list[tuple[str, object]] = [
@@ -277,7 +288,7 @@ class StateMonitorViewModel(QObject):
     Usage::
 
         vm = StateMonitorViewModel()
-        vm.setup(connectors, [("demo", "vehicle.fuel"), ...])
+        vm.setup(connectors, session, [("demo", "", "vehicle.fuel"), ...])
         vm.register_object("Widget: Fuel", fuel_ctx)
         # pass vm via extra_context; call vm.start() in pre_run
     """
@@ -307,21 +318,39 @@ class StateMonitorViewModel(QObject):
         self.sourcesChanged.emit()
 
     def setup(
-        self, connectors: ConnectorRegistry, sources: list[tuple[str, str]]
+        self,
+        connectors: ConnectorRegistry,
+        session: "SessionRuntime",
+        sources: list[tuple[str, str, str]],
     ) -> None:
-        """Register connector dot-path sources, grouped by plugin."""
-        by_plugin: dict[str, list[str]] = {}
-        for plugin_name, path in sources:
-            by_plugin.setdefault(plugin_name, []).append(path)
+        """Register provider-backed dot-path sources, grouped by consumer plugin."""
+        by_consumer: dict[str, dict[str, list[str]]] = {}
+        for consumer_name, capability, path in sources:
+            by_consumer.setdefault(consumer_name, {}).setdefault(capability, []).append(path)
 
-        for plugin_name, paths in by_plugin.items():
-            connector = connectors.get(plugin_name)
-            if connector is not None:
+        for consumer_name, paths_by_capability in by_consumer.items():
+            seen_provider_names: set[str] = set()
+
+            for capability, paths in paths_by_capability.items():
+                binding = _binding_for_source(session, consumer_name, capability)
+                if binding is None:
+                    continue
+
+                if binding.provider_name not in seen_provider_names:
+                    connector = connectors.get(binding.provider_name)
+                    if connector is not None:
+                        self._sources.append(
+                            _ConnectorStateSource(f"State: {binding.provider_name}", connector)
+                        )
+                        seen_provider_names.add(binding.provider_name)
+
                 self._sources.append(
-                    _ConnectorStateSource(f"State: {plugin_name}", connector)
-                )
-                self._sources.append(
-                    _ConnectorSource(f"Polling: {plugin_name}", connector, paths)
+                    _ConnectorSource(
+                        f"Polling: {consumer_name}"
+                        + (f" [{capability}]" if capability else ""),
+                        binding.provider,
+                        paths,
+                    )
                 )
 
         if self._selected < 0 and self._sources:

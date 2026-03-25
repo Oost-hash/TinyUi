@@ -21,6 +21,7 @@
 """tinycore — generic application engine."""
 
 from .app import App, create_app
+from .capabilities.registry import CapabilityBinding, CapabilityRegistry
 from .config.loader import LoaderRegistry, read_json, write_json
 from .config.store import ConfigStore
 from .editor import ColumnDef, EditorRegistry, EditorSpec, load_editors_toml
@@ -33,11 +34,14 @@ from .plugin.spec import PluginSpec
 from .plugin.subprocess_host import SubprocessPlugin
 from .providers.protocol import Provider
 from .providers.registry import ProviderRegistry
+from .session.runtime import ConsumerBindingSet, ProviderHandle, SessionRuntime
 from .settings import SettingsRegistry, SettingsSpec
 
 __all__ = [
     "App",
     "create_app",
+    "CapabilityBinding",
+    "CapabilityRegistry",
     "ConfigStore",
     "LoaderRegistry",
     "read_json",
@@ -55,6 +59,9 @@ __all__ = [
     "SubprocessPlugin",
     "Provider",
     "ProviderRegistry",
+    "ProviderHandle",
+    "ConsumerBindingSet",
+    "SessionRuntime",
     "SettingsRegistry",
     "SettingsSpec",
 ]

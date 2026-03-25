@@ -38,6 +38,7 @@ class PluginSpec:
     module: str         # Python module path, e.g. "plugins.demo"
     cls:    str         # Class name, e.g. "DemoPlugin"
     name:   str = ""    # Plugin name; auto-derived from cls if empty
+    requires: tuple[str, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         if not self.name:

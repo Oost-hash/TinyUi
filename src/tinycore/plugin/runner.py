@@ -101,6 +101,22 @@ class _ProxyEditors:
         self._conn.send({"type": "editors.register", "spec": spec})
 
 
+class _ProxyCapabilities:
+    """Read-only view of declared requirements inside the subprocess."""
+
+    def __init__(self, required: tuple[str, ...]) -> None:
+        self._required = required
+
+    def required(self) -> tuple[str, ...]:
+        return self._required
+
+    def get(self, capability: str):
+        raise NotImplementedError("capability resolution is not available during register phase")
+
+    def require(self, capability: str):
+        raise NotImplementedError("capability resolution is not available during register phase")
+
+
 class _ProxyContext:
     """Proxy PluginContext inside the subprocess.
 
@@ -108,12 +124,13 @@ class _ProxyContext:
     to the host via the pipe. The plugin code sees no difference.
     """
 
-    def __init__(self, conn: Connection, plugin_name: str) -> None:
+    def __init__(self, conn: Connection, plugin_name: str, requires: tuple[str, ...]) -> None:
         self.name      = plugin_name
         self.settings  = _ProxySettings(conn)
         self.loaders   = _ProxyLoaders(conn)
         self.widgets   = _ProxyWidgets(conn)
         self.editors   = _ProxyEditors(conn)
+        self.capabilities = _ProxyCapabilities(requires)
         self.config    = None   # not available in subprocess
         self.events    = None   # future: proxy event subscription
         self.providers = None   # future: proxy data providers
@@ -121,7 +138,13 @@ class _ProxyContext:
 
 # ── Entry point — called by multiprocessing.Process ───────────────────────────
 
-def run(conn: Connection, module_path: str, class_name: str, extra_paths: list[str]) -> None:
+def run(
+    conn: Connection,
+    module_path: str,
+    class_name: str,
+    requires: tuple[str, ...],
+    extra_paths: list[str],
+) -> None:
     """Load and run a plugin inside a subprocess.
 
     Args:
@@ -138,7 +161,7 @@ def run(conn: Connection, module_path: str, class_name: str, extra_paths: list[s
     cls = getattr(mod, class_name)
     plugin = cls()
 
-    ctx = _ProxyContext(conn, plugin.name)
+    ctx = _ProxyContext(conn, plugin.name, requires)
 
     # ── Registration phase ────────────────────────────────────────────────
     conn.send({"type": "hello", "name": plugin.name})

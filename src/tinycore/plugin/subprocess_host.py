@@ -55,6 +55,10 @@ class SubprocessPlugin:
     def name(self) -> str:
         return self._spec.name
 
+    @property
+    def requires(self) -> tuple[str, ...]:
+        return self._spec.requires
+
     def register(self, ctx: PluginContext) -> None:
         """Spawn the plugin subprocess and collect its registrations."""
         from tinycore.plugin import runner
@@ -63,7 +67,7 @@ class SubprocessPlugin:
 
         self._proc = mp.Process(
             target=runner.run,
-            args=(child_conn, self._spec.module, self._spec.cls, sys.path),
+            args=(child_conn, self._spec.module, self._spec.cls, self._spec.requires, sys.path),
             daemon=True,
             name=f"plugin-{self._spec.name}",
         )

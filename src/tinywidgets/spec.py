@@ -42,9 +42,10 @@ class WidgetSpec:
     enable:      bool = True
 
     # Telemetry
-    source: str = ""   # dot-path into connector, e.g. "vehicle.fuel"
-    format: str = "{}" # Python format string applied to the raw value
-    label:  str = ""   # short label shown above or next to the value
+    capability: str = ""  # capability to bind against, e.g. "telemetry.car.v1"
+    source: str = ""      # dot-path into the bound provider, e.g. "vehicle.fuel"
+    format: str = "{}"    # Python format string applied to the raw value
+    label:  str = ""      # short label shown above or next to the value
 
     # Position on the overlay (logical pixels)
     x: int = 100
@@ -79,6 +80,7 @@ def load_widgets_toml(path: Path) -> list[WidgetSpec]:
             title       = widget_data.get("title",       widget_id),
             description = widget_data.get("description", ""),
             enable      = widget_data.get("enable",      True),
+            capability  = widget_data.get("capability",  ""),
             source      = widget_data.get("source",      ""),
             format      = widget_data.get("format",      "{}"),
             label       = widget_data.get("label",       ""),

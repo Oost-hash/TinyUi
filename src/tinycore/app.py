@@ -24,12 +24,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .capabilities.registry import CapabilityRegistry
 from .config.loader import LoaderRegistry
 from .config.store import ConfigStore
 from .editor import EditorRegistry
 from .events.bus import EventBus
 from .plugin.registry import PluginRegistry
 from .providers.registry import ProviderRegistry
+from .session.runtime import SessionRuntime
 from .settings import SettingsRegistry
 from .telemetry.registry import ConnectorRegistry
 
@@ -40,6 +42,8 @@ class App:
     def __init__(self, config_dir: Path):
         self.config        = ConfigStore()
         self.loaders       = LoaderRegistry(config_dir)
+        self.capabilities  = CapabilityRegistry()
+        self.session       = SessionRuntime(self.capabilities)
         self.connectors    = ConnectorRegistry()
         self.editors       = EditorRegistry()
         self.events        = EventBus()

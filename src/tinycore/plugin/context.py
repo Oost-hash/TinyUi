@@ -31,8 +31,10 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from tinycore.app import App
+    from tinycore.capabilities.registry import CapabilityBinding, CapabilityRegistry
     from tinycore.config.loader import LoaderRegistry
     from tinycore.config.store import ConfigStore
+    from tinycore.session.runtime import SessionRuntime
     from tinycore.settings import SettingsRegistry, SettingsSpec
     from tinycore.telemetry.reader import TelemetryReader
     from tinycore.telemetry.registry import ConnectorRegistry
@@ -48,6 +50,35 @@ class ScopedConnector:
     def register(self, connector: TelemetryReader) -> None:
         """Register a TelemetryReader for this plugin."""
         self._registry.register(self._name, connector)
+
+
+class ScopedCapabilities:
+    """Capability bindings scoped to one consumer plugin."""
+
+    def __init__(self, session: SessionRuntime, plugin_name: str, required: tuple[str, ...]) -> None:
+        self._session = session
+        self._plugin_name = plugin_name
+        self._required = required
+
+    def required(self) -> tuple[str, ...]:
+        """Declared capability requirements for this plugin."""
+        return self._required
+
+    def all(self) -> dict[str, CapabilityBinding]:
+        """All resolved bindings currently known for this plugin."""
+        return dict(self._session.bindings_for(self._plugin_name).resolved)
+
+    def get(self, capability: str) -> CapabilityBinding | None:
+        """Resolve a capability if it was declared by this plugin."""
+        if capability not in self._required:
+            raise KeyError(f"Capability '{capability}' was not declared in requires")
+        return self._session.bindings_for(self._plugin_name).get(capability)
+
+    def require(self, capability: str) -> CapabilityBinding:
+        """Resolve a declared capability or raise KeyError."""
+        if capability not in self._required:
+            raise KeyError(f"Capability '{capability}' was not declared in requires")
+        return self._session.bindings_for(self._plugin_name).require(capability)
 
 
 class ScopedSettings:
@@ -95,10 +126,11 @@ class PluginContext:
     (events, widgets, editors, providers, config) is passed through.
     """
 
-    def __init__(self, app: App, plugin_name: str) -> None:
+    def __init__(self, app: App, plugin_name: str, requires: tuple[str, ...] = ()) -> None:
         self.name      = plugin_name
         self.settings  = ScopedSettings(app.settings, plugin_name)
         self.loaders   = ScopedLoaders(app.loaders, plugin_name)
+        self.capabilities = ScopedCapabilities(app.session, plugin_name, requires)
         self.connector = ScopedConnector(app.connectors, plugin_name)
         self.config    = app.config
         self.editors   = app.editors

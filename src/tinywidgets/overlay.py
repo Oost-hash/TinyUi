@@ -37,6 +37,7 @@ from PySide6.QtCore import QUrl
 from tinycore.log import get_logger
 from tinycore.qt import create_engine
 from tinycore.qt.loop import PollLoop
+from tinycore.session.runtime import SessionRuntime
 from .config_store import WidgetConfigStore
 from .context import WidgetContext, WidgetModel
 from .runner import ConnectorUpdater, TextWidgetRunner
@@ -53,15 +54,17 @@ class WidgetOverlay:
     """Creates and manages all widget windows.
 
     Usage (from composition root):
-        overlay = WidgetOverlay(connectors, config_dir=_config_dir())
+        overlay = WidgetOverlay(connectors, session, config_dir=_config_dir())
         overlay.load(specs, plugin_name="demo")
         exit_code = tinyui.launch(core, lifecycle, pre_run=overlay.start,
                                   extra_context={"widgetModel": overlay.model})
     """
 
     def __init__(self, connectors: ConnectorRegistry,
+                 session: SessionRuntime,
                  config_dir: Path | None = None) -> None:
         self._connectors = connectors
+        self._session = session
         self._config_dir = config_dir
         self._poll_loop  = PollLoop(interval_ms=100)
         self._model      = WidgetModel()
@@ -106,7 +109,7 @@ class WidgetOverlay:
                         ]
 
             ctx    = WidgetContext(spec)
-            runner = TextWidgetRunner(spec, self._connectors, plugin_name, ctx.update)
+            runner = TextWidgetRunner(spec, self._session, plugin_name, ctx.update)
 
             if store:
                 def _save(cx: WidgetContext = ctx, s: WidgetConfigStore = store) -> None:
@@ -123,7 +126,12 @@ class WidgetOverlay:
 
             self._model.add(ctx)
             self._poll_loop.register(runner)
-            _log.overlay("loaded widget", id=spec.id, source=spec.source)
+            _log.overlay(
+                "loaded widget",
+                id=spec.id,
+                capability=spec.capability or "-",
+                source=spec.source,
+            )
 
     def start(self) -> None:
         """Create widget windows and start polling.

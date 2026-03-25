@@ -5,6 +5,7 @@
 title       = "Fuel"
 description = "Remaining fuel with low-fuel warning"
 enable      = true
+capability  = "telemetry.car.v1"
 source      = "vehicle.fuel"
 format      = "{:.1f}"
 label       = "FUEL"

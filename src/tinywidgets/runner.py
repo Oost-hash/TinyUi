@@ -30,6 +30,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable
 
 from tinycore.log import get_logger
+from tinycore.session.runtime import ConsumerBindingSet, SessionRuntime
 from .flash import FlashState
 from .threshold import evaluate
 from .spec import WidgetSpec
@@ -51,6 +52,22 @@ def _resolve(connector, path: str) -> float:
     for part in parts[:-1]:
         obj = getattr(obj, part)
     return float(getattr(obj, parts[-1])())
+
+
+def _binding_for_widget(
+    session: SessionRuntime,
+    consumer_name: str,
+    spec: WidgetSpec,
+):
+    """Resolve the provider binding used by a widget."""
+    bindings = session.bindings_for(consumer_name)
+    if spec.capability:
+        return bindings.get(spec.capability)
+
+    if len(bindings.resolved) == 1:
+        return next(iter(bindings.resolved.values()))
+
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -141,27 +158,38 @@ class TextWidgetRunner:
 
     def __init__(
         self,
-        spec:        WidgetSpec,
-        connectors:  ConnectorRegistry,
-        plugin_name: str,
-        on_update:   Callable[[WidgetState], None],
+        spec:          WidgetSpec,
+        session:       SessionRuntime,
+        consumer_name: str,
+        on_update:     Callable[[WidgetState], None],
     ) -> None:
-        self._spec        = spec
-        self._connectors  = connectors
-        self._plugin_name = plugin_name
-        self._on_update   = on_update
-        self._flash       = FlashState()
-        self._last:       WidgetState | None = None
+        self._spec = spec
+        self._session = session
+        self._consumer_name = consumer_name
+        self._on_update = on_update
+        self._flash = FlashState()
+        self._last: WidgetState | None = None
+        self._missing_logged = False
 
     def tick(self) -> None:
-        connector = self._connectors.get(self._plugin_name)
-        if connector is None:
+        binding = _binding_for_widget(self._session, self._consumer_name, self._spec)
+        if binding is None:
+            if not self._missing_logged:
+                target = self._spec.capability or "<implicit single binding>"
+                _log.warning(
+                    "widget binding missing  consumer=%s  widget=%s  capability=%s",
+                    self._consumer_name,
+                    self._spec.id,
+                    target,
+                )
+                self._missing_logged = True
             return
 
         try:
-            raw   = _resolve(connector, self._spec.source)
+            raw   = _resolve(binding.provider, self._spec.source)
             text  = self._spec.format.format(raw)
             color = evaluate(self._spec.thresholds, raw) or _FALLBACK_COLOR
+            self._missing_logged = False
 
             active = next(
                 (e for e in sorted(self._spec.thresholds, key=lambda e: e.value)
