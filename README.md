@@ -72,13 +72,18 @@ Once the foundation is solid, the focus shifts to actually rendering data on scr
 - [x] Layout engine — position, resize, and stack widgets on screen
 - [x] Widget config — per-widget settings via the data-driven config system
 
-### 0.3.0 - Widget globals and hotkeys
+### 0.3.0 Seperate game connector and restructure plugin
+
+- [ ] a lot of small things
+- [ ] improve debugging
+
+### 0.4.0 - Widget globals and hotkeys
 In this update I want too introduce a new system and add globals too widgets
 
 - [ ] implement widget global settings
 - [ ] implement tinyHotkey
 - [ ] add indicators: hotkey, game connection
-- [ ] improve debugging
+
 
 ### Later
 Ideas that are on the radar but not scheduled yet:
