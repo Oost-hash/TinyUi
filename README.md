@@ -96,58 +96,6 @@ Ideas that are on the radar but not scheduled yet:
 
 ---
 
-## Architecture
-
-```mermaid
-graph TB
-
-    subgraph Core["tinycore — Core Engine"]
-        direction TB
-        store[Config Store]
-        bus[Event Bus]
-        pluginsys[Plugin System\nlifecycle · isolation · subprocess]
-        providers[Provider Registry]
-        telemetry[Telemetry ABCs\n🚧 in progress]
-    end
-
-    subgraph QML["tinyui — UI Platform  •  QML"]
-        direction TB
-        qmlviews[QML Views\ncomponents · layout · tabs]
-        viewmodels[ViewModels]
-        windowing[Windowing]
-    end
-
-    subgraph Plugins["Plugins"]
-        direction TB
-        tp[tinypedal\nloaders · models]
-        demo[demo\nreference implementation]
-        connector[LMU Connector\n🚧 in progress]
-    end
-
-    Plugins -->|register providers| Core
-    QML -->|uses core services| Core
-    demo --> connector
-    connector -.->|implements| telemetry
-
-    style Core fill:#2c3e50,color:#fff
-    style QML fill:#2980b9,color:#fff
-    style Plugins fill:#e67e22,color:#fff
-```
-
----
-
-## Plugin model
-
-Plugins are self-contained packages. A minimal plugin needs:
-
-- `plugin.py` — implements the `Plugin` protocol (`register`, `start`, `stop`)
-- `editors.toml` — declarative config UI definition
-- Default dicts — user config is auto-generated on first boot
-
-The `demo` plugin is the reference implementation and stays in sync with the current plugin API.
-
----
-
 ## Help Wanted: TinyUi Logo
 
 Looking for a community-contributed logo for **TinyUi**!
