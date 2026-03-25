@@ -4,6 +4,6 @@
 [submodule "src/plugins/lmu_connector/pyLMUSharedMemory"]
 	path = src/plugins/lmu_connector/pyLMUSharedMemory
 	url = https://github.com/TinyPedal/pyLMUSharedMemory.git
-[submodule "src/plugins/demo/pyRfactor2SharedMemory"]
-	path = src/plugins/demo/pyRfactor2SharedMemory
+[submodule "src/plugins/lmu_connector/pyRfactor2SharedMemory"]
+	path = src/plugins/lmu_connector/pyRfactor2SharedMemory
 	url = https://github.com/TinyPedal/pyRfactor2SharedMemory.git

@@ -23,7 +23,7 @@ Tags:
 
 ## Entries
 
-- [plugins][changed] Established the new plugin baseline: `demo` now declares a consumer manifest without a bundled connector, and `lmu_connector` now owns the LMU shared-memory submodule and provider-side connector split
+- [plugins][changed] Established the new plugin baseline: `demo` now declares a consumer manifest without bundled connector code, and `lmu_connector` now owns the shared-memory submodules and provider-side connector split
 - [plugins] LMU connector logs game state transitions with full session context: session type, track, driver, car, class, car count, track temperature, ambient temperature, and game version
 - [tinycore] Log output to terminal and Dev Tools console can now be controlled independently — set `console_level = "INFO"` (or `"DEBUG"`, `"WARNING"`) in `[tool.tinyui.debug]` to attach a terminal handler at that level; omit the key to suppress terminal output entirely
 - [tinycore] Debug categories can be toggled at runtime from Dev Tools without restarting; `ALL_CATEGORIES` constant lists all available channels
