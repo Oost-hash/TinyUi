@@ -5,19 +5,21 @@ Usage:
     python scripts/release.py minor   # 0.1.0 -> 0.2.0
     python scripts/release.py major   # 0.1.0 -> 1.0.0
 
-Changes are read from unreleased_changelog.md:
-  - patch  : takes only ### patch entries
-  - minor  : takes ### patch + ### minor entries
-  - major  : takes all entries (### patch + ### minor + ### major)
+The bump type only controls the version number.
 
-Entries are automatically sorted into ### Added / ### Changed / ### Fixed /
-### Removed based on keywords in the entry text:
-  - Removed  : starts with "Removed" or contains "removed from"
-  - Fixed    : contains " now " (was broken, now works) or starts with "Fixed"
-  - Added    : minor/major entry that is not Removed or Changed
-  - Changed  : everything else
+Release notes are read from the `Entries` section in docs/unreleased_changelog.md
+as a flat list.
 
-Used sections are cleared from unreleased_changelog.md after release.
+Each line should use this format:
+  - [package] message
+  - [package][changed] message
+  - [package][fixed] message
+  - [package][removed] message
+
+If the change tag is omitted, the entry is treated as Added.
+The script groups the final release notes by category and package.
+
+After a release, the unreleased file is reset to the empty template.
 """
 
 import re
@@ -41,12 +43,34 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 """
 
-# Which unreleased sections to include per release type (cumulative)
-SECTIONS = {
-    "patch": ["patch"],
-    "minor": ["minor", "patch"],
-    "major": ["major", "minor", "patch"],
-}
+VALID_BUMPS = {"patch", "minor", "major"}
+CHANGELOG_CATEGORIES = ("Added", "Changed", "Fixed", "Removed")
+PACKAGE_ORDER = ("app", "plugins", "tinycore", "tinyui", "tinywidgets", "other")
+
+UNRELEASED_TEMPLATE = """\
+# Unreleased
+
+Add entries here before running a release.
+The release script controls the version bump, category, and grouping.
+
+## Format
+
+Use one line per change:
+  - [tinycore] New provider registry API
+  - [tinyui][fixed] Settings panel not opening from toolbar
+  - [tinywidgets][removed] Legacy overlay shim
+  - [plugins][changed] LMU connector now logs session transitions
+
+Known packages:
+  - app
+  - plugins
+  - tinycore
+  - tinyui
+  - tinywidgets
+  - other
+
+## Entries
+"""
 
 
 # ── Version helpers ───────────────────────────────────────────────────────────
@@ -83,67 +107,83 @@ def _write_version(version: tuple[int, int, int]):
 
 # ── Changelog helpers ─────────────────────────────────────────────────────────
 
-def _parse_unreleased() -> dict[str, list[str]]:
-    """Parse unreleased_changelog.md into {section: [lines]}."""
+def _normalize_category(raw: str | None) -> str:
+    """Map short change tags to changelog category names."""
+    if raw is None:
+        return "Added"
+
+    value = raw.strip().lower()
+    mapping = {
+        "add": "Added",
+        "added": "Added",
+        "change": "Changed",
+        "changed": "Changed",
+        "fix": "Fixed",
+        "fixed": "Fixed",
+        "remove": "Removed",
+        "removed": "Removed",
+    }
+    if value not in mapping:
+        raise SystemExit(
+            f"Unknown changelog tag '{raw}'. Use added, changed, fixed, or removed."
+        )
+    return mapping[value]
+
+
+def _parse_unreleased() -> dict[str, dict[str, list[str]]]:
+    """Parse unreleased_changelog.md into category -> package -> entries."""
     text = UNRELEASED.read_text(encoding="utf-8")
-    result: dict[str, list[str]] = {"major": [], "minor": [], "patch": []}
-    current = None
+    result: dict[str, dict[str, list[str]]] = {
+        category: {} for category in CHANGELOG_CATEGORIES
+    }
+    in_entries = False
+
     for line in text.splitlines():
-        m = re.match(r"^###\s+(major|minor|patch)", line)
-        if m:
-            current = m.group(1)
+        stripped = line.strip()
+        if stripped == "## Entries":
+            in_entries = True
             continue
-        if line.startswith("#"):
-            current = None
+        if not in_entries:
             continue
-        if current and line.strip() and not line.strip().startswith("<!--"):
-            result[current].append(line.rstrip())
+        if not stripped or stripped.startswith("#"):
+            continue
+        match = re.match(
+            r"^-\s*\[([A-Za-z0-9_-]+)\](?:\[([A-Za-z]+)\])?\s+(.+)$",
+            stripped,
+        )
+        if not match:
+            continue
+
+        package = match.group(1).strip()
+        if package not in PACKAGE_ORDER:
+            raise SystemExit(
+                f"Unknown package '{package}' in unreleased changelog. "
+                f"Use one of: {', '.join(PACKAGE_ORDER)}"
+            )
+        category = _normalize_category(match.group(2))
+        message = match.group(3).strip()
+        result[category].setdefault(package, []).append(f"- {message}")
+
     return result
 
 
-def _categorize(line: str, source_section: str) -> str:
-    """Return 'Added', 'Changed', 'Fixed', or 'Removed' based on keywords."""
-    text = line.lstrip("- ").strip()
-
-    # Removed — explicit keyword
-    if re.match(r"Removed\b", text) or "removed from" in text.lower():
-        return "Removed"
-
-    # Fixed — "now" indicates something that was previously broken
-    if re.search(r"\bnow\b", text) or re.match(r"Fixed\b", text, re.IGNORECASE):
-        return "Fixed"
-
-    # Changed — refactoring / moves / structural work
-    changed_words = ("moved", "refactored", "extracted", "aligned",
-                     "changed from", "bumped", "replaced", "renamed", "updated")
-    if any(w in text.lower() for w in changed_words):
-        return "Changed"
-
-    # minor / major entries that aren't Removed/Fixed/Changed → Added
-    if source_section in ("minor", "major"):
-        return "Added"
-
-    # Remaining patch entries → Changed
-    return "Changed"
+def _package_sort_key(package: str) -> tuple[int, str]:
+    if package in PACKAGE_ORDER:
+        return (PACKAGE_ORDER.index(package), package)
+    return (len(PACKAGE_ORDER), package)
 
 
-def _build_release_body(sections: dict[str, list[str]], include: list[str]) -> str:
-    """Categorize all included entries and format into Added/Changed/Fixed/Removed."""
-    buckets: dict[str, list[str]] = {
-        "Added": [], "Changed": [], "Fixed": [], "Removed": [],
-    }
-
-    for section_name in ["major", "minor", "patch"]:
-        if section_name not in include:
-            continue
-        for line in sections[section_name]:
-            cat = _categorize(line, section_name)
-            buckets[cat].append(line)
-
+def _build_release_body(sections: dict[str, dict[str, list[str]]]) -> str:
+    """Format unreleased entries into a changelog body."""
     parts = []
-    for cat in ("Added", "Changed", "Fixed", "Removed"):
-        if buckets[cat]:
-            parts.append(f"### {cat}\n" + "\n".join(buckets[cat]))
+    for cat in CHANGELOG_CATEGORIES:
+        package_parts = []
+        for package in sorted(sections[cat], key=_package_sort_key):
+            entries = sections[cat][package]
+            if entries:
+                package_parts.append(f"#### {package}\n" + "\n".join(entries))
+        if package_parts:
+            parts.append(f"### {cat}\n\n" + "\n\n".join(package_parts))
 
     return "\n\n".join(parts).strip()
 
@@ -169,23 +209,9 @@ def _prepend_changelog(version_str: str, body: str):
     )
 
 
-def _clear_unreleased_sections(include: list[str]):
-    """Remove used content lines from unreleased_changelog.md."""
-    text = UNRELEASED.read_text(encoding="utf-8")
-    lines = text.splitlines(keepends=True)
-    result = []
-    skip = False
-    for line in lines:
-        m = re.match(r"^###\s+(major|minor|patch)", line)
-        if m:
-            skip = m.group(1) in include
-            result.append(line)
-            continue
-        if line.startswith("#"):
-            skip = False
-        if not skip or not line.strip() or line.strip().startswith("<!--"):
-            result.append(line)
-    UNRELEASED.write_text("".join(result), encoding="utf-8")
+def _reset_unreleased() -> None:
+    """Reset unreleased_changelog.md to the empty template."""
+    UNRELEASED.write_text(UNRELEASED_TEMPLATE, encoding="utf-8")
 
 
 # ── Git helpers ───────────────────────────────────────────────────────────────
@@ -209,17 +235,15 @@ def _commit_and_tag(version_str: str):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
-    if len(sys.argv) != 2 or sys.argv[1] not in SECTIONS:
+    if len(sys.argv) != 2 or sys.argv[1] not in VALID_BUMPS:
         print("Usage: python scripts/release.py patch|minor|major")
         sys.exit(1)
 
     bump_type = sys.argv[1]
-    include   = SECTIONS[bump_type]
-
     sections = _parse_unreleased()
-    body = _build_release_body(sections, include)
+    body = _build_release_body(sections)
     if not body:
-        print(f"Nothing to release in sections: {include}")
+        print("Nothing to release in docs/unreleased_changelog.md")
         print("Add entries to unreleased_changelog.md first.")
         sys.exit(1)
 
@@ -229,14 +253,13 @@ def main():
 
     old_str = "%d.%d.%d" % old_version
     print(f"Bumping {old_str} -> {version_str}  ({bump_type})")
-    print(f"Sections included: {include}\n")
     print("Release notes:")
     print("-" * 40)
     print(body)
     print("-" * 40)
 
     _prepend_changelog(version_str, body)
-    _clear_unreleased_sections(include)
+    _reset_unreleased()
     _commit_and_tag(version_str)
 
 
