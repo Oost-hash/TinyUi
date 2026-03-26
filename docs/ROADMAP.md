@@ -37,6 +37,7 @@ Planned:
 These are on the radar, but not tied to a release yet:
 
 - Offload the original connector submodule into its own repository once the integration boundary is clean
+- Editor surface for compounds, vehicle-specific data, and other user-managed plugin data once that workflow becomes relevant
 - Processing / derived data layer
 - Spotter?
 - Custom widgets
