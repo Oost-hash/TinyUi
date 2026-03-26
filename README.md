@@ -27,8 +27,8 @@ It started as an attempt to extend [TinyPedal](https://github.com/TinyPedal/Tiny
 
 The architecture is split into three hard layers:
 
-- **tinycore** — a generic engine with no domain knowledge. Plugin lifecycle, config store, event bus, provider registry.
-- **plugins** — where game-specific and runtime-facing plugin code lives. Plugins run in isolated subprocesses and will move toward explicit provider and consumer roles.
+- **tinycore** — the host runtime. Session ownership, capability binding, subprocess consumer hosting, config persistence, and inspection.
+- **plugins** — where game-specific and runtime-facing plugin code lives. Plugins now split into explicit provider and consumer roles.
 - **tinyui** — the overlay UI, built in QML. Talks to tinycore, knows nothing about games.
 
 The shape is still evolving, but the direction is clear.
@@ -60,7 +60,7 @@ This release laid down the base: the runtime, the UI shell, and the first workin
 - [x] Plugin system — lifecycle, isolation, subprocess support
 - [x] Data-driven config — TOML for plugin definitions, JSON for user data
 - [x] QML overlay — windowing, theming, tab layout
-- [x] Telemetry ABCs — abstract connector contract in tinycore
+- [x] First telemetry contract layer
 - [x] LMU connector — first real game connector (Le Mans Ultimate / rFactor 2)
 
 ### 0.2.0 — Widget renderer
@@ -73,17 +73,17 @@ This release got live data onto the screen with the first usable widget workflow
 ### 0.3.0 — Runtime contracts and plugin split
 This release is about defining the runtime properly: clear plugin roles, explicit requirements, and a host that binds providers and consumers through contracts instead of plugin-specific wiring.
 
-- [ ] Define the new plugin manifest shape around explicit roles and `requires`
-- [ ] Separate provider-side plugins from consumer-side plugins
-- [ ] Replace plugin-name-based connector lookup with capability-based binding
-- [ ] Define the session/runtime services that own activation, binding, and health state
-- [ ] Improve debugging around runtime state, active bindings, and provider health
+- [x] Define the new plugin manifest shape around explicit roles and `requires`
+- [x] Separate provider-side plugins from consumer-side plugins
+- [x] Replace plugin-name-based connector lookup with capability-based binding
+- [x] Define the session/runtime services that own activation, binding, and health state
+- [x] Improve debugging around runtime state, active bindings, and provider health
+- [x] Define the widget-facing data contract model
+- [x] Move widget data flow away from direct connector traversal
 
 ### 0.4.0 — UI contracts, widget globals, and interaction
 Once the runtime contracts are in place, the focus shifts to stable UI-facing data contracts and better day-to-day usability.
 
-- [ ] Define the widget-facing data contract model
-- [ ] Move widget data flow away from direct connector traversal
 - [ ] Implement widget global settings
 - [ ] Implement hotkey support
 - [ ] Add clear indicators for runtime state such as hotkeys and game connection
@@ -97,6 +97,7 @@ These are on the radar, but not tied to a release yet:
 - Custom widgets
 - Grouping widgets
 - Provider selection UI
+- Game detection and source handoff inside provider families
 - More connectors and capability coverage
 
 ---

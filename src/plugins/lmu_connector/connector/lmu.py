@@ -1,33 +1,15 @@
 #  TinyUI
-#  Copyright (C) 2026 Oost-hash
-#
-#  This file is part of TinyUI.
-#
-#  TinyUI is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  TinyUI is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#
-#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
-#  licensed under GPLv3.
-"""LMU connector composition root.
-
-The LMU connector is now composed from a shared LMU source plus domain
-providers. This file only wires those pieces together.
-"""
+"""LMU provider-family runtime."""
 
 from __future__ import annotations
 
-from tinycore.telemetry.reader import ElectricMotor, TelemetryReader
+from time import monotonic
 
+from tinycore.log import get_logger
+
+from .inspect import provider_inspection_snapshot, reader_inspection_snapshot
+from .mock import LMUMockConnector
+from .reader import ElectricMotor, TelemetryReader
 from .session import LMULapProvider, LMUSessionProvider, LMUStateProvider, LMUTimingProvider
 from .source import LMUSource
 from .tyre import LMUTyreProvider
@@ -39,6 +21,9 @@ from .vehicle import (
     LMUVehicleProvider,
     LMUWheelProvider,
 )
+
+_log = get_logger(__name__)
+_DEMO_GRACE_SECONDS = 30.0
 
 
 class LMUElectricMotorProvider(ElectricMotor):
@@ -63,8 +48,8 @@ class LMUElectricMotorProvider(ElectricMotor):
         return 0.0
 
 
-class LMUConnector(TelemetryReader):
-    """Thin composition layer over LMU source and domain providers."""
+class LMURealConnector(TelemetryReader):
+    """Thin composition layer over the LMU shared-memory source."""
 
     def __init__(self) -> None:
         self._source = LMUSource()
@@ -83,7 +68,6 @@ class LMUConnector(TelemetryReader):
 
     @property
     def source(self) -> LMUSource:
-        """Shared LMU source used by all providers."""
         return self._source
 
     def open(self) -> None:
@@ -142,3 +126,189 @@ class LMUConnector(TelemetryReader):
     @property
     def wheel(self):
         return self._wheel
+
+    def inspect_snapshot(self) -> list[tuple[str, str]]:
+        return reader_inspection_snapshot(self)
+
+
+class LMUConnector(TelemetryReader):
+    """Provider runtime that owns both real and demo LMU sources."""
+
+    def __init__(self) -> None:
+        self._real = LMURealConnector()
+        self._mock = LMUMockConnector()
+        self._real_open = False
+        self._mock_open = False
+        self._demo_owners: set[str] = set()
+        self._demo_grace_until: float | None = None
+
+    def open(self) -> None:
+        if not self._real_open:
+            self._real.open()
+            self._real_open = True
+
+    def close(self) -> None:
+        if self._mock_open:
+            self._mock.close()
+            self._mock_open = False
+        if self._real_open:
+            self._real.close()
+            self._real_open = False
+
+    def update(self) -> None:
+        if self._real_open:
+            try:
+                self._real.update()
+            except Exception as exc:
+                _log.warning("LMU real source update failed: %s", exc)
+
+        if self._demo_enabled():
+            self._ensure_mock_open()
+            self._mock.update()
+            return
+
+        if self._mock_open:
+            self._mock.close()
+            self._mock_open = False
+            _log.info("LMU demo mode stopped")
+
+    def request_demo_mode(self, owner: str) -> None:
+        first_owner = not self._demo_owners
+        self._demo_owners.add(owner)
+        self._demo_grace_until = None
+        if first_owner:
+            _log.info("LMU demo mode requested  owner=%s", owner)
+
+    def release_demo_mode(self, owner: str) -> None:
+        self._demo_owners.discard(owner)
+        if self._demo_owners:
+            return
+        self._demo_grace_until = monotonic() + _DEMO_GRACE_SECONDS
+        _log.info("LMU demo mode grace started  owner=%s  seconds=%s", owner, _DEMO_GRACE_SECONDS)
+
+    def mode(self) -> str:
+        if self._demo_enabled():
+            return "demo"
+        if self._real_active():
+            return "real"
+        return "inactive"
+
+    def active_game(self) -> str:
+        if self._demo_enabled():
+            return "mock"
+        if self._real_active():
+            return "lmu"
+        return "none"
+
+    def supports_demo_mode(self) -> bool:
+        return True
+
+    def demo_min(self) -> float:
+        return self._mock.min_val
+
+    def demo_max(self) -> float:
+        return self._mock.max_val
+
+    def demo_speed(self) -> float:
+        return self._mock.step
+
+    def set_demo_min(self, value: float) -> None:
+        self._mock.configure(value, self._mock.max_val, self._mock.step)
+
+    def set_demo_max(self, value: float) -> None:
+        self._mock.configure(self._mock.min_val, value, self._mock.step)
+
+    def set_demo_speed(self, value: float) -> None:
+        self._mock.configure(self._mock.min_val, self._mock.max_val, value)
+
+    def inspect_snapshot(self) -> list[tuple[str, str]]:
+        mode = self.mode()
+        active_reader = None if mode == "inactive" else self._active_reader
+        return provider_inspection_snapshot(
+            mode=mode,
+            active_game=self.active_game(),
+            supports_demo=self.supports_demo_mode(),
+            demo_enabled=self._demo_enabled(),
+            demo_owner_count=len(self._demo_owners),
+            demo_grace_active=self._demo_grace_until is not None,
+            demo_min=self.demo_min(),
+            demo_max=self.demo_max(),
+            demo_speed=self.demo_speed(),
+            real_open=self._real_open,
+            mock_open=self._mock_open,
+            active_reader=active_reader,
+        )
+
+    @property
+    def real(self) -> LMURealConnector:
+        return self._real
+
+    def _demo_enabled(self) -> bool:
+        if self._demo_owners:
+            return True
+        return bool(self._demo_grace_until and monotonic() < self._demo_grace_until)
+
+    def _ensure_mock_open(self) -> None:
+        if self._mock_open:
+            return
+        self._mock.open()
+        self._mock_open = True
+        _log.info("LMU demo mode started")
+
+    def _real_active(self) -> bool:
+        try:
+            return self._real.state.active()
+        except Exception:
+            return False
+
+    @property
+    def _active_reader(self) -> TelemetryReader:
+        return self._mock if self._demo_enabled() else self._real
+
+    @property
+    def state(self):
+        return self._active_reader.state
+
+    @property
+    def brake(self):
+        return self._active_reader.brake
+
+    @property
+    def electric_motor(self):
+        return self._active_reader.electric_motor
+
+    @property
+    def engine(self):
+        return self._active_reader.engine
+
+    @property
+    def inputs(self):
+        return self._active_reader.inputs
+
+    @property
+    def lap(self):
+        return self._active_reader.lap
+
+    @property
+    def session(self):
+        return self._active_reader.session
+
+    @property
+    def switch(self):
+        return self._active_reader.switch
+
+    @property
+    def timing(self):
+        return self._active_reader.timing
+
+    @property
+    def tyre(self):
+        return self._active_reader.tyre
+
+    @property
+    def vehicle(self):
+        return self._active_reader.vehicle
+
+    @property
+    def wheel(self):
+        return self._active_reader.wheel

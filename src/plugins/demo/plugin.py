@@ -35,7 +35,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from tinycore.editor import load_editors_toml
+from tinyui_schema import load_editors_toml
 
 if TYPE_CHECKING:
     from tinycore.plugin.context import PluginContext
@@ -81,7 +81,7 @@ class DemoPlugin:
     def register(self, ctx: PluginContext) -> None:
         ctx.loaders.register("heatmaps",  "heatmaps.json",  DEFAULT_HEATMAPS)
         ctx.loaders.register("compounds", "compounds.json", DEFAULT_COMPOUNDS)
-        ctx.loaders.load_all(ctx.config)
+        ctx.loaders.load_all()
 
         plugin_dir = Path(__file__).parent
         for spec in load_editors_toml(plugin_dir / "editors.toml"):

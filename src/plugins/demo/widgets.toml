@@ -3,26 +3,81 @@
 
 [fuel]
 title       = "Fuel"
-description = "Remaining fuel with low-fuel warning"
+description = "Fuel remaining in liters"
 enable      = true
 capability  = "telemetry.car.v1"
-source      = "vehicle.fuel"
+field       = "fuel"
 format      = "{:.1f}"
 label       = "FUEL"
 x           = 100
 y           = 100
 [[fuel.thresholds]]
 value        = 2.0
-color        = "#FF4444"   # red — fuel <= 2 L (critical)
+color        = "#FF4444"   # critical when fuel <= 2.0 L
 flash        = true
 flash_speed  = 3           # fast blink when critical
 flash_target = "value"
 
 [[fuel.thresholds]]
 value        = 10.0
-color        = "#FF8C00"   # orange — fuel <= 10 L
+color        = "#FF8C00"   # warning when fuel <= 10.0 L
 flash        = false
 flash_speed  = 5
 flash_target = "value"
 
 # above 10 L → default color (no entry needed)
+
+[speed]
+title       = "Speed"
+description = "Current vehicle speed in km/h"
+enable      = true
+capability  = "telemetry.car.v1"
+field       = "speed"
+format      = "{:.0f}"
+label       = "KM/H"
+x           = 100
+y           = 190
+
+[place]
+title       = "Place"
+description = "Current overall race position"
+enable      = true
+capability  = "telemetry.car.v1"
+field       = "place"
+format      = "P{}"
+label       = "POS"
+x           = 260
+y           = 100
+
+[track]
+title       = "Track"
+description = "Active track name"
+enable      = true
+capability  = "telemetry.session.v1"
+field       = "track_name"
+format      = "{}"
+label       = "TRACK"
+x           = 260
+y           = 190
+
+[session_remaining]
+title       = "Time Left"
+description = "Remaining session time in seconds"
+enable      = true
+capability  = "telemetry.session.v1"
+field       = "session_time_left"
+format      = "{:.0f}s"
+label       = "TIME"
+x           = 420
+y           = 100
+
+[track_temp]
+title       = "Track Temp"
+description = "Current track surface temperature"
+enable      = true
+capability  = "telemetry.session.v1"
+field       = "track_temperature"
+format      = "{:.1f}"
+label       = "TRK TEMP"
+x           = 420
+y           = 190

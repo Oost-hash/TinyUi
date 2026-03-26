@@ -1,0 +1,175 @@
+"""Provider-owned inspection snapshots for the LMU connector family."""
+
+from __future__ import annotations
+
+from .reader import TelemetryReader
+
+
+def reader_inspection_snapshot(reader: TelemetryReader) -> list[tuple[str, str]]:
+    fields = [
+        ("state.active", lambda: str(reader.state.active())),
+        ("state.paused", lambda: str(reader.state.paused())),
+        ("state.version", lambda: reader.state.version()),
+        ("session.track", lambda: reader.session.track_name()),
+        ("session.kind", lambda: str(reader.session.session_kind())),
+        ("session.is_race", lambda: str(reader.session.is_race_session())),
+        ("session.time_elapsed", lambda: f"{reader.session.session_time_elapsed():.1f} s"),
+        ("session.time_left", lambda: f"{reader.session.session_time_left():.1f} s"),
+        ("session.t_track", lambda: f"{reader.session.track_temperature():.1f} °C"),
+        ("session.t_amb", lambda: f"{reader.session.ambient_temperature():.1f} °C"),
+        ("session.raininess", lambda: f"{reader.session.raininess():.2f}"),
+        ("vehicle.player_idx", lambda: str(reader.vehicle.player_index())),
+        ("vehicle.total", lambda: str(reader.vehicle.total_vehicles())),
+        ("vehicle.driver", lambda: reader.vehicle.driver_name()),
+        ("vehicle.car", lambda: reader.vehicle.vehicle_name()),
+        ("vehicle.class", lambda: reader.vehicle.class_name()),
+        ("vehicle.place", lambda: str(reader.vehicle.place())),
+        ("vehicle.in_pits", lambda: str(reader.vehicle.in_pits())),
+        ("vehicle.fuel", lambda: f"{reader.vehicle.fuel():.2f} L"),
+        ("vehicle.speed", lambda: f"{reader.vehicle.speed() * 3.6:.1f} km/h"),
+        (
+            "vehicle.position",
+            lambda: (
+                f"({reader.vehicle.position_xyz()[0]:.2f}, "
+                f"{reader.vehicle.position_xyz()[1]:.2f}, "
+                f"{reader.vehicle.position_xyz()[2]:.2f})"
+            ),
+        ),
+        ("lap.current", lambda: str(reader.lap.current_lap())),
+        ("lap.completed", lambda: str(reader.lap.completed_laps())),
+        ("lap.distance", lambda: f"{reader.lap.lap_distance():.1f} m"),
+        ("lap.track_length", lambda: f"{reader.lap.track_length():.1f} m"),
+        ("lap.progress", lambda: f"{reader.lap.lap_progress() * 100:.1f} %"),
+        ("lap.current_sector", lambda: str(reader.lap.current_sector())),
+        ("engine.gear", lambda: str(reader.engine.gear())),
+        ("engine.gear_max", lambda: str(reader.engine.gear_max())),
+        ("engine.rpm", lambda: f"{reader.engine.rpm():.0f}"),
+        ("engine.rpm_max", lambda: f"{reader.engine.rpm_max():.0f}"),
+        ("engine.torque", lambda: f"{reader.engine.torque():.2f} Nm"),
+        ("engine.turbo", lambda: f"{reader.engine.turbo():.3f} bar"),
+        ("engine.temp_oil", lambda: f"{reader.engine.oil_temperature():.1f} °C"),
+        ("engine.temp_water", lambda: f"{reader.engine.water_temperature():.1f} °C"),
+        ("emotor.state", lambda: str(reader.electric_motor.state())),
+        ("emotor.battery", lambda: f"{reader.electric_motor.battery_charge():.2f}"),
+        ("emotor.rpm", lambda: f"{reader.electric_motor.rpm():.0f}"),
+        ("emotor.torque", lambda: f"{reader.electric_motor.torque():.2f} Nm"),
+        ("emotor.temp_motor", lambda: f"{reader.electric_motor.motor_temperature():.1f} °C"),
+        ("emotor.temp_water", lambda: f"{reader.electric_motor.water_temperature():.1f} °C"),
+        ("inputs.throttle", lambda: f"{reader.inputs.throttle():.3f}"),
+        ("inputs.throttle_raw", lambda: f"{reader.inputs.throttle_raw():.3f}"),
+        ("inputs.brake", lambda: f"{reader.inputs.brake():.3f}"),
+        ("inputs.brake_raw", lambda: f"{reader.inputs.brake_raw():.3f}"),
+        ("inputs.clutch", lambda: f"{reader.inputs.clutch():.3f}"),
+        ("inputs.steering", lambda: f"{reader.inputs.steering():.4f}"),
+        ("inputs.steering_raw", lambda: f"{reader.inputs.steering_raw():.4f}"),
+        ("inputs.ffb", lambda: f"{reader.inputs.force_feedback():.3f} Nm"),
+        ("brake.bias_front", lambda: f"{reader.brake.bias_front():.3f}"),
+        ("brake.pressure_fl", lambda: f"{reader.brake.pressure()[0]:.3f}"),
+        ("brake.pressure_fr", lambda: f"{reader.brake.pressure()[1]:.3f}"),
+        ("brake.pressure_rl", lambda: f"{reader.brake.pressure()[2]:.3f}"),
+        ("brake.pressure_rr", lambda: f"{reader.brake.pressure()[3]:.3f}"),
+        ("brake.temp_fl", lambda: f"{reader.brake.temperature()[0]:.1f} °C"),
+        ("brake.temp_fr", lambda: f"{reader.brake.temperature()[1]:.1f} °C"),
+        ("brake.temp_rl", lambda: f"{reader.brake.temperature()[2]:.1f} °C"),
+        ("brake.temp_rr", lambda: f"{reader.brake.temperature()[3]:.1f} °C"),
+        ("brake.wear_fl", lambda: f"{reader.brake.wear()[0]:.3f}"),
+        ("brake.wear_fr", lambda: f"{reader.brake.wear()[1]:.3f}"),
+        ("brake.wear_rl", lambda: f"{reader.brake.wear()[2]:.3f}"),
+        ("brake.wear_rr", lambda: f"{reader.brake.wear()[3]:.3f}"),
+        ("tyre.compound_f", lambda: str(reader.tyre.compound()[0])),
+        ("tyre.compound_r", lambda: str(reader.tyre.compound()[1])),
+        ("tyre.compound_name_f", lambda: reader.tyre.compound_name()[0]),
+        ("tyre.compound_name_r", lambda: reader.tyre.compound_name()[1]),
+        ("tyre.temp_surface_fl", lambda: f"{reader.tyre.surface_temperature()[0]:.1f} °C"),
+        ("tyre.temp_surface_fr", lambda: f"{reader.tyre.surface_temperature()[1]:.1f} °C"),
+        ("tyre.temp_surface_rl", lambda: f"{reader.tyre.surface_temperature()[2]:.1f} °C"),
+        ("tyre.temp_surface_rr", lambda: f"{reader.tyre.surface_temperature()[3]:.1f} °C"),
+        ("tyre.temp_inner_fl", lambda: f"{reader.tyre.inner_temperature()[0]:.1f} °C"),
+        ("tyre.temp_inner_fr", lambda: f"{reader.tyre.inner_temperature()[1]:.1f} °C"),
+        ("tyre.temp_inner_rl", lambda: f"{reader.tyre.inner_temperature()[2]:.1f} °C"),
+        ("tyre.temp_inner_rr", lambda: f"{reader.tyre.inner_temperature()[3]:.1f} °C"),
+        ("tyre.pressure_fl", lambda: f"{reader.tyre.pressure()[0]:.2f}"),
+        ("tyre.pressure_fr", lambda: f"{reader.tyre.pressure()[1]:.2f}"),
+        ("tyre.pressure_rl", lambda: f"{reader.tyre.pressure()[2]:.2f}"),
+        ("tyre.pressure_rr", lambda: f"{reader.tyre.pressure()[3]:.2f}"),
+        ("tyre.wear_fl", lambda: f"{reader.tyre.wear()[0]:.3f}"),
+        ("tyre.wear_fr", lambda: f"{reader.tyre.wear()[1]:.3f}"),
+        ("tyre.wear_rl", lambda: f"{reader.tyre.wear()[2]:.3f}"),
+        ("tyre.wear_rr", lambda: f"{reader.tyre.wear()[3]:.3f}"),
+        ("tyre.load_fl", lambda: f"{reader.tyre.load()[0]:.1f} N"),
+        ("tyre.load_fr", lambda: f"{reader.tyre.load()[1]:.1f} N"),
+        ("tyre.load_rl", lambda: f"{reader.tyre.load()[2]:.1f} N"),
+        ("tyre.load_rr", lambda: f"{reader.tyre.load()[3]:.1f} N"),
+        ("wheel.camber_fl", lambda: f"{reader.wheel.camber()[0]:.3f} rad"),
+        ("wheel.camber_fr", lambda: f"{reader.wheel.camber()[1]:.3f} rad"),
+        ("wheel.camber_rl", lambda: f"{reader.wheel.camber()[2]:.3f} rad"),
+        ("wheel.camber_rr", lambda: f"{reader.wheel.camber()[3]:.3f} rad"),
+        ("wheel.rotation_fl", lambda: f"{reader.wheel.rotation()[0]:.3f} rad"),
+        ("wheel.rotation_fr", lambda: f"{reader.wheel.rotation()[1]:.3f} rad"),
+        ("wheel.rotation_rl", lambda: f"{reader.wheel.rotation()[2]:.3f} rad"),
+        ("wheel.rotation_rr", lambda: f"{reader.wheel.rotation()[3]:.3f} rad"),
+        ("wheel.ride_height_fl", lambda: f"{reader.wheel.ride_height()[0]:.1f} mm"),
+        ("wheel.ride_height_fr", lambda: f"{reader.wheel.ride_height()[1]:.1f} mm"),
+        ("wheel.ride_height_rl", lambda: f"{reader.wheel.ride_height()[2]:.1f} mm"),
+        ("wheel.ride_height_rr", lambda: f"{reader.wheel.ride_height()[3]:.1f} mm"),
+        ("wheel.susp_defl_fl", lambda: f"{reader.wheel.suspension_deflection()[0]:.1f} mm"),
+        ("wheel.susp_defl_fr", lambda: f"{reader.wheel.suspension_deflection()[1]:.1f} mm"),
+        ("wheel.susp_defl_rl", lambda: f"{reader.wheel.suspension_deflection()[2]:.1f} mm"),
+        ("wheel.susp_defl_rr", lambda: f"{reader.wheel.suspension_deflection()[3]:.1f} mm"),
+        ("switch.headlights", lambda: str(reader.switch.headlights())),
+        ("switch.speed_limiter", lambda: str(reader.switch.speed_limiter())),
+        ("switch.drs", lambda: str(reader.switch.drs_status())),
+        ("timing.current_lap", lambda: f"{reader.timing.current_laptime():.3f} s"),
+        ("timing.last_lap", lambda: f"{reader.timing.last_laptime():.3f} s"),
+        ("timing.best_lap", lambda: f"{reader.timing.best_laptime():.3f} s"),
+        ("timing.cur_s1", lambda: f"{reader.timing.current_sector1():.3f} s"),
+        ("timing.cur_s2", lambda: f"{reader.timing.current_sector2():.3f} s"),
+        ("timing.last_s1", lambda: f"{reader.timing.last_sector1():.3f} s"),
+        ("timing.last_s2", lambda: f"{reader.timing.last_sector2():.3f} s"),
+        ("timing.best_s1", lambda: f"{reader.timing.best_sector1():.3f} s"),
+        ("timing.best_s2", lambda: f"{reader.timing.best_sector2():.3f} s"),
+        ("timing.gap_to_leader", lambda: f"{reader.timing.gap_to_leader():.3f} s"),
+    ]
+
+    snapshot: list[tuple[str, str]] = []
+    for key, getter in fields:
+        try:
+            snapshot.append((key, str(getter())))
+        except Exception as exc:
+            snapshot.append((key, f"err: {exc}"))
+    return snapshot
+
+
+def provider_inspection_snapshot(
+    *,
+    mode: str,
+    active_game: str,
+    supports_demo: bool,
+    demo_enabled: bool,
+    demo_owner_count: int,
+    demo_grace_active: bool,
+    demo_min: float,
+    demo_max: float,
+    demo_speed: float,
+    real_open: bool,
+    mock_open: bool,
+    active_reader: TelemetryReader | None,
+) -> list[tuple[str, str]]:
+    snapshot = [
+        ("provider.mode", mode),
+        ("provider.active_game", active_game),
+        ("provider.supports_demo", str(supports_demo)),
+        ("provider.demo_enabled", str(demo_enabled)),
+        ("provider.demo_owner_count", str(demo_owner_count)),
+        ("provider.demo_grace_active", str(demo_grace_active)),
+        ("provider.demo_min", f"{demo_min:.2f}"),
+        ("provider.demo_max", f"{demo_max:.2f}"),
+        ("provider.demo_speed", f"{demo_speed:.2f}"),
+        ("provider.real_open", str(real_open)),
+        ("provider.mock_open", str(mock_open)),
+    ]
+    if mode == "inactive" or active_reader is None:
+        snapshot.append(("provider.status", "Waiting for an active LMU source or demo lease"))
+        return snapshot
+    snapshot.extend(reader_inspection_snapshot(active_reader))
+    return snapshot

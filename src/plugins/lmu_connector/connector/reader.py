@@ -1,0 +1,360 @@
+#  TinyUI
+"""Telemetry reader contracts for the LMU provider family."""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class WeatherNode:
+    """A single weather forecast entry."""
+
+    time: float
+    raininess: float
+    temperature: float
+
+
+class State(ABC):
+    __slots__ = ()
+
+    @abstractmethod
+    def active(self) -> bool: ...
+
+    @abstractmethod
+    def paused(self) -> bool: ...
+
+    @abstractmethod
+    def version(self) -> str: ...
+
+
+class Brake(ABC):
+    __slots__ = ()
+
+    @abstractmethod
+    def bias_front(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def pressure(self, index: int | None = None, scale: float = 1) -> tuple[float, ...]: ...
+
+    @abstractmethod
+    def temperature(self, index: int | None = None) -> tuple[float, ...]: ...
+
+    @abstractmethod
+    def wear(self, index: int | None = None) -> tuple[float, ...]: ...
+
+
+class ElectricMotor(ABC):
+    __slots__ = ()
+
+    @abstractmethod
+    def state(self, index: int | None = None) -> int: ...
+
+    @abstractmethod
+    def battery_charge(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def rpm(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def torque(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def motor_temperature(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def water_temperature(self, index: int | None = None) -> float: ...
+
+
+class Engine(ABC):
+    __slots__ = ()
+
+    @abstractmethod
+    def gear(self, index: int | None = None) -> int: ...
+
+    @abstractmethod
+    def gear_max(self, index: int | None = None) -> int: ...
+
+    @abstractmethod
+    def rpm(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def rpm_max(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def torque(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def turbo(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def oil_temperature(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def water_temperature(self, index: int | None = None) -> float: ...
+
+
+class Inputs(ABC):
+    __slots__ = ()
+
+    @abstractmethod
+    def throttle(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def throttle_raw(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def brake(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def brake_raw(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def clutch(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def steering(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def steering_raw(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def force_feedback(self) -> float: ...
+
+
+class Lap(ABC):
+    __slots__ = ()
+
+    @abstractmethod
+    def current_lap(self, index: int | None = None) -> int: ...
+
+    @abstractmethod
+    def completed_laps(self, index: int | None = None) -> int: ...
+
+    @abstractmethod
+    def track_length(self) -> float: ...
+
+    @abstractmethod
+    def lap_distance(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def lap_progress(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def current_sector(self, index: int | None = None) -> int: ...
+
+
+class Session(ABC):
+    __slots__ = ()
+
+    @abstractmethod
+    def track_name(self) -> str: ...
+
+    @abstractmethod
+    def session_time_elapsed(self) -> float: ...
+
+    @abstractmethod
+    def session_time_left(self) -> float: ...
+
+    @abstractmethod
+    def session_kind(self) -> int: ...
+
+    @abstractmethod
+    def is_race_session(self) -> bool: ...
+
+    @abstractmethod
+    def track_temperature(self) -> float: ...
+
+    @abstractmethod
+    def ambient_temperature(self) -> float: ...
+
+    @abstractmethod
+    def raininess(self) -> float: ...
+
+    @abstractmethod
+    def weather_forecast(self) -> tuple[WeatherNode, ...]: ...
+
+
+class Switch(ABC):
+    __slots__ = ()
+
+    @abstractmethod
+    def headlights(self, index: int | None = None) -> int: ...
+
+    @abstractmethod
+    def speed_limiter(self, index: int | None = None) -> int: ...
+
+    @abstractmethod
+    def drs_status(self, index: int | None = None) -> int: ...
+
+
+class Timing(ABC):
+    __slots__ = ()
+
+    @abstractmethod
+    def current_laptime(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def last_laptime(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def best_laptime(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def current_sector1(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def current_sector2(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def last_sector1(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def last_sector2(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def best_sector1(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def best_sector2(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def gap_to_leader(self, index: int | None = None) -> float: ...
+
+
+class Tyre(ABC):
+    __slots__ = ()
+
+    @abstractmethod
+    def compound(self, index: int | None = None) -> tuple[int, int]: ...
+
+    @abstractmethod
+    def compound_name(self, index: int | None = None) -> tuple[str, str]: ...
+
+    @abstractmethod
+    def surface_temperature(self, index: int | None = None) -> tuple[float, ...]: ...
+
+    @abstractmethod
+    def inner_temperature(self, index: int | None = None) -> tuple[float, ...]: ...
+
+    @abstractmethod
+    def pressure(self, index: int | None = None) -> tuple[float, ...]: ...
+
+    @abstractmethod
+    def wear(self, index: int | None = None) -> tuple[float, ...]: ...
+
+    @abstractmethod
+    def load(self, index: int | None = None) -> tuple[float, ...]: ...
+
+
+class Vehicle(ABC):
+    __slots__ = ()
+
+    @abstractmethod
+    def player_index(self) -> int: ...
+
+    @abstractmethod
+    def is_player(self, index: int = 0) -> bool: ...
+
+    @abstractmethod
+    def total_vehicles(self) -> int: ...
+
+    @abstractmethod
+    def driver_name(self, index: int | None = None) -> str: ...
+
+    @abstractmethod
+    def vehicle_name(self, index: int | None = None) -> str: ...
+
+    @abstractmethod
+    def class_name(self, index: int | None = None) -> str: ...
+
+    @abstractmethod
+    def place(self, index: int | None = None) -> int: ...
+
+    @abstractmethod
+    def in_pits(self, index: int | None = None) -> bool: ...
+
+    @abstractmethod
+    def fuel(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def speed(self, index: int | None = None) -> float: ...
+
+    @abstractmethod
+    def position_xyz(self, index: int | None = None) -> tuple[float, float, float]: ...
+
+
+class Wheel(ABC):
+    __slots__ = ()
+
+    @abstractmethod
+    def camber(self, index: int | None = None) -> tuple[float, ...]: ...
+
+    @abstractmethod
+    def rotation(self, index: int | None = None) -> tuple[float, ...]: ...
+
+    @abstractmethod
+    def ride_height(self, index: int | None = None) -> tuple[float, ...]: ...
+
+    @abstractmethod
+    def suspension_deflection(self, index: int | None = None) -> tuple[float, ...]: ...
+
+
+class TelemetryReader(ABC):
+    @abstractmethod
+    def open(self) -> None: ...
+
+    @abstractmethod
+    def close(self) -> None: ...
+
+    @abstractmethod
+    def update(self) -> None: ...
+
+    @property
+    @abstractmethod
+    def state(self) -> State: ...
+
+    @property
+    @abstractmethod
+    def brake(self) -> Brake: ...
+
+    @property
+    @abstractmethod
+    def electric_motor(self) -> ElectricMotor: ...
+
+    @property
+    @abstractmethod
+    def engine(self) -> Engine: ...
+
+    @property
+    @abstractmethod
+    def inputs(self) -> Inputs: ...
+
+    @property
+    @abstractmethod
+    def lap(self) -> Lap: ...
+
+    @property
+    @abstractmethod
+    def session(self) -> Session: ...
+
+    @property
+    @abstractmethod
+    def switch(self) -> Switch: ...
+
+    @property
+    @abstractmethod
+    def timing(self) -> Timing: ...
+
+    @property
+    @abstractmethod
+    def tyre(self) -> Tyre: ...
+
+    @property
+    @abstractmethod
+    def vehicle(self) -> Vehicle: ...
+
+    @property
+    @abstractmethod
+    def wheel(self) -> Wheel: ...

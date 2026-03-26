@@ -3,7 +3,8 @@ type = "plugin.consumer"
 version = "0.1.0"
 
 requires = [
-  "telemetry.car.v1"
+  "telemetry.car.v1",
+  "telemetry.session.v1"
 ]
 
 [logic]

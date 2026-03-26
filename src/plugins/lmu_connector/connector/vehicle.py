@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import math
 
-from tinycore.telemetry.reader import Brake, Engine, Inputs, Switch, Vehicle, Wheel
+from .reader import Brake, Engine, Inputs, Switch, Vehicle, Wheel
 
 from .shared import _KELVIN, decode_bytes
 from .source import LMUSource

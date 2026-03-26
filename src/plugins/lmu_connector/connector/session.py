@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from tinycore.telemetry.reader import Lap, Session, State, Timing, WeatherNode
+from .reader import Lap, Session, State, Timing, WeatherNode
 
 from .shared import decode_bytes
 from .source import LMUSource
@@ -35,7 +35,7 @@ class LMULapProvider(Lap):
         idx = self._source.info.data.telemetry.playerVehicleIdx if index is None else index
         return self._source.info.data.scoring.vehScoringInfo[idx]
 
-    def number(self, index: int | None = None) -> int:
+    def current_lap(self, index: int | None = None) -> int:
         return int(self._scor(index).mLapNumber)
 
     def completed_laps(self, index: int | None = None) -> int:
@@ -44,14 +44,14 @@ class LMULapProvider(Lap):
     def track_length(self) -> float:
         return float(self._source.info.data.scoring.scoringInfo.mLapDist)
 
-    def distance(self, index: int | None = None) -> float:
+    def lap_distance(self, index: int | None = None) -> float:
         return float(self._scor(index).mLapDist)
 
-    def progress(self, index: int | None = None) -> float:
+    def lap_progress(self, index: int | None = None) -> float:
         length = self.track_length()
-        return self.distance(index) / length if length > 0 else 0.0
+        return self.lap_distance(index) / length if length > 0 else 0.0
 
-    def sector_index(self, index: int | None = None) -> int:
+    def current_sector(self, index: int | None = None) -> int:
         raw = int(self._scor(index).mSector)
         return {0: 2, 1: 0, 2: 1}.get(raw, 0)
 
@@ -66,13 +66,13 @@ class LMUSessionProvider(Session):
     def track_name(self) -> str:
         return decode_bytes(self._si().mTrackName)
 
-    def elapsed(self) -> float:
+    def session_time_elapsed(self) -> float:
         return float(self._si().mCurrentET)
 
-    def remaining(self) -> float:
+    def session_time_left(self) -> float:
         return float(self._si().mEndET - self._si().mCurrentET)
 
-    def session_type(self) -> int:
+    def session_kind(self) -> int:
         raw = int(self._si().mSession)
         if raw == 0:
             return 0
@@ -84,8 +84,8 @@ class LMUSessionProvider(Session):
             return 3
         return 4
 
-    def in_race(self) -> bool:
-        return self.session_type() == 4
+    def is_race_session(self) -> bool:
+        return self.session_kind() == 4
 
     def track_temperature(self) -> float:
         return float(self._si().mTrackTemp)
@@ -135,5 +135,5 @@ class LMUTimingProvider(Timing):
     def best_sector2(self, index: int | None = None) -> float:
         return float(self._scor(index).mBestSector2)
 
-    def behind_leader(self, index: int | None = None) -> float:
+    def gap_to_leader(self, index: int | None = None) -> float:
         return float(self._scor(index).mTimeBehindLeader)

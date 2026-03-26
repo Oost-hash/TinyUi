@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from tinycore.telemetry.reader import Tyre
+from .reader import Tyre
 
 from .shared import _KELVIN, decode_bytes
 from .source import LMUSource
