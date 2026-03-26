@@ -43,6 +43,7 @@ These are on the radar, but not tied to a release yet:
 - Grouping widgets
 - Provider selection UI
 - Game detection and source handoff inside provider families
+- Widget globals (fonts, bkg_color, size, layout)
 
 # Released
 
