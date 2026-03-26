@@ -29,10 +29,9 @@ from __future__ import annotations
 import multiprocessing as mp
 import sys
 from typing import TYPE_CHECKING, cast
+from multiprocessing.connection import Connection
 
 if TYPE_CHECKING:
-    from multiprocessing.connection import Connection
-
     from tinycore.plugin.context import PluginContext
     from tinycore.plugin.spec import ConsumerRuntimeSpec
 
