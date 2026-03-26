@@ -3,19 +3,18 @@
 TinyUi tracks roadmap items latest-first so the current direction is visible
 without scrolling through older releases first.
 
-## Current focus: 0.4.0
+## Current focus: 0.3.1
 
 This update is about making the platform itself cleaner and more stable before
 adding a larger wave of user-facing features.
 
-### 0.4.0 — Platform cleanup and release structure
+### 0.3.1 — Foundation extension and release cleanup
 
 Focus areas:
 
 - build and distribution cleanup
 - startup cleanup
-- plugin packaging direction
-- clearer docs and project framing
+- plugin packaging
 
 Planned:
 
@@ -25,29 +24,27 @@ Planned:
 - [ ] Move roadmap and project planning into clearer docs
 - [ ] Improve project framing in the README and supporting docs
 
-## 0.5.0 — UI contracts, widget globals, and interaction
+## 0.3.2 — Connector consolidation
 
-Once the platform and packaging direction are cleaner, the focus can shift to
-day-to-day overlay usability.
+This step is about pulling the connector-related submodule work into one more
+coherent program shape so the integration surface is easier to maintain.
 
 Planned:
 
-- [ ] Implement widget global settings
-- [ ] Implement hotkey support
-- [ ] Add clear runtime indicators for things like hotkeys and game connection
-- [ ] Improve the day-to-day interaction model around overlay usage
+- [ ] Consolidate the connector submodules
+- [ ] Reduce connector-specific fragmentation in the current workflow
 
 ## Later
 
 These are on the radar, but not tied to a release yet:
 
+- Offload the original connector submodule into its own repository once the integration boundary is clean
 - Processing / derived data layer
 - Spotter?
 - Custom widgets
 - Grouping widgets
 - Provider selection UI
 - Game detection and source handoff inside provider families
-- More connectors and capability coverage
 
 # Released
 

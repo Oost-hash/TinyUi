@@ -1,6 +1,6 @@
 # TinyUi
 
-[![Version](https://img.shields.io/badge/version-0.4.0-purple)](docs/ROADMAP.md)
+[![Version](https://img.shields.io/badge/version-0.3.1-purple)](docs/ROADMAP.md)
 [![Status](https://img.shields.io/badge/status-work%20in%20progress-orange)](docs/ROADMAP.md)
 [![License](https://img.shields.io/badge/license-GPLv3-green)](LICENSE)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-%23db61a2?logo=github)](https://github.com/sponsors/oost-hash)
@@ -21,10 +21,10 @@
 
 ## Latest update
 
-**TinyUi is now moving toward `0.4.0`.**
+**TinyUi is now moving toward `0.3.1`.**
 
-This update is focused on cleaning up the platform foundations so the next wave
-of features can land on something much more solid:
+This update is focused on extending and tightening the current foundation
+instead of pretending the foundational work is already done:
 
 - tightening the build and distribution structure
 - improving startup behavior and reducing eager loading
