@@ -1,7 +1,7 @@
 # TinyUi
 
-[![Version](https://img.shields.io/badge/version-0.2.0-purple)](https://github.com/Oost-hash/TinyUi/releases/tag/v0.2.0)
-[![Status](https://img.shields.io/badge/status-work%20in%20progress-orange)](#roadmap---will-be-moved-to-project)
+[![Version](https://img.shields.io/badge/version-0.4.0-purple)](docs/ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-work%20in%20progress-orange)](docs/ROADMAP.md)
 [![License](https://img.shields.io/badge/license-GPLv3-green)](LICENSE)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-%23db61a2?logo=github)](https://github.com/sponsors/oost-hash)
 
@@ -9,9 +9,9 @@
 
 ## Table of Contents
 
+- [Latest update](#latest-update)
 - [What is TinyUi?](#what-is-tinyui)
 - [Supported platforms](#supported-platforms)
-- [Roadmap](#roadmap---will-be-moved-to-project)
 - [Help Wanted: Logo](#help-wanted-tinyui-logo)
 - [Credits](#credits)
 - [AI use](#ai-use)
@@ -19,19 +19,40 @@
 
 ---
 
+## Latest update
+
+**TinyUi is now moving toward `0.4.0`.**
+
+This update is focused on cleaning up the platform foundations so the next wave
+of features can land on something much more solid:
+
+- tightening the build and distribution structure
+- improving startup behavior and reducing eager loading
+- locking down the plugin packaging direction
+- making the project easier to understand for users and plugin developers
+
+If you want the full release overview and roadmap, see [docs/ROADMAP.md](docs/ROADMAP.md).
+
+---
+
 ## What is TinyUi?
 
-TinyUi is a modular overlay toolkit for sim racing. The goal is a platform where you can connect to any supported game, build or install plugins, and display live telemetry data as overlays on your screen — without any of those pieces being tangled up with each other.
+TinyUi is a modular overlay platform for sim racing.
 
-It started as an attempt to extend [TinyPedal](https://github.com/TinyPedal/TinyPedal). When that turned out to be impossible without rewriting the core, that became the project.
+The goal is simple: connect to supported games, install or build plugins, and
+show live telemetry as overlays without turning game integration, runtime
+logic, and UI into one monolithic app.
 
-The architecture is split into three hard layers:
+The architecture is split into four hard layers:
 
 - **tinycore** — the host runtime. Session ownership, capability binding, subprocess consumer hosting, config persistence, and inspection.
-- **plugins** — where game-specific and runtime-facing plugin code lives. Plugins now split into explicit provider and consumer roles.
+- **plugins** — where game-specific and runtime-facing plugin code lives. Plugins split into explicit provider and consumer roles.
+- **tinywidgets** — the widget runtime and overlay rendering layer. Turns plugin-fed data into on-screen widget behavior.
 - **tinyui** — the overlay UI, built in QML. Talks to tinycore, knows nothing about games.
 
-The shape is still evolving, but the direction is clear.
+TinyUi is still early, but the direction is clear: build a clean
+plugin platform, make the runtime fast and understandable, and then layer a
+better day-to-day overlay experience on top.
 
 ---
 
@@ -52,56 +73,6 @@ The shape is still evolving, but the direction is clear.
 
 ---
 
-## Roadmap
-
-### 0.1.0 — Foundation
-This release laid down the base: the runtime, the UI shell, and the first working telemetry connector.
-
-- [x] Plugin system — lifecycle, isolation, subprocess support
-- [x] Data-driven config — TOML for plugin definitions, JSON for user data
-- [x] QML overlay — windowing, theming, tab layout
-- [x] First telemetry contract layer
-- [x] LMU connector — first real game connector (Le Mans Ultimate / rFactor 2)
-
-### 0.2.0 — Widget renderer
-This release got live data onto the screen with the first usable widget workflow.
-
-- [x] Widget system — define and render overlay widgets from plugin data
-- [x] Layout engine — position, resize, and stack widgets on screen
-- [x] Widget config — per-widget settings via the data-driven config system
-
-### 0.3.0 — Runtime contracts and plugin split
-This release is about defining the runtime properly: clear plugin roles, explicit requirements, and a host that binds providers and consumers through contracts instead of plugin-specific wiring.
-
-- [x] Define the new plugin manifest shape around explicit roles and `requires`
-- [x] Separate provider-side plugins from consumer-side plugins
-- [x] Replace plugin-name-based connector lookup with capability-based binding
-- [x] Define the session/runtime services that own activation, binding, and health state
-- [x] Improve debugging around runtime state, active bindings, and provider health
-- [x] Define the widget-facing data contract model
-- [x] Move widget data flow away from direct connector traversal
-
-### 0.4.0 — UI contracts, widget globals, and interaction
-Once the runtime contracts are in place, the focus shifts to stable UI-facing data contracts and better day-to-day usability.
-
-- [ ] Implement widget global settings
-- [ ] Implement hotkey support
-- [ ] Add clear indicators for runtime state such as hotkeys and game connection
-
-
-### Later
-These are on the radar, but not tied to a release yet:
-
-- Processing / derived data layer
-- Spotter?
-- Custom widgets
-- Grouping widgets
-- Provider selection UI
-- Game detection and source handoff inside provider families
-- More connectors and capability coverage
-
----
-
 ## Help Wanted: TinyUi Logo
 
 Looking for a community-contributed logo for **TinyUi**!
@@ -118,7 +89,11 @@ Submitted logos are released under [CC BY-SA 4.0](https://creativecommons.org/li
 
 ## Credits
 
-Built on top of ideas and data models from [TinyPedal](https://github.com/TinyPedal/TinyPedal) by s-victor.
+TinyUi builds on lessons, ideas, and data model inspiration from
+[TinyPedal](https://github.com/TinyPedal/TinyPedal) by s-victor.
+
+TinyUi is not a fork of TinyPedal. It became its own project after it became
+clear that the desired architecture required a different core.
 
 ---
 
