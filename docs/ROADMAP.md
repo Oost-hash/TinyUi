@@ -20,9 +20,7 @@ Planned:
 
 - [ ] Improve startup behavior and reduce eager loading
 - [ ] Clean up the build output and distribution structure
-- [ ] Define and stabilize the plugin packaging direction
-- [ ] Move roadmap and project planning into clearer docs
-- [ ] Improve project framing in the README and supporting docs
+- [ ] Define the plugin packaging direction
 
 ## 0.3.2 — Connector consolidation
 
