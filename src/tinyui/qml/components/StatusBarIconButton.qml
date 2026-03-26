@@ -26,7 +26,7 @@ AbstractButton {
     id: btn
     property string iconText: ""
     property bool selected: false
-    property string textFont: theme.iconFont  // override for plain text labels
+    property string textFont: theme.fontFamily
 
     width: 28
     height: parent.height

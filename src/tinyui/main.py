@@ -41,7 +41,6 @@ from tinycore.plugin.lifecycle import PluginLifecycleManager
 from tinycore.qt import create_application, create_engine
 from tinyui.const import APP_NAME, VERSION
 from tinyui.devtools import LogSettingsViewModel, LogViewModel
-from tinyui.icons import Icons, load_font
 from tinyui.theme import Theme
 from tinyui.viewmodels.core_viewmodel import CoreViewModel
 from tinyui.viewmodels.menu_viewmodel import MenuViewModel
@@ -76,7 +75,6 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     # ── Qt setup ──────────────────────────────────────────────────────────────
     app = create_application(sys.argv)
     app.setQuitOnLastWindowClosed(False)
-    load_font()
     app.setApplicationName(APP_NAME)
     app.setApplicationVersion(VERSION)
 
@@ -142,14 +140,11 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
         lambda: menu_vm.closeMenu() if settings_vm.open else None
     )
 
-    icons = Icons()
-
     # ── QML engine ────────────────────────────────────────────────────────────
     engine = create_engine()
     ctx = engine.rootContext()
     ctx.setContextProperty("appName",                APP_NAME)
     ctx.setContextProperty("theme",                  theme)
-    ctx.setContextProperty("icons",                  icons)
     ctx.setContextProperty("coreViewModel",          core_vm)
     ctx.setContextProperty("menuViewModel",          menu_vm)
     ctx.setContextProperty("statusBarViewModel",     statusbar_vm)
@@ -258,7 +253,6 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     del core_vm
     del menu_vm
     del statusbar_vm
-    del icons
     del theme
 
     return exit_code

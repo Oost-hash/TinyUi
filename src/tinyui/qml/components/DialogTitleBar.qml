@@ -48,7 +48,7 @@ Rectangle {
     TitleBarButton {
         anchors.right: maximizeBtn.left
         height: parent.height
-        iconText: icons.minimize
+        iconSource: "../../assets/icons/window-minimize.svg"
         onClicked: root.Window.window.showMinimized()
     }
 
@@ -56,7 +56,9 @@ Rectangle {
         id: maximizeBtn
         anchors.right: closeBtn.left
         height: parent.height
-        iconText: root.Window.window.visibility === Window.Maximized ? icons.restore : icons.maximize
+        iconSource: root.Window.window.visibility === Window.Maximized
+            ? "../../assets/icons/window-restore.svg"
+            : "../../assets/icons/window-maximize.svg"
         onClicked: {
             if (root.Window.window.visibility === Window.Maximized)
                 root.Window.window.showNormal()
@@ -69,7 +71,7 @@ Rectangle {
         id: closeBtn
         anchors.right: parent.right
         height: parent.height
-        iconText: icons.close
+        iconSource: "../../assets/icons/window-close.svg"
         isCloseButton: true
         onClicked: root.closeClicked()
     }

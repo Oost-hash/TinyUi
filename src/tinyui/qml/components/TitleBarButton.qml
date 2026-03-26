@@ -24,7 +24,7 @@ import QtQuick.Controls
 
 AbstractButton {
     id: btn
-    property string iconText: ""
+    property string iconSource: ""
     property bool isCloseButton: false
 
     width: 46
@@ -37,12 +37,16 @@ AbstractButton {
                : "transparent"
     }
 
-    contentItem: Text {
-        text: btn.iconText
-        font.family: theme.iconFont
-        font.pixelSize: 10
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
-        color: btn.hovered && btn.isCloseButton ? theme.accentText : "#FFFFFF"
+    contentItem: Item {
+        Image {
+            anchors.centerIn: parent
+            width: 10
+            height: 10
+            source: btn.iconSource
+            sourceSize.width: width
+            sourceSize.height: height
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+        }
     }
 }

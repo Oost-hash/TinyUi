@@ -20,3 +20,5 @@ Known packages:
   - other
 
 ## Entries
+- [tinyui][changed] Replaced the bundled Linux icon font and legacy image set with dedicated SVG chrome assets for menu and window controls
+- [tinyui][removed] Removed the old icon glyph loader and unused chrome image/font assets after moving the title bar to direct SVG icons

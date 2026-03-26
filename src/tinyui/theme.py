@@ -25,8 +25,6 @@ import tomllib
 
 from PySide6.QtCore import QObject, Property, Signal
 
-_ICON_FONT = "Segoe Fluent Icons" if _platform.system() == "Windows" else "Material Symbols Rounded"
-
 _sys = _platform.system()
 _FONT_FAMILY = (
     "Segoe UI"           if _sys == "Windows" else
@@ -88,9 +86,6 @@ class Theme(QObject):
 
     @Property(str, constant=True)
     def fontFamily(self): return _FONT_FAMILY
-
-    @Property(str, constant=True)
-    def iconFont(self): return _ICON_FONT
 
     # ── Font sizes (uit TOML schalen) ────────────────────────────────────
 

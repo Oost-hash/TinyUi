@@ -228,13 +228,20 @@ Rectangle {
             }
 
             contentItem: Item {
-                Text {
+                Image {
                     id: menuIcon
-                    anchors.left: parent.left; anchors.leftMargin: 12
+                    anchors.left: parent.left
+                    anchors.leftMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
-                    text: menuViewModel.menuOpen ? icons.menuOpen : icons.menu
-                    font.family: theme.iconFont; font.pixelSize: 10
-                    color: "#FFFFFF"
+                    width: 10
+                    height: 10
+                    source: menuViewModel.menuOpen
+                        ? "../../assets/icons/menu-open.svg"
+                        : "../../assets/icons/menu.svg"
+                    sourceSize.width: width
+                    sourceSize.height: height
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true
                 }
                 Text {
                     id: menuLabel
@@ -261,19 +268,21 @@ Rectangle {
 
         TitleBarButton {
             height: parent.height
-            iconText: icons.minimize
+            iconSource: "../../assets/icons/window-minimize.svg"
             onClicked: windowController.minimize()
         }
 
         TitleBarButton {
             height: parent.height
-            iconText: root.visibility === Window.Maximized ? icons.restore : icons.maximize
+            iconSource: root.visibility === Window.Maximized
+                ? "../../assets/icons/window-restore.svg"
+                : "../../assets/icons/window-maximize.svg"
             onClicked: windowController.toggleMaximize()
         }
 
         TitleBarButton {
             height: parent.height
-            iconText: icons.close
+            iconSource: "../../assets/icons/window-close.svg"
             isCloseButton: true
             onClicked: root.close()
         }
