@@ -36,12 +36,23 @@ from __future__ import annotations
 import multiprocessing as mp
 import sys
 from pathlib import Path
+from time import perf_counter
 
 import tinycore.log as _log_mod
 _log_mod.configure()  # must run before any other import emits log records
 
 from .bootstrap import bootstrap_runtime, discover_manifests
-from tinyui import launch
+from tinycore.plugin.user_files import sync_user_files
+from tinyui.main import launch
+from tinycore.log import get_logger
+
+_log = get_logger(__name__)
+
+
+def _log_startup_phase(phase: str, start: float, **extra: object) -> None:
+    fields = " ".join(f"{key}={value}" for key, value in extra.items())
+    suffix = f" {fields}" if fields else ""
+    _log.info("startup phase=%s ms=%.1f%s", phase, (perf_counter() - start) * 1000, suffix)
 
 
 def _config_dir() -> Path:
@@ -57,14 +68,44 @@ def _plugins_dir() -> Path:
 
 
 def main() -> None:
-    manifests = discover_manifests(_plugins_dir())
+    total_start = perf_counter()
+    plugins_dir = _plugins_dir()
+
+    phase_start = perf_counter()
+    manifests = discover_manifests(plugins_dir)
+    _log_startup_phase(
+        "discover_manifests",
+        phase_start,
+        plugins=len(manifests),
+        consumers=sum(1 for item in manifests if item.is_consumer),
+        providers=sum(1 for item in manifests if item.is_provider),
+    )
+
+    phase_start = perf_counter()
+    sync_result = sync_user_files(plugins_dir.parent, manifests)
+    _log_startup_phase(
+        "sync_user_files",
+        phase_start,
+        installed=sync_result.installed,
+        preserved=sync_result.preserved,
+        left_unset=sync_result.left_unset,
+        missing=sync_result.missing_sources,
+    )
+
+    phase_start = perf_counter()
     runtime = bootstrap_runtime(_config_dir(), manifests)
+    _log_startup_phase("bootstrap_runtime", phase_start)
 
     def _pre_run() -> None:
+        pre_run_start = perf_counter()
         runtime.overlay.start()
         runtime.state_monitor.start()
+        _log_startup_phase("pre_run", pre_run_start)
 
+    phase_start = perf_counter()
     exit_code = launch(runtime.core, runtime.lifecycle, pre_run=_pre_run, extra_context=runtime.extra_context)
+    _log_startup_phase("launch_returned", phase_start)
+    _log_startup_phase("main_total_until_exit", total_start)
     runtime.state_monitor.shutdown()
     runtime.overlay.stop()
     sys.exit(exit_code)

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from time import perf_counter
 
 from tinycore.app import App, create_app
 from tinycore.inspect import RuntimeInspector
@@ -12,13 +13,17 @@ from tinycore.log import get_logger
 from tinycore.plugin.lifecycle import PluginLifecycleManager
 from tinycore.plugin.manifest import PluginManifest, scan_plugins
 from tinycore.plugin.subprocess_host import SubprocessPlugin
-from tinyui import TinyUIPlugin
+from tinyui.plugin import TinyUIPlugin
 from tinyui.devtools import StateMonitorViewModel
 from tinywidgets.fields import read_field
 from tinywidgets.overlay import WidgetOverlay
 from tinywidgets.spec import load_widgets_toml
 
 _log = get_logger(__name__)
+
+
+def _ms(start: float) -> float:
+    return round((perf_counter() - start) * 1000, 1)
 
 
 @dataclass(frozen=True)
@@ -39,9 +44,11 @@ def discover_manifests(plugins_dir: Path) -> list[PluginManifest]:
 
 def bootstrap_runtime(config_dir: Path, manifests: list[PluginManifest]) -> BootRuntime:
     """Build and wire the runtime before the Qt event loop starts."""
+    total_start = perf_counter()
     consumer_manifests = [m for m in manifests if m.is_consumer]
     provider_manifests = [m for m in manifests if m.is_provider]
 
+    phase_start = perf_counter()
     core = create_app(
         config_dir,
         *[
@@ -49,16 +56,34 @@ def bootstrap_runtime(config_dir: Path, manifests: list[PluginManifest]) -> Boot
             for m in consumer_manifests
         ],
     )
+    _log.info("startup phase=create_app ms=%.1f", _ms(phase_start))
+
+    phase_start = perf_counter()
     TinyUIPlugin().register(core)
     _load_host_state(core)
     core.start(plugins=False)
+    _log.info("startup phase=host_state ms=%.1f", _ms(phase_start))
 
+    phase_start = perf_counter()
     lifecycle = _activate_plugins(core)
-    _register_providers(core, provider_manifests)
-    _bind_consumers(core, consumer_manifests)
+    _log.info("startup phase=activate_plugins ms=%.1f", _ms(phase_start))
 
+    phase_start = perf_counter()
+    _register_providers(core, provider_manifests)
+    _log.info("startup phase=register_providers ms=%.1f", _ms(phase_start))
+
+    phase_start = perf_counter()
+    _bind_consumers(core, consumer_manifests)
+    _log.info("startup phase=bind_consumers ms=%.1f", _ms(phase_start))
+
+    phase_start = perf_counter()
     overlay, widget_sources = _build_overlay(core, config_dir, consumer_manifests)
+    _log.info("startup phase=build_overlay ms=%.1f", _ms(phase_start))
+
+    phase_start = perf_counter()
     state_monitor = _build_state_monitor(core, overlay, widget_sources)
+    _log.info("startup phase=build_state_monitor ms=%.1f", _ms(phase_start))
+    _log.info("startup phase=bootstrap_runtime_total ms=%.1f", _ms(total_start))
 
     return BootRuntime(
         core=core,

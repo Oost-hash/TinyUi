@@ -34,7 +34,7 @@ from pathlib import Path
 from PySide6.QtCore import QUrl
 
 from tinycore.log import get_logger
-from tinycore.qt import create_engine
+from tinycore.qt.engine import create_engine
 from tinycore.qt.loop import PollLoop
 from tinycore.session.runtime import SessionRuntime
 from .config_store import WidgetConfigStore

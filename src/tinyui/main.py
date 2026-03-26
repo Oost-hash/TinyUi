@@ -30,6 +30,7 @@ import logging
 import platform
 import sys
 from pathlib import Path
+from time import perf_counter
 from typing import TYPE_CHECKING, Callable
 
 import PySide6
@@ -38,7 +39,8 @@ from PySide6.QtCore import QUrl, QtMsgType, qInstallMessageHandler, qVersion
 from tinycore.app import App
 from tinycore.inspect import LogInspector
 from tinycore.plugin.lifecycle import PluginLifecycleManager
-from tinycore.qt import create_application, create_engine
+from tinycore.qt.app import create_application
+from tinycore.qt.engine import create_engine
 from tinyui.const import APP_NAME, VERSION
 from tinyui.devtools import LogSettingsViewModel, LogViewModel
 from tinyui.theme import Theme
@@ -70,15 +72,18 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     Called by the composition root after tinycore is fully booted.
     Returns the Qt exit code.
     """
+    total_start = perf_counter()
     qInstallMessageHandler(_qt_message_handler)
 
     # ── Qt setup ──────────────────────────────────────────────────────────────
+    phase_start = perf_counter()
     app = create_application(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     app.setApplicationName(APP_NAME)
     app.setApplicationVersion(VERSION)
-
     log = logging.getLogger(__name__)
+    log.info("startup phase=qt_app_setup ms=%.1f", (perf_counter() - phase_start) * 1000)
+
     log.info("── %s %s ──────────────────────────────", APP_NAME, VERSION)
     log.info("OS:      %s %s", platform.system(), platform.release())
     log.info("Python:  %s", platform.python_version())
@@ -87,6 +92,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     log.info("Editors: %d", len(core.host.editors.all()))
 
     # ── ViewModels ────────────────────────────────────────────────────────────
+    phase_start = perf_counter()
     log_inspector   = LogInspector()
     log_vm          = LogViewModel(log_inspector)
     log_settings_vm = LogSettingsViewModel()
@@ -98,6 +104,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     tab_vm       = TabViewModel()
 
     tab_vm.register("widgets", "Widgets")
+    log.info("startup phase=viewmodels ms=%.1f", (perf_counter() - phase_start) * 1000)
 
     # ── Plugin switching — driven by the status bar ───────────────────────────
     _plugin_names = [p.name for p in core.runtime.plugins.plugins]
@@ -141,6 +148,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     )
 
     # ── QML engine ────────────────────────────────────────────────────────────
+    phase_start = perf_counter()
     engine = create_engine()
     ctx = engine.rootContext()
     ctx.setContextProperty("appName",                APP_NAME)
@@ -162,12 +170,14 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     else:
         qml_dir = Path(__file__).resolve().parent / "qml"
     engine.load(QUrl.fromLocalFile(str(qml_dir / "main.qml")))
+    log.info("startup phase=qml_load ms=%.1f", (perf_counter() - phase_start) * 1000)
 
     if not engine.rootObjects():
         core.stop()
         return -1
 
     # ── Platform windowing ────────────────────────────────────────────────────
+    phase_start = perf_counter()
     window = engine.rootObjects()[0]
     dpr = app.devicePixelRatio()
 
@@ -202,6 +212,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
 
     if _win_ctrl is not None:
         engine.rootContext().setContextProperty("windowController", _win_ctrl)
+    log.info("startup phase=windowing ms=%.1f", (perf_counter() - phase_start) * 1000)
 
     # ── Window state restore ──────────────────────────────────────────────────
     if core.host.host_settings.get_value("TinyUI", "remember_position"):
@@ -240,8 +251,11 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     window.closing.connect(lambda: app.quit())
 
     if pre_run is not None:
+        phase_start = perf_counter()
         pre_run()
+        log.info("startup phase=pre_run_callback ms=%.1f", (perf_counter() - phase_start) * 1000)
     log_vm.replay()
+    log.info("startup phase=launch_ready_for_exec ms=%.1f", (perf_counter() - total_start) * 1000)
 
     exit_code = app.exec()
 
