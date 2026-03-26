@@ -59,6 +59,7 @@ Tags:
 - [tinyui][changed] Reworked Dev Tools: the State tab now uses a source dropdown with collapsible inspection sections, and the Console `DEV` toggle now acts as a true all-categories on/off switch
 - [tinyui][changed] Moved Dev Tools into its own feature folders so its QML and viewmodels are separated from the rest of the main window structure
 - [tinywidgets][fixed] Fixed the widget list enable switch so it no longer opens the settings pane on click and now persists each widget's enabled state correctly
+- [plugins][fixed] Corrected LMU provider game detection so `active_game` now reports the real focused game (`lmu` or `none`) while demo/real source state is tracked separately
 - [plugins] LMU connector logs game state transitions with full session context: session type, track, driver, car, class, car count, track temperature, ambient temperature, and game version
 - [tinycore] Log output to terminal and Dev Tools console can now be controlled independently — set `console_level = "INFO"` (or `"DEBUG"`, `"WARNING"`) in `[tool.tinyui.debug]` to attach a terminal handler at that level; omit the key to suppress terminal output entirely
 - [tinycore] Debug categories can be toggled at runtime from Dev Tools without restarting; `ALL_CATEGORIES` constant lists all available channels

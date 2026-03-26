@@ -450,7 +450,11 @@ Item {
                 EditRow {
                     label: "Binding"
                     description: widgetTab.selectedContext
-                        ? widgetTab.selectedContext.providerName + " / " + widgetTab.selectedContext.activeGame
+                        ? (
+                            widgetTab.selectedContext.activeGame !== "none"
+                            ? widgetTab.selectedContext.providerName + " / " + widgetTab.selectedContext.activeGame
+                            : widgetTab.selectedContext.providerName
+                        )
                         : ""
                 }
 

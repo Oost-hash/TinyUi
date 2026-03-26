@@ -144,6 +144,7 @@ def provider_inspection_snapshot(
     *,
     mode: str,
     active_game: str,
+    active_source: str,
     supports_demo: bool,
     demo_enabled: bool,
     demo_owner_count: int,
@@ -158,6 +159,7 @@ def provider_inspection_snapshot(
     snapshot = [
         ("provider.mode", mode),
         ("provider.active_game", active_game),
+        ("provider.active_source", active_source),
         ("provider.supports_demo", str(supports_demo)),
         ("provider.demo_enabled", str(demo_enabled)),
         ("provider.demo_owner_count", str(demo_owner_count)),

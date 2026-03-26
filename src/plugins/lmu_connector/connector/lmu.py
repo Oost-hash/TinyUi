@@ -194,10 +194,15 @@ class LMUConnector(TelemetryReader):
         return "inactive"
 
     def active_game(self) -> str:
-        if self._demo_enabled():
-            return "mock"
         if self._real_active():
             return "lmu"
+        return "none"
+
+    def active_source(self) -> str:
+        if self._demo_enabled():
+            return "demo"
+        if self._real_active():
+            return "real"
         return "none"
 
     def supports_demo_mode(self) -> bool:
@@ -227,6 +232,7 @@ class LMUConnector(TelemetryReader):
         return provider_inspection_snapshot(
             mode=mode,
             active_game=self.active_game(),
+            active_source=self.active_source(),
             supports_demo=self.supports_demo_mode(),
             demo_enabled=self._demo_enabled(),
             demo_owner_count=len(self._demo_owners),
