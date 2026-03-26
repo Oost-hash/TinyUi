@@ -1,7 +1,7 @@
 # TinyUi
 
-[![Version](https://img.shields.io/badge/version-0.3.1-purple)](docs/ROADMAP.md)
-[![Status](https://img.shields.io/badge/status-work%20in%20progress-orange)](docs/ROADMAP.md)
+[![Release](https://img.shields.io/badge/released-0.3.0-green)](https://github.com/Oost-hash/TinyUi/releases/tag/v0.3.0)
+[![Status](https://img.shields.io/badge/being%20worked%20on-0.3.1-orange)](docs/ROADMAP.md)
 [![License](https://img.shields.io/badge/license-GPLv3-green)](LICENSE)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-%23db61a2?logo=github)](https://github.com/sponsors/oost-hash)
 
