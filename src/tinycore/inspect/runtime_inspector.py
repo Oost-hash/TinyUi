@@ -103,7 +103,15 @@ def _resolve_path_value(root: object, path: str) -> object:
         value = getattr(value, part)
         if callable(value):
             signature = inspect.signature(value)
-            if len(signature.parameters) == 0:
+            parameters = tuple(signature.parameters.values())
+            if all(
+                parameter.kind in (
+                    inspect.Parameter.VAR_POSITIONAL,
+                    inspect.Parameter.VAR_KEYWORD,
+                )
+                or parameter.default is not inspect.Parameter.empty
+                for parameter in parameters
+            ):
                 value = value()
     return value
 

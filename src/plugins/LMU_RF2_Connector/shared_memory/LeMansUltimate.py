@@ -193,7 +193,10 @@ class LMULapProvider(Lap):
     def _scor(self, index: int | None):
         idx = self._source.info.data.telemetry.playerVehicleIdx if index is None else index
         return self._source.info.data.scoring.vehScoringInfo[idx]
-    def current_lap(self, index: int | None = None) -> int: return int(self._scor(index).mLapNumber)
+    def _telem(self, index: int | None):
+        idx = self._source.info.data.telemetry.playerVehicleIdx if index is None else index
+        return self._source.info.data.telemetry.telemInfo[idx]
+    def current_lap(self, index: int | None = None) -> int: return int(self._telem(index).mLapNumber)
     def completed_laps(self, index: int | None = None) -> int: return int(self._scor(index).mTotalLaps)
     def track_length(self) -> float: return float(self._source.info.data.scoring.scoringInfo.mLapDist)
     def lap_distance(self, index: int | None = None) -> float: return float(self._scor(index).mLapDist)
