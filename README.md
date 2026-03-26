@@ -23,9 +23,6 @@
 
 **TinyUi is now moving toward `0.3.1`.**
 
-This update is focused on extending and tightening the current foundation
-instead of pretending the foundational work is already done:
-
 - tightening the build and distribution structure
 - improving startup behavior and reducing eager loading
 - locking down the plugin packaging direction
