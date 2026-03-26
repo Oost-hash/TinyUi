@@ -18,34 +18,18 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""SettingsSpec + SettingsRegistry — declarative plugin settings."""
+"""SettingsRegistry — plugin and host setting persistence."""
 
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from tinycore.log import get_logger
+from tinyui_schema import SettingsSpec
 
 log = get_logger(__name__)
-
-
-@dataclass
-class SettingsSpec:
-    """Declares one setting that a plugin exposes."""
-
-    key:         str
-    label:       str
-    type:        str               # "bool" | "enum" | "int" | "float" | "str" | "color"
-    default:     Any
-    description: str        = ""
-    options:     list[str]  = field(default_factory=list)  # for enum type
-    section:     str        = ""                            # grouping in UI
-    min:         float | None = None                        # for int / float
-    max:         float | None = None                        # for int / float
-    step:        float | None = None                        # for int / float (default: 1 / 0.1)
 
 
 class SettingsRegistry:

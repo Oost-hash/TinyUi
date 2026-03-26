@@ -18,17 +18,25 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""Provider protocol — pull-based data access."""
+"""Declarative settings schema contracts shared by plugins and the host UI."""
 
 from __future__ import annotations
 
-from typing import Protocol, TypeVar, runtime_checkable
+from dataclasses import dataclass, field
+from typing import Any
 
-T = TypeVar("T")
 
+@dataclass
+class SettingsSpec:
+    """Declares one setting that a plugin or host surface exposes."""
 
-@runtime_checkable
-class Provider(Protocol[T]):
-    """A provider knows how to produce a value on demand."""
-
-    def get(self) -> T: ...
+    key: str
+    label: str
+    type: str
+    default: Any
+    description: str = ""
+    options: list[str] = field(default_factory=list)
+    section: str = ""
+    min: float | None = None
+    max: float | None = None
+    step: float | None = None

@@ -121,13 +121,11 @@ def set_dev_mode(enabled: bool) -> None:
     """Enable or disable all debug-channel output at runtime.
 
     Also updates the root-logger level so DEBUG records actually propagate.
-    When enabling from a cold start (no categories configured), all categories
-    are activated automatically so the user sees output immediately.
+    The Dev Tools master toggle now treats this as an all-categories switch.
     """
     global _dev_mode, _enabled
     _dev_mode = enabled
-    if enabled and not _enabled:
-        _enabled = set(ALL_CATEGORIES)
+    _enabled = set(ALL_CATEGORIES) if enabled else set()
     logging.getLogger().setLevel(logging.DEBUG if enabled else logging.INFO)
 
 
@@ -143,7 +141,7 @@ def set_category_enabled(cat: str, enabled: bool) -> None:
     If the magic token ``"all"`` was active, it is expanded to individual
     entries first so subsequent per-category toggles work correctly.
     """
-    global _enabled
+    global _dev_mode, _enabled
     if "all" in _enabled:
         _enabled = set(ALL_CATEGORIES)
         _enabled.discard("all")
@@ -151,6 +149,8 @@ def set_category_enabled(cat: str, enabled: bool) -> None:
         _enabled.add(cat)
     else:
         _enabled.discard(cat)
+    _dev_mode = bool(_enabled)
+    logging.getLogger().setLevel(logging.DEBUG if _dev_mode else logging.INFO)
 
 
 class CategoryLogger:

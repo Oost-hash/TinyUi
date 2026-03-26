@@ -18,21 +18,21 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""PluginSpec — descriptor for a subprocess-isolated plugin."""
+"""ConsumerRuntimeSpec — descriptor for a subprocess-isolated consumer plugin."""
 
 from dataclasses import dataclass, field
 
 
 @dataclass
-class PluginSpec:
-    """Describes a plugin that will run in an isolated subprocess.
+class ConsumerRuntimeSpec:
+    """Describes a consumer plugin that will run in an isolated subprocess.
 
     The host never imports the plugin module — only the subprocess does.
     Name is derived from the class name if omitted: "DemoPlugin" → "demo".
 
     Usage:
-        PluginSpec("plugins.demo", "DemoPlugin")
-        PluginSpec("acme.laptime", "LapTimePlugin", name="laptime")
+        ConsumerRuntimeSpec("plugins.demo", "DemoPlugin")
+        ConsumerRuntimeSpec("acme.laptime", "LapTimePlugin", name="laptime")
     """
 
     module: str         # Python module path, e.g. "plugins.demo"

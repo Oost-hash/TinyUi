@@ -22,52 +22,70 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 
 from .capabilities.registry import CapabilityRegistry
 from .config.loader import LoaderRegistry
 from .config.store import ConfigStore
-from .editor import EditorRegistry
-from .events.bus import EventBus
 from .plugin.registry import PluginRegistry
-from .providers.registry import ProviderRegistry
 from .session.runtime import SessionRuntime
 from .settings import SettingsRegistry
-from .telemetry.registry import ConnectorRegistry
+from tinyui_schema import EditorRegistry
+
+
+@dataclass(frozen=True)
+class HostServices:
+    """Host-owned persistence and declaration services."""
+
+    config: ConfigStore
+    loaders: LoaderRegistry
+    editors: EditorRegistry
+    plugin_settings: SettingsRegistry
+    host_settings: SettingsRegistry
+
+
+@dataclass(frozen=True)
+class RuntimeServices:
+    """Runtime-owned lifecycle and session services."""
+
+    session: SessionRuntime
+    plugins: PluginRegistry
 
 
 class App:
-    """Central application container — owns all registries."""
+    """Application composition container.
+
+    ``App`` groups host services and runtime services so the composition root
+    can wire the system together without exposing one flat bucket of registries.
+    """
 
     def __init__(self, config_dir: Path):
-        self.config        = ConfigStore()
-        self.loaders       = LoaderRegistry(config_dir)
-        self.capabilities  = CapabilityRegistry()
-        self.session       = SessionRuntime(self.capabilities)
-        self.connectors    = ConnectorRegistry()
-        self.editors       = EditorRegistry()
-        self.events        = EventBus()
-        self.plugins       = PluginRegistry()
-        self.providers     = ProviderRegistry()
-        self.settings      = SettingsRegistry(config_dir)   # plugin settings only
-        self.host_settings = SettingsRegistry(config_dir)   # host (TinyUI) — not visible to plugins
+        capabilities = CapabilityRegistry()
+        self.host = HostServices(
+            config=ConfigStore(),
+            loaders=LoaderRegistry(config_dir),
+            editors=EditorRegistry(),
+            plugin_settings=SettingsRegistry(config_dir),
+            host_settings=SettingsRegistry(config_dir),
+        )
+        self.runtime = RuntimeServices(
+            session=SessionRuntime(capabilities),
+            plugins=PluginRegistry(),
+        )
 
     def start(self, *, plugins: bool = True) -> None:
-        """Start the application: emit events, optionally start all plugins.
+        """Start the application, optionally starting all plugins.
 
         Pass plugins=False when using PluginLifecycleManager — it handles
         plugin start/stop on demand instead of starting everything at once.
         """
-        self.events.emit("app.starting")
         if plugins:
-            self.plugins.start_all()
-        self.events.emit("app.started")
+            self.runtime.plugins.start_all()
 
     def stop(self) -> None:
-        """Stop the application: emit events, stop plugins."""
-        self.events.emit("app.stopping")
-        self.plugins.stop_all()
-        self.events.emit("app.stopped")
+        """Stop the application and all registered plugins."""
+        self.runtime.plugins.stop_all()
 
 
 def create_app(config_dir: Path, *plugins) -> App:
@@ -79,11 +97,15 @@ def create_app(config_dir: Path, *plugins) -> App:
 
     Usage:
         app = create_app(Path("data/config"), PluginA(), PluginB())
-        app.loaders.load_all(app.config)
+        app.host.loaders.load_all(app.host.config)
         app.start()
     """
     app = App(config_dir)
     for plugin in plugins:
-        app.plugins.add(plugin)
-    app.plugins.register_all(app)
+        if isinstance(plugin, tuple):
+            instance, requires = plugin
+            app.runtime.plugins.add(instance, requires)
+        else:
+            app.runtime.plugins.add(plugin)
+    app.runtime.plugins.register_all(app)
     return app

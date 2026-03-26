@@ -25,7 +25,7 @@ Plugins load these from widgets.toml and pass them to the WidgetRegistry.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field as dc_field
 from pathlib import Path
 
 from .threshold import ThresholdEntry
@@ -43,7 +43,7 @@ class WidgetSpec:
 
     # Telemetry
     capability: str = ""  # capability to bind against, e.g. "telemetry.car.v1"
-    source: str = ""      # dot-path into the bound provider, e.g. "vehicle.fuel"
+    field: str = ""       # host-defined widget field, e.g. "fuel"
     format: str = "{}"    # Python format string applied to the raw value
     label:  str = ""      # short label shown above or next to the value
 
@@ -52,7 +52,7 @@ class WidgetSpec:
     y: int = 100
 
     # Threshold coloring — each entry carries its own flash, speed, and target
-    thresholds: list[ThresholdEntry] = field(default_factory=list)
+    thresholds: list[ThresholdEntry] = dc_field(default_factory=list)
 
 
 def load_widgets_toml(path: Path) -> list[WidgetSpec]:
@@ -81,7 +81,7 @@ def load_widgets_toml(path: Path) -> list[WidgetSpec]:
             description = widget_data.get("description", ""),
             enable      = widget_data.get("enable",      True),
             capability  = widget_data.get("capability",  ""),
-            source      = widget_data.get("source",      ""),
+            field       = widget_data.get("field",       ""),
             format      = widget_data.get("format",      "{}"),
             label       = widget_data.get("label",       ""),
             x           = widget_data.get("x",           100),

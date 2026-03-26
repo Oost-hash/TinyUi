@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QUrl
 
@@ -40,11 +39,8 @@ from tinycore.qt.loop import PollLoop
 from tinycore.session.runtime import SessionRuntime
 from .config_store import WidgetConfigStore
 from .context import WidgetContext, WidgetModel
-from .runner import ConnectorUpdater, TextWidgetRunner
+from .runner import ProviderUpdater, TextWidgetRunner
 from .spec import WidgetSpec
-
-if TYPE_CHECKING:
-    from tinycore.telemetry.registry import ConnectorRegistry
 
 _QML_DIR = Path(__file__).resolve().parent / "qml"
 _log = get_logger(__name__)
@@ -54,23 +50,21 @@ class WidgetOverlay:
     """Creates and manages all widget windows.
 
     Usage (from composition root):
-        overlay = WidgetOverlay(connectors, session, config_dir=_config_dir())
+        overlay = WidgetOverlay(session, config_dir=_config_dir())
         overlay.load(specs, plugin_name="demo")
         exit_code = tinyui.launch(core, lifecycle, pre_run=overlay.start,
                                   extra_context={"widgetModel": overlay.model})
     """
 
-    def __init__(self, connectors: ConnectorRegistry,
-                 session: SessionRuntime,
+    def __init__(self, session: SessionRuntime,
                  config_dir: Path | None = None) -> None:
-        self._connectors = connectors
         self._session = session
         self._config_dir = config_dir
         self._poll_loop  = PollLoop(interval_ms=100)
         self._model      = WidgetModel()
         self._engine     = None
 
-        self._poll_loop.register(ConnectorUpdater(connectors))
+        self._poll_loop.register(ProviderUpdater(session))
 
     @property
     def model(self) -> WidgetModel:
@@ -85,7 +79,7 @@ class WidgetOverlay:
         )
 
         for spec in specs:
-            if not spec.enable or not spec.source:
+            if not spec.enable or not spec.capability or not spec.field:
                 continue
 
             # Override spec defaults with persisted user config
@@ -108,7 +102,7 @@ class WidgetOverlay:
                             for t in saved["thresholds"]
                         ]
 
-            ctx    = WidgetContext(spec)
+            ctx    = WidgetContext(spec, self._session.controls, plugin_name)
             runner = TextWidgetRunner(spec, self._session, plugin_name, ctx.update)
 
             if store:
@@ -129,8 +123,8 @@ class WidgetOverlay:
             _log.overlay(
                 "loaded widget",
                 id=spec.id,
-                capability=spec.capability or "-",
-                source=spec.source,
+                capability=spec.capability,
+                field=spec.field,
             )
 
     def start(self) -> None:

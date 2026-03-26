@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""Capability registry for provider exports and consumer bindings."""
+"""Capability registry for provider exports."""
 
 from __future__ import annotations
 
@@ -35,41 +35,54 @@ class CapabilityBinding:
     provider: Any
 
 
+@dataclass(frozen=True)
+class CapabilityProvider:
+    """Registered provider for a capability."""
+
+    capability: str
+    provider_name: str
+    provider: Any
+
+
 class CapabilityRegistry:
-    """Registers exported capabilities and resolves consumer requirements."""
+    """Registers exported capabilities and exposes providers by capability."""
 
     def __init__(self) -> None:
-        self._capabilities: dict[str, CapabilityBinding] = {}
+        self._capabilities: dict[str, CapabilityProvider] = {}
 
-    def register(self, capability: str, provider_name: str, provider: Any) -> None:
+    def register(
+        self,
+        capability: str,
+        provider_name: str,
+        provider: Any,
+    ) -> None:
         """Register one exported capability for a provider."""
         existing = self._capabilities.get(capability)
         if existing is not None and existing.provider_name != provider_name:
             raise ValueError(
-                f"Capability '{capability}' is already provided by '{existing.provider_name}'"
+                f"Capability '{capability}' is already owned by provider "
+                f"'{existing.provider_name}', cannot also register '{provider_name}'"
             )
-        self._capabilities[capability] = CapabilityBinding(
+        self._capabilities[capability] = CapabilityProvider(
             capability=capability,
             provider_name=provider_name,
             provider=provider,
         )
 
-    def register_many(self, provider_name: str, capabilities: tuple[str, ...], provider: Any) -> None:
+    def register_many(
+        self,
+        provider_name: str,
+        capabilities: tuple[str, ...],
+        provider: Any,
+    ) -> None:
         """Register all exported capabilities for one provider."""
         for capability in capabilities:
             self.register(capability, provider_name, provider)
 
-    def get(self, capability: str) -> CapabilityBinding | None:
-        """Return the registered provider binding for a capability, if any."""
+    def provider_for(self, capability: str) -> CapabilityProvider | None:
+        """Return the registered provider for a capability, if any."""
         return self._capabilities.get(capability)
 
-    def require(self, capability: str) -> CapabilityBinding:
-        """Return a registered capability binding or raise KeyError."""
-        binding = self.get(capability)
-        if binding is None:
-            raise KeyError(f"No provider registered for capability '{capability}'")
-        return binding
-
-    def all(self) -> list[CapabilityBinding]:
-        """Return all registered capability bindings."""
+    def all(self) -> list[CapabilityProvider]:
+        """Return all registered providers."""
         return list(self._capabilities.values())

@@ -18,19 +18,14 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""EditorSpec — declarative editor registration.
-
-Plugins register EditorSpecs to tell the UI what data editors are available.
-Specs can be defined in Python or loaded from editors.toml.
-"""
+"""EditorSpec — declarative editor registration."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-# Maps TOML type names to Python types
 _TYPE_MAP: dict[str, type] = {
     "str": str,
     "int": int,
@@ -53,26 +48,22 @@ class ColumnDef:
 
 @dataclass
 class EditorSpec:
-    """Declares a data editor that a plugin wants to expose.
+    """Declares a data editor that a plugin wants to expose."""
 
-    Plugins create these and register them with the app.
-    The UI reads them to build editor dialogs automatically.
-    """
-
-    id: str  # unique identifier, e.g. "heatmap"
-    title: str  # window title, e.g. "Heatmap Editor"
-    config_key: str  # key in ConfigStore (matches loader key)
-    columns: list[ColumnDef]  # column definitions for the table
-    has_presets: bool = True  # data is dict[preset_name, ...]
-    data_field: str = ""  # if set, rows live in this field per preset
-    menu: str = ""  # menu group, e.g. "Demo"
-    icon: str = ""  # optional icon name
+    id: str
+    title: str
+    config_key: str
+    columns: list[ColumnDef]
+    has_presets: bool = True
+    data_field: str = ""
+    menu: str = ""
+    icon: str = ""
 
 
 class EditorRegistry:
     """Stores EditorSpecs registered by plugins."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._specs: dict[str, EditorSpec] = {}
 
     def register(self, spec: EditorSpec) -> None:
@@ -89,26 +80,7 @@ class EditorRegistry:
 
 
 def load_editors_toml(path: Path) -> list[EditorSpec]:
-    """Load editor specs from an editors.toml file.
-
-    Example editors.toml:
-
-        [heatmap]
-        title = "Heatmap Editor"
-        config = "heatmaps"
-        has_presets = true
-        data_field = "entries"
-
-        [[heatmap.columns]]
-        name = "temperature"
-        type = "float"
-        default = 0.0
-
-        [[heatmap.columns]]
-        name = "color"
-        type = "str"
-        default = "#FFFFFF"
-    """
+    """Load editor specs from an editors.toml file."""
     import tomllib
 
     with open(path, "rb") as f:

@@ -37,7 +37,7 @@ from .spec import WidgetSpec
 from .threshold import ThresholdEntry
 
 if TYPE_CHECKING:
-    pass
+    from tinycore.session import ProviderControlService
 
 
 class WidgetContext(QObject):
@@ -50,15 +50,29 @@ class WidgetContext(QObject):
     stateChanged    = Signal()
     positionChanged = Signal()
     configChanged   = Signal()
+    demoChanged     = Signal()
 
-    def __init__(self, spec: WidgetSpec, parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        spec: WidgetSpec,
+        controls: "ProviderControlService",
+        consumer_name: str,
+        parent: QObject | None = None,
+    ) -> None:
         super().__init__(parent)
         self._spec         = spec
+        self._controls     = controls
+        self._consumer_name = consumer_name
         self._text         = ""
         self._color        = "#E0E0E0"
         self._visible      = True
         self._text_visible = True
         self._flash_target = "value"
+        self._demo_requested = False
+        self._demo_owner = f"widget-settings:{consumer_name}:{spec.id}"
+
+    def _provider_name(self) -> str:
+        return self._controls.provider_name_for(self._consumer_name, self._spec.capability)
 
     def update(self, state: WidgetState) -> None:
         self._text         = state.text
@@ -136,6 +150,42 @@ class WidgetContext(QObject):
             self._spec.thresholds.pop(index)
             self.configChanged.emit()
 
+    @Slot()
+    def requestDemo(self) -> None:
+        if not self._provider_name() or not self.supportsDemoMode or self._demo_requested:
+            return
+        if not self._controls.request_demo_mode(self._consumer_name, self._spec.capability, self._demo_owner):
+            return
+        self._demo_requested = True
+        self.demoChanged.emit()
+
+    @Slot()
+    def releaseDemo(self) -> None:
+        if not self._provider_name() or not self._demo_requested:
+            return
+        if not self._controls.release_demo_mode(self._consumer_name, self._spec.capability, self._demo_owner):
+            return
+        self._demo_requested = False
+        self.demoChanged.emit()
+
+    @Slot(float)
+    def setDemoMin(self, value: float) -> None:
+        if not self._controls.set_demo_min(self._consumer_name, self._spec.capability, value):
+            return
+        self.demoChanged.emit()
+
+    @Slot(float)
+    def setDemoMax(self, value: float) -> None:
+        if not self._controls.set_demo_max(self._consumer_name, self._spec.capability, value):
+            return
+        self.demoChanged.emit()
+
+    @Slot(float)
+    def setDemoSpeed(self, value: float) -> None:
+        if not self._controls.set_demo_speed(self._consumer_name, self._spec.capability, value):
+            return
+        self.demoChanged.emit()
+
     # ── Live state properties ─────────────────────────────────────────────────
 
     @Property(str, notify=stateChanged)
@@ -169,12 +219,51 @@ class WidgetContext(QObject):
         return self._spec.description
 
     @Property(str, constant=True)
-    def source(self) -> str:
-        return self._spec.source
+    def capability(self) -> str:
+        return self._spec.capability
+
+    @Property(str, constant=True)
+    def field(self) -> str:
+        return self._spec.field
 
     @Property(str, constant=True)
     def formatStr(self) -> str:
         return self._spec.format
+
+    @Property(str, notify=demoChanged)
+    def providerName(self) -> str:
+        return self._provider_name()
+
+    @Property(bool, notify=demoChanged)
+    def supportsDemoMode(self) -> bool:
+        return self._controls.supports_demo_mode(self._consumer_name, self._spec.capability)
+
+    @Property(bool, notify=demoChanged)
+    def demoRequested(self) -> bool:
+        return self._demo_requested
+
+    @Property(str, notify=demoChanged)
+    def providerMode(self) -> str:
+        return self._controls.provider_mode(self._consumer_name, self._spec.capability)
+
+    @Property(str, notify=demoChanged)
+    def activeGame(self) -> str:
+        return self._controls.active_game(self._consumer_name, self._spec.capability)
+
+    @Property(float, notify=demoChanged)
+    def demoMin(self) -> float:
+        return self._demo_config().minimum
+
+    @Property(float, notify=demoChanged)
+    def demoMax(self) -> float:
+        return self._demo_config().maximum
+
+    @Property(float, notify=demoChanged)
+    def demoSpeed(self) -> float:
+        return self._demo_config().speed
+
+    def _demo_config(self):
+        return self._controls.demo_config(self._consumer_name, self._spec.capability)
 
     # ── User-editable config properties ──────────────────────────────────────
 

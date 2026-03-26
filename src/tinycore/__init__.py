@@ -21,47 +21,17 @@
 """tinycore — generic application engine."""
 
 from .app import App, create_app
-from .capabilities.registry import CapabilityBinding, CapabilityRegistry
-from .config.loader import LoaderRegistry, read_json, write_json
-from .config.store import ConfigStore
-from .editor import ColumnDef, EditorRegistry, EditorSpec, load_editors_toml
-from .events.bus import EventBus
-from .plugin.context import PluginContext
+from .inspect import LogInspector, RuntimeInspector
 from .plugin.lifecycle import PluginLifecycleManager
-from .plugin.protocol import Plugin
-from .plugin.registry import PluginRegistry
-from .plugin.spec import PluginSpec
 from .plugin.subprocess_host import SubprocessPlugin
-from .providers.protocol import Provider
-from .providers.registry import ProviderRegistry
-from .session.runtime import ConsumerBindingSet, ProviderHandle, SessionRuntime
-from .settings import SettingsRegistry, SettingsSpec
+from tinyui_schema import SettingsSpec
 
 __all__ = [
     "App",
     "create_app",
-    "CapabilityBinding",
-    "CapabilityRegistry",
-    "ConfigStore",
-    "LoaderRegistry",
-    "read_json",
-    "write_json",
-    "ColumnDef",
-    "EditorRegistry",
-    "EditorSpec",
-    "load_editors_toml",
-    "EventBus",
-    "Plugin",
-    "PluginContext",
-    "PluginRegistry",
+    "LogInspector",
+    "RuntimeInspector",
     "PluginLifecycleManager",
-    "PluginSpec",
     "SubprocessPlugin",
-    "Provider",
-    "ProviderRegistry",
-    "ProviderHandle",
-    "ConsumerBindingSet",
-    "SessionRuntime",
-    "SettingsRegistry",
     "SettingsSpec",
 ]

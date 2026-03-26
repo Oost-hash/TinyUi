@@ -27,7 +27,6 @@ Protocol (over multiprocessing.Pipe, pickle-serialised):
   subprocess → host:
     {"type": "hello",            "name": <str>}
     {"type": "settings.register","spec": <SettingsSpec>}
-    {"type": "widgets.register", "spec": <WidgetSpec>}
     {"type": "editors.register", "spec": <EditorSpec>}
     {"type": "loaders.register", "key": <str>, "filename": <str>, "defaults": <dict|None>}
     {"type": "loaders.load_all"}
@@ -74,23 +73,14 @@ class _ProxyLoaders:
             "defaults": defaults,
         })
 
-    def load_all(self, store=None) -> None:
-        # store is the host's ConfigStore — not available here, ignored
+    def load_all(self) -> None:
         self._conn.send({"type": "loaders.load_all"})
 
-    def load(self, store, key: str) -> None:
+    def load(self, key: str) -> None:
         self._conn.send({"type": "loaders.load", "key": key})
 
-    def save(self, store, key: str) -> None:
+    def save(self, key: str) -> None:
         self._conn.send({"type": "loaders.save", "key": key})
-
-
-class _ProxyWidgets:
-    def __init__(self, conn: Connection) -> None:
-        self._conn = conn
-
-    def register(self, spec) -> None:
-        self._conn.send({"type": "widgets.register", "spec": spec})
 
 
 class _ProxyEditors:
@@ -128,12 +118,8 @@ class _ProxyContext:
         self.name      = plugin_name
         self.settings  = _ProxySettings(conn)
         self.loaders   = _ProxyLoaders(conn)
-        self.widgets   = _ProxyWidgets(conn)
         self.editors   = _ProxyEditors(conn)
         self.capabilities = _ProxyCapabilities(requires)
-        self.config    = None   # not available in subprocess
-        self.events    = None   # future: proxy event subscription
-        self.providers = None   # future: proxy data providers
 
 
 # ── Entry point — called by multiprocessing.Process ───────────────────────────

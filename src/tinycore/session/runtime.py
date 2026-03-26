@@ -25,7 +25,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from tinycore.capabilities.registry import CapabilityBinding, CapabilityRegistry
+from tinycore.capabilities.registry import (
+    CapabilityBinding,
+    CapabilityProvider,
+    CapabilityRegistry,
+)
+from .control import ProviderControlService
 
 
 @dataclass(frozen=True)
@@ -71,6 +76,7 @@ class SessionRuntime:
         self._capabilities = capabilities
         self._providers: dict[str, ProviderHandle] = {}
         self._bindings_by_consumer: dict[str, ConsumerBindingSet] = {}
+        self.controls = ProviderControlService(self)
 
     def register_provider(
         self,
@@ -79,7 +85,11 @@ class SessionRuntime:
         exports: tuple[str, ...],
     ) -> ProviderHandle:
         """Register an active provider and its exported capabilities."""
-        handle = ProviderHandle(name=provider_name, exports=exports, provider=provider)
+        handle = ProviderHandle(
+            name=provider_name,
+            exports=exports,
+            provider=provider,
+        )
         self._providers[provider_name] = handle
         self._capabilities.register_many(provider_name, exports, provider)
         return handle
@@ -89,11 +99,15 @@ class SessionRuntime:
         resolved: dict[str, CapabilityBinding] = {}
         missing: list[str] = []
         for capability in requires:
-            binding = self._capabilities.get(capability)
-            if binding is None:
+            candidate = self._select_provider(capability)
+            if candidate is None:
                 missing.append(capability)
                 continue
-            resolved[capability] = binding
+            resolved[capability] = CapabilityBinding(
+                capability=capability,
+                provider_name=candidate.provider_name,
+                provider=candidate.provider,
+            )
 
         binding_set = ConsumerBindingSet(
             consumer_name=consumer_name,
@@ -112,9 +126,34 @@ class SessionRuntime:
         """Return all active providers."""
         return list(self._providers.values())
 
+    def provider_items(self) -> list[tuple[str, ProviderHandle]]:
+        """Return all active providers keyed by provider name."""
+        return list(self._providers.items())
+
     def bindings_for(self, consumer_name: str) -> ConsumerBindingSet:
         """Return the binding set for a consumer plugin."""
         return self._bindings_by_consumer.get(
             consumer_name,
             ConsumerBindingSet(consumer_name=consumer_name, requires=()),
         )
+
+    def update_providers(self) -> list[tuple[str, str]]:
+        """Tick all provider runtimes that expose ``update()``.
+
+        Returns:
+            A list of ``(provider_name, error)`` pairs for providers that failed.
+        """
+        errors: list[tuple[str, str]] = []
+        for provider_name, handle in self._providers.items():
+            update = getattr(handle.provider, "update", None)
+            if not callable(update):
+                continue
+            try:
+                update()
+            except Exception as exc:
+                errors.append((provider_name, str(exc)))
+        return errors
+
+    def _select_provider(self, capability: str) -> CapabilityProvider | None:
+        """Return the registered provider for one capability."""
+        return self._capabilities.provider_for(capability)

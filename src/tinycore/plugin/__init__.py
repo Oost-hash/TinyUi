@@ -18,16 +18,16 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""tinycore.plugin — plugin protocol and registry."""
+"""tinycore.plugin — consumer plugin runtime boundary."""
 
 from .context import PluginContext
 from .lifecycle import PluginLifecycleManager
 from .protocol import Plugin
 from .registry import PluginRegistry
-from .spec import PluginSpec
+from .spec import ConsumerRuntimeSpec
 from .subprocess_host import SubprocessPlugin
 
 __all__ = [
     "Plugin", "PluginContext", "PluginLifecycleManager",
-    "PluginRegistry", "PluginSpec", "SubprocessPlugin",
+    "PluginRegistry", "ConsumerRuntimeSpec", "SubprocessPlugin",
 ]

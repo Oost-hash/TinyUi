@@ -39,7 +39,7 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .spec import PluginSpec
+from .spec import ConsumerRuntimeSpec
 
 
 _CONSUMER_TYPE = "plugin.consumer"
@@ -104,11 +104,11 @@ class PluginManifest:
             return None
         return self.plugin_dir / self.editors_file
 
-    def plugin_spec(self) -> PluginSpec:
-        """Build the subprocess PluginSpec for a consumer plugin."""
+    def consumer_runtime_spec(self) -> ConsumerRuntimeSpec:
+        """Build the subprocess runtime spec for a consumer plugin."""
         if self.logic is None:
             raise ValueError(f"Plugin '{self.name}' has no [logic] declaration")
-        return PluginSpec(
+        return ConsumerRuntimeSpec(
             self.logic.module,
             self.logic.class_name,
             name=self.name,

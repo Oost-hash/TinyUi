@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""SubprocessPlugin — host-side wrapper for a subprocess-isolated plugin.
+"""SubprocessPlugin — host-side wrapper for a subprocess-isolated consumer plugin.
 
 The plugin module is never imported in the host process. All communication
 goes through a multiprocessing.Pipe (pickle-serialised).
@@ -34,17 +34,17 @@ if TYPE_CHECKING:
     from multiprocessing.connection import Connection
 
     from tinycore.plugin.context import PluginContext
-    from tinycore.plugin.spec import PluginSpec
+    from tinycore.plugin.spec import ConsumerRuntimeSpec
 
 
 class SubprocessPlugin:
-    """Host-side manager for a plugin running in an isolated subprocess.
+    """Host-side manager for a consumer plugin running in an isolated subprocess.
 
     Implements the Plugin protocol (name / register / start / stop) so it
     drops in wherever a regular plugin is expected.
     """
 
-    def __init__(self, spec: PluginSpec) -> None:
+    def __init__(self, spec: ConsumerRuntimeSpec) -> None:
         self._spec = spec
         self._proc: mp.Process | None = None
         self._conn: Connection | None = None   # parent-side pipe end
@@ -54,10 +54,6 @@ class SubprocessPlugin:
     @property
     def name(self) -> str:
         return self._spec.name
-
-    @property
-    def requires(self) -> tuple[str, ...]:
-        return self._spec.requires
 
     def register(self, ctx: PluginContext) -> None:
         """Spawn the plugin subprocess and collect its registrations."""
@@ -82,7 +78,7 @@ class SubprocessPlugin:
         if msg["name"] != self._spec.name:
             raise RuntimeError(
                 f"Plugin name mismatch: spec='{self._spec.name}' plugin='{msg['name']}'. "
-                f"Update PluginSpec to use name='{msg['name']}'."
+                f"Update ConsumerRuntimeSpec to use name='{msg['name']}'."
             )
 
         # ── Collect registrations ─────────────────────────────────────────
@@ -116,9 +112,6 @@ class SubprocessPlugin:
         if t == "settings.register":
             ctx.settings.register(msg["spec"])
 
-        elif t == "widgets.register":
-            ctx.widgets.register(msg["spec"])
-
         elif t == "editors.register":
             ctx.editors.register(msg["spec"])
 
@@ -126,10 +119,10 @@ class SubprocessPlugin:
             ctx.loaders.register(msg["key"], msg["filename"], msg.get("defaults"))
 
         elif t == "loaders.load_all":
-            ctx.loaders.load_all(ctx.config)
+            ctx.loaders.load_all()
 
         elif t == "loaders.load":
-            ctx.loaders.load(ctx.config, msg["key"])
+            ctx.loaders.load(msg["key"])
 
         elif t == "loaders.save":
-            ctx.loaders.save(ctx.config, msg["key"])
+            ctx.loaders.save(msg["key"])

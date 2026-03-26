@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""PluginLifecycleManager — on-demand plugin start/stop with grace period.
+"""PluginLifecycleManager — on-demand consumer plugin start/stop with grace period.
 
 When the user switches plugins, the new plugin starts immediately.
 The old plugin keeps running for `grace_seconds` (default 30) in case
@@ -38,11 +38,11 @@ log = logging.getLogger(__name__)
 
 
 class PluginLifecycleManager:
-    """Manages plugin start/stop with a configurable grace period.
+    """Manages consumer plugin start/stop with a configurable grace period.
 
     Usage:
-        lifecycle = PluginLifecycleManager(core.plugins)
-        lifecycle.activate(core.plugins.plugins[0].name)   # start first plugin
+        lifecycle = PluginLifecycleManager(core.runtime.plugins)
+        lifecycle.activate(core.runtime.plugins.plugins[0].name)   # start first plugin
 
         # on switch:
         lifecycle.activate("demo2")   # starts demo2, schedules demo stop after 30s
