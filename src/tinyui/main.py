@@ -35,20 +35,22 @@ from typing import TYPE_CHECKING, Callable
 import PySide6
 from PySide6.QtCore import QUrl, QtMsgType, qInstallMessageHandler, qVersion
 
+from tinycore.app import App
+from tinycore.inspect import LogInspector
+from tinycore.plugin.lifecycle import PluginLifecycleManager
 from tinycore.qt import create_application, create_engine
 from tinyui.const import APP_NAME, VERSION
+from tinyui.devtools import LogSettingsViewModel, LogViewModel
 from tinyui.icons import Icons, load_font
 from tinyui.theme import Theme
 from tinyui.viewmodels.core_viewmodel import CoreViewModel
-from tinyui.viewmodels.log_settings_viewmodel import LogSettingsViewModel
-from tinyui.viewmodels.log_viewmodel import LogViewModel
 from tinyui.viewmodels.menu_viewmodel import MenuViewModel
 from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
 from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
 from tinyui.viewmodels.tab_viewmodel import TabViewModel
 
 if TYPE_CHECKING:
-    from tinycore import App, PluginLifecycleManager
+    pass
 
 
 def _qt_message_handler(mode, context, message):
@@ -84,10 +86,11 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     log.info("Python:  %s", platform.python_version())
     log.info("Qt:      %s  PySide6: %s", qVersion(), PySide6.__version__)
     log.info("Backend: %s", app.platformName())
-    log.info("Editors: %d", len(core.editors.all()))
+    log.info("Editors: %d", len(core.host.editors.all()))
 
     # ── ViewModels ────────────────────────────────────────────────────────────
-    log_vm          = LogViewModel()          # install early — captures all subsequent log output
+    log_inspector   = LogInspector()
+    log_vm          = LogViewModel(log_inspector)
     log_settings_vm = LogSettingsViewModel()
     theme        = Theme()
     menu_vm      = MenuViewModel()
@@ -99,7 +102,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     tab_vm.register("widgets", "Widgets")
 
     # ── Plugin switching — driven by the status bar ───────────────────────────
-    _plugin_names = [p.name for p in core.plugins.plugins]
+    _plugin_names = [p.name for p in core.runtime.plugins.plugins]
 
     def _on_plugin_switch() -> None:
         idx = statusbar_vm.activePluginIndex
@@ -110,15 +113,15 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
 
     # ── Settings — apply theme and persist on change ──────────────────────────
     def _apply_tinyui_settings() -> None:
-        val = core.host_settings.get_value("TinyUI", "theme")
+        val = core.host.host_settings.get_value("TinyUI", "theme")
         if val:
             theme.load(val)
 
     def _save_setting(plugin_name: str) -> None:
-        if core.host_settings.has_plugin(plugin_name):
-            core.host_settings.save(plugin_name)
+        if core.host.host_settings.has_plugin(plugin_name):
+            core.host.host_settings.save(plugin_name)
         else:
-            core.settings.save(plugin_name)
+            core.host.plugin_settings.save(plugin_name)
 
     core_vm.settingsChanged.connect(_apply_tinyui_settings)
     core_vm.settingValueChanged.connect(_save_setting)
@@ -206,32 +209,33 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
         engine.rootContext().setContextProperty("windowController", _win_ctrl)
 
     # ── Window state restore ──────────────────────────────────────────────────
-    if core.host_settings.get_value("TinyUI", "remember_position"):
-        x = core.host_settings.get_value("TinyUI", "_position_x")
-        y = core.host_settings.get_value("TinyUI", "_position_y")
+    if core.host.host_settings.get_value("TinyUI", "remember_position"):
+        x = core.host.host_settings.get_value("TinyUI", "_position_x")
+        y = core.host.host_settings.get_value("TinyUI", "_position_y")
         if x is not None and y is not None:
             window.setX(int(x))
             window.setY(int(y))
 
-    if core.host_settings.get_value("TinyUI", "remember_size"):
-        w = core.host_settings.get_value("TinyUI", "_window_width")
-        h = core.host_settings.get_value("TinyUI", "_window_height")
+    if core.host.host_settings.get_value("TinyUI", "remember_size"):
+        w = core.host.host_settings.get_value("TinyUI", "_window_width")
+        h = core.host.host_settings.get_value("TinyUI", "_window_height")
         if w is not None and h is not None:
             window.setWidth(int(w))
             window.setHeight(int(h))
 
     # ── Run ───────────────────────────────────────────────────────────────────
     def _save_window_state() -> None:
-        if core.host_settings.get_value("TinyUI", "remember_position"):
-            core.host_settings.set_value("TinyUI", "_position_x", window.x())
-            core.host_settings.set_value("TinyUI", "_position_y", window.y())
-        if core.host_settings.get_value("TinyUI", "remember_size"):
-            core.host_settings.set_value("TinyUI", "_window_width",  window.width())
-            core.host_settings.set_value("TinyUI", "_window_height", window.height())
-        core.host_settings.save("TinyUI")
+        if core.host.host_settings.get_value("TinyUI", "remember_position"):
+            core.host.host_settings.set_value("TinyUI", "_position_x", window.x())
+            core.host.host_settings.set_value("TinyUI", "_position_y", window.y())
+        if core.host.host_settings.get_value("TinyUI", "remember_size"):
+            core.host.host_settings.set_value("TinyUI", "_window_width",  window.width())
+            core.host.host_settings.set_value("TinyUI", "_window_height", window.height())
+        core.host.host_settings.save("TinyUI")
 
     app.aboutToQuit.connect(_save_window_state)
     app.aboutToQuit.connect(log_vm.shutdown)
+    app.aboutToQuit.connect(log_inspector.shutdown)
     app.aboutToQuit.connect(engine.deleteLater)
     app.aboutToQuit.connect(lifecycle.shutdown)
     app.aboutToQuit.connect(core.stop)
@@ -242,6 +246,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
 
     if pre_run is not None:
         pre_run()
+    log_vm.replay()
 
     exit_code = app.exec()
 

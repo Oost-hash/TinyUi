@@ -23,7 +23,7 @@
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
-from tinycore import App
+from tinycore.app import App
 from tinycore.log import get_logger
 
 log = get_logger(__name__)
@@ -54,7 +54,7 @@ class CoreViewModel(QObject):
                 "title": e.title,
                 "menu":  e.menu,
             }
-            for e in self._core.editors.all()
+            for e in self._core.host.editors.all()
         ]
 
     @Slot(str, bool)
@@ -65,7 +65,7 @@ class CoreViewModel(QObject):
     @Property("QVariantList", constant=True)
     def pluginNames(self) -> list[str]:
         """Name of each loaded plugin — used by the status bar plugin switcher."""
-        return [p.name for p in self._core.plugins.plugins]
+        return [p.name for p in self._core.runtime.plugins.plugins]
 
     @Property("QVariantList", notify=settingsChanged)
     def settingsByPlugin(self) -> list[dict]:
@@ -80,7 +80,7 @@ class CoreViewModel(QObject):
 
         result = []
         # Host settings first (TinyUI), then plugin settings
-        registries = [self._core.host_settings, self._core.settings]
+        registries = [self._core.host.host_settings, self._core.host.plugin_settings]
         for registry in registries:
             for plugin_name, specs in registry.by_plugin().items():
                 sections: dict[str, list[dict]] = {}
@@ -119,9 +119,9 @@ class CoreViewModel(QObject):
     def setSettingValue(self, plugin_name: str, key: str, value) -> None:
         """Persist a new setting value and notify QML."""
         registry = (
-            self._core.host_settings
-            if self._core.host_settings.has_plugin(plugin_name)
-            else self._core.settings
+            self._core.host.host_settings
+            if self._core.host.host_settings.has_plugin(plugin_name)
+            else self._core.host.plugin_settings
         )
         registry.set_value(plugin_name, key, value)
         self._settings_cache = None          # invalidate cache — fresh values on next read

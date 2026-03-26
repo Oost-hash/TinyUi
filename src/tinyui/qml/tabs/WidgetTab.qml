@@ -31,10 +31,29 @@ Item {
     readonly property int colPad:     16
 
     property var selectedContext: null
+    property var demoLeaseContext: null
 
-    // True when a mock connector was registered (dev/demo builds only).
-    // Centralises the typeof guard so inner elements can just test hasMock.
-    readonly property bool hasMock: hasMock
+    function syncDemoLease(previousContext, nextContext) {
+        if (previousContext && previousContext.demoRequested)
+            previousContext.releaseDemo()
+        demoLeaseContext = nextContext && nextContext.demoRequested ? nextContext : null
+    }
+
+    onSelectedContextChanged: {
+        syncDemoLease(demoLeaseContext, selectedContext)
+    }
+
+    onVisibleChanged: {
+        if (!visible && demoLeaseContext && demoLeaseContext.demoRequested) {
+            demoLeaseContext.releaseDemo()
+            demoLeaseContext = null
+        }
+    }
+
+    Component.onDestruction: {
+        if (demoLeaseContext && demoLeaseContext.demoRequested)
+            demoLeaseContext.releaseDemo()
+    }
 
     // ── Left: widget list ──────────────────────────────────────────────────────
     Item {
@@ -180,7 +199,7 @@ Item {
             // Title + description
             Column {
                 anchors.left: parent.left; anchors.leftMargin: 16
-                anchors.right: demoBtn.left; anchors.rightMargin: 8
+                anchors.right: demoButton.left; anchors.rightMargin: 16
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 3
 
@@ -198,49 +217,82 @@ Item {
                 }
             }
 
-            // Demo toggle button — only shown when mockViewModel is available
             Rectangle {
-                id: demoBtn
-                visible: hasMock
-                anchors.right: parent.right; anchors.rightMargin: 12
+                id: demoButton
+                visible: widgetTab.selectedContext && widgetTab.selectedContext.supportsDemoMode
+                anchors.right: parent.right
+                anchors.rightMargin: 12
                 anchors.verticalCenter: parent.verticalCenter
-                width: 64; height: 26; radius: 4
-                color: (hasMock && mockViewModel.active)
-                       ? theme.accent
-                       : (demoBtnArea.containsMouse ? theme.surfaceRaised : "transparent")
+                width: 72
+                height: 26
+                radius: 4
+                color: widgetTab.selectedContext && widgetTab.selectedContext.demoRequested
+                    ? theme.accent
+                    : (demoButtonArea.containsMouse ? theme.surfaceRaised : "transparent")
                 border.width: 1
-                border.color: (hasMock && mockViewModel.active)
-                              ? theme.accent : theme.border
+                border.color: widgetTab.selectedContext && widgetTab.selectedContext.demoRequested
+                    ? theme.accent
+                    : theme.border
                 Behavior on color { ColorAnimation { duration: 80 } }
 
-                Text {
+                Row {
                     anchors.centerIn: parent
-                    text: (hasMock && mockViewModel.active)
-                          ? "■ Demo" : "▶ Demo"
-                    color: (hasMock && mockViewModel.active)
-                           ? theme.accentText : (demoBtnArea.containsMouse ? theme.text : theme.textMuted)
-                    font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
-                    font.weight: Font.Medium
-                    Behavior on color { ColorAnimation { duration: 80 } }
+                    spacing: 6
+
+                    Text {
+                        text: widgetTab.selectedContext && widgetTab.selectedContext.demoRequested
+                            ? icons.stop
+                            : icons.play
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.family: theme.iconFont
+                        font.pixelSize: theme.fontSizeSmall
+                        renderType: Text.NativeRendering
+                        color: widgetTab.selectedContext && widgetTab.selectedContext.demoRequested
+                            ? theme.accentText
+                            : (demoButtonArea.containsMouse ? theme.text : theme.textMuted)
+                    }
+
+                    Text {
+                        text: "Demo"
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: widgetTab.selectedContext && widgetTab.selectedContext.demoRequested
+                            ? theme.accentText
+                            : (demoButtonArea.containsMouse ? theme.text : theme.textMuted)
+                        font.pixelSize: theme.fontSizeSmall
+                        font.family: theme.fontFamily
+                        font.weight: Font.DemiBold
+                    }
                 }
 
                 MouseArea {
-                    id: demoBtnArea
-                    anchors.fill: parent; hoverEnabled: true
-                    onClicked: if (hasMock) mockViewModel.toggle()
+                    id: demoButtonArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: {
+                        if (!widgetTab.selectedContext)
+                            return
+                        if (widgetTab.selectedContext.demoRequested) {
+                            widgetTab.selectedContext.releaseDemo()
+                            if (widgetTab.demoLeaseContext === widgetTab.selectedContext)
+                                widgetTab.demoLeaseContext = null
+                        } else {
+                            widgetTab.selectedContext.requestDemo()
+                            widgetTab.demoLeaseContext = widgetTab.selectedContext
+                        }
+                    }
                 }
             }
 
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
         }
 
-        // ── Demo settings — slides in below the header when active ───────────────
         Rectangle {
             id: demoSection
-            readonly property bool _on: hasMock && mockViewModel.active
+            readonly property bool active: widgetTab.selectedContext && widgetTab.selectedContext.demoRequested
             anchors.top: detailHeader.bottom
-            anchors.left: parent.left; anchors.right: parent.right
-            height: _on ? demoSectionInner.implicitHeight : 0
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: active ? demoSectionInner.implicitHeight : 0
             Behavior on height { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
             clip: true
             color: theme.surfaceAlt
@@ -250,40 +302,53 @@ Item {
 
             Column {
                 id: demoSectionInner
-                anchors.left: parent.left; anchors.right: parent.right
+                anchors.left: parent.left
+                anchors.right: parent.right
                 spacing: 0
 
                 EditRow {
                     label: "Min"
-                    description: "Lowest value in the sweep"
+                    description: "Lowest value in the mock sweep"
                     NumberStepper {
                         anchors.right: parent.right; anchors.rightMargin: 0
                         anchors.verticalCenter: parent.verticalCenter
-                        value: hasMock ? mockViewModel.demoMin : 0
+                        value: widgetTab.selectedContext ? widgetTab.selectedContext.demoMin : 0
                         step: 1
-                        onCommit: (v) => { if (hasMock) mockViewModel.setMin(v) }
+                        onCommit: (v) => {
+                            if (widgetTab.selectedContext)
+                                widgetTab.selectedContext.setDemoMin(v)
+                        }
                     }
                 }
+
                 EditRow {
                     label: "Max"
-                    description: "Starting value; sweep resets here"
+                    description: "Highest value before the sweep resets"
                     NumberStepper {
                         anchors.right: parent.right; anchors.rightMargin: 0
                         anchors.verticalCenter: parent.verticalCenter
-                        value: hasMock ? mockViewModel.demoMax : 100
+                        value: widgetTab.selectedContext ? widgetTab.selectedContext.demoMax : 100
                         step: 1
-                        onCommit: (v) => { if (hasMock) mockViewModel.setMax(v) }
+                        onCommit: (v) => {
+                            if (widgetTab.selectedContext)
+                                widgetTab.selectedContext.setDemoMax(v)
+                        }
                     }
                 }
+
                 EditRow {
                     label: "Speed"
-                    description: "Decrease per tick (100 ms)"
+                    description: "Sweep speed per poll tick"
                     NumberStepper {
                         anchors.right: parent.right; anchors.rightMargin: 0
                         anchors.verticalCenter: parent.verticalCenter
-                        value: hasMock ? mockViewModel.demoSpeed : 0.5
+                        value: widgetTab.selectedContext ? widgetTab.selectedContext.demoSpeed : 0.5
                         step: 0.1
-                        onCommit: (v) => { if (hasMock) mockViewModel.setSpeed(v) }
+                        min: 0.1
+                        onCommit: (v) => {
+                            if (widgetTab.selectedContext)
+                                widgetTab.selectedContext.setDemoSpeed(v)
+                        }
                     }
                 }
             }
@@ -372,6 +437,23 @@ Item {
                                 widgetTab.selectedContext.move(widgetTab.selectedContext.widgetX, v)
                         }
                     }
+                }
+
+                // ── Section: Provider ───────────────────────────────────────
+                SectionHeader { text: "Provider" }
+
+                EditRow {
+                    label: "Binding"
+                    description: widgetTab.selectedContext
+                        ? widgetTab.selectedContext.providerName + " / " + widgetTab.selectedContext.activeGame
+                        : ""
+                }
+
+                EditRow {
+                    label: "Mode"
+                    description: widgetTab.selectedContext
+                        ? widgetTab.selectedContext.providerMode
+                        : ""
                 }
 
                 // ── Section: Thresholds ────────────────────────────────────────

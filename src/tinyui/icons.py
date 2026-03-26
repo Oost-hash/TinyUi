@@ -63,6 +63,8 @@ _SEG: dict[str, str] = {
     "license":      "\uE946",
     "privacy":      "\uE8B6",
     "console":      "\uE756",   # Command Prompt
+    "play":         "\uE768",
+    "stop":         "\uE71A",
 }
 
 _MAT: dict[str, str] = {
@@ -88,6 +90,8 @@ _MAT: dict[str, str] = {
     "license":      "\uE90E",   # gavel
     "privacy":      "\uE904",   # privacy_tip
     "console":      "\uE86F",   # terminal
+    "play":         "\uE037",   # play_arrow
+    "stop":         "\uE047",   # stop
 }
 
 _G = _SEG if _WINDOWS else _MAT
@@ -177,3 +181,9 @@ class Icons(QObject):
 
     @Property(str, constant=True)
     def console(self) -> str: return _G["console"]
+
+    @Property(str, constant=True)
+    def play(self) -> str: return _G["play"]
+
+    @Property(str, constant=True)
+    def stop(self) -> str: return _G["stop"]

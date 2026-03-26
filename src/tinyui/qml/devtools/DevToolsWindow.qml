@@ -22,7 +22,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "components"
+import "../components"
 
 BaseDialog {
     id: devTools
@@ -131,62 +131,31 @@ BaseDialog {
                         color: theme.border
                     }
 
-                    Flickable {
+                    Row {
                         anchors.fill: parent
-                        contentWidth: sourceRow.implicitWidth + 16
-                        contentHeight: height
-                        clip: true
-                        flickableDirection: Flickable.HorizontalFlick
-                        ScrollBar.horizontal: ScrollBar { policy: ScrollBar.AsNeeded; height: 3 }
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        spacing: 8
 
-                        Row {
-                            id: sourceRow
-                            x: 8
+                        Text {
+                            width: 46
                             height: parent.height
-                            spacing: 4
+                            verticalAlignment: Text.AlignVCenter
+                            text: "Source"
+                            color: theme.textMuted
+                            font.pixelSize: theme.fontSizeSmall
+                            font.family: theme.fontFamily
+                        }
 
-                            Repeater {
-                                model: stateTab._vm ? stateTab._vm.sources : []
-
-                                delegate: Rectangle {
-                                    required property var modelData
-
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    implicitWidth: srcLabel.implicitWidth + 16
-                                    height: 22; radius: 3
-
-                                    readonly property bool active:
-                                        stateTab._vm && stateTab._vm.selectedIndex === modelData.index
-
-                                    color: active
-                                           ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.15)
-                                           : (srcArea.containsMouse ? theme.surfaceRaised : "transparent")
-                                    border.width: 1
-                                    border.color: active ? theme.accent : theme.border
-
-                                    Behavior on color        { ColorAnimation { duration: 80 } }
-                                    Behavior on border.color { ColorAnimation { duration: 80 } }
-
-                                    Text {
-                                        id: srcLabel
-                                        anchors.centerIn: parent
-                                        text: modelData.label
-                                        color: parent.active ? theme.accent : theme.textMuted
-                                        font.pixelSize: theme.fontSizeSmall
-                                        font.family: theme.fontFamily
-                                        Behavior on color { ColorAnimation { duration: 80 } }
-                                    }
-
-                                    MouseArea {
-                                        id: srcArea
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            if (stateTab._vm)
-                                                stateTab._vm.selectSource(modelData.index)
-                                        }
-                                    }
-                                }
+                        ThemedComboBox {
+                            id: sourceCombo
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: Math.min(parent.width - 54, 340)
+                            model: stateTab._vm ? stateTab._vm.sources.map(function(item) { return item.label }) : []
+                            currentIndex: stateTab._vm ? stateTab._vm.selectedIndex : -1
+                            onActivated: function(index) {
+                                if (stateTab._vm)
+                                    stateTab._vm.selectSource(index)
                             }
                         }
                     }
@@ -237,85 +206,156 @@ BaseDialog {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
-                    model: stateTab._vm ? stateTab._vm.entries : []
+                    model: stateTab._vm ? stateTab._vm.sections : []
                     spacing: 0
                     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
-                    delegate: Item {
-                        id: stateRow
+                    delegate: Column {
+                        id: sectionColumn
                         required property var modelData
                         required property int index
-
                         width: ListView.view.width
-                        height: 22
-
-                        // Flash overlay — fades from yellow on change
-                        Rectangle {
-                            id: flashRect
-                            anchors.fill: parent
-                            color: "#50FFD700"
-                            opacity: 0
-                        }
+                        spacing: 0
 
                         Rectangle {
-                            anchors.fill: parent
-                            color: index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.02)
-                            z: -1
-                        }
+                            width: parent.width
+                            height: 28
+                            color: theme.surfaceAlt
 
-                        Row {
-                            anchors.fill: parent
-                            anchors.leftMargin: 12
-                            anchors.rightMargin: 12
-                            spacing: 6
-
-                            // Heartbeat dot — green within 2 s of last change
                             Rectangle {
-                                width: 6; height: 6; radius: 3
-                                anchors.verticalCenter: parent.verticalCenter
-                                color: (stateTab.currentTime - stateRow.modelData.changedAt) < 2000
-                                       ? "#44FF88" : theme.border
-                                Behavior on color { ColorAnimation { duration: 300 } }
+                                anchors.bottom: parent.bottom
+                                width: parent.width
+                                height: 1
+                                color: theme.border
+                                opacity: 0.4
                             }
 
-                            Text {
-                                width: parent.width * 0.60
-                                height: parent.height
-                                verticalAlignment: Text.AlignVCenter
-                                text: stateRow.modelData.key
-                                color: theme.textMuted
-                                font.pixelSize: 11
-                                font.family: "Consolas, Courier New, monospace"
-                                elide: Text.ElideLeft
+                            Row {
+                                anchors.fill: parent
+                                anchors.leftMargin: 12
+                                anchors.rightMargin: 12
+                                spacing: 8
+
+                                Text {
+                                    width: 14
+                                    height: parent.height
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: sectionColumn.modelData.collapsed ? "▸" : "▾"
+                                    color: theme.textMuted
+                                    font.pixelSize: 10
+                                    font.family: "Consolas, Courier New, monospace"
+                                }
+
+                                Text {
+                                    width: parent.width - 72
+                                    height: parent.height
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: sectionColumn.modelData.title
+                                    color: theme.textSecondary
+                                    font.pixelSize: theme.fontSizeSmall
+                                    font.family: theme.fontFamily
+                                    font.weight: Font.DemiBold
+                                }
+
+                                Text {
+                                    width: 40
+                                    height: parent.height
+                                    horizontalAlignment: Text.AlignRight
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: sectionColumn.modelData.entries.length
+                                    color: theme.textMuted
+                                    font.pixelSize: 10
+                                    font.family: "Consolas, Courier New, monospace"
+                                }
                             }
-                            Text {
-                                width: parent.width * 0.35
-                                height: parent.height
-                                verticalAlignment: Text.AlignVCenter
-                                text: stateRow.modelData.value
-                                color: theme.text
-                                font.pixelSize: 11
-                                font.family: "Consolas, Courier New, monospace"
-                                elide: Text.ElideRight
+
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: {
+                                    if (stateTab._vm)
+                                        stateTab._vm.toggleSection(sectionColumn.modelData.name)
+                                }
                             }
                         }
 
-                        NumberAnimation {
-                            id: flashAnim
-                            target: flashRect; property: "opacity"
-                            from: 1.0; to: 0.0
-                            duration: 600; easing.type: Easing.OutQuad
-                        }
+                        Repeater {
+                            model: sectionColumn.modelData.collapsed ? [] : sectionColumn.modelData.entries
 
-                        Component.onCompleted: {
-                            if (stateRow.modelData.changed) flashAnim.start()
+                            delegate: Item {
+                                id: stateRow
+                                required property var modelData
+                                required property int index
+
+                                width: sectionColumn.width
+                                height: 22
+
+                                Rectangle {
+                                    id: flashRect
+                                    anchors.fill: parent
+                                    color: "#50FFD700"
+                                    opacity: 0
+                                }
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    color: index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.02)
+                                    z: -1
+                                }
+
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 24
+                                    anchors.rightMargin: 12
+                                    spacing: 6
+
+                                    Rectangle {
+                                        width: 6; height: 6; radius: 3
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        color: (stateTab.currentTime - stateRow.modelData.changedAt) < 2000
+                                               ? "#44FF88" : theme.border
+                                        Behavior on color { ColorAnimation { duration: 300 } }
+                                    }
+
+                                    Text {
+                                        width: parent.width * 0.58
+                                        height: parent.height
+                                        verticalAlignment: Text.AlignVCenter
+                                        text: stateRow.modelData.key
+                                        color: theme.textMuted
+                                        font.pixelSize: 11
+                                        font.family: "Consolas, Courier New, monospace"
+                                        elide: Text.ElideLeft
+                                    }
+                                    Text {
+                                        width: parent.width * 0.36
+                                        height: parent.height
+                                        verticalAlignment: Text.AlignVCenter
+                                        text: stateRow.modelData.value
+                                        color: theme.text
+                                        font.pixelSize: 11
+                                        font.family: "Consolas, Courier New, monospace"
+                                        elide: Text.ElideRight
+                                    }
+                                }
+
+                                NumberAnimation {
+                                    id: flashAnim
+                                    target: flashRect; property: "opacity"
+                                    from: 1.0; to: 0.0
+                                    duration: 600; easing.type: Easing.OutQuad
+                                }
+
+                                Component.onCompleted: {
+                                    if (stateRow.modelData.changed) flashAnim.start()
+                                }
+                            }
                         }
                     }
 
                     // Empty state
                     Text {
                         anchors.centerIn: parent
-                        visible: !stateTab._vm || stateTab._vm.entries.length === 0
+                        visible: !stateTab._vm || stateTab._vm.sections.length === 0
                         text: stateTab._vm && stateTab._vm.sources.length === 0
                               ? "No sources — load a plugin with widgets to start monitoring."
                               : "Select a source above."
@@ -486,12 +526,12 @@ BaseDialog {
                             height: parent.height
                             spacing: 4
 
-                            // ── Dev mode master toggle ─────────────────────────
+                            // ── All-categories master toggle ──────────────────
                             Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 44; height: 20; radius: 3
                                 readonly property bool on: logSettingsViewModel
-                                                           ? logSettingsViewModel.devMode : false
+                                                           ? logSettingsViewModel.allCategoriesEnabled : false
                                 color:        on ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.18)
                                                  : "transparent"
                                 border.color: on ? theme.accent : theme.border
@@ -499,19 +539,19 @@ BaseDialog {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: "DEV"
+                                    text: "ALL"
                                     color: parent.on ? theme.accent : theme.textMuted
                                     font.pixelSize: 10
                                     font.family: "Consolas, Courier New, monospace"
                                     font.weight: Font.Bold
                                 }
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: {
-                                        if (logSettingsViewModel)
-                                            logSettingsViewModel.setDevMode(!logSettingsViewModel.devMode)
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: {
+                                            if (logSettingsViewModel)
+                                                logSettingsViewModel.setDevMode(!logSettingsViewModel.allCategoriesEnabled)
+                                        }
                                     }
-                                }
                             }
 
                             // Divider
@@ -531,17 +571,12 @@ BaseDialog {
                                     implicitWidth:  catLabel.implicitWidth + 12
                                     height: 20; radius: 3
 
-                                    readonly property bool devOn: logSettingsViewModel
-                                                                  ? logSettingsViewModel.devMode : false
-                                    readonly property bool catOn: modelData.enabled && devOn
+                                    readonly property bool catOn: modelData.enabled
 
                                     color:        catOn ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.12)
                                                         : "transparent"
                                     border.color: catOn ? theme.accent : theme.border
                                     border.width: 1
-                                    opacity: devOn ? 1.0 : 0.4
-
-                                    Behavior on opacity { NumberAnimation { duration: 120 } }
 
                                     Text {
                                         id: catLabel
@@ -553,7 +588,6 @@ BaseDialog {
                                     }
                                     MouseArea {
                                         anchors.fill: parent
-                                        enabled: parent.devOn
                                         onClicked: {
                                             if (logSettingsViewModel)
                                                 logSettingsViewModel.setCategoryEnabled(

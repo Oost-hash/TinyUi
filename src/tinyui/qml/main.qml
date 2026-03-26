@@ -22,6 +22,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "devtools" as DevTools
 import "layout"
 import "tabs"
 import "."
@@ -130,7 +131,7 @@ ApplicationWindow {
 
     // SettingsDialog and DevToolsWindow are Windows — outside ColumnLayout
     SettingsDialog {}
-    DevToolsWindow { id: devToolsWindow }
+    DevTools.DevToolsWindow { id: devToolsWindow }
 
     // F12 — open Dev Tools, just like browser devtools
     // TODO: make keyboard shortcuts configurable in settings

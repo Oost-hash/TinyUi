@@ -19,33 +19,13 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""LogViewModel — bridges Python logging to QML via a Signal per log line."""
+"""Thin Qt adapter over the runtime log inspector."""
 
 from __future__ import annotations
 
-import logging
-
 from PySide6.QtCore import QObject, Signal, Slot
 
-
-class _QtLogHandler(logging.Handler):
-    """Logging handler that calls a callback for each log record."""
-
-    def __init__(self, callback):
-        super().__init__()
-        self._callback = callback
-
-    def emit(self, record: logging.LogRecord) -> None:
-        if self._callback is None:
-            return
-        try:
-            import time as _time
-            t = _time.strftime("%H:%M:%S", _time.localtime(record.created))
-            ms = int(record.msecs)
-            self._callback(f"{t}.{ms:03d}", record.levelname, record.name,
-                           record.getMessage())
-        except Exception:
-            self.handleError(record)
+from tinycore.inspect.log_inspector import LogInspector, LogRecordEntry
 
 
 class LogViewModel(QObject):
@@ -59,17 +39,23 @@ class LogViewModel(QObject):
     recordAdded = Signal(str, str, str, str)
     cleared     = Signal()
 
-    def __init__(self, parent: QObject | None = None) -> None:
+    def __init__(self, inspector: LogInspector, parent: QObject | None = None) -> None:
         super().__init__(parent)
+        self._inspector = inspector
+        self._inspector.subscribe(self._on_record)
 
-        self._handler = _QtLogHandler(self.recordAdded.emit)
-        self._handler.setLevel(logging.DEBUG)  # capture everything the root passes
-        logging.getLogger().addHandler(self._handler)
+    def _on_record(self, entry: LogRecordEntry) -> None:
+        self.recordAdded.emit(entry.time, entry.level, entry.name, entry.message)
+
+    @Slot()
+    def replay(self) -> None:
+        for entry in self._inspector.records():
+            self._on_record(entry)
 
     @Slot()
     def clear(self) -> None:
+        self._inspector.clear()
         self.cleared.emit()
 
     def shutdown(self) -> None:
-        logging.getLogger().removeHandler(self._handler)
-        self._handler._callback = None
+        self._inspector.unsubscribe(self._on_record)

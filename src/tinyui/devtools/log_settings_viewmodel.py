@@ -44,6 +44,7 @@ class LogSettingsViewModel(QObject):
 
     categoriesChanged = Signal()
     devModeChanged    = Signal()
+    allCategoriesEnabledChanged = Signal()
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -55,12 +56,18 @@ class LogSettingsViewModel(QObject):
         """True when DEBUG-level output is globally enabled."""
         return _core_log.get_dev_mode()
 
+    @Property(bool, notify=allCategoriesEnabledChanged)
+    def allCategoriesEnabled(self) -> bool:
+        """True when every known debug category is enabled."""
+        states = _core_log.get_category_states()
+        return bool(states) and all(enabled for _, enabled in states)
+
     @Slot(bool)
     def setDevMode(self, enabled: bool) -> None:
         _core_log.set_dev_mode(enabled)
         self.devModeChanged.emit()
-        # Category enabled-state display depends on devMode — refresh the list
         self.categoriesChanged.emit()
+        self.allCategoriesEnabledChanged.emit()
 
     # ── Per-category toggles ──────────────────────────────────────────────────
 
@@ -73,4 +80,6 @@ class LogSettingsViewModel(QObject):
     @Slot(str, bool)
     def setCategoryEnabled(self, name: str, enabled: bool) -> None:
         _core_log.set_category_enabled(name, enabled)
+        self.devModeChanged.emit()
         self.categoriesChanged.emit()
+        self.allCategoriesEnabledChanged.emit()
