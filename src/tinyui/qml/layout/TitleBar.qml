@@ -233,8 +233,8 @@ Rectangle {
                     anchors.left: parent.left
                     anchors.leftMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 10
-                    height: 10
+                    width: 16
+                    height: 16
                     source: menuViewModel.menuOpen
                         ? "../../assets/icons/menu-open.svg"
                         : "../../assets/icons/menu.svg"

@@ -40,8 +40,8 @@ AbstractButton {
     contentItem: Item {
         Image {
             anchors.centerIn: parent
-            width: 10
-            height: 10
+            width: 16
+            height: 16
             source: btn.iconSource
             sourceSize.width: width
             sourceSize.height: height

@@ -30,4 +30,5 @@ Known packages:
 - [0.3.1][other][changed] Split release note rendering out of the mutating release flow and added `preview_release_notes.py` so version-tagged release notes can be reviewed without mutating `unreleased`
 - [0.3.1][tinyui][fixed] Fixed the state dev tool so live heartbeat and change updates keep the state list scroll stable, show the correct empty state, and allow quick copying of `key: value` entries
 - [0.3.1][tinyui][changed] Replaced the bundled Linux icon font and legacy image set with dedicated SVG chrome assets for menu and window controls
+- [0.3.1][tinyui][changed] Increased the custom title bar and menu chrome icons to a cleaner 16px SVG canvas with lighter strokes for better desktop readability
 - [0.3.1][tinyui][removed] Removed the old icon glyph loader and unused chrome image/font assets after moving the title bar to direct SVG icons
