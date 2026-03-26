@@ -203,150 +203,143 @@ BaseDialog {
 
                 // ── Property list ─────────────────────────────────────────────
                 ListView {
+                    id: stateList
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
-                    model: stateTab._vm ? stateTab._vm.sections : []
+                    model: stateTab._vm ? stateTab._vm.sectionModel : null
                     spacing: 0
                     ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                    delegate: Item {
+                        id: stateRow
+                        readonly property bool isSection: rowType === "section"
+                        readonly property bool recentlyChanged:
+                            !isSection && (stateTab.currentTime - changedAt) < 600
+                        property real copiedAt: 0
+                        readonly property bool showCopied:
+                            !isSection && (stateTab.currentTime - copiedAt) < 900
 
-                    delegate: Column {
-                        id: sectionColumn
-                        required property var modelData
-                        required property int index
                         width: ListView.view.width
-                        spacing: 0
+                        height: isSection ? 28 : 22
 
                         Rectangle {
+                            anchors.fill: parent
+                            color: parent.isSection
+                                   ? theme.surfaceAlt
+                                   : (parent.recentlyChanged
+                                      ? "#24FFD700"
+                                      : (index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.02)))
+                            z: -1
+                            Behavior on color { ColorAnimation { duration: 180 } }
+                        }
+
+                        Rectangle {
+                            visible: parent.isSection
+                            anchors.bottom: parent.bottom
                             width: parent.width
-                            height: 28
-                            color: theme.surfaceAlt
+                            height: 1
+                            color: theme.border
+                            opacity: 0.4
+                        }
 
-                            Rectangle {
-                                anchors.bottom: parent.bottom
-                                width: parent.width
-                                height: 1
-                                color: theme.border
-                                opacity: 0.4
+                        Row {
+                            visible: parent.isSection
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            spacing: 8
+
+                            Text {
+                                width: 14
+                                height: parent.height
+                                verticalAlignment: Text.AlignVCenter
+                                text: model.collapsed ? "▸" : "▾"
+                                color: theme.textMuted
+                                font.pixelSize: 10
+                                font.family: "Consolas, Courier New, monospace"
                             }
 
-                            Row {
-                                anchors.fill: parent
-                                anchors.leftMargin: 12
-                                anchors.rightMargin: 12
-                                spacing: 8
-
-                                Text {
-                                    width: 14
-                                    height: parent.height
-                                    verticalAlignment: Text.AlignVCenter
-                                    text: sectionColumn.modelData.collapsed ? "▸" : "▾"
-                                    color: theme.textMuted
-                                    font.pixelSize: 10
-                                    font.family: "Consolas, Courier New, monospace"
-                                }
-
-                                Text {
-                                    width: parent.width - 72
-                                    height: parent.height
-                                    verticalAlignment: Text.AlignVCenter
-                                    text: sectionColumn.modelData.title
-                                    color: theme.textSecondary
-                                    font.pixelSize: theme.fontSizeSmall
-                                    font.family: theme.fontFamily
-                                    font.weight: Font.DemiBold
-                                }
-
-                                Text {
-                                    width: 40
-                                    height: parent.height
-                                    horizontalAlignment: Text.AlignRight
-                                    verticalAlignment: Text.AlignVCenter
-                                    text: sectionColumn.modelData.entries.length
-                                    color: theme.textMuted
-                                    font.pixelSize: 10
-                                    font.family: "Consolas, Courier New, monospace"
-                                }
+                            Text {
+                                width: parent.width - 72
+                                height: parent.height
+                                verticalAlignment: Text.AlignVCenter
+                                text: model.sectionTitle
+                                color: theme.textSecondary
+                                font.pixelSize: theme.fontSizeSmall
+                                font.family: theme.fontFamily
+                                font.weight: Font.DemiBold
                             }
 
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    if (stateTab._vm)
-                                        stateTab._vm.toggleSection(sectionColumn.modelData.name)
-                                }
+                            Text {
+                                width: 40
+                                height: parent.height
+                                horizontalAlignment: Text.AlignRight
+                                verticalAlignment: Text.AlignVCenter
+                                text: model.sectionCount
+                                color: theme.textMuted
+                                font.pixelSize: 10
+                                font.family: "Consolas, Courier New, monospace"
                             }
                         }
 
-                        Repeater {
-                            model: sectionColumn.modelData.collapsed ? [] : sectionColumn.modelData.entries
+                        MouseArea {
+                            visible: parent.isSection
+                            anchors.fill: parent
+                            onClicked: {
+                                if (stateTab._vm)
+                                    stateTab._vm.toggleSection(model.sectionName)
+                            }
+                        }
 
-                            delegate: Item {
-                                id: stateRow
-                                required property var modelData
-                                required property int index
+                        Row {
+                            visible: !parent.isSection
+                            anchors.fill: parent
+                            anchors.leftMargin: 24
+                            anchors.rightMargin: 12
+                            spacing: 6
 
-                                width: sectionColumn.width
-                                height: 22
+                            Rectangle {
+                                width: 6; height: 6; radius: 3
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: (stateTab.currentTime - changedAt) < 2000
+                                       ? "#44FF88" : theme.border
+                                Behavior on color { ColorAnimation { duration: 300 } }
+                            }
 
-                                Rectangle {
-                                    id: flashRect
+                            Text {
+                                width: parent.width * 0.58
+                                height: parent.height
+                                verticalAlignment: Text.AlignVCenter
+                                text: model.keyText
+                                color: theme.textMuted
+                                font.pixelSize: 11
+                                font.family: "Consolas, Courier New, monospace"
+                                elide: Text.ElideLeft
+                            }
+                            Item {
+                                width: parent.width * 0.36
+                                height: parent.height
+
+                                Text {
                                     anchors.fill: parent
-                                    color: "#50FFD700"
-                                    opacity: 0
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: stateRow.showCopied ? "Copied" : model.valueText
+                                    color: stateRow.showCopied ? theme.accent : theme.text
+                                    font.pixelSize: 11
+                                    font.family: "Consolas, Courier New, monospace"
+                                    elide: Text.ElideRight
                                 }
 
-                                Rectangle {
+                                MouseArea {
                                     anchors.fill: parent
-                                    color: index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.02)
-                                    z: -1
-                                }
-
-                                Row {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 24
-                                    anchors.rightMargin: 12
-                                    spacing: 6
-
-                                    Rectangle {
-                                        width: 6; height: 6; radius: 3
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: (stateTab.currentTime - stateRow.modelData.changedAt) < 2000
-                                               ? "#44FF88" : theme.border
-                                        Behavior on color { ColorAnimation { duration: 300 } }
+                                    cursorShape: Qt.PointingHandCursor
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        if (stateTab._vm) {
+                                            stateTab._vm.copyEntry(model.keyText, model.valueText)
+                                            stateRow.copiedAt = Date.now()
+                                        }
                                     }
-
-                                    Text {
-                                        width: parent.width * 0.58
-                                        height: parent.height
-                                        verticalAlignment: Text.AlignVCenter
-                                        text: stateRow.modelData.key
-                                        color: theme.textMuted
-                                        font.pixelSize: 11
-                                        font.family: "Consolas, Courier New, monospace"
-                                        elide: Text.ElideLeft
-                                    }
-                                    Text {
-                                        width: parent.width * 0.36
-                                        height: parent.height
-                                        verticalAlignment: Text.AlignVCenter
-                                        text: stateRow.modelData.value
-                                        color: theme.text
-                                        font.pixelSize: 11
-                                        font.family: "Consolas, Courier New, monospace"
-                                        elide: Text.ElideRight
-                                    }
-                                }
-
-                                NumberAnimation {
-                                    id: flashAnim
-                                    target: flashRect; property: "opacity"
-                                    from: 1.0; to: 0.0
-                                    duration: 600; easing.type: Easing.OutQuad
-                                }
-
-                                Component.onCompleted: {
-                                    if (stateRow.modelData.changed) flashAnim.start()
                                 }
                             }
                         }
@@ -355,10 +348,15 @@ BaseDialog {
                     // Empty state
                     Text {
                         anchors.centerIn: parent
-                        visible: !stateTab._vm || stateTab._vm.sections.length === 0
-                        text: stateTab._vm && stateTab._vm.sources.length === 0
+                        visible: !stateTab._vm
+                                 || stateTab._vm.sources.length === 0
+                                 || !stateTab._vm.hasSelectedSource
+                                 || stateList.count === 0
+                        text: !stateTab._vm || stateTab._vm.sources.length === 0
                               ? "No sources — load a plugin with widgets to start monitoring."
-                              : "Select a source above."
+                              : (!stateTab._vm.hasSelectedSource
+                                 ? "Select a source above."
+                                 : "No state available for this source yet.")
                         color: theme.textMuted
                         font.pixelSize: theme.fontSizeSmall
                         font.family: theme.fontFamily

@@ -28,5 +28,6 @@ Known packages:
 - [0.3.1][app][changed] Updated the standalone build to use `_runtime`, package plugins into `dist/TinyUi/plugins`, separate app and plugin build steps, and expose clearer `build.py` CLI modes
 - [0.3.1][app][changed] Added an internal packaged demo smoke path to verify packaged plugin discovery, runtime loading, and preserved user files in the new distribution flow
 - [0.3.1][other][changed] Split release note rendering out of the mutating release flow and added `preview_release_notes.py` so version-tagged release notes can be reviewed without mutating `unreleased`
+- [0.3.1][tinyui][fixed] Fixed the state dev tool so live heartbeat and change updates keep the state list scroll stable, show the correct empty state, and allow quick copying of `key: value` entries
 - [0.3.1][tinyui][changed] Replaced the bundled Linux icon font and legacy image set with dedicated SVG chrome assets for menu and window controls
 - [0.3.1][tinyui][removed] Removed the old icon glyph loader and unused chrome image/font assets after moving the title bar to direct SVG icons

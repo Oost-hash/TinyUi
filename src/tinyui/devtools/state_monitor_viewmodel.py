@@ -1,11 +1,42 @@
 #  TinyUI
+#  Copyright (C) 2026 Oost-hash
+#
+#  This file is part of TinyUI.
+#
+#  TinyUI is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  TinyUI is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
+#  licensed under GPLv3.
+
+#  TinyUI
 """Thin Qt adapter over the runtime inspector."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
+from PySide6.QtCore import (
+    Property,
+    QAbstractListModel,
+    QModelIndex,
+    QObject,
+    Qt,
+    QTimer,
+    Signal,
+    Slot,
+)
+from PySide6.QtGui import QGuiApplication
 
 from tinycore.inspect.runtime_inspector import RuntimeInspector
 
@@ -17,6 +48,104 @@ class _QObjectSource:
     id: str
     label: str
     obj: QObject
+
+
+@dataclass(frozen=True)
+class _StateRow:
+    row_type: str
+    section_name: str
+    section_title: str
+    section_count: int
+    collapsed: bool
+    key: str
+    value: str
+    changed_at: int
+    identity: tuple[str, str]
+
+
+class _StateRowsModel(QAbstractListModel):
+    RowTypeRole = Qt.UserRole + 1
+    SectionNameRole = Qt.UserRole + 2
+    SectionTitleRole = Qt.UserRole + 3
+    SectionCountRole = Qt.UserRole + 4
+    CollapsedRole = Qt.UserRole + 5
+    KeyRole = Qt.UserRole + 6
+    ValueRole = Qt.UserRole + 7
+    ChangedAtRole = Qt.UserRole + 8
+
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._rows: list[_StateRow] = []
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return 0 if parent.isValid() else len(self._rows)
+
+    def data(self, index: QModelIndex, role: int = Qt.DisplayRole):
+        if not index.isValid() or not (0 <= index.row() < len(self._rows)):
+            return None
+
+        row = self._rows[index.row()]
+        if role == self.RowTypeRole:
+            return row.row_type
+        if role == self.SectionNameRole:
+            return row.section_name
+        if role == self.SectionTitleRole:
+            return row.section_title
+        if role == self.SectionCountRole:
+            return row.section_count
+        if role == self.CollapsedRole:
+            return row.collapsed
+        if role == self.KeyRole:
+            return row.key
+        if role == self.ValueRole:
+            return row.value
+        if role == self.ChangedAtRole:
+            return row.changed_at
+        return None
+
+    def roleNames(self) -> dict[int, bytes]:
+        return {
+            self.RowTypeRole: b"rowType",
+            self.SectionNameRole: b"sectionName",
+            self.SectionTitleRole: b"sectionTitle",
+            self.SectionCountRole: b"sectionCount",
+            self.CollapsedRole: b"collapsed",
+            self.KeyRole: b"keyText",
+            self.ValueRole: b"valueText",
+            self.ChangedAtRole: b"changedAt",
+        }
+
+    def replace_rows(self, rows: list[_StateRow]) -> None:
+        old_identities = [row.identity for row in self._rows]
+        new_identities = [row.identity for row in rows]
+        if old_identities != new_identities:
+            self.beginResetModel()
+            self._rows = list(rows)
+            self.endResetModel()
+            return
+
+        if not rows:
+            return
+
+        changed_indexes: list[int] = []
+        for index, (old, new) in enumerate(zip(self._rows, rows)):
+            if old != new:
+                self._rows[index] = new
+                changed_indexes.append(index)
+
+        for index in changed_indexes:
+            model_index = self.index(index, 0)
+            self.dataChanged.emit(
+                model_index,
+                model_index,
+                [
+                    self.SectionCountRole,
+                    self.CollapsedRole,
+                    self.KeyRole,
+                    self.ValueRole,
+                    self.ChangedAtRole,
+                ],
+            )
 
 
 class StateMonitorViewModel(QObject):
@@ -33,7 +162,7 @@ class StateMonitorViewModel(QObject):
         self._qobject_sources: list[_QObjectSource] = []
         self._selected_index = -1
         self._entries: list[dict] = []
-        self._sections: list[dict] = []
+        self._rows_model = _StateRowsModel(self)
         self._collapsed_by_source: dict[str, set[str]] = {}
         self._timer = QTimer(self)
         self._timer.setInterval(200)
@@ -84,9 +213,8 @@ class StateMonitorViewModel(QObject):
                     }
                 )
         self._entries = entries
-        self._sections = self._build_sections(selected["id"], entries)
+        self._rows_model.replace_rows(self._build_rows(selected["id"], entries))
         self.entriesChanged.emit()
-        self.sectionsChanged.emit()
 
     def _all_sources(self) -> list[dict]:
         runtime_sources = [
@@ -134,7 +262,7 @@ class StateMonitorViewModel(QObject):
             )
         return entries
 
-    def _build_sections(self, source_id: str, entries: list[dict]) -> list[dict]:
+    def _build_rows(self, source_id: str, entries: list[dict]) -> list[_StateRow]:
         grouped: dict[str, list[dict]] = {}
         order: list[str] = []
         for entry in entries:
@@ -157,17 +285,41 @@ class StateMonitorViewModel(QObject):
             )
 
         collapsed = self._collapsed_by_source.setdefault(source_id, set())
-        sections: list[dict] = []
+        rows: list[_StateRow] = []
         for section in order:
-            sections.append(
-                {
-                    "name": section,
-                    "title": section.replace("_", " ").title(),
-                    "collapsed": section in collapsed,
-                    "entries": grouped[section],
-                }
+            section_title = section.replace("_", " ").title()
+            section_entries = grouped[section]
+            is_collapsed = section in collapsed
+            rows.append(
+                _StateRow(
+                    row_type="section",
+                    section_name=section,
+                    section_title=section_title,
+                    section_count=len(section_entries),
+                    collapsed=is_collapsed,
+                    key="",
+                    value="",
+                    changed_at=0,
+                    identity=("section", section),
+                )
             )
-        return sections
+            if is_collapsed:
+                continue
+            for entry in section_entries:
+                rows.append(
+                    _StateRow(
+                        row_type="entry",
+                        section_name=section,
+                        section_title=section_title,
+                        section_count=len(section_entries),
+                        collapsed=False,
+                        key=str(entry["key"]),
+                        value=str(entry["value"]),
+                        changed_at=int(entry["changedAt"]),
+                        identity=("entry", str(entry["fullKey"])),
+                    )
+                )
+        return rows
 
     @Property("QVariantList", notify=sourcesChanged)
     def sources(self) -> list:
@@ -180,15 +332,18 @@ class StateMonitorViewModel(QObject):
     def selectedIndex(self) -> int:
         return self._selected_index
 
+    @Property(bool, notify=selectedChanged)
+    def hasSelectedSource(self) -> bool:
+        return 0 <= self._selected_index < len(self._all_sources())
+
     @Slot(int)
     def selectSource(self, index: int) -> None:
         if 0 <= index < len(self._all_sources()) and index != self._selected_index:
             self._selected_index = index
             self._entries = []
-            self._sections = []
+            self._rows_model.replace_rows([])
             self.selectedChanged.emit()
             self.entriesChanged.emit()
-            self.sectionsChanged.emit()
 
     @Slot(str)
     def toggleSection(self, name: str) -> None:
@@ -201,13 +356,19 @@ class StateMonitorViewModel(QObject):
             collapsed.remove(name)
         else:
             collapsed.add(name)
-        self._sections = self._build_sections(source_id, self._entries)
-        self.sectionsChanged.emit()
+        self._rows_model.replace_rows(self._build_rows(source_id, self._entries))
+
+    @Slot(str, str)
+    def copyEntry(self, key: str, value: str) -> None:
+        clipboard = QGuiApplication.clipboard()
+        if clipboard is None:
+            return
+        clipboard.setText(f"{key}: {value}")
 
     @Property("QVariantList", notify=entriesChanged)
     def entries(self) -> list:
         return self._entries
 
-    @Property("QVariantList", notify=sectionsChanged)
-    def sections(self) -> list:
-        return self._sections
+    @Property(QObject, constant=True)
+    def sectionModel(self) -> QObject:
+        return self._rows_model
