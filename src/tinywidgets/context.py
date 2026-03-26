@@ -65,7 +65,8 @@ class WidgetContext(QObject):
         self._consumer_name = consumer_name
         self._text         = ""
         self._color        = "#E0E0E0"
-        self._visible      = True
+        self._enabled      = spec.enable
+        self._runtime_visible = True
         self._text_visible = True
         self._flash_target = "value"
         self._demo_requested = False
@@ -77,7 +78,7 @@ class WidgetContext(QObject):
     def update(self, state: WidgetState) -> None:
         self._text         = state.text
         self._color        = state.color
-        self._visible      = state.visible
+        self._runtime_visible = state.visible
         self._text_visible = state.text_visible
         self._flash_target = state.flash_target
         self.stateChanged.emit()
@@ -95,6 +96,15 @@ class WidgetContext(QObject):
     def setLabel(self, label: str) -> None:
         self._spec.label = label
         self.configChanged.emit()
+
+    @Slot(bool)
+    def setEnabled(self, enabled: bool) -> None:
+        if self._spec.enable == enabled:
+            return
+        self._spec.enable = enabled
+        self._enabled = enabled
+        self.configChanged.emit()
+        self.stateChanged.emit()
 
     @Slot(int, str)
     def setThresholdColor(self, index: int, color: str) -> None:
@@ -198,7 +208,11 @@ class WidgetContext(QObject):
 
     @Property(bool, notify=stateChanged)
     def visible(self) -> bool:
-        return self._visible
+        return self._enabled and self._runtime_visible
+
+    @Property(bool, notify=configChanged)
+    def enabled(self) -> bool:
+        return self._enabled
 
     @Property(bool, notify=stateChanged)
     def textVisible(self) -> bool:

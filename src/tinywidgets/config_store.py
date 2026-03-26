@@ -27,6 +27,7 @@ Format:
   {
     "fuel": {
       "x": 100, "y": 200,
+      "enable": true,
       "label": "FUEL",
       "flash_below": 2.0,
       "thresholds": [{"value": 0.0, "color": "#FF4444"}, ...]
@@ -59,6 +60,7 @@ class WidgetConfigStore:
     def save(
         self,
         widget_id: str,
+        enable: bool,
         x: int,
         y: int,
         label: str,
@@ -66,6 +68,7 @@ class WidgetConfigStore:
     ) -> None:
         """Persist all user-editable fields for widget_id."""
         self._data[widget_id] = {
+            "enable":     enable,
             "x":          x,
             "y":          y,
             "label":      label,

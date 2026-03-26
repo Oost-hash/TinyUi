@@ -158,14 +158,19 @@ Item {
                         width: widgetTab.colToggle; height: parent.height
                         ToggleSwitch {
                             anchors.centerIn: parent
-                            checked: row.widgetContext ? row.widgetContext.visible : true
-                            onToggled: (v) => { }  // TODO: wire enable/disable to context
+                            checked: row.widgetContext ? row.widgetContext.enabled : true
+                            onToggled: (v) => {
+                                if (row.widgetContext)
+                                    row.widgetContext.setEnabled(v)
+                            }
                         }
                     }
                 }
 
                 MouseArea {
-                    anchors.fill: parent; acceptedButtons: Qt.LeftButton
+                    anchors.fill: parent
+                    anchors.rightMargin: widgetTab.colToggle
+                    acceptedButtons: Qt.LeftButton
                     onClicked: widgetTab.selectedContext = row.isSelected ? null : row.widgetContext
                 }
                 HoverHandler { id: rowHover }

@@ -79,13 +79,14 @@ class WidgetOverlay:
         )
 
         for spec in specs:
-            if not spec.enable or not spec.capability or not spec.field:
+            if not spec.capability or not spec.field:
                 continue
 
             # Override spec defaults with persisted user config
             if store:
                 saved = store.get(spec.id)
                 if saved:
+                    spec.enable      = saved.get("enable", spec.enable)
                     spec.x           = saved.get("x", spec.x)
                     spec.y           = saved.get("y", spec.y)
                     spec.label       = saved.get("label", spec.label)
@@ -109,6 +110,7 @@ class WidgetOverlay:
                 def _save(cx: WidgetContext = ctx, s: WidgetConfigStore = store) -> None:
                     s.save(
                         cx.widgetId,
+                        cx.enabled,
                         cx.widgetX,
                         cx.widgetY,
                         cx.label,
