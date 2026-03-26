@@ -36,7 +36,11 @@ Item {
     function syncDemoLease(previousContext, nextContext) {
         if (previousContext && previousContext.demoRequested)
             previousContext.releaseDemo()
+        if (nextContext && nextContext.supportsDemoMode && !nextContext.demoRequested)
+            nextContext.requestDemo()
         demoLeaseContext = nextContext && nextContext.demoRequested ? nextContext : null
+        if (typeof widgetOverlayState !== "undefined")
+            widgetOverlayState.setPreviewWidget(nextContext ? nextContext.widgetId : "")
     }
 
     onSelectedContextChanged: {
@@ -48,11 +52,15 @@ Item {
             demoLeaseContext.releaseDemo()
             demoLeaseContext = null
         }
+        if (!visible && typeof widgetOverlayState !== "undefined")
+            widgetOverlayState.setPreviewWidget("")
     }
 
     Component.onDestruction: {
         if (demoLeaseContext && demoLeaseContext.demoRequested)
             demoLeaseContext.releaseDemo()
+        if (typeof widgetOverlayState !== "undefined")
+            widgetOverlayState.setPreviewWidget("")
     }
 
     // ── Left: widget list ──────────────────────────────────────────────────────
@@ -204,7 +212,7 @@ Item {
             // Title + description
             Column {
                 anchors.left: parent.left; anchors.leftMargin: 16
-                anchors.right: demoButton.left; anchors.rightMargin: 16
+                anchors.right: parent.right; anchors.rightMargin: 16
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 3
 
@@ -222,78 +230,14 @@ Item {
                 }
             }
 
-            Rectangle {
-                id: demoButton
-                visible: widgetTab.selectedContext && widgetTab.selectedContext.supportsDemoMode
-                anchors.right: parent.right
-                anchors.rightMargin: 12
-                anchors.verticalCenter: parent.verticalCenter
-                width: 72
-                height: 26
-                radius: 4
-                color: widgetTab.selectedContext && widgetTab.selectedContext.demoRequested
-                    ? theme.accent
-                    : (demoButtonArea.containsMouse ? theme.surfaceRaised : "transparent")
-                border.width: 1
-                border.color: widgetTab.selectedContext && widgetTab.selectedContext.demoRequested
-                    ? theme.accent
-                    : theme.border
-                Behavior on color { ColorAnimation { duration: 80 } }
-
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 6
-
-                    Text {
-                        text: widgetTab.selectedContext && widgetTab.selectedContext.demoRequested
-                            ? icons.stop
-                            : icons.play
-                        anchors.verticalCenter: parent.verticalCenter
-                        font.family: theme.iconFont
-                        font.pixelSize: theme.fontSizeSmall
-                        renderType: Text.NativeRendering
-                        color: widgetTab.selectedContext && widgetTab.selectedContext.demoRequested
-                            ? theme.accentText
-                            : (demoButtonArea.containsMouse ? theme.text : theme.textMuted)
-                    }
-
-                    Text {
-                        text: "Demo"
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: widgetTab.selectedContext && widgetTab.selectedContext.demoRequested
-                            ? theme.accentText
-                            : (demoButtonArea.containsMouse ? theme.text : theme.textMuted)
-                        font.pixelSize: theme.fontSizeSmall
-                        font.family: theme.fontFamily
-                        font.weight: Font.DemiBold
-                    }
-                }
-
-                MouseArea {
-                    id: demoButtonArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: {
-                        if (!widgetTab.selectedContext)
-                            return
-                        if (widgetTab.selectedContext.demoRequested) {
-                            widgetTab.selectedContext.releaseDemo()
-                            if (widgetTab.demoLeaseContext === widgetTab.selectedContext)
-                                widgetTab.demoLeaseContext = null
-                        } else {
-                            widgetTab.selectedContext.requestDemo()
-                            widgetTab.demoLeaseContext = widgetTab.selectedContext
-                        }
-                    }
-                }
-            }
-
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
         }
 
         Rectangle {
             id: demoSection
-            readonly property bool active: widgetTab.selectedContext && widgetTab.selectedContext.demoRequested
+            readonly property bool active: widgetTab.selectedContext
+                && widgetTab.selectedContext.supportsDemoMode
+                && widgetTab.selectedContext.demoRequested
             anchors.top: detailHeader.bottom
             anchors.left: parent.left
             anchors.right: parent.right

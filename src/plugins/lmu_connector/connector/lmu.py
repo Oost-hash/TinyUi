@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-from time import monotonic
-
 from tinycore.log import get_logger
 
 from .inspect import provider_inspection_snapshot, reader_inspection_snapshot
@@ -23,7 +21,6 @@ from .vehicle import (
 )
 
 _log = get_logger(__name__)
-_DEMO_GRACE_SECONDS = 30.0
 
 
 class LMUElectricMotorProvider(ElectricMotor):
@@ -140,7 +137,6 @@ class LMUConnector(TelemetryReader):
         self._real_open = False
         self._mock_open = False
         self._demo_owners: set[str] = set()
-        self._demo_grace_until: float | None = None
 
     def open(self) -> None:
         if not self._real_open:
@@ -175,7 +171,6 @@ class LMUConnector(TelemetryReader):
     def request_demo_mode(self, owner: str) -> None:
         first_owner = not self._demo_owners
         self._demo_owners.add(owner)
-        self._demo_grace_until = None
         if first_owner:
             _log.info("LMU demo mode requested  owner=%s", owner)
 
@@ -183,8 +178,10 @@ class LMUConnector(TelemetryReader):
         self._demo_owners.discard(owner)
         if self._demo_owners:
             return
-        self._demo_grace_until = monotonic() + _DEMO_GRACE_SECONDS
-        _log.info("LMU demo mode grace started  owner=%s  seconds=%s", owner, _DEMO_GRACE_SECONDS)
+        if self._mock_open:
+            self._mock.close()
+            self._mock_open = False
+        _log.info("LMU demo mode stopped  owner=%s", owner)
 
     def mode(self) -> str:
         if self._demo_enabled():
@@ -236,7 +233,7 @@ class LMUConnector(TelemetryReader):
             supports_demo=self.supports_demo_mode(),
             demo_enabled=self._demo_enabled(),
             demo_owner_count=len(self._demo_owners),
-            demo_grace_active=self._demo_grace_until is not None,
+            demo_grace_active=False,
             demo_min=self.demo_min(),
             demo_max=self.demo_max(),
             demo_speed=self.demo_speed(),
@@ -250,9 +247,7 @@ class LMUConnector(TelemetryReader):
         return self._real
 
     def _demo_enabled(self) -> bool:
-        if self._demo_owners:
-            return True
-        return bool(self._demo_grace_until and monotonic() < self._demo_grace_until)
+        return bool(self._demo_owners)
 
     def _ensure_mock_open(self) -> None:
         if self._mock_open:

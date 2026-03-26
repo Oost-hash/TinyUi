@@ -35,7 +35,15 @@ Window {
     // Position and visibility driven by context
     x:       widgetContext ? widgetContext.widgetX : 0
     y:       widgetContext ? widgetContext.widgetY : 0
-    visible: widgetContext ? widgetContext.visible : false
+    visible: widgetContext
+        ? (
+            widgetOverlayState.previewWidgetId === widgetContext.widgetId
+            || (
+                widgetOverlayState.overlayVisible
+                && widgetContext.enabled
+            )
+        )
+        : false
 
     readonly property bool _flashVisible: widgetContext ? widgetContext.textVisible : true
     readonly property string _flashTarget: widgetContext ? widgetContext.flashTarget : "value"

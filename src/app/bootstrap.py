@@ -67,6 +67,7 @@ def bootstrap_runtime(config_dir: Path, manifests: list[PluginManifest]) -> Boot
         state_monitor=state_monitor,
         extra_context={
             "widgetModel": overlay.model,
+            "widgetOverlayState": overlay.state,
             "stateMonitorViewModel": state_monitor,
         },
     )

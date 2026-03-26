@@ -26,6 +26,27 @@ import "../components"
 Rectangle {
     id: titleBar
 
+    function _menuItems() {
+        return [
+            {
+                label: "Show Overlay",
+                sep: false,
+                checkable: true,
+                checked: widgetOverlayState ? widgetOverlayState.overlayVisible : false,
+                action: function() {
+                    if (widgetOverlayState)
+                        widgetOverlayState.toggleOverlayVisible()
+                }
+            },
+            { label: "",           sep: true,  action: null },
+            { label: "Settings",   sep: false, action: function() { settingsPanelViewModel.openPanel(); menuViewModel.closeMenu() } },
+            { label: "",           sep: true,  action: null },
+            { label: "Dev Tools",  sep: false, action: function() { root.openDevTools(); menuViewModel.closeMenu() } },
+            { label: "",           sep: true,  action: null },
+            { label: "Close",      sep: false, action: function() { root.close() } }
+        ]
+    }
+
     height: theme.titleBarHeight
     color: theme.surfaceRaised
 
@@ -103,10 +124,35 @@ Rectangle {
         Text {
             visible: !modelData.sep
             anchors.verticalCenter: parent.verticalCenter
-            anchors.left: parent.left; anchors.leftMargin: 12
+            anchors.left: checkboxIndicator.visible ? checkboxIndicator.right : parent.left
+            anchors.leftMargin: checkboxIndicator.visible ? 10 : 12
             text: modelData.label
             color: theme.text
             font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+        }
+
+        Rectangle {
+            id: checkboxIndicator
+            visible: !modelData.sep && !!modelData.checkable
+            anchors.left: parent.left
+            anchors.leftMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+            width: 14
+            height: 14
+            radius: 3
+            color: !!modelData.checked ? theme.accent : "transparent"
+            border.width: 1
+            border.color: !!modelData.checked ? theme.accent : theme.border
+
+            Text {
+                anchors.centerIn: parent
+                visible: !!modelData.checked
+                text: "✓"
+                color: theme.accentText
+                font.pixelSize: 9
+                font.family: theme.fontFamily
+                font.weight: Font.DemiBold
+            }
         }
 
         MouseArea {
@@ -132,13 +178,7 @@ Rectangle {
             width: parent.width; spacing: 0
 
             Repeater {
-                model: [
-                    { label: "Settings",  sep: false, action: function() { settingsPanelViewModel.openPanel(); menuViewModel.closeMenu() } },
-                    { label: "",          sep: true,  action: null },
-                    { label: "Dev Tools", sep: false, action: function() { root.openDevTools(); menuViewModel.closeMenu() } },
-                    { label: "",          sep: true,  action: null },
-                    { label: "Close",     sep: false, action: function() { root.close() } }
-                ]
+                model: titleBar._menuItems()
                 delegate: MenuItemDelegate {}
             }
         }

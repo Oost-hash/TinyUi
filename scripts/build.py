@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 ROOT    = Path(__file__).resolve().parents[1]   # scripts/ -> repo root
-ENTRY   = ROOT / "src" / "tinyui" / "main.py"
+ENTRY   = ROOT / "src" / "tinyui_boot.py"
 DIST    = ROOT / "dist"
 BUILD   = ROOT / "build"
 SPEC    = ROOT / "TinyUi.spec"
@@ -64,6 +64,9 @@ def build():
         "--collect-all", "tinycore",
         "--collect-all", "plugins",
         "--collect-all", "tinyui",
+        "--collect-all", "tinyui_schema",
+        "--collect-all", "tinywidgets",
+        "--collect-all", "app",
         "--paths", str(ROOT / "src"),
         "--distpath", str(DIST),
         "--workpath", str(BUILD),

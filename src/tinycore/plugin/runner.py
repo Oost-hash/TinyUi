@@ -156,11 +156,17 @@ def run(
 
     # ── Lifecycle loop ────────────────────────────────────────────────────
     while True:
-        msg = conn.recv()
+        try:
+            msg = conn.recv()
+        except (BrokenPipeError, EOFError):
+            break
         if msg["type"] == "start":
             plugin.start()
             conn.send({"type": "ack"})
         elif msg["type"] == "stop":
             plugin.stop()
-            conn.send({"type": "ack"})
+            try:
+                conn.send({"type": "ack"})
+            except (BrokenPipeError, EOFError):
+                pass
             break

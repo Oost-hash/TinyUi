@@ -38,7 +38,7 @@ from tinycore.qt import create_engine
 from tinycore.qt.loop import PollLoop
 from tinycore.session.runtime import SessionRuntime
 from .config_store import WidgetConfigStore
-from .context import WidgetContext, WidgetModel
+from .context import WidgetContext, WidgetModel, WidgetOverlayState
 from .runner import ProviderUpdater, TextWidgetRunner
 from .spec import WidgetSpec
 
@@ -62,6 +62,7 @@ class WidgetOverlay:
         self._config_dir = config_dir
         self._poll_loop  = PollLoop(interval_ms=100)
         self._model      = WidgetModel()
+        self._state      = WidgetOverlayState()
         self._engine     = None
 
         self._poll_loop.register(ProviderUpdater(session))
@@ -70,6 +71,11 @@ class WidgetOverlay:
     def model(self) -> WidgetModel:
         """The widget model — can be registered in any QML engine."""
         return self._model
+
+    @property
+    def state(self) -> WidgetOverlayState:
+        """Shared overlay state used by both the main UI and widget engine."""
+        return self._state
 
     def load(self, specs: list[WidgetSpec], plugin_name: str) -> None:
         """Create a runner + context for every enabled widget spec."""
@@ -139,6 +145,7 @@ class WidgetOverlay:
 
         self._engine = create_engine()
         self._engine.rootContext().setContextProperty("widgetModel", self._model)
+        self._engine.rootContext().setContextProperty("widgetOverlayState", self._state)
 
         qml_dir = (
             Path(sys._MEIPASS) / "tinywidgets" / "qml"

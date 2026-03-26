@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ---
 
 ## [0.3.0] — 2026-03-26
+The main goal of this release was to stop treating the runtime like a loose pile of registries
+and start shaping it into a real system. `SessionRuntime` is now the center of provider ownership,
+consumer bindings, provider control, and runtime inspection. That gives TinyUI a much cleaner base
+for future connectors, game detection, and widgets.
+
+This release also moves the widget system forward in a practical way. Widgets now read through
+explicit capability + field contracts, more demo widgets were added to cover the new contracts,
+and the LMU provider owns both live and demo sources behind one provider identity. The result is
+that the project feels like its taken the shape it was aiming for: clean runtime boundaries,
+clear separation of concerns, data driven.
 
 ### Added widgets:
 - Fuel
@@ -28,6 +38,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dev Tools State tab now has a source selector — choose a widget context or connector to inspect; widget context properties are read live via QMetaObject introspection
 
 ### Changed
+
+#### app
+- Windows builds now boot through a dedicated launcher and bundle the new runtime packages correctly, so the packaged app follows the same entry path as the source tree
 
 #### plugins
 - Established the new plugin baseline: `demo` now declares a consumer manifest without bundled connector code, and `lmu_connector` now owns the shared-memory submodules and provider-side connector split
@@ -59,6 +72,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 #### tinyui
 - Reworked Dev Tools: the State tab now uses a source dropdown with collapsible inspection sections, and the Console `DEV` toggle now acts as a true all-categories on/off switch
 - Moved Dev Tools into its own feature folders so its QML and viewmodels are separated from the rest of the main window structure
+- Reworked widget editing flow so selecting a widget now previews that widget directly and automatically drives demo mode through the selected provider
+- Replaced the old overlay action with a checkable `Show Overlay` menu item that fits the rest of the title-bar menu styling
 - Dutch comments in `ColorPicker.qml` translated to English
 
 #### tinywidgets
@@ -66,14 +81,24 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Replaced widget `source` paths with explicit `field` contracts read through host-side capability adapters; the demo widget now reads `telemetry.car.v1` + `fuel`
 - Expanded the first capability field contracts for `telemetry.car.v1` and `telemetry.session.v1`, and added more demo widgets that read through those contracts
 - Renamed the session widget field contract from `remaining` to `session_time_left` so UI-facing telemetry fields are more explicit
+- Split global overlay visibility and per-widget preview into shared overlay state so the main UI and widget engine now follow the same visibility rules
 
 ### Fixed
 
+#### app
+- Fixed the packaged Windows build so the executable no longer crashes on startup from relative imports or misses the new runtime packages in the bundle
+- Fixed frozen subprocess shutdown so closed plugin pipes no longer cascade into a second stderr crash when the packaged app exits
+
 #### plugins
 - Corrected LMU provider game detection so `active_game` now reports the real focused game (`lmu` or `none`) while demo/real source state is tracked separately
+- Fixed LMU demo mode so it stops immediately when the last widget releases it instead of lingering after the settings panel closes
+
+#### tinyui
+- Fixed the global overlay toggle so it now reliably hides and shows the full overlay while still allowing the selected widget to appear as a preview during editing
 
 #### tinywidgets
 - Fixed the widget list enable switch so it no longer opens the settings pane on click and now persists each widget's enabled state correctly
+- Fixed widget visibility and flash handling when no game is running so inactive providers no longer leave stale flashing values on screen
 
 ### Removed
 

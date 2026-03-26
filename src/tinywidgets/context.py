@@ -215,6 +215,10 @@ class WidgetContext(QObject):
         return self._enabled
 
     @Property(bool, notify=stateChanged)
+    def runtimeVisible(self) -> bool:
+        return self._runtime_visible
+
+    @Property(bool, notify=stateChanged)
     def textVisible(self) -> bool:
         return self._text_visible
 
@@ -314,6 +318,47 @@ class WidgetContext(QObject):
 # ---------------------------------------------------------------------------
 
 
+class WidgetOverlayState(QObject):
+    """Shared overlay visibility state exposed to both QML engines."""
+
+    overlayVisibleChanged = Signal()
+    previewWidgetChanged = Signal()
+
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._overlay_visible = True
+        self._preview_widget_id = ""
+
+    @Property(bool, notify=overlayVisibleChanged)
+    def overlayVisible(self) -> bool:
+        return self._overlay_visible
+
+    @Property(str, notify=previewWidgetChanged)
+    def previewWidgetId(self) -> str:
+        return self._preview_widget_id
+
+    @Slot(bool)
+    def setOverlayVisible(self, visible: bool) -> None:
+        if self._overlay_visible == visible:
+            return
+        self._overlay_visible = visible
+        self.overlayVisibleChanged.emit()
+
+    @Slot()
+    def toggleOverlayVisible(self) -> None:
+        self.setOverlayVisible(not self._overlay_visible)
+
+    @Slot(str)
+    def setPreviewWidget(self, widget_id: str) -> None:
+        if self._preview_widget_id == widget_id:
+            return
+        self._preview_widget_id = widget_id
+        self.previewWidgetChanged.emit()
+
+
+# ---------------------------------------------------------------------------
+
+
 class WidgetModel(QAbstractListModel):
     """Holds all WidgetContexts as a proper ListModel for QML Repeater.
 
@@ -327,7 +372,6 @@ class WidgetModel(QAbstractListModel):
     """
 
     ContextRole = Qt.UserRole + 1
-
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._widgets: list[WidgetContext] = []

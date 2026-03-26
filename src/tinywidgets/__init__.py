@@ -20,7 +20,7 @@
 #  licensed under GPLv3.
 """tinywidgets — self-contained overlay widget system."""
 
-from .context import WidgetContext, WidgetModel
+from .context import WidgetContext, WidgetModel, WidgetOverlayState
 from .flash import FlashState
 from .overlay import WidgetOverlay
 from .registry import WidgetRegistry
@@ -35,6 +35,7 @@ __all__ = [
     "ThresholdEntry",
     "WidgetContext",
     "WidgetModel",
+    "WidgetOverlayState",
     "WidgetOverlay",
     "WidgetRegistry",
     "WidgetSpec",

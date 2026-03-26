@@ -151,6 +151,11 @@ class TextWidgetRunner:
         self._last: WidgetState | None = None
         self._missing_logged = False
 
+    @staticmethod
+    def _provider_mode(provider) -> str:
+        mode = getattr(provider, "mode", None)
+        return str(mode()) if callable(mode) else "real"
+
     def tick(self) -> None:
         try:
             binding = _binding_for_widget(self._session, self._consumer_name, self._spec)
@@ -167,6 +172,21 @@ class TextWidgetRunner:
             return
 
         try:
+            if self._provider_mode(binding.provider) == "inactive":
+                self._flash.reset()
+                state = WidgetState(
+                    text="",
+                    color=_FALLBACK_COLOR,
+                    visible=False,
+                    text_visible=True,
+                    label=self._spec.label,
+                    flash_target="value",
+                )
+                if state != self._last:
+                    self._last = state
+                    self._on_update(state)
+                return
+
             raw_value = read_field(self._spec.capability, self._spec.field, binding.provider)
             is_numeric = isinstance(raw_value, Real) and not isinstance(raw_value, bool)
             raw_number = float(raw_value) if is_numeric else None
