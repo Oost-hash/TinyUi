@@ -25,7 +25,7 @@ flash        = false
 flash_speed  = 5
 flash_target = "value"
 
-# above 10 L → default color (no entry needed)
+# above 10 L -> default color (no entry needed)
 
 [speed]
 title       = "Speed"

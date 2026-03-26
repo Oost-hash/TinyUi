@@ -1,5 +1,8 @@
-"""Build standalone app with PyInstaller — Windows and Linux."""
+"""Build the TinyUi app distribution and optionally package first-party plugins."""
 
+from __future__ import annotations
+
+import argparse
 import platform
 import shutil
 import subprocess
@@ -12,6 +15,7 @@ DIST    = ROOT / "dist"
 BUILD   = ROOT / "build"
 SPEC    = ROOT / "TinyUi.spec"
 EGG_INFO = ROOT / "src" / "tinyui.egg-info"
+PLUGIN_BUILD_SCRIPT = ROOT / "scripts" / "build_plugin.py"
 
 IS_WINDOWS = platform.system() == "Windows"
 IS_LINUX   = platform.system() == "Linux"
@@ -29,8 +33,15 @@ ICON = (
 USER_DIRS = {
     "config":  ROOT / "data" / "plugin-config",
     "themes":  ROOT / "src" / "tinyui" / "themes",
-    "plugins": ROOT / "src" / "plugins",
 }
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Build the TinyUi app distribution.")
+    parser.add_argument("--skip-clean", action="store_true", help="Keep existing dist/build folders before running")
+    parser.add_argument("--app-only", action="store_true", help="Build only the main program and skip plugin packaging")
+    parser.add_argument("--plugins-only", action="store_true", help="Package plugins into the app dist without running PyInstaller")
+    return parser.parse_args()
 
 
 def clean():
@@ -52,17 +63,40 @@ def _copy_user_dir(name: str, src: Path):
     shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
 
 
-def build():
-    clean()
+def _build_packaged_plugins() -> None:
+    """Build packaged plugins into the app distribution."""
+    plugins_src = ROOT / "src" / "plugins"
+    plugins_dst = APP_DIR / "plugins"
+    print(f"Packaging plugins into {plugins_dst} ...")
+    if plugins_dst.exists():
+        shutil.rmtree(plugins_dst)
+    plugins_dst.mkdir(parents=True, exist_ok=True)
 
+    for manifest_path in sorted(plugins_src.glob("*/plugin.toml")):
+        print(f"  - {manifest_path.parent.name}")
+        cmd = [
+            sys.executable,
+            str(PLUGIN_BUILD_SCRIPT),
+            str(manifest_path.parent),
+            "--output-dir",
+            str(plugins_dst),
+            "--clean",
+        ]
+        result = subprocess.run(cmd)
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"Plugin build failed for '{manifest_path.parent.name}' with code {result.returncode}"
+            )
+
+
+def _pyinstaller_cmd() -> list[str]:
     cmd = [
         sys.executable, "-m", "PyInstaller",
         "--name", "TinyUi",
         "--onedir",
         "--windowed",
-        "--contents-directory", "lib",
+        "--contents-directory", "_runtime",
         "--collect-all", "tinycore",
-        "--collect-all", "plugins",
         "--collect-all", "tinyui",
         "--collect-all", "tinyui_schema",
         "--collect-all", "tinywidgets",
@@ -78,9 +112,34 @@ def build():
         cmd.extend(["--icon", str(ICON)])
 
     cmd.append(str(ENTRY))
+    return cmd
+
+
+def _print_structure() -> None:
+    print(f"\nBuild complete: {APP_DIR}")
+    print("Structure:")
+    print("  TinyUi/")
+    print(f"  +-- {EXE_NAME}")
+    print("  +-- config/")
+    print("  +-- themes/")
+    print("  +-- plugins/")
+    print("  +-- _runtime/")
+
+
+def build(*, skip_clean: bool, app_only: bool, plugins_only: bool) -> int:
+    if plugins_only:
+        if not APP_DIR.exists():
+            print(f"Build failed: app directory does not exist yet: {APP_DIR}")
+            return 1
+        _build_packaged_plugins()
+        _print_structure()
+        return 0
+
+    if not skip_clean:
+        clean()
 
     print(f"Building TinyUi for {platform.system()} ...")
-    result = subprocess.run(cmd)
+    result = subprocess.run(_pyinstaller_cmd())
 
     # Remove intermediate build artifacts
     for path in (BUILD, SPEC, EGG_INFO):
@@ -93,15 +152,9 @@ def build():
         for name, src in USER_DIRS.items():
             if src.exists():
                 _copy_user_dir(name, src)
-
-        print(f"\nBuild complete: {APP_DIR}")
-        print("Structure:")
-        print("  TinyUi/")
-        print(f"  +-- {EXE_NAME}")
-        print("  +-- config/")
-        print("  +-- themes/")
-        print("  +-- plugins/")
-        print("  +-- lib/")
+        if not app_only:
+            _build_packaged_plugins()
+        _print_structure()
     else:
         print(f"\nBuild failed with code {result.returncode}")
 
@@ -109,4 +162,8 @@ def build():
 
 
 if __name__ == "__main__":
-    sys.exit(build())
+    args = _parse_args()
+    if args.app_only and args.plugins_only:
+        print("Build failed: --app-only and --plugins-only cannot be used together")
+        raise SystemExit(1)
+    sys.exit(build(skip_clean=args.skip_clean, app_only=args.app_only, plugins_only=args.plugins_only))

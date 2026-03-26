@@ -44,6 +44,7 @@ import importlib
 import sys
 from multiprocessing.connection import Connection
 
+from .runtime_loader import ensure_runtime_import_path
 
 # ── Proxy context — used inside the subprocess ────────────────────────────────
 
@@ -129,6 +130,7 @@ def run(
     module_path: str,
     class_name: str,
     requires: tuple[str, ...],
+    artifact_path: str | None,
     extra_paths: list[str],
 ) -> None:
     """Load and run a plugin inside a subprocess.
@@ -143,6 +145,7 @@ def run(
         if p not in sys.path:
             sys.path.insert(0, p)
 
+    ensure_runtime_import_path(artifact_path)
     mod = importlib.import_module(module_path)
     cls = getattr(mod, class_name)
     plugin = cls()

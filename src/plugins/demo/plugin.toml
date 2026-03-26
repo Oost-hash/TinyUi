@@ -11,8 +11,10 @@ requires = [
 module = "plugins.demo.plugin"
 class  = "DemoPlugin"
 
-[ui]
-widgets = "widgets.toml"
+[widgets]
+file = "widgets/widgets.toml"
 
+# TODO(0.3.x): editors become relevant later as the user-facing place for
+# compounds, vehicle-specific data, and other removable or editable records.
 [editors]
-file = "editors.toml"
+file = "editors/editors.toml"

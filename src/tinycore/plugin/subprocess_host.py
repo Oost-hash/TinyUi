@@ -63,7 +63,14 @@ class SubprocessPlugin:
 
         self._proc = mp.Process(
             target=runner.run,
-            args=(child_conn, self._spec.module, self._spec.cls, self._spec.requires, sys.path),
+            args=(
+                child_conn,
+                self._spec.module,
+                self._spec.cls,
+                self._spec.requires,
+                self._spec.artifact_path,
+                sys.path,
+            ),
             daemon=True,
             name=f"plugin-{self._spec.name}",
         )

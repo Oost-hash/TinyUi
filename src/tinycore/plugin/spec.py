@@ -39,6 +39,7 @@ class ConsumerRuntimeSpec:
     cls:    str         # Class name, e.g. "DemoPlugin"
     name:   str = ""    # Plugin name; auto-derived from cls if empty
     requires: tuple[str, ...] = field(default_factory=tuple)
+    artifact_path: str | None = None
 
     def __post_init__(self) -> None:
         if not self.name:

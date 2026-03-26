@@ -24,7 +24,7 @@ The demo plugin is intended to become the reference shape for a consumer-side
 plugin:
 1. register local config data
 2. register editor definitions
-3. provide UI-facing assets such as widgets
+3. provide widget-facing assets such as widgets
 
 It no longer owns a connector in its manifest. Runtime data should come from
 required capabilities instead of plugin-owned data sources.
@@ -84,7 +84,7 @@ class DemoPlugin:
         ctx.loaders.load_all()
 
         plugin_dir = Path(__file__).parent
-        for spec in load_editors_toml(plugin_dir / "editors.toml"):
+        for spec in load_editors_toml(plugin_dir / "editors" / "editors.toml"):
             ctx.editors.register(spec)
 
     def start(self) -> None:
