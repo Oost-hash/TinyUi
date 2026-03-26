@@ -28,6 +28,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from numbers import Real
+from typing import cast
 from typing import Callable
 
 from tinycore.log import get_logger
@@ -189,7 +190,7 @@ class TextWidgetRunner:
 
             raw_value = read_field(self._spec.capability, self._spec.field, binding.provider)
             is_numeric = isinstance(raw_value, Real) and not isinstance(raw_value, bool)
-            raw_number = float(raw_value) if is_numeric else None
+            raw_number = float(cast(Real, raw_value)) if is_numeric else None
 
             text = self._spec.format.format(raw_value)
             color = (

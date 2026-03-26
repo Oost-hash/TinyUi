@@ -39,7 +39,7 @@ class TabViewModel(QObject):
 
     # ── Properties ────────────────────────────────────────────────────────────
 
-    @Property("QVariantList", notify=tabNamesChanged)
+    @Property(list, notify=tabNamesChanged)
     def tabNames(self) -> list[str]:
         return self._names
 
@@ -57,4 +57,3 @@ class TabViewModel(QObject):
             return
         self._current_index = index
         self.currentIndexChanged.emit()
-

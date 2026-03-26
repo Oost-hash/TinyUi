@@ -1,3 +1,24 @@
+#  TinyUI
+#  Copyright (C) 2026 Oost-hash
+#
+#  This file is part of TinyUI.
+#
+#  TinyUI is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  TinyUI is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
+#  licensed under GPLv3.
+
 """Session-owned provider control helpers for UI-facing adapters."""
 
 from __future__ import annotations
@@ -7,6 +28,10 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .runtime import SessionRuntime
+
+
+def _float_or_zero(value: object) -> float:
+    return float(value) if isinstance(value, int | float) else 0.0
 
 
 @dataclass(frozen=True)
@@ -92,7 +117,7 @@ class ProviderControlService:
     @staticmethod
     def _call_float(provider, name: str) -> float:
         getter = getattr(provider, name, None)
-        return float(getter()) if callable(getter) else 0.0
+        return _float_or_zero(getter()) if callable(getter) else 0.0
 
     def _set_demo_value(self, consumer_name: str, capability: str, name: str, value: float) -> bool:
         provider = self._provider(consumer_name, capability)

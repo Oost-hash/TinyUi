@@ -27,7 +27,7 @@ def main():
         print(f"  SVG not found: {SVG_PATH}")
         return 1
 
-    app = QApplication(sys.argv)
+    _app = QApplication(sys.argv)
 
     renderer = QSvgRenderer(SVG_PATH)
     if not renderer.isValid():
@@ -35,8 +35,8 @@ def main():
         return 1
 
     # Render PNG at 256x256
-    img = QImage(256, 256, QImage.Format_ARGB32)
-    img.fill(Qt.transparent)
+    img = QImage(256, 256, QImage.Format.Format_ARGB32)
+    img.fill(Qt.GlobalColor.transparent)
     painter = QPainter(img)
     renderer.render(painter)
     painter.end()

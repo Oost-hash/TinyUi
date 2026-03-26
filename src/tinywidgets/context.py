@@ -29,7 +29,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import (
-    Property, QAbstractListModel, QModelIndex, QObject, Qt, Signal, Slot,
+    QByteArray,
+    Property,
+    QAbstractListModel,
+    QModelIndex,
+    QObject,
+    QPersistentModelIndex,
+    Qt,
+    Signal,
+    Slot,
 )
 
 from .runner import WidgetState
@@ -294,8 +302,8 @@ class WidgetContext(QObject):
         """Current flash target — driven by the active threshold, updates on stateChanged."""
         return self._flash_target
 
-    @Property("QVariantList", notify=configChanged)
-    def thresholds(self) -> list:
+    @Property(list, notify=configChanged)
+    def thresholds(self) -> list[dict[str, object]]:
         """Each entry: {value, color, flash, flashSpeed, flashTarget}."""
         return [{"value":       t.value,
                  "color":       t.color,
@@ -371,7 +379,7 @@ class WidgetModel(QAbstractListModel):
         }
     """
 
-    ContextRole = Qt.UserRole + 1
+    ContextRole = int(Qt.ItemDataRole.UserRole) + 1
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._widgets: list[WidgetContext] = []
@@ -386,15 +394,21 @@ class WidgetModel(QAbstractListModel):
         self._widgets.append(ctx)
         self.endInsertRows()
 
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def rowCount(
+        self, parent: QModelIndex | QPersistentModelIndex = QModelIndex()
+    ) -> int:
         return len(self._widgets)
 
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole):
+    def data(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        role: int = int(Qt.ItemDataRole.DisplayRole),
+    ):
         if not index.isValid() or index.row() >= len(self._widgets):
             return None
         if role == self.ContextRole:
             return self._widgets[index.row()]
         return None
 
-    def roleNames(self) -> dict:
-        return {self.ContextRole: b"widgetContext"}
+    def roleNames(self) -> dict[int, QByteArray]:
+        return {self.ContextRole: QByteArray(b"widgetContext")}

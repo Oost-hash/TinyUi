@@ -8,12 +8,20 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from release_notes import build_release_body, parse_unreleased, sections_for_version, write_unreleased
-
 ROOT         = Path(__file__).parent.parent
 PYPROJECT    = ROOT / "pyproject.toml"
 CHANGELOG    = ROOT / "docs" / "CHANGELOG.md"
 UNRELEASED   = ROOT / "docs" / "unreleased_changelog.md"
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.release_notes import (  # noqa: E402
+    build_release_body,
+    parse_unreleased,
+    sections_for_version,
+    write_unreleased,
+)
 
 CHANGELOG_HEADER = """\
 # Changelog
@@ -119,7 +127,12 @@ def main():
 
     current_version = "%d.%d.%d" % old_version
     if current_version != target_version:
-        version_str = _write_version(tuple(int(part) for part in target_version.split(".")))
+        version_parts = tuple(int(part) for part in target_version.split("."))
+        if len(version_parts) != 3:
+            raise SystemExit(f"ERROR: invalid semantic version '{target_version}'")
+        version_str = _write_version(
+            (version_parts[0], version_parts[1], version_parts[2])
+        )
     else:
         version_str = target_version
 

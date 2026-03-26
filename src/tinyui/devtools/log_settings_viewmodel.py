@@ -71,8 +71,8 @@ class LogSettingsViewModel(QObject):
 
     # ── Per-category toggles ──────────────────────────────────────────────────
 
-    @Property("QVariantList", notify=categoriesChanged)
-    def categories(self) -> list:
+    @Property(list, notify=categoriesChanged)
+    def categories(self) -> list[dict[str, object]]:
         """List of ``{name, enabled}`` dicts for every known debug category."""
         return [{"name": name, "enabled": enabled}
                 for name, enabled in _core_log.get_category_states()]

@@ -31,10 +31,11 @@ import platform
 import sys
 from pathlib import Path
 from time import perf_counter
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, cast
 
 import PySide6
-from PySide6.QtCore import QUrl, QtMsgType, qInstallMessageHandler, qVersion
+from PySide6.QtCore import QObject, QUrl, QtMsgType, qInstallMessageHandler, qVersion
+from PySide6.QtQuick import QQuickWindow
 
 from tinycore.app import App
 from tinycore.inspect import LogInspector
@@ -66,7 +67,7 @@ def _qt_message_handler(mode, context, message):
 
 def launch(core: App, lifecycle: PluginLifecycleManager,
            *, pre_run: Callable[[], None] | None = None,
-           extra_context: dict | None = None) -> int:
+           extra_context: dict[str, object] | None = None) -> int:
     """Initialize and run the tinyui main window.
 
     Called by the composition root after tinycore is fully booted.
@@ -110,9 +111,12 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     _plugin_names = [p.name for p in core.runtime.plugins.plugins]
 
     def _on_plugin_switch() -> None:
-        idx = statusbar_vm.activePluginIndex
+        idx = cast(int, statusbar_vm.property("activePluginIndex"))
         if 0 <= idx < len(_plugin_names):
             lifecycle.activate(_plugin_names[idx])
+
+    def _maybe_int(value: object) -> int | None:
+        return int(value) if isinstance(value, int | float | str) else None
 
     statusbar_vm.activePluginIndexChanged.connect(_on_plugin_switch)
 
@@ -165,8 +169,9 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
         for key, value in extra_context.items():
             ctx.setContextProperty(key, value)
 
-    if getattr(sys, "frozen", False):
-        qml_dir = Path(sys._MEIPASS) / "tinyui" / "qml"
+    frozen_root = getattr(sys, "_MEIPASS", None)
+    if getattr(sys, "frozen", False) and isinstance(frozen_root, str):
+        qml_dir = Path(frozen_root) / "tinyui" / "qml"
     else:
         qml_dir = Path(__file__).resolve().parent / "qml"
     engine.load(QUrl.fromLocalFile(str(qml_dir / "main.qml")))
@@ -178,7 +183,11 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
 
     # ── Platform windowing ────────────────────────────────────────────────────
     phase_start = perf_counter()
-    window = engine.rootObjects()[0]
+    window_obj = engine.rootObjects()[0]
+    if not isinstance(window_obj, QQuickWindow):
+        core.stop()
+        return -1
+    window = window_obj
     dpr = app.devicePixelRatio()
 
     _wnd_proc = None   # Windows only: MUST be kept alive — otherwise GC → crash
@@ -195,11 +204,11 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
         hwnd = int(window.winId())
         _wnd_proc, _set_left = install_wnd_proc(
             hwnd,
-            title_bar_height   = round(theme.titleBarHeight   * dpr),
-            resize_border      = round(theme.resizeBorder      * dpr),
-            resize_corner      = round(theme.resizeCorner      * dpr),
-            left_button_width  = round(theme.leftButtonWidth   * dpr),
-            right_button_width = round(theme.rightButtonWidth  * dpr),
+            title_bar_height   = round(cast(float, theme.property("titleBarHeight")) * dpr),
+            resize_border      = round(cast(float, theme.property("resizeBorder")) * dpr),
+            resize_corner      = round(cast(float, theme.property("resizeCorner")) * dpr),
+            left_button_width  = round(cast(float, theme.property("leftButtonWidth")) * dpr),
+            right_button_width = round(cast(float, theme.property("rightButtonWidth")) * dpr),
         )
         apply_dwm_frame(hwnd)
         _win_ctrl      = WindowController(hwnd, dpr=dpr, set_left_button_width=_set_left)
@@ -218,16 +227,20 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     if core.host.host_settings.get_value("TinyUI", "remember_position"):
         x = core.host.host_settings.get_value("TinyUI", "_position_x")
         y = core.host.host_settings.get_value("TinyUI", "_position_y")
-        if x is not None and y is not None:
-            window.setX(int(x))
-            window.setY(int(y))
+        x_pos = _maybe_int(x)
+        y_pos = _maybe_int(y)
+        if x_pos is not None and y_pos is not None:
+            window.setX(x_pos)
+            window.setY(y_pos)
 
     if core.host.host_settings.get_value("TinyUI", "remember_size"):
         w = core.host.host_settings.get_value("TinyUI", "_window_width")
         h = core.host.host_settings.get_value("TinyUI", "_window_height")
-        if w is not None and h is not None:
-            window.setWidth(int(w))
-            window.setHeight(int(h))
+        width = _maybe_int(w)
+        height = _maybe_int(h)
+        if width is not None and height is not None:
+            window.setWidth(width)
+            window.setHeight(height)
 
     # ── Run ───────────────────────────────────────────────────────────────────
     def _save_window_state() -> None:

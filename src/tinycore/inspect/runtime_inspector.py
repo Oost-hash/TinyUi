@@ -1,4 +1,25 @@
 #  TinyUI
+#  Copyright (C) 2026 Oost-hash
+#
+#  This file is part of TinyUI.
+#
+#  TinyUI is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  TinyUI is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
+#  licensed under GPLv3.
+
+#  TinyUI
 """Runtime-owned inspection service for Dev Tools and diagnostics."""
 
 from __future__ import annotations
@@ -15,6 +36,12 @@ if TYPE_CHECKING:
 _log = get_logger(__name__)
 FieldReader = Callable[[str, str, object], object]
 SnapshotFn = Callable[[], list[tuple[str, str]]]
+
+
+def _render_value(value: object) -> str:
+    if isinstance(value, int | float):
+        return f"{float(value):.6g}"
+    return str(value)
 
 
 @dataclass(frozen=True)
@@ -72,10 +99,7 @@ class _FieldSource(_Source):
     def _read(self, field: str) -> str:
         try:
             value = self._field_reader(self._capability, field, self._provider)
-            try:
-                return f"{float(value):.6g}"
-            except (ValueError, TypeError):
-                return str(value)
+            return _render_value(value)
         except Exception as exc:
             return f"err: {exc}"
 

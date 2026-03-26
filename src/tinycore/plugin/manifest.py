@@ -138,14 +138,24 @@ class PluginManifest:
     def consumer_runtime_spec(self) -> ConsumerRuntimeSpec:
         """Build the subprocess runtime spec for a consumer plugin."""
         runtime = self.runtime
-        if self.logic is None and runtime is None:
+        logic = self.logic
+        if runtime is not None:
+            module = runtime.entry_module
+            class_name = runtime.entry_class
+            artifact_path = runtime.artifact_path
+        elif logic is not None:
+            module = logic.module
+            class_name = logic.class_name
+            artifact_path = None
+        else:
             raise ValueError(f"Plugin '{self.name}' has no [logic] or [runtime] declaration")
+
         return ConsumerRuntimeSpec(
-            runtime.entry_module if runtime else self.logic.module,
-            runtime.entry_class if runtime else self.logic.class_name,
+            module,
+            class_name,
             name=self.name,
             requires=self.requires,
-            artifact_path=runtime.artifact_path if runtime else None,
+            artifact_path=artifact_path,
         )
 
 

@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import multiprocessing as mp
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from multiprocessing.connection import Connection
@@ -76,7 +76,7 @@ class SubprocessPlugin:
         )
         self._proc.start()
         child_conn.close()   # host does not use the child end
-        self._conn = parent_conn
+        self._conn = cast(Connection, parent_conn)
 
         # ── Hello ─────────────────────────────────────────────────────────
         msg = parent_conn.recv()

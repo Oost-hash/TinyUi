@@ -40,12 +40,12 @@ class CoreViewModel(QObject):
         self._core = core
         self._settings_cache: list[dict] | None = None
 
-    @Property("QVariantList", constant=True)
+    @Property(list, constant=True)
     def widgets(self) -> list[dict]:
         """Widget list — managed by tinywidgets, not tinycore."""
         return []
 
-    @Property("QVariantList", constant=True)
+    @Property(list, constant=True)
     def editors(self) -> list[dict]:
         """All registered editor specs (from plugins)."""
         return [
@@ -62,12 +62,12 @@ class CoreViewModel(QObject):
         """Widget enable/disable is handled by tinywidgets."""
         pass
 
-    @Property("QVariantList", constant=True)
+    @Property(list, constant=True)
     def pluginNames(self) -> list[str]:
         """Name of each loaded plugin — used by the status bar plugin switcher."""
         return [p.name for p in self._core.runtime.plugins.plugins]
 
-    @Property("QVariantList", notify=settingsChanged)
+    @Property(list, notify=settingsChanged)
     def settingsByPlugin(self) -> list[dict]:
         """Settings grouped by plugin and section — for the settings dialog.
 

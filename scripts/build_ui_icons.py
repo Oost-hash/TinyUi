@@ -36,17 +36,17 @@ def render_svg(svg_path: str, size: int) -> QImage:
     renderer = QSvgRenderer(svg_path)
 
     # Stap 1: render SVG (zwart op transparant)
-    mask = QImage(size, size, QImage.Format_ARGB32)
-    mask.fill(Qt.transparent)
+    mask = QImage(size, size, QImage.Format.Format_ARGB32)
+    mask.fill(Qt.GlobalColor.transparent)
     painter = QPainter(mask)
     renderer.render(painter)
     painter.end()
 
     # Stap 2: wit canvas, gebruik SVG als alpha-masker
-    result = QImage(size, size, QImage.Format_ARGB32)
-    result.fill(Qt.white)
+    result = QImage(size, size, QImage.Format.Format_ARGB32)
+    result.fill(Qt.GlobalColor.white)
     painter = QPainter(result)
-    painter.setCompositionMode(QPainter.CompositionMode_DestinationIn)
+    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
     painter.drawImage(0, 0, mask)
     painter.end()
 
@@ -54,7 +54,7 @@ def render_svg(svg_path: str, size: int) -> QImage:
 
 
 def main():
-    app = QApplication(sys.argv)
+    _app = QApplication(sys.argv)
 
     svgs = sorted(f for f in os.listdir(SRC_DIR) if f.endswith(".svg"))
     if not svgs:

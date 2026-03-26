@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import cast
 
 from PySide6.QtCore import QUrl
 
@@ -115,12 +116,12 @@ class WidgetOverlay:
             if store:
                 def _save(cx: WidgetContext = ctx, s: WidgetConfigStore = store) -> None:
                     s.save(
-                        cx.widgetId,
-                        cx.enabled,
-                        cx.widgetX,
-                        cx.widgetY,
-                        cx.label,
-                        cx.thresholds,
+                        cx._spec.id,
+                        cx._spec.enable,
+                        cx._spec.x,
+                        cx._spec.y,
+                        cx._spec.label,
+                        cast(list[dict[str, object]], cx.thresholds),
                     )
 
                 ctx.positionChanged.connect(_save)
@@ -141,15 +142,18 @@ class WidgetOverlay:
         Must be called after QApplication exists (i.e. inside pre_run).
         """
         from PySide6.QtWidgets import QApplication
-        QApplication.instance().aboutToQuit.connect(self.stop)
+        app = QApplication.instance()
+        if app is not None:
+            app.aboutToQuit.connect(self.stop)
 
         self._engine = create_engine()
         self._engine.rootContext().setContextProperty("widgetModel", self._model)
         self._engine.rootContext().setContextProperty("widgetOverlayState", self._state)
 
+        frozen_root = getattr(sys, "_MEIPASS", None)
         qml_dir = (
-            Path(sys._MEIPASS) / "tinywidgets" / "qml"
-            if getattr(sys, "frozen", False)
+            Path(frozen_root) / "tinywidgets" / "qml"
+            if getattr(sys, "frozen", False) and isinstance(frozen_root, str)
             else _QML_DIR
         )
         self._engine.load(QUrl.fromLocalFile(str(qml_dir / "WidgetHost.qml")))

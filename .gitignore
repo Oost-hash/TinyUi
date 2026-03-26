@@ -23,6 +23,7 @@ __pycache__/
 
 # config files (runtime generated)
 *.json
+!pyrightconfig.json
 !src/tinyui/themes/*.json
 
 # data files

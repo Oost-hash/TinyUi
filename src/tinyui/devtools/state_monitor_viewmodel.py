@@ -29,8 +29,10 @@ from dataclasses import dataclass
 from PySide6.QtCore import (
     Property,
     QAbstractListModel,
+    QByteArray,
     QModelIndex,
     QObject,
+    QPersistentModelIndex,
     Qt,
     QTimer,
     Signal,
@@ -64,23 +66,29 @@ class _StateRow:
 
 
 class _StateRowsModel(QAbstractListModel):
-    RowTypeRole = Qt.UserRole + 1
-    SectionNameRole = Qt.UserRole + 2
-    SectionTitleRole = Qt.UserRole + 3
-    SectionCountRole = Qt.UserRole + 4
-    CollapsedRole = Qt.UserRole + 5
-    KeyRole = Qt.UserRole + 6
-    ValueRole = Qt.UserRole + 7
-    ChangedAtRole = Qt.UserRole + 8
+    RowTypeRole = int(Qt.ItemDataRole.UserRole) + 1
+    SectionNameRole = int(Qt.ItemDataRole.UserRole) + 2
+    SectionTitleRole = int(Qt.ItemDataRole.UserRole) + 3
+    SectionCountRole = int(Qt.ItemDataRole.UserRole) + 4
+    CollapsedRole = int(Qt.ItemDataRole.UserRole) + 5
+    KeyRole = int(Qt.ItemDataRole.UserRole) + 6
+    ValueRole = int(Qt.ItemDataRole.UserRole) + 7
+    ChangedAtRole = int(Qt.ItemDataRole.UserRole) + 8
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._rows: list[_StateRow] = []
 
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def rowCount(
+        self, parent: QModelIndex | QPersistentModelIndex = QModelIndex()
+    ) -> int:
         return 0 if parent.isValid() else len(self._rows)
 
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole):
+    def data(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        role: int = int(Qt.ItemDataRole.DisplayRole),
+    ):
         if not index.isValid() or not (0 <= index.row() < len(self._rows)):
             return None
 
@@ -103,16 +111,16 @@ class _StateRowsModel(QAbstractListModel):
             return row.changed_at
         return None
 
-    def roleNames(self) -> dict[int, bytes]:
+    def roleNames(self) -> dict[int, QByteArray]:
         return {
-            self.RowTypeRole: b"rowType",
-            self.SectionNameRole: b"sectionName",
-            self.SectionTitleRole: b"sectionTitle",
-            self.SectionCountRole: b"sectionCount",
-            self.CollapsedRole: b"collapsed",
-            self.KeyRole: b"keyText",
-            self.ValueRole: b"valueText",
-            self.ChangedAtRole: b"changedAt",
+            self.RowTypeRole: QByteArray(b"rowType"),
+            self.SectionNameRole: QByteArray(b"sectionName"),
+            self.SectionTitleRole: QByteArray(b"sectionTitle"),
+            self.SectionCountRole: QByteArray(b"sectionCount"),
+            self.CollapsedRole: QByteArray(b"collapsed"),
+            self.KeyRole: QByteArray(b"keyText"),
+            self.ValueRole: QByteArray(b"valueText"),
+            self.ChangedAtRole: QByteArray(b"changedAt"),
         }
 
     def replace_rows(self, rows: list[_StateRow]) -> None:
@@ -161,7 +169,7 @@ class StateMonitorViewModel(QObject):
         self._inspector = inspector
         self._qobject_sources: list[_QObjectSource] = []
         self._selected_index = -1
-        self._entries: list[dict] = []
+        self._entries: list[dict[str, object]] = []
         self._rows_model = _StateRowsModel(self)
         self._collapsed_by_source: dict[str, set[str]] = {}
         self._timer = QTimer(self)
@@ -199,7 +207,7 @@ class StateMonitorViewModel(QObject):
             snapshot = self._snapshot_qobject(selected["id"])
         else:
             snapshot = self._inspector.snapshot(selected["id"])
-        entries: list[dict] = []
+        entries: list[dict[str, object]] = []
         for entry in snapshot:
             if isinstance(entry, dict):
                 entries.append(entry)
@@ -216,7 +224,7 @@ class StateMonitorViewModel(QObject):
         self._rows_model.replace_rows(self._build_rows(selected["id"], entries))
         self.entriesChanged.emit()
 
-    def _all_sources(self) -> list[dict]:
+    def _all_sources(self) -> list[dict[str, str]]:
         runtime_sources = [
             {"id": info.id, "label": info.label, "kind": info.kind}
             for info in self._inspector.sources()
@@ -227,7 +235,7 @@ class StateMonitorViewModel(QObject):
         ]
         return runtime_sources + qobject_sources
 
-    def _snapshot_qobject(self, source_id: str):
+    def _snapshot_qobject(self, source_id: str) -> list[dict[str, object]]:
         source = next((item for item in self._qobject_sources if item.id == source_id), None)
         if source is None:
             return []
@@ -262,8 +270,10 @@ class StateMonitorViewModel(QObject):
             )
         return entries
 
-    def _build_rows(self, source_id: str, entries: list[dict]) -> list[_StateRow]:
-        grouped: dict[str, list[dict]] = {}
+    def _build_rows(
+        self, source_id: str, entries: list[dict[str, object]]
+    ) -> list[_StateRow]:
+        grouped: dict[str, list[dict[str, object]]] = {}
         order: list[str] = []
         for entry in entries:
             key = str(entry["key"])
@@ -306,6 +316,7 @@ class StateMonitorViewModel(QObject):
             if is_collapsed:
                 continue
             for entry in section_entries:
+                changed_at = entry["changedAt"]
                 rows.append(
                     _StateRow(
                         row_type="entry",
@@ -315,14 +326,14 @@ class StateMonitorViewModel(QObject):
                         collapsed=False,
                         key=str(entry["key"]),
                         value=str(entry["value"]),
-                        changed_at=int(entry["changedAt"]),
+                        changed_at=int(changed_at) if isinstance(changed_at, int | float) else 0,
                         identity=("entry", str(entry["fullKey"])),
                     )
                 )
         return rows
 
-    @Property("QVariantList", notify=sourcesChanged)
-    def sources(self) -> list:
+    @Property(list, notify=sourcesChanged)
+    def sources(self) -> list[dict[str, object]]:
         return [
             {"label": info["label"], "index": index}
             for index, info in enumerate(self._all_sources())
@@ -365,8 +376,8 @@ class StateMonitorViewModel(QObject):
             return
         clipboard.setText(f"{key}: {value}")
 
-    @Property("QVariantList", notify=entriesChanged)
-    def entries(self) -> list:
+    @Property(list, notify=entriesChanged)
+    def entries(self) -> list[dict[str, object]]:
         return self._entries
 
     @Property(QObject, constant=True)

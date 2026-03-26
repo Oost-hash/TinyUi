@@ -46,7 +46,7 @@ class WindowController(QObject):
 
     @Slot()
     def toggleMaximize(self):
-        if self._window.windowState() & Qt.WindowMaximized:
+        if self._window.windowState() & Qt.WindowState.WindowMaximized:
             self._window.showNormal()
         else:
             self._window.showMaximized()
