@@ -25,6 +25,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
+import json
+from pathlib import Path
+import sys
 
 from PySide6.QtCore import (
     Property,
@@ -163,6 +167,7 @@ class StateMonitorViewModel(QObject):
     selectedChanged = Signal()
     entriesChanged = Signal()
     sectionsChanged = Signal()
+    captureChanged = Signal()
 
     def __init__(self, inspector: RuntimeInspector, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -175,6 +180,8 @@ class StateMonitorViewModel(QObject):
         self._timer = QTimer(self)
         self._timer.setInterval(200)
         self._timer.timeout.connect(self._refresh)
+        self._capture_source_id: str | None = None
+        self._capture_path: Path | None = None
 
         if self._inspector.sources():
             self._selected_index = 0
@@ -222,6 +229,7 @@ class StateMonitorViewModel(QObject):
                 )
         self._entries = entries
         self._rows_model.replace_rows(self._build_rows(selected["id"], entries))
+        self._write_capture(selected["id"], selected["label"], entries)
         self.entriesChanged.emit()
 
     def _all_sources(self) -> list[dict[str, str]]:
@@ -376,6 +384,73 @@ class StateMonitorViewModel(QObject):
             return
         clipboard.setText(f"{key}: {value}")
 
+    @Slot()
+    def copyAllEntries(self) -> None:
+        clipboard = QGuiApplication.clipboard()
+        if clipboard is None:
+            return
+        if not self._entries:
+            clipboard.setText("")
+            return
+        lines = [f"{entry['key']}: {entry['value']}" for entry in self._entries]
+        clipboard.setText("\n".join(lines))
+
+    @Slot()
+    def toggleCapture(self) -> None:
+        if self._capture_source_id is not None:
+            self._capture_source_id = None
+            self._capture_path = None
+            self.captureChanged.emit()
+            return
+
+        sources = self._all_sources()
+        if not (0 <= self._selected_index < len(sources)):
+            return
+
+        selected = sources[self._selected_index]
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+        safe_label = "".join(
+            char.lower() if char.isalnum() else "-"
+            for char in selected["label"]
+        ).strip("-")
+        filename = f"{stamp}-{safe_label or 'source'}.jsonl"
+        capture_dir = self._capture_dir()
+        capture_dir.mkdir(parents=True, exist_ok=True)
+        self._capture_source_id = selected["id"]
+        self._capture_path = capture_dir / filename
+        self.captureChanged.emit()
+
+    @Slot()
+    def copyCapturePath(self) -> None:
+        clipboard = QGuiApplication.clipboard()
+        if clipboard is None or self._capture_path is None:
+            return
+        clipboard.setText(str(self._capture_path))
+
+    def _capture_dir(self) -> Path:
+        if getattr(sys, "frozen", False):
+            return Path(sys.executable).resolve().parent / "devtools-captures"
+        return Path(__file__).resolve().parents[3] / "data" / "devtools-captures"
+
+    def _write_capture(
+        self,
+        source_id: str,
+        source_label: str,
+        entries: list[dict[str, object]],
+    ) -> None:
+        if self._capture_source_id != source_id or self._capture_path is None or not entries:
+            return
+
+        payload = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "source_id": source_id,
+            "source_label": source_label,
+            "entries": entries,
+        }
+        with self._capture_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=True))
+            handle.write("\n")
+
     @Property(list, notify=entriesChanged)
     def entries(self) -> list[dict[str, object]]:
         return self._entries
@@ -383,3 +458,11 @@ class StateMonitorViewModel(QObject):
     @Property(QObject, constant=True)
     def sectionModel(self) -> QObject:
         return self._rows_model
+
+    @Property(bool, notify=captureChanged)
+    def captureActive(self) -> bool:
+        return self._capture_source_id is not None and self._capture_path is not None
+
+    @Property(str, notify=captureChanged)
+    def capturePath(self) -> str:
+        return "" if self._capture_path is None else str(self._capture_path)

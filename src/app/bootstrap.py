@@ -129,7 +129,11 @@ def _register_providers(core: App, manifests: list[PluginManifest]) -> None:
 
 def _bind_consumers(core: App, manifests: list[PluginManifest]) -> None:
     for manifest in manifests:
-        bindings = core.runtime.session.bind_consumer(manifest.name, manifest.requires)
+        bindings = core.runtime.session.bind_consumer(
+            manifest.name,
+            manifest.requires,
+            manifest.provider_requests,
+        )
         if bindings.missing:
             _log.warning(
                 "consumer requires missing  plugin=%s  missing=%s",

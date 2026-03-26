@@ -24,9 +24,10 @@
 
 from __future__ import annotations
 
+import inspect
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, cast
 
 from tinycore.log import get_logger
 
@@ -42,6 +43,69 @@ def _render_value(value: object) -> str:
     if isinstance(value, int | float):
         return f"{float(value):.6g}"
     return str(value)
+
+
+def _to_int(value: object) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        return int(value)
+    raise TypeError(f"cannot render int from {type(value).__name__}")
+
+
+def _to_float(value: object) -> float:
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        return float(value)
+    raise TypeError(f"cannot render float from {type(value).__name__}")
+
+
+def _render_schema_value(value: object, render: str) -> str:
+    if render == "str":
+        return str(value)
+    if render == "bool":
+        return str(bool(value))
+    if render == "int":
+        return str(_to_int(value))
+    if render == "float_1":
+        return f"{_to_float(value):.1f}"
+    if render == "float_2":
+        return f"{_to_float(value):.2f}"
+    if render == "float_3":
+        return f"{_to_float(value):.3f}"
+    if render == "kmh_1":
+        return f"{_to_float(value) * 3.6:.1f} km/h"
+    if render == "seconds_1":
+        return f"{_to_float(value):.1f} s"
+    if render == "seconds_3":
+        return f"{_to_float(value):.3f} s"
+    if render == "celsius_1":
+        return f"{_to_float(value):.1f} C"
+    if render == "percent_1":
+        return f"{_to_float(value) * 100:.1f} %"
+    if render == "join":
+        if isinstance(value, tuple | list):
+            return ", ".join(str(item) for item in value)
+        return str(value)
+    return _render_value(value)
+
+
+def _resolve_path_value(root: object, path: str) -> object:
+    value = root
+    for part in path.split("."):
+        value = getattr(value, part)
+        if callable(value):
+            signature = inspect.signature(value)
+            if len(signature.parameters) == 0:
+                value = value()
+    return value
 
 
 @dataclass(frozen=True)
@@ -110,13 +174,42 @@ class _ProviderTelemetrySource(_Source):
         super().__init__(source_id, label, "provider", self._snapshot)
 
     def _snapshot(self) -> list[tuple[str, str]]:
+        schema_fn = getattr(self._provider, "inspect_schema", None)
+        if schema_fn is not None:
+            try:
+                schema = schema_fn()
+                return self._schema_snapshot(schema)
+            except Exception as exc:
+                return [("provider.inspect_schema", f"err: {exc}")]
         snapshot = getattr(self._provider, "inspect_snapshot", None)
         if snapshot is None:
-            return [("provider.inspect", "err: provider has no inspect_snapshot()")]
+            return [("provider.inspect", "err: provider has no inspect_schema()")]
         try:
             return snapshot()
         except Exception as exc:
             return [("provider.inspect", f"err: {exc}")]
+
+    def _schema_snapshot(self, schema) -> list[tuple[str, str]]:
+        entries: list[tuple[str, str]] = []
+        for field in schema:
+            try:
+                value = _resolve_path_value(self._provider, field.path)
+                if field.key == "opponents.p1.driver":
+                    value = self._provider.opponents.driver_name(0)
+                elif field.key == "opponents.p1.place":
+                    value = self._provider.opponents.place(0)
+                elif field.key == "opponents.p1.in_pits":
+                    value = self._provider.opponents.in_pits(0)
+                elif field.key == "opponents.p1.gap_to_leader":
+                    value = self._provider.opponents.gap_to_leader(0)
+                elif field.key == "tyre.compound_f":
+                    value = self._provider.tyre.compound_name()[0]
+                elif field.key == "tyre.compound_r":
+                    value = self._provider.tyre.compound_name()[1]
+                entries.append((field.key, _render_schema_value(value, field.render)))
+            except Exception as exc:
+                entries.append((field.key, f"err: {exc}"))
+        return entries
 
 
 class RuntimeInspector:
@@ -156,6 +249,14 @@ class RuntimeInspector:
                                 handle.provider,
                             )
                         )
+                        raw_snapshot = getattr(handle.provider, "raw_snapshot", None)
+                        if callable(raw_snapshot):
+                            self.add_snapshot_source(
+                                f"provider:{binding.provider_name}:raw",
+                                f"Raw: {binding.provider_name}",
+                                "provider-raw",
+                                cast(SnapshotFn, raw_snapshot),
+                            )
                         seen_provider_names.add(binding.provider_name)
 
                 self.add_source(

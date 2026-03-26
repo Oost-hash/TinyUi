@@ -158,6 +158,100 @@ BaseDialog {
                                     stateTab._vm.selectSource(index)
                             }
                         }
+
+                        Item { width: 1; height: 1 }
+
+                        Rectangle {
+                            width: 72
+                            height: 22
+                            radius: 3
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: copyAllMouse.containsMouse ? theme.surfaceRaised : "transparent"
+                            border.color: theme.border
+                            border.width: 1
+                            opacity: stateTab._vm && stateTab._vm.hasSelectedSource && stateTab._vm.entries.length > 0 ? 1 : 0.45
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Copy all"
+                                color: theme.textMuted
+                                font.pixelSize: theme.fontSizeSmall
+                                font.family: "Consolas, Courier New, monospace"
+                            }
+
+                            MouseArea {
+                                id: copyAllMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                enabled: stateTab._vm && stateTab._vm.hasSelectedSource && stateTab._vm.entries.length > 0
+                                onClicked: {
+                                    if (stateTab._vm)
+                                        stateTab._vm.copyAllEntries()
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            width: 78
+                            height: 22
+                            radius: 3
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: stateTab._vm && stateTab._vm.captureActive
+                                   ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.16)
+                                   : (recordMouse.containsMouse ? theme.surfaceRaised : "transparent")
+                            border.color: stateTab._vm && stateTab._vm.captureActive ? theme.accent : theme.border
+                            border.width: 1
+                            opacity: stateTab._vm && stateTab._vm.hasSelectedSource && stateTab._vm.entries.length > 0 ? 1 : 0.45
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: stateTab._vm && stateTab._vm.captureActive ? "Recording" : "Record"
+                                color: stateTab._vm && stateTab._vm.captureActive ? theme.accent : theme.textMuted
+                                font.pixelSize: theme.fontSizeSmall
+                                font.family: "Consolas, Courier New, monospace"
+                            }
+
+                            MouseArea {
+                                id: recordMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                enabled: stateTab._vm && stateTab._vm.hasSelectedSource && stateTab._vm.entries.length > 0
+                                onClicked: {
+                                    if (stateTab._vm)
+                                        stateTab._vm.toggleCapture()
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            width: 86
+                            height: 22
+                            radius: 3
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: copyCaptureMouse.containsMouse ? theme.surfaceRaised : "transparent"
+                            border.color: theme.border
+                            border.width: 1
+                            opacity: stateTab._vm && stateTab._vm.captureActive ? 1 : 0.45
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Copy path"
+                                color: theme.textMuted
+                                font.pixelSize: theme.fontSizeSmall
+                                font.family: "Consolas, Courier New, monospace"
+                            }
+
+                            MouseArea {
+                                id: copyCaptureMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                enabled: stateTab._vm && stateTab._vm.captureActive
+                                onClicked: {
+                                    if (stateTab._vm)
+                                        stateTab._vm.copyCapturePath()
+                                }
+                            }
+                        }
                     }
                 }
 

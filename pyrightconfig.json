@@ -21,8 +21,7 @@
     "data",
     "dev_notes",
     "dist",
-    "tinypedal_repo",
-    "src/plugins/lmu_connector"
+    "tinypedal_repo"
   ],
   "pythonVersion": "3.12",
   "typeCheckingMode": "standard",

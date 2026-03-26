@@ -18,25 +18,37 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""Shared LMU connector helpers and imports."""
+
+"""Shared source protocol for the consolidated connector family."""
 
 from __future__ import annotations
 
-from plugins.lmu_connector.pyLMUSharedMemory import lmu_data
-from plugins.lmu_connector.pyLMUSharedMemory.lmu_data import LMUConstants
-from plugins.lmu_connector.pyLMUSharedMemory.lmu_mmap import MMapControl
+from abc import ABC, abstractmethod
 
-_KELVIN = 273.15
-
-_SESSION_NAMES = {
-    0: "test",
-    1: "practice",
-    2: "qualify",
-    3: "warmup",
-    4: "race",
-}
+from .telemetry import TelemetryReader
 
 
-def decode_bytes(raw: bytes) -> str:
-    """Decode LMU shared memory bytes into text."""
-    return raw.rstrip(b"\x00").decode("utf-8", errors="replace")
+class ConnectorSource(ABC):
+    """Common lifecycle and metadata contract for family sources."""
+
+    name: str
+    kind: str
+    game: str
+    description: str
+
+    @abstractmethod
+    def open(self) -> None:
+        """Allocate or activate the source."""
+
+    @abstractmethod
+    def close(self) -> None:
+        """Release source resources."""
+
+    @abstractmethod
+    def update(self) -> None:
+        """Advance the source one tick."""
+
+    @property
+    @abstractmethod
+    def reader(self) -> TelemetryReader:
+        """Expose the shared telemetry reader surface for the source."""

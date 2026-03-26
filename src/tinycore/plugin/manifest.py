@@ -96,6 +96,15 @@ class UserFilesManifest:
 
 
 @dataclass(frozen=True)
+class ProviderRequest:
+    """Consumer-side provider selection hint for one capability."""
+
+    capability: str
+    provider: str | None = None
+    source: str | None = None
+
+
+@dataclass(frozen=True)
 class PluginManifest:
     """Parsed contents of a ``plugin.toml`` file."""
 
@@ -106,6 +115,7 @@ class PluginManifest:
     manifest_path: Path
     requires: tuple[str, ...] = field(default_factory=tuple)
     exports: tuple[str, ...] = field(default_factory=tuple)
+    provider_requests: tuple[ProviderRequest, ...] = field(default_factory=tuple)
     runtime: RuntimeSection | None = None
     logic: RuntimeDecl | None = None
     provider: RuntimeDecl | None = None
@@ -223,6 +233,28 @@ def _user_files_manifest(data: dict) -> UserFilesManifest:
     )
 
 
+def _provider_requests(data: dict) -> tuple[ProviderRequest, ...]:
+    requests = data.get("provider_requests", [])
+    if not isinstance(requests, list):
+        raise ValueError("Manifest key 'provider_requests' must be an array of tables")
+
+    parsed: list[ProviderRequest] = []
+    for entry in requests:
+        if not isinstance(entry, dict):
+            raise ValueError("Manifest key 'provider_requests' contains an invalid entry")
+        capability = entry.get("capability")
+        provider = entry.get("provider")
+        source = entry.get("source")
+        if not isinstance(capability, str):
+            raise ValueError("Manifest key 'provider_requests' requires 'capability' as a string")
+        if provider is not None and not isinstance(provider, str):
+            raise ValueError("Manifest key 'provider_requests' field 'provider' must be a string")
+        if source is not None and not isinstance(source, str):
+            raise ValueError("Manifest key 'provider_requests' field 'source' must be a string")
+        parsed.append(ProviderRequest(capability=capability, provider=provider, source=source))
+    return tuple(parsed)
+
+
 def load_manifest(path: Path) -> PluginManifest:
     """Parse a ``plugin.toml`` file and return a validated PluginManifest."""
     with path.open("rb") as f:
@@ -276,6 +308,7 @@ def load_manifest(path: Path) -> PluginManifest:
         manifest_path=path,
         requires=_tuple_of_strings(data, "requires"),
         exports=_tuple_of_strings(data, "exports"),
+        provider_requests=_provider_requests(data),
         runtime=runtime,
         logic=logic,
         provider=provider,
@@ -292,6 +325,8 @@ def load_manifest(path: Path) -> PluginManifest:
         raise ValueError(f"Consumer plugin '{manifest.name}' cannot declare exports")
     if manifest.is_provider and manifest.requires:
         raise ValueError(f"Provider plugin '{manifest.name}' cannot declare requires")
+    if manifest.is_provider and manifest.provider_requests:
+        raise ValueError(f"Provider plugin '{manifest.name}' cannot declare provider_requests")
 
     return manifest
 

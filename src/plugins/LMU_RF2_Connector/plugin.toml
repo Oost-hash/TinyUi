@@ -1,4 +1,4 @@
-name = "lmu_connector"
+name = "LMU_RF2_Connector"
 type = "plugin.provider"
 version = "0.1.0"
 
@@ -14,5 +14,5 @@ exports = [
 ]
 
 [provider]
-module = "plugins.lmu_connector.connector.lmu"
-class  = "LMUConnector"
+module = "plugins.LMU_RF2_Connector.plugin"
+class  = "LMURF2Connector"

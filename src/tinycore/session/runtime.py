@@ -30,6 +30,7 @@ from tinycore.capabilities.registry import (
     CapabilityProvider,
     CapabilityRegistry,
 )
+from tinycore.plugin.manifest import ProviderRequest
 from .control import ProviderControlService
 
 
@@ -94,12 +95,18 @@ class SessionRuntime:
         self._capabilities.register_many(provider_name, exports, provider)
         return handle
 
-    def bind_consumer(self, consumer_name: str, requires: tuple[str, ...]) -> ConsumerBindingSet:
+    def bind_consumer(
+        self,
+        consumer_name: str,
+        requires: tuple[str, ...],
+        provider_requests: tuple[ProviderRequest, ...] = (),
+    ) -> ConsumerBindingSet:
         """Resolve and store bindings for one consumer plugin."""
         resolved: dict[str, CapabilityBinding] = {}
         missing: list[str] = []
+        request_map = {request.capability: request for request in provider_requests}
         for capability in requires:
-            candidate = self._select_provider(capability)
+            candidate = self._select_provider(capability, request_map.get(capability))
             if candidate is None:
                 missing.append(capability)
                 continue
@@ -154,6 +161,22 @@ class SessionRuntime:
                 errors.append((provider_name, str(exc)))
         return errors
 
-    def _select_provider(self, capability: str) -> CapabilityProvider | None:
-        """Return the registered provider for one capability."""
-        return self._capabilities.provider_for(capability)
+    def _select_provider(
+        self,
+        capability: str,
+        request: ProviderRequest | None,
+    ) -> CapabilityProvider | None:
+        """Return the registered provider for one capability plus optional selector."""
+        provider = self._capabilities.provider_for(capability)
+        if provider is None:
+            return None
+        if request is not None and request.provider and provider.provider_name != request.provider:
+            return None
+        if request is not None and request.source:
+            select_source = getattr(provider.provider, "request_source", None)
+            if callable(select_source):
+                owner = f"manifest:{provider.provider_name}:{capability}"
+                selected = bool(select_source(owner, request.source))
+                if not selected:
+                    return None
+        return provider

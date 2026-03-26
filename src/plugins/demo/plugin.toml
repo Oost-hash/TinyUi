@@ -7,6 +7,16 @@ requires = [
   "telemetry.session.v1"
 ]
 
+[[provider_requests]]
+capability = "telemetry.car.v1"
+provider = "LMU_RF2_Connector"
+source = "lmu"
+
+[[provider_requests]]
+capability = "telemetry.session.v1"
+provider = "LMU_RF2_Connector"
+source = "lmu"
+
 [logic]
 module = "plugins.demo.plugin"
 class  = "DemoPlugin"
