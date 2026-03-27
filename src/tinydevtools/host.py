@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol
 from PySide6.QtQml import QQmlApplicationEngine
 
 from tinycore.logging import LogInspector
@@ -11,12 +12,22 @@ from tinywidgets.overlay import WidgetOverlay
 
 from .log_settings_viewmodel import LogSettingsViewModel
 from .log_viewmodel import LogViewModel
+from .runtime_viewmodel import RuntimeViewModel
 from .state_monitor_viewmodel import StateMonitorViewModel
+
+
+class _MonitorLike(Protocol):
+    @property
+    def refresh_interval_ms(self) -> int: ...
+
+    def start(self) -> None: ...
+    def shutdown(self) -> None: ...
 
 
 @dataclass(frozen=True)
 class DevToolsRuntimeAttachment:
-    state_monitor: StateMonitorViewModel
+    state_monitor: _MonitorLike
+    runtime_view_model: RuntimeViewModel
     extra_context: dict[str, object]
 
 
@@ -26,6 +37,31 @@ class DevToolsUiAttachment:
     log_settings_view_model: LogSettingsViewModel
     qml_url: str
 
+
+class _DevToolsMonitor(_MonitorLike):
+    def __init__(
+        self,
+        state_monitor: StateMonitorViewModel,
+        runtime_view_model: RuntimeViewModel,
+    ) -> None:
+        self._state_monitor = state_monitor
+        self._runtime_view_model = runtime_view_model
+
+    @property
+    def refresh_interval_ms(self) -> int:
+        return min(
+            self._state_monitor.refresh_interval_ms,
+            self._runtime_view_model.refresh_interval_ms,
+        )
+
+    def start(self) -> None:
+        self._state_monitor.start()
+        self._runtime_view_model.start()
+
+    def shutdown(self) -> None:
+        self._state_monitor.shutdown()
+        self._runtime_view_model.shutdown()
+
 def attach_runtime(
     core: CoreRuntime,
     overlay: WidgetOverlay,
@@ -34,11 +70,16 @@ def attach_runtime(
     if core.runtime_inspector is None:
         raise RuntimeError("CoreRuntime does not have a runtime_inspector attached")
     state_monitor = StateMonitorViewModel(core.runtime_inspector)
+    runtime_view_model = RuntimeViewModel(core)
     for context in overlay.model.contexts:
         state_monitor.register_object(f"Widget: {context.title}", context)
     return DevToolsRuntimeAttachment(
-        state_monitor=state_monitor,
-        extra_context={"stateMonitorViewModel": state_monitor},
+        state_monitor=_DevToolsMonitor(state_monitor, runtime_view_model),
+        runtime_view_model=runtime_view_model,
+        extra_context={
+            "stateMonitorViewModel": state_monitor,
+            "runtimeViewModel": runtime_view_model,
+        },
     )
 
 

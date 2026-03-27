@@ -36,7 +36,7 @@ BaseDialog {
 
     property int currentTab: 0
 
-    readonly property var _tabs: ["State", "Console"]
+    readonly property var _tabs: ["State", "Runtime", "Console"]
 
     // ── Layout ────────────────────────────────────────────────────────────────
 
@@ -459,12 +459,181 @@ BaseDialog {
             }
         }
 
+        // ── Runtime tab ───────────────────────────────────────────────────────
+
+        Item {
+            id: runtimeTab
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: devTools.currentTab === 1
+
+            readonly property var _vm: runtimeViewModel ?? null
+
+            ColumnLayout {
+                anchors.fill: parent
+                spacing: 0
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 34
+                    color: theme.surfaceAlt
+
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        width: parent.width; height: 1
+                        color: theme.border
+                    }
+
+                    Row {
+                        anchors.fill: parent
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        spacing: 12
+
+                        Text {
+                            width: parent.width - 96
+                            height: parent.height
+                            verticalAlignment: Text.AlignVCenter
+                            text: runtimeTab._vm ? runtimeTab._vm.summary : "No runtime data"
+                            color: theme.textMuted
+                            font.pixelSize: theme.fontSizeSmall
+                            font.family: "Consolas, Courier New, monospace"
+                            elide: Text.ElideRight
+                        }
+
+                        Rectangle {
+                            width: 84
+                            height: 22
+                            radius: 3
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: runtimeCopyMouse.containsMouse ? theme.surfaceRaised : "transparent"
+                            border.color: theme.border
+                            border.width: 1
+                            opacity: runtimeTab._vm && runtimeTab._vm.units.length > 0 ? 1 : 0.45
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Copy all"
+                                color: theme.textMuted
+                                font.pixelSize: theme.fontSizeSmall
+                                font.family: "Consolas, Courier New, monospace"
+                            }
+
+                            MouseArea {
+                                id: runtimeCopyMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                enabled: runtimeTab._vm && runtimeTab._vm.units.length > 0
+                                onClicked: {
+                                    if (runtimeTab._vm)
+                                        runtimeTab._vm.copyOverview()
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 24
+                    color: theme.surfaceAlt
+
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        width: parent.width; height: 1
+                        color: theme.border
+                    }
+
+                    Row {
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        spacing: 8
+
+                        Text { width: 220; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Unit"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                        Text { width: 70; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "State"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                        Text { width: 70; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Kind"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                        Text { width: 90; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Policy"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                        Text { width: 90; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Activation"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                        Text { width: 80; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "PID"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                        Text { width: 160; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Parent"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                    }
+                }
+
+                ListView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    model: runtimeTab._vm ? runtimeTab._vm.units : []
+                    spacing: 0
+                    ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+                    delegate: Rectangle {
+                        required property int index
+                        required property var modelData
+                        width: ListView.view.width
+                        height: 24
+                        color: index % 2 === 0 ? "transparent" : Qt.rgba(1, 1, 1, 0.02)
+
+                        Row {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            spacing: 8
+
+                            Text { width: 220; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.id; color: theme.text; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
+                            Text { width: 70; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.state; color: modelData.state === "failed" ? theme.danger : (modelData.state === "running" ? theme.accent : theme.textMuted); font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
+                            Text { width: 70; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.kind; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
+                            Text { width: 90; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.execution; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
+                            Text { width: 90; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.activation; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
+                            Text { width: 80; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.pid; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
+                            Text { width: 160; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.parent; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
+                        }
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        visible: !runtimeTab._vm || runtimeTab._vm.units.length === 0
+                        text: "No runtime units available."
+                        color: theme.textMuted
+                        font.pixelSize: theme.fontSizeSmall
+                        font.family: theme.fontFamily
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 28
+                    color: theme.surfaceAlt
+                    visible: runtimeTab._vm && runtimeTab._vm.taskIds.length > 0
+
+                    Rectangle {
+                        anchors.top: parent.top
+                        width: parent.width; height: 1
+                        color: theme.border
+                    }
+
+                    Text {
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        verticalAlignment: Text.AlignVCenter
+                        text: runtimeTab._vm ? ("Tasks: " + runtimeTab._vm.taskIds.join(", ")) : ""
+                        color: theme.textMuted
+                        font.pixelSize: 10
+                        font.family: "Consolas, Courier New, monospace"
+                        elide: Text.ElideRight
+                    }
+                }
+            }
+        }
+
         // ── Console tab ───────────────────────────────────────────────────────
 
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: devTools.currentTab === 1
+            visible: devTools.currentTab === 2
 
             // Level filter state — local to this item
             property bool showDebug:   true
