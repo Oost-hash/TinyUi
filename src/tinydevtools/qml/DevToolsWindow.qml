@@ -468,6 +468,17 @@ BaseDialog {
             visible: devTools.currentTab === 1
 
             readonly property var _vm: runtimeViewModel ?? null
+            property real unitColumnWidth: 280
+            property real stateColumnWidth: 82
+            property real kindColumnWidth: 78
+            property real policyColumnWidth: 96
+            property real activationColumnWidth: 96
+            property real pidColumnWidth: 84
+            property real parentColumnWidth: 220
+            readonly property real tableWidth:
+                unitColumnWidth + stateColumnWidth + kindColumnWidth
+                + policyColumnWidth + activationColumnWidth
+                + pidColumnWidth + parentColumnWidth + 48
 
             ColumnLayout {
                 anchors.fill: parent
@@ -535,6 +546,102 @@ BaseDialog {
 
                 Rectangle {
                     Layout.fillWidth: true
+                    height: 30
+                    color: theme.surface
+
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        width: parent.width; height: 1
+                        color: theme.border
+                    }
+
+                    Flickable {
+                        anchors.fill: parent
+                        contentWidth: runtimeFilterRow.implicitWidth + 16
+                        contentHeight: height
+                        clip: true
+                        flickableDirection: Flickable.HorizontalFlick
+                        ScrollBar.horizontal: ScrollBar { policy: ScrollBar.AsNeeded; height: 4 }
+
+                        Row {
+                            id: runtimeFilterRow
+                            x: 8
+                            height: parent.height
+                            spacing: 4
+
+                            Rectangle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 44; height: 20; radius: 3
+                                readonly property bool on: runtimeTab._vm && runtimeTab._vm.stateFilters.length === runtimeTab._vm.availableStateFilters.length
+                                color: on ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.18) : "transparent"
+                                border.color: on ? theme.accent : theme.border
+                                border.width: 1
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "ALL"
+                                    color: parent.on ? theme.accent : theme.textMuted
+                                    font.pixelSize: 10
+                                    font.family: "Consolas, Courier New, monospace"
+                                    font.weight: Font.Bold
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    enabled: runtimeTab._vm
+                                    onClicked: {
+                                        if (runtimeTab._vm)
+                                            runtimeTab._vm.resetStateFilters()
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 1; height: 14
+                                color: theme.border
+                            }
+
+                            Repeater {
+                                model: runtimeTab._vm ? runtimeTab._vm.availableStateFilters : []
+
+                                delegate: Rectangle {
+                                    required property string modelData
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    implicitWidth: filterLabel.implicitWidth + 12
+                                    height: 20; radius: 3
+
+                                    readonly property bool active: runtimeTab._vm && runtimeTab._vm.stateFilters.indexOf(modelData) >= 0
+
+                                    color: active ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.12) : "transparent"
+                                    border.color: active ? theme.accent : theme.border
+                                    border.width: 1
+
+                                    Text {
+                                        id: filterLabel
+                                        anchors.centerIn: parent
+                                        text: modelData
+                                        color: parent.active ? theme.accent : theme.textMuted
+                                        font.pixelSize: 10
+                                        font.family: "Consolas, Courier New, monospace"
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        enabled: runtimeTab._vm
+                                        onClicked: {
+                                            if (runtimeTab._vm)
+                                                runtimeTab._vm.toggleStateFilter(modelData)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
                     height: 24
                     color: theme.surfaceAlt
 
@@ -544,60 +651,229 @@ BaseDialog {
                         color: theme.border
                     }
 
-                    Row {
+                    Flickable {
                         anchors.fill: parent
-                        anchors.leftMargin: 10
-                        anchors.rightMargin: 10
-                        spacing: 8
+                        contentWidth: runtimeTab.tableWidth
+                        contentHeight: height
+                        clip: true
+                        flickableDirection: Flickable.HorizontalFlick
+                        ScrollBar.horizontal: ScrollBar { policy: ScrollBar.AsNeeded; height: 4 }
 
-                        Text { width: 220; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Unit"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
-                        Text { width: 70; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "State"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
-                        Text { width: 70; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Kind"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
-                        Text { width: 90; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Policy"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
-                        Text { width: 90; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Activation"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
-                        Text { width: 80; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "PID"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
-                        Text { width: 160; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Parent"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                        Row {
+                            x: 10
+                            width: runtimeTab.tableWidth - 20
+                            height: parent.height
+                            spacing: 8
+
+                            Rectangle {
+                                width: runtimeTab.unitColumnWidth; height: parent.height; color: "transparent"
+                                Text {
+                                    anchors.fill: parent
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: "Unit" + (runtimeTab._vm && runtimeTab._vm.sortKey === "id" ? (runtimeTab._vm.sortDescending ? " ▼" : " ▲") : "")
+                                    color: theme.textMuted
+                                    font.pixelSize: 10
+                                    font.family: "Consolas, Courier New, monospace"
+                                    font.weight: Font.DemiBold
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    enabled: runtimeTab._vm
+                                    onClicked: {
+                                        if (runtimeTab._vm)
+                                            runtimeTab._vm.setSort("id")
+                                    }
+                                }
+
+                                Rectangle {
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    anchors.right: parent.right
+                                    width: 6
+                                    color: unitResize.containsMouse || unitResize.drag.active ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.22) : "transparent"
+
+                                    MouseArea {
+                                        id: unitResize
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.SizeHorCursor
+                                        property real startWidth: 0
+                                        property real startX: 0
+                                        drag.target: null
+                                        onPressed: function(mouse) {
+                                            startWidth = runtimeTab.unitColumnWidth
+                                            startX = mouse.x
+                                        }
+                                        onPositionChanged: function(mouse) {
+                                            if (!pressed)
+                                                return
+                                            runtimeTab.unitColumnWidth = Math.max(180, startWidth + (mouse.x - startX))
+                                        }
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                width: runtimeTab.stateColumnWidth; height: parent.height; color: "transparent"
+                                Text {
+                                    anchors.fill: parent
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: "State" + (runtimeTab._vm && runtimeTab._vm.sortKey === "state" ? (runtimeTab._vm.sortDescending ? " ▼" : " ▲") : "")
+                                    color: theme.textMuted
+                                    font.pixelSize: 10
+                                    font.family: "Consolas, Courier New, monospace"
+                                    font.weight: Font.DemiBold
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    enabled: runtimeTab._vm
+                                    onClicked: {
+                                        if (runtimeTab._vm)
+                                            runtimeTab._vm.setSort("state")
+                                    }
+                                }
+                            }
+
+                            Text { width: runtimeTab.kindColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Kind"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                            Text { width: runtimeTab.policyColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Policy"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                            Text { width: runtimeTab.activationColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Activation"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                            Text { width: runtimeTab.pidColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "PID"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+
+                            Rectangle {
+                                width: runtimeTab.parentColumnWidth; height: parent.height; color: "transparent"
+                                Text {
+                                    anchors.fill: parent
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: "Parent"
+                                    color: theme.textMuted
+                                    font.pixelSize: 10
+                                    font.family: "Consolas, Courier New, monospace"
+                                    font.weight: Font.DemiBold
+                                }
+
+                                Rectangle {
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    anchors.right: parent.right
+                                    width: 6
+                                    color: parentResize.containsMouse || parentResize.drag.active ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.22) : "transparent"
+
+                                    MouseArea {
+                                        id: parentResize
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.SizeHorCursor
+                                        property real startWidth: 0
+                                        property real startX: 0
+                                        drag.target: null
+                                        onPressed: function(mouse) {
+                                            startWidth = runtimeTab.parentColumnWidth
+                                            startX = mouse.x
+                                        }
+                                        onPositionChanged: function(mouse) {
+                                            if (!pressed)
+                                                return
+                                            runtimeTab.parentColumnWidth = Math.max(140, startWidth + (mouse.x - startX))
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
-                ListView {
+                Flickable {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
+                    contentWidth: runtimeTab.tableWidth
+                    contentHeight: height
                     clip: true
-                    model: runtimeTab._vm ? runtimeTab._vm.units : []
-                    spacing: 0
-                    ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                    flickableDirection: Flickable.HorizontalFlick
+                    ScrollBar.horizontal: ScrollBar { policy: ScrollBar.AsNeeded; height: 6 }
 
-                    delegate: Rectangle {
-                        required property int index
-                        required property var modelData
-                        width: ListView.view.width
-                        height: 24
-                        color: index % 2 === 0 ? "transparent" : Qt.rgba(1, 1, 1, 0.02)
+                    ListView {
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: runtimeTab.tableWidth
+                        clip: true
+                        model: runtimeTab._vm ? runtimeTab._vm.rowsModel : null
+                        spacing: 0
+                        ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
-                        Row {
-                            anchors.fill: parent
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 10
-                            spacing: 8
+                        delegate: Rectangle {
+                            required property int index
+                            required property var modelData
+                            width: ListView.view.width
+                            height: 24
+                            color: index % 2 === 0 ? "transparent" : Qt.rgba(1, 1, 1, 0.02)
 
-                            Text { width: 220; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.id; color: theme.text; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
-                            Text { width: 70; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.state; color: modelData.state === "failed" ? theme.danger : (modelData.state === "running" ? theme.accent : theme.textMuted); font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
-                            Text { width: 70; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.kind; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
-                            Text { width: 90; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.execution; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
-                            Text { width: 90; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.activation; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
-                            Text { width: 80; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.pid; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
-                            Text { width: 160; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.parent; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
+                            Row {
+                                anchors.fill: parent
+                                anchors.leftMargin: 10
+                                anchors.rightMargin: 10
+                                spacing: 8
+
+                                Item {
+                                    width: runtimeTab.unitColumnWidth
+                                    height: parent.height
+
+                                    Row {
+                                        anchors.fill: parent
+                                        spacing: 0
+
+                                        Item {
+                                            width: (modelData.depth || 0) * 14
+                                            height: parent.height
+                                        }
+
+                                        Text {
+                                            width: 16
+                                            height: parent.height
+                                            verticalAlignment: Text.AlignVCenter
+                                            text: modelData.hasChildren ? (modelData.expanded ? "▾" : "▸") : ""
+                                            color: theme.textMuted
+                                            font.pixelSize: 10
+                                            font.family: "Consolas, Courier New, monospace"
+                                        }
+
+                                        Text {
+                                            width: Math.max(48, runtimeTab.unitColumnWidth - 16 - ((modelData.depth || 0) * 14))
+                                            height: parent.height
+                                            verticalAlignment: Text.AlignVCenter
+                                            text: modelData.displayId
+                                            color: theme.text
+                                            font.pixelSize: 11
+                                            font.family: "Consolas, Courier New, monospace"
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        enabled: modelData.hasChildren
+                                        onClicked: {
+                                            if (runtimeTab._vm)
+                                                runtimeTab._vm.toggleExpanded(modelData.id)
+                                        }
+                                    }
+                                }
+                                Text { width: runtimeTab.stateColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.state; color: modelData.state === "failed" ? theme.danger : (modelData.state === "running" ? theme.accent : theme.textMuted); font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
+                                Text { width: runtimeTab.kindColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.kind; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
+                                Text { width: runtimeTab.policyColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.execution; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
+                                Text { width: runtimeTab.activationColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.activation; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
+                                Text { width: runtimeTab.pidColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.pid; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
+                                Text { width: runtimeTab.parentColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.parent; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
+                            }
                         }
-                    }
 
-                    Text {
-                        anchors.centerIn: parent
-                        visible: !runtimeTab._vm || runtimeTab._vm.units.length === 0
-                        text: "No runtime units available."
-                        color: theme.textMuted
-                        font.pixelSize: theme.fontSizeSmall
-                        font.family: theme.fontFamily
+                        Text {
+                            anchors.centerIn: parent
+                            visible: !runtimeTab._vm || runtimeTab._vm.units.length === 0
+                            text: "No runtime units available."
+                            color: theme.textMuted
+                            font.pixelSize: theme.fontSizeSmall
+                            font.family: theme.fontFamily
+                        }
                     }
                 }
 
