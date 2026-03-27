@@ -27,10 +27,14 @@ Known packages:
 - [0.3.4][tinycore][fixed] Moved widget state persistence into host-owned persistence services so widget layout and config are no longer stored through a separate tinywidgets-only path
 - [0.3.4][tinycore][fixed] Tightened the persistence API behind host-facing methods and a plugin `ctx.config` surface so host and plugin code stop reaching through loose registries and loader internals
 - [0.3.4][tinycore][fixed] Moved runtime boot, subprocess supervision, host worker ownership, and activation/state tracking into `tinycore.runtime` so app startup no longer owns the live process graph
+- [0.3.4][tinycore][fixed] Moved provider activation, provider update routing, and the widget poll loop into runtime-owned services so session facts and widget code stop owning runtime heat and polling behavior
 - [0.3.4][tinycore][fixed] Split runtime diagnostics into explicit log and runtime surfaces, removed `tinycore.inspect`, and moved log inspection under logging-owned diagnostics
 - [0.3.4][tinycore][fixed] Added runtime scheduling metadata and a core-owned delayed scheduler so widget polling, devtools refresh, boot phases, and plugin grace timers share one runtime vocabulary
 - [0.3.4][tinycore][fixed] Added a shared runtime-owned Qt timer adapter and scheduling driver metadata so runtime polling and diagnostics refresh stop building separate raw `QTimer` loops
 - [0.3.4][tinycore][fixed] Normalized runtime boot into typed assembly and phase specs so optional devtools and host workers are described through the same boot pipeline instead of late special cases
+- [0.3.4][tinycore][changed] Reduced the top-level `tinycore` and `tinycore.runtime` public APIs so runtime internals, diagnostics helpers, and host adapter glue no longer leak through broad package re-exports
+- [0.3.4][tinyui][changed] Moved TinyUI host assembly and UI adapter wiring into `tinyui.boot` and `tinyui.ui_adapters` so `tinycore.runtime` no longer imports TinyUI-specific boot, overlay, or devtools UI surfaces
+- [0.3.4][other][removed] Retired the `app` package, moved the launcher entry path to `tinyui_boot`, and updated the build and script entrypoints to use the new bootloader directly
 - [0.3.3][tinycore][changed] Split logging into product logging and optional diagnostics under `tinycore.logging`, removed the old `tinycore.log` shim, and moved startup timing output behind the diagnostics path
 - [0.3.3][app][changed] Moved devtools runtime wiring behind an optional `tinydevtools.host.attach_runtime(...)` path so bootstrap can run without a direct devtools package dependency
 - [0.3.3][tinyui][changed] Stopped treating Dev Tools as part of the main UI package by loading the devtools window through an optional QML loader and only showing the menu entry when devtools are available
