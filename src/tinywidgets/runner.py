@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""Widget runners — Tickable implementations driven by the PollLoop."""
+"""Widget runners — update participants driven by the runtime update loop."""
 
 from __future__ import annotations
 
@@ -76,7 +76,7 @@ class WidgetState:
 class TextWidgetRunner:
     """Reads one telemetry value per tick and emits a WidgetState when it changes.
 
-    Implements Tickable — register with PollLoop after ProviderUpdater.
+    Register with PollLoop after ProviderUpdater so widget reads happen after provider refresh.
     """
 
     def __init__(

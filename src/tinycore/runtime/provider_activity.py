@@ -24,7 +24,7 @@
 from __future__ import annotations
 
 from tinycore.runtime.models import RuntimeState
-from tinycore.runtime.unit_ids import provider_capability_unit_id, provider_runtime_unit_id
+from tinycore.runtime.unit_ids import provider_export_unit_id, provider_runtime_unit_id
 from tinycore.runtime.plugins.facts import PluginParticipationFacts
 
 from .registry import RuntimeRegistry
@@ -35,16 +35,16 @@ class ProviderActivity:
 
     def __init__(self, participation: PluginParticipationFacts) -> None:
         self._participation = participation
-        self._active_consumers: set[str] = set()
+        self._active_participants: set[str] = set()
         self._active_provider_names: set[str] = set()
         self._runtime_registry: RuntimeRegistry | None = None
 
-    def activate_consumer(self, consumer_name: str) -> None:
-        self._active_consumers.add(consumer_name)
+    def activate_participant(self, participant_name: str) -> None:
+        self._active_participants.add(participant_name)
         self._refresh_active_providers()
 
-    def deactivate_consumer(self, consumer_name: str) -> None:
-        self._active_consumers.discard(consumer_name)
+    def deactivate_participant(self, participant_name: str) -> None:
+        self._active_participants.discard(participant_name)
         self._refresh_active_providers()
 
     def active_provider_names(self) -> tuple[str, ...]:
@@ -61,8 +61,8 @@ class ProviderActivity:
         self._runtime_registry = registry
         self._sync_provider_runtime_states(set(), self._active_provider_names)
 
-    def bindings_changed(self, consumer_name: str) -> None:
-        if consumer_name in self._active_consumers:
+    def bindings_changed(self, participant_name: str) -> None:
+        if participant_name in self._active_participants:
             self._refresh_active_providers()
 
     def provider_registered(self, provider_name: str) -> None:
@@ -85,8 +85,8 @@ class ProviderActivity:
     def _refresh_active_providers(self) -> None:
         previous = set(self._active_provider_names)
         active: set[str] = set()
-        for consumer_name in self._active_consumers:
-            bindings = self._participation.bindings_for(consumer_name)
+        for participant_name in self._active_participants:
+            bindings = self._participation.bindings_for(participant_name)
             active.update(binding.provider_name for binding in bindings.resolved.values())
         self._active_provider_names = active
         self._sync_provider_runtime_states(previous, active)
@@ -108,7 +108,7 @@ class ProviderActivity:
             self._runtime_registry.set_state(runtime_unit_id, state)
         if handle is None:
             return
-        for capability in handle.exports:
-            capability_unit_id = provider_capability_unit_id(provider_name, capability)
-            if self._runtime_registry.get(capability_unit_id) is not None:
-                self._runtime_registry.set_state(capability_unit_id, state)
+        for export_name in handle.exports:
+            export_unit_id = provider_export_unit_id(provider_name, export_name)
+            if self._runtime_registry.get(export_unit_id) is not None:
+                self._runtime_registry.set_state(export_unit_id, state)

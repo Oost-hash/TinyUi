@@ -28,7 +28,7 @@ from typing import Literal
 
 from .scheduling import RuntimeClock, RuntimeScheduleKind
 
-RuntimeUnitKind = Literal["process", "worker", "timer", "adapter"]
+RuntimeUnitKind = Literal["process", "worker", "timer", "adapter", "surface"]
 RuntimeTransport = Literal["host", "qt_timer", "thread", "subprocess"]
 RuntimeState = Literal[
     "declared",

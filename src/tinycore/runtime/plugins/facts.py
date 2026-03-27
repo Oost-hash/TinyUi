@@ -23,22 +23,28 @@
 
 from __future__ import annotations
 
-from tinycore.session.runtime import ConsumerBindingSet, ProviderHandle, SessionRuntime
+from tinycore.session.runtime import ConsumerBindingSet, ProviderHandle
+
+from .controls import PluginParticipationControls
+from .protocols import PluginParticipationStore
+
+ConsumerParticipationBindings = ConsumerBindingSet
+ProviderParticipationHandle = ProviderHandle
 
 
 class PluginParticipationFacts:
     """Expose plugin/provider binding facts through a runtime-owned seam."""
 
-    def __init__(self, session: SessionRuntime) -> None:
+    def __init__(self, session: PluginParticipationStore) -> None:
         self._session = session
-        self.controls = session.controls
+        self.controls = PluginParticipationControls(session.controls)
 
     def register_provider(
         self,
         provider_name: str,
         provider: object,
         exports: tuple[str, ...],
-    ) -> ProviderHandle:
+    ) -> ProviderParticipationHandle:
         return self._session.register_provider(provider_name, provider, exports)
 
     def bind_consumer(
@@ -46,17 +52,17 @@ class PluginParticipationFacts:
         consumer_name: str,
         requires: tuple[str, ...],
         provider_requests=(),
-    ) -> ConsumerBindingSet:
+    ) -> ConsumerParticipationBindings:
         return self._session.bind_consumer(consumer_name, requires, provider_requests)
 
-    def provider(self, provider_name: str) -> ProviderHandle | None:
+    def provider(self, provider_name: str) -> ProviderParticipationHandle | None:
         return self._session.provider(provider_name)
 
-    def providers(self) -> list[ProviderHandle]:
+    def providers(self) -> list[ProviderParticipationHandle]:
         return self._session.providers()
 
-    def provider_items(self) -> list[tuple[str, ProviderHandle]]:
+    def provider_items(self) -> list[tuple[str, ProviderParticipationHandle]]:
         return self._session.provider_items()
 
-    def bindings_for(self, consumer_name: str) -> ConsumerBindingSet:
+    def bindings_for(self, consumer_name: str) -> ConsumerParticipationBindings:
         return self._session.bindings_for(consumer_name)

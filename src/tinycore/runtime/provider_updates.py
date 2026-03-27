@@ -47,7 +47,7 @@ class ProviderUpdater:
     Also tracks active/paused state transitions per provider and logs them
     via the ``connector`` debug category.
 
-    Register this as the first Tickable in the runtime poll loop so widget
+        Register this as the first update participant in the runtime update loop so widget
     runners and other consumers see fresh provider state each cycle.
     """
 

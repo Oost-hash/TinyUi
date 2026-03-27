@@ -18,15 +18,11 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""tinycore.session — session-owned provider bindings and control surfaces."""
+"""tinycore.session — internal backing store for provider bindings and controls."""
 
 from .control import DemoConfig, ProviderControlService
 from .runtime import ConsumerBindingSet, ProviderHandle, SessionRuntime
 
 __all__ = [
-    "ConsumerBindingSet",
-    "DemoConfig",
-    "ProviderControlService",
-    "ProviderHandle",
     "SessionRuntime",
 ]

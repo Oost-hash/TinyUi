@@ -45,7 +45,7 @@ from .spec import WidgetSpec
 from .threshold import ThresholdEntry
 
 if TYPE_CHECKING:
-    from tinycore.session import ProviderControlService
+    from tinycore.runtime.plugins.controls import PluginParticipationControls
 
 
 class WidgetContext(QObject):
@@ -63,7 +63,7 @@ class WidgetContext(QObject):
     def __init__(
         self,
         spec: WidgetSpec,
-        controls: "ProviderControlService",
+        controls: "PluginParticipationControls",
         consumer_name: str,
         parent: QObject | None = None,
     ) -> None:

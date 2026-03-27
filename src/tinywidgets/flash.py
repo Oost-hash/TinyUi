@@ -20,7 +20,7 @@
 #  licensed under GPLv3.
 """FlashState — tick-driven blink for critical widget values.
 
-Driven by the PollLoop (100 ms ticks). Default: toggles every 5 ticks = 500 ms.
+Driven by the runtime update loop (100 ms ticks). Default: toggles every 5 ticks = 500 ms.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ from __future__ import annotations
 class FlashState:
     """Toggles visibility at a fixed tick interval.
 
-    Call tick() each PollLoop cycle.
+Call tick() each runtime update cycle.
     Read visible to decide whether the widget should render.
     Call reset() when the flash condition is no longer met.
     """

@@ -44,7 +44,7 @@ class ThresholdEntry:
     value:        float
     color:        str
     flash:        bool = False
-    flash_speed:  int  = 5        # PollLoop ticks per toggle (1 tick = 100 ms)
+    flash_speed:  int  = 5        # update-loop ticks per toggle (1 tick = 100 ms)
     flash_target: str  = "value"  # "value" | "text" | "widget"
 
 
