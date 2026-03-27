@@ -33,6 +33,9 @@ Known packages:
 - [0.3.4][tinycore][fixed] Added a shared runtime-owned Qt timer adapter and scheduling driver metadata so runtime polling and diagnostics refresh stop building separate raw `QTimer` loops
 - [0.3.4][tinycore][fixed] Normalized runtime boot into typed assembly and phase specs so optional devtools and host workers are described through the same boot pipeline instead of late special cases
 - [0.3.4][tinycore][changed] Reduced the top-level `tinycore` and `tinycore.runtime` public APIs so runtime internals, diagnostics helpers, and host adapter glue no longer leak through broad package re-exports
+- [0.3.4][tinycore][changed] Moved host/runtime service groupings and explicit runtime composition into dedicated `tinycore.services` and `tinycore.composition` modules so runtime boot no longer depends on an app container or `create_app` path
+- [0.3.4][tinycore][removed] Removed `tinycore.app` after moving the remaining runtime boot and compatibility routes to explicit composition-owned entrypoints
+- [0.3.4][tinycore][changed] Tightened package roots for `tinycore.diagnostics`, `tinycore.persistence`, `tinywidgets`, and `tinydevtools` so broad package-level grab-bags no longer define the public import surface
 - [0.3.4][tinyui][changed] Moved TinyUI host assembly and UI adapter wiring into `tinyui.boot` and `tinyui.ui_adapters` so `tinycore.runtime` no longer imports TinyUI-specific boot, overlay, or devtools UI surfaces
 - [0.3.4][other][removed] Retired the `app` package, moved the launcher entry path to `tinyui_boot`, and updated the build and script entrypoints to use the new bootloader directly
 - [0.3.3][tinycore][changed] Split logging into product logging and optional diagnostics under `tinycore.logging`, removed the old `tinycore.log` shim, and moved startup timing output behind the diagnostics path
