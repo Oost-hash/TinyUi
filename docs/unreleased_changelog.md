@@ -24,6 +24,8 @@ Known packages:
 - [0.3.4][plugins][fixed] Moved connector inspection ownership to the provider runtime through `inspect_snapshot()` so new plugins do not need central inspection schemas to become inspectable
 - [0.3.4][tinycore][fixed] Added shared `AppPaths` ownership for source and frozen runtime roots so boot and QML loading stop rebuilding app paths locally
 - [0.3.4][tinycore][fixed] Grouped config and settings services under explicit host persistence ownership so persisted state no longer hangs off `HostServices` as unrelated registries
+- [0.3.4][tinycore][fixed] Moved widget state persistence into host-owned persistence services so widget layout and config are no longer stored through a separate tinywidgets-only path
+- [0.3.4][tinycore][fixed] Tightened the persistence API behind host-facing methods and a plugin `ctx.config` surface so host and plugin code stop reaching through loose registries and loader internals
 - [0.3.3][tinycore][changed] Split logging into product logging and optional diagnostics under `tinycore.logging`, removed the old `tinycore.log` shim, and moved startup timing output behind the diagnostics path
 - [0.3.3][app][changed] Moved devtools runtime wiring behind an optional `tinydevtools.host.attach_runtime(...)` path so bootstrap can run without a direct devtools package dependency
 - [0.3.3][tinyui][changed] Stopped treating Dev Tools as part of the main UI package by loading the devtools window through an optional QML loader and only showing the menu entry when devtools are available
