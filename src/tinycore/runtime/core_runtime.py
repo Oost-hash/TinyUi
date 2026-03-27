@@ -25,11 +25,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
-from typing import Protocol
+from typing import Callable, Protocol
 
-from tinycore.app import App
 from tinycore.diagnostics.runtime_state import RuntimeInspector
 from tinycore.plugin.lifecycle import PluginLifecycleManager
+from tinycore.paths import AppPaths
+from tinycore.services import HostServices, RuntimeServices
 
 from .host_workers import HostWorkerSupervisor
 from .models import RuntimeActivationPolicy, RuntimeExecutionPolicy, RuntimeState, RuntimeUnitInfo, RuntimeUnitSpec
@@ -64,9 +65,12 @@ class _StateMonitorLike(Protocol):
 
 @dataclass
 class CoreRuntime:
-    """Core-owned runtime shell around the current app composition."""
+    """Core-owned runtime shell around the current host/runtime composition."""
 
-    app: App
+    paths: AppPaths
+    host: HostServices
+    runtime: RuntimeServices
+    stop_runtime: Callable[[], None]
     lifecycle: PluginLifecycleManager
     process_supervisor: ProcessSupervisor
     provider_activity: ProviderActivity
@@ -77,18 +81,6 @@ class CoreRuntime:
     state_monitor: _StateMonitorLike | None
     extra_context: dict[str, object]
     units: RuntimeRegistry
-
-    @property
-    def paths(self):
-        return self.app.paths
-
-    @property
-    def host(self):
-        return self.app.host
-
-    @property
-    def runtime(self):
-        return self.app.runtime
 
     def start_host_workers(self) -> None:
         """Start core-owned host workers whose activation policy is always-on."""
@@ -127,10 +119,10 @@ class CoreRuntime:
         self.host_workers.stop(unit_id)
 
     def shutdown(self) -> None:
-        """Shut down host workers and then stop the wrapped app."""
+        """Shut down host workers and then stop the wrapped runtime composition."""
         self.host_workers.shutdown()
         self.scheduler.shutdown()
-        self.app.stop()
+        self.stop_runtime()
 
     def stop(self) -> None:
         """Compatibility alias for shutdown during the transition."""
@@ -156,7 +148,7 @@ class CoreRuntime:
 
 
 def build_runtime_registry(
-    app: App,
+    runtime: RuntimeServices,
     lifecycle: PluginLifecycleManager,
     process_supervisor: ProcessSupervisor,
     provider_activity: ProviderActivity,
@@ -499,7 +491,7 @@ def build_runtime_registry(
             )
         )
 
-    for provider in app.runtime.session.providers():
+    for provider in runtime.session.providers():
         runtime_unit_id = provider_runtime_unit_id(provider.name)
         provider_state: RuntimeState = (
             "running" if provider.name in provider_activity.active_provider_names() else "idle"
@@ -548,7 +540,7 @@ def build_runtime_registry(
 
     supervised_infos = {info.plugin_name: info for info in process_supervisor.infos()}
     active_consumers = set(lifecycle.active_consumer_names())
-    for plugin in app.runtime.plugins.plugins:
+    for plugin in runtime.plugins.plugins:
         process_info = supervised_infos.get(plugin.name)
         pid = process_info.pid if process_info is not None else None
         process_state = process_info.state if process_info is not None else "declared"

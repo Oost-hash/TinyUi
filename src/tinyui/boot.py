@@ -27,7 +27,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import cast
 
-from tinycore.app import App
+from tinycore.paths import AppPaths
+from tinycore.services import HostServices, RuntimeServices
 from tinycore.logging import get_logger
 from tinycore.plugin.manifest import PluginManifest
 from tinycore.runtime.boot import HostAssembly, HostOverlayBuild, HostStateMonitorBuild
@@ -53,20 +54,22 @@ class TinyUiHostAssembly(HostAssembly):
             return None
         return StateMonitorViewModel.REFRESH_INTERVAL_MS
 
-    def register_host(self, app: App) -> None:
-        TinyUIPlugin().register(app)
+    def register_host(self, host: HostServices) -> None:
+        TinyUIPlugin().register(host)
 
     def build_overlay(
         self,
-        app: App,
+        paths: AppPaths,
+        host: HostServices,
+        runtime: RuntimeServices,
         provider_activity: ProviderActivity,
         manifests: list[PluginManifest],
     ) -> HostOverlayBuild:
         overlay = WidgetOverlay(
-            app.runtime.session,
+            runtime.session,
             provider_activity,
-            paths=app.paths,
-            widget_state_for=app.host.persistence.widget_state_for,
+            paths=paths,
+            widget_state_for=host.persistence.widget_state_for,
         )
         widget_sources: list[tuple[str, str, str]] = []
         for manifest in manifests:

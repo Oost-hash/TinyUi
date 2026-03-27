@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tinycore.app import App
+    from tinycore.services import HostServices, RuntimeServices
 
     from .protocol import Plugin
 
@@ -49,11 +49,19 @@ class PluginRegistry:
         """Add a plugin to the registry."""
         self._plugins.append(RegisteredPlugin(plugin=plugin, requires=requires))
 
-    def register_all(self, app: App) -> None:
+    def register_all(self, host: HostServices, runtime: RuntimeServices) -> None:
         """Phase 1: call register() on all plugins with a scoped PluginContext."""
         from .context import PluginContext
         for entry in self._plugins:
-            entry.plugin.register(PluginContext(app, entry.plugin.name, entry.requires))
+            entry.plugin.register(
+                PluginContext(
+                    host.persistence,
+                    host.editors,
+                    runtime.session,
+                    entry.plugin.name,
+                    entry.requires,
+                )
+            )
 
     def start_all(self) -> None:
         """Phase 2: call start() on all plugins in order."""

@@ -18,27 +18,16 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""tinywidgets — self-contained overlay widget system."""
+"""tinywidgets public surface.
 
-from .context import WidgetContext, WidgetModel, WidgetOverlayState
-from .flash import FlashState
+Expose only the obvious host entrypoints; import widget internals from their
+owning modules directly.
+"""
+
 from .overlay import WidgetOverlay
-from .registry import WidgetRegistry
-from .runner import TextWidgetRunner, WidgetState
-from .spec import WidgetSpec, load_widgets_toml
-from .threshold import ThresholdEntry, evaluate
+from .spec import load_widgets_toml
 
 __all__ = [
-    "FlashState",
-    "TextWidgetRunner",
-    "ThresholdEntry",
-    "WidgetContext",
-    "WidgetModel",
-    "WidgetOverlayState",
     "WidgetOverlay",
-    "WidgetRegistry",
-    "WidgetSpec",
-    "WidgetState",
-    "evaluate",
     "load_widgets_toml",
 ]

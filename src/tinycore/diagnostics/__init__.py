@@ -19,19 +19,15 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Diagnostics package.
+"""tinycore.diagnostics public surface.
 
-Keep package-level imports intentionally light to avoid circular imports during
-early app bootstrap. Import heavier helpers from their submodules directly.
+Keep package-level exports intentionally small. Import concrete runtime-state or
+log-diagnostics helpers from their owning modules directly.
 """
 
-from .runtime_state import InspectionEntry, InspectionSourceInfo, RuntimeInspector
 from .snapshot_protocols import InspectionSnapshot, InspectionSnapshotProvider
 
 __all__ = [
-    "InspectionEntry",
     "InspectionSnapshot",
     "InspectionSnapshotProvider",
-    "InspectionSourceInfo",
-    "RuntimeInspector",
 ]

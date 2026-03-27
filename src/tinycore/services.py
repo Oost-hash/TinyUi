@@ -18,12 +18,15 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""App container + create_app() factory."""
+
+"""Core-owned host and runtime service groupings."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Callable
+
+from tinyui_schema import EditorRegistry, SettingsSpec
 
 from .capabilities.registry import CapabilityRegistry
 from .paths import AppPaths
@@ -33,7 +36,6 @@ from .persistence.settings import SettingsRegistry
 from .persistence.widget_state import WidgetStateRegistry
 from .plugin.registry import PluginRegistry
 from .session.runtime import SessionRuntime
-from tinyui_schema import EditorRegistry, SettingsSpec
 
 
 class PersistenceServices:
@@ -108,12 +110,16 @@ class PersistenceServices:
 
     def get_setting(self, plugin_name: str, key: str) -> Any:
         """Read a persisted setting from the right registry."""
-        registry = self._host_settings if self.has_host_settings(plugin_name) else self._plugin_settings
+        registry = (
+            self._host_settings if self.has_host_settings(plugin_name) else self._plugin_settings
+        )
         return registry.get_value(plugin_name, key)
 
     def set_setting(self, plugin_name: str, key: str, value: Any) -> None:
         """Write a persisted setting into the right registry."""
-        registry = self._host_settings if self.has_host_settings(plugin_name) else self._plugin_settings
+        registry = (
+            self._host_settings if self.has_host_settings(plugin_name) else self._plugin_settings
+        )
         registry.set_value(plugin_name, key, value)
 
     def load_all_settings(self) -> None:
@@ -123,7 +129,9 @@ class PersistenceServices:
 
     def save_settings(self, plugin_name: str) -> None:
         """Persist one plugin or host settings group to disk."""
-        registry = self._host_settings if self.has_host_settings(plugin_name) else self._plugin_settings
+        registry = (
+            self._host_settings if self.has_host_settings(plugin_name) else self._plugin_settings
+        )
         registry.save(plugin_name)
 
     def widget_state_for(self, plugin_name: str):
@@ -147,61 +155,18 @@ class RuntimeServices:
     plugins: PluginRegistry
 
 
-class App:
-    """Application composition container.
-
-    ``App`` groups host services and runtime services so the composition root
-    can wire the system together without exposing one flat bucket of registries.
-    """
-
-    def __init__(self, paths: AppPaths):
-        self.paths = paths
-        capabilities = CapabilityRegistry()
-        self.host = HostServices(
-            persistence=PersistenceServices(paths),
-            editors=EditorRegistry(),
-        )
-        self.runtime = RuntimeServices(
-            session=SessionRuntime(capabilities),
-            plugins=PluginRegistry(),
-        )
-
-    def start(self, *, plugins: bool = True) -> None:
-        """Start the application, optionally starting all plugins.
-
-        Pass plugins=False when using PluginLifecycleManager — it handles
-        plugin start/stop on demand instead of starting everything at once.
-        """
-        if plugins:
-            self.runtime.plugins.start_all()
-
-    def stop(self) -> None:
-        """Stop the application and all registered plugins."""
-        self.runtime.plugins.stop_all()
-
-    def register_plugins(self) -> None:
-        """Run plugin register phase with scoped plugin contexts."""
-        self.runtime.plugins.register_all(self)
+def build_host_services(paths: AppPaths) -> HostServices:
+    """Create the host-owned service group for one runtime composition."""
+    return HostServices(
+        persistence=PersistenceServices(paths),
+        editors=EditorRegistry(),
+    )
 
 
-def create_app(paths: AppPaths, *plugins, register_plugins: bool = True) -> App:
-    """Factory: create an App, add plugins, and run register phase.
-
-    Args:
-        paths: Shared application path ownership for the current runtime mode.
-
-    Usage:
-        app = create_app(AppPaths.detect(), PluginA(), PluginB())
-        app.host.persistence.load_all_configs()
-        app.start()
-    """
-    app = App(paths)
-    for plugin in plugins:
-        if isinstance(plugin, tuple):
-            instance, requires = plugin
-            app.runtime.plugins.add(instance, requires)
-        else:
-            app.runtime.plugins.add(plugin)
-    if register_plugins:
-        app.register_plugins()
-    return app
+def build_runtime_services() -> RuntimeServices:
+    """Create the runtime-owned service group for one runtime composition."""
+    capabilities = CapabilityRegistry()
+    return RuntimeServices(
+        session=SessionRuntime(capabilities),
+        plugins=PluginRegistry(),
+    )

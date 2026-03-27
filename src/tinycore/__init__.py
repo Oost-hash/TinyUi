@@ -33,7 +33,6 @@ from importlib import import_module
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .app import App, create_app
     from .logging import LogInspector
     from .paths import AppPaths
     from .runtime.boot import boot_runtime, discover_manifests
@@ -41,22 +40,18 @@ if TYPE_CHECKING:
 
 
 _EXPORTS: dict[str, tuple[str, str]] = {
-    "App": (".app", "App"),
     "AppPaths": (".paths", "AppPaths"),
     "CoreRuntime": (".runtime.core_runtime", "CoreRuntime"),
     "LogInspector": (".logging", "LogInspector"),
     "boot_runtime": (".runtime.boot", "boot_runtime"),
-    "create_app": (".app", "create_app"),
     "discover_manifests": (".runtime.boot", "discover_manifests"),
 }
 
 __all__ = (
-    "App",
     "AppPaths",
     "CoreRuntime",
     "LogInspector",
     "boot_runtime",
-    "create_app",
     "discover_manifests",
 )
 

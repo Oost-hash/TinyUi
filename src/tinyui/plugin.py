@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""TinyUIPlugin — registers host settings directly on ``App.host.persistence``.
+"""TinyUIPlugin — registers host settings directly on host persistence services.
 
 TinyUI is the host application, not a plugin. It registers its settings
 on the host settings registry which is not exposed to plugins via PluginContext.
@@ -31,7 +31,7 @@ from typing import TYPE_CHECKING
 from tinyui_schema import SettingsSpec
 
 if TYPE_CHECKING:
-    from tinycore.app import App
+    from tinycore.services import HostServices
 
 
 class TinyUIPlugin:
@@ -39,8 +39,8 @@ class TinyUIPlugin:
 
     name = "TinyUI"
 
-    def register(self, app: App) -> None:
-        _r = lambda spec: app.host.persistence.register_host_setting(self.name, spec)
+    def register(self, host: HostServices) -> None:
+        _r = lambda spec: host.persistence.register_host_setting(self.name, spec)
 
         # ── Application ───────────────────────────────────────────────────
         _r(SettingsSpec(

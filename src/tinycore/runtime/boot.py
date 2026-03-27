@@ -27,13 +27,14 @@ from dataclasses import dataclass
 from time import perf_counter
 from typing import Callable, Protocol, TypeVar, cast
 
-from tinycore.app import App, create_app
+from tinycore.composition import create_runtime_composition
 from tinycore.diagnostics.runtime_sources import build_runtime_inspector
 from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
 from tinycore.plugin.lifecycle import PluginLifecycleManager
 from tinycore.plugin.manifest import PluginManifest, scan_plugins
 from tinycore.plugin.subprocess_host import SubprocessPlugin
+from tinycore.services import HostServices, RuntimeServices
 
 from .core_runtime import CoreRuntime, build_runtime_registry
 from .host_workers import HostWorkerHandle, HostWorkerSupervisor
@@ -95,7 +96,10 @@ class _BootAssembly:
     boot_phase_states: dict[str, RuntimeState]
     process_supervisor: ProcessSupervisor
     scheduler: RuntimeScheduler
-    app: App
+    host: HostServices
+    runtime: RuntimeServices
+    start_runtime: Callable[[], None]
+    stop_runtime: Callable[[], None]
     host_assembly: HostAssembly
     provider_activity: ProviderActivity | None = None
     lifecycle: PluginLifecycleManager | None = None
@@ -129,11 +133,13 @@ class HostAssembly(Protocol):
     @property
     def devtools_monitor_interval_ms(self) -> int | None: ...
 
-    def register_host(self, app: App) -> None: ...
+    def register_host(self, host: HostServices) -> None: ...
 
     def build_overlay(
         self,
-        app: App,
+        paths: AppPaths,
+        host: HostServices,
+        runtime: RuntimeServices,
         provider_activity: ProviderActivity,
         manifests: list[PluginManifest],
     ) -> HostOverlayBuild: ...
@@ -247,7 +253,7 @@ def boot_runtime(
     host_workers = HostWorkerSupervisor()
 
     registry = build_runtime_registry(
-        assembly.app,
+        assembly.runtime,
         lifecycle,
         assembly.process_supervisor,
         provider_activity,
@@ -282,7 +288,10 @@ def boot_runtime(
     _register_host_workers(host_workers, assembly.host_worker_build)
 
     runtime = CoreRuntime(
-        app=assembly.app,
+        paths=assembly.paths,
+        host=assembly.host,
+        runtime=assembly.runtime,
+        stop_runtime=assembly.stop_runtime,
         lifecycle=lifecycle,
         process_supervisor=assembly.process_supervisor,
         provider_activity=provider_activity,
@@ -340,7 +349,7 @@ def _create_boot_assembly(
     process_supervisor = ProcessSupervisor()
     scheduler = RuntimeScheduler()
     phase_start = perf_counter()
-    app = create_app(
+    composition = create_runtime_composition(
         paths,
         *[
             (
@@ -354,7 +363,7 @@ def _create_boot_assembly(
         ],
         register_plugins=False,
     )
-    _log_startup_phase("create_app", phase_start)
+    _log_startup_phase("create_runtime_composition", phase_start)
 
     return _BootAssembly(
         paths=paths,
@@ -364,9 +373,12 @@ def _create_boot_assembly(
         boot_phase_states=boot_phase_states,
         process_supervisor=process_supervisor,
         scheduler=scheduler,
-        app=app,
+        host=composition.host,
+        runtime=composition.runtime,
+        start_runtime=lambda: composition.start(plugins=False),
+        stop_runtime=composition.stop,
         host_assembly=host_assembly,
-        provider_activity=ProviderActivity(app.runtime.session),
+        provider_activity=ProviderActivity(composition.runtime.session),
     )
 
 
@@ -375,21 +387,25 @@ def _pre_registry_phases(assembly: _BootAssembly) -> tuple[_PreRegistryPhaseSpec
     return (
         _PreRegistryPhaseSpec(
             name="register_consumers",
-            action=lambda: _register_consumers(assembly.app),
+            action=lambda: _register_consumers(assembly.host, assembly.runtime),
         ),
         _PreRegistryPhaseSpec(
             name="register_host",
-            action=lambda: _register_host_and_start(assembly.app, assembly.host_assembly),
+            action=lambda: _register_host_and_start(
+                assembly.host,
+                assembly.start_runtime,
+                assembly.host_assembly,
+            ),
         ),
         _PreRegistryPhaseSpec(
             name="activate_plugins",
-            action=lambda: _activate_plugins(assembly.app, assembly.scheduler),
+            action=lambda: _activate_plugins(assembly.runtime, assembly.scheduler),
             assign=lambda result: setattr(assembly, "lifecycle", result),
         ),
         _PreRegistryPhaseSpec(
             name="register_providers",
             action=lambda: _register_providers(
-                assembly.app,
+                assembly.runtime,
                 assembly.provider_manifests,
                 cast(ProviderActivity, assembly.provider_activity),
             ),
@@ -397,7 +413,7 @@ def _pre_registry_phases(assembly: _BootAssembly) -> tuple[_PreRegistryPhaseSpec
         _PreRegistryPhaseSpec(
             name="bind_consumers",
             action=lambda: _bind_consumers(
-                assembly.app,
+                assembly.runtime,
                 assembly.consumer_manifests,
                 cast(ProviderActivity, assembly.provider_activity),
             ),
@@ -405,7 +421,9 @@ def _pre_registry_phases(assembly: _BootAssembly) -> tuple[_PreRegistryPhaseSpec
         _PreRegistryPhaseSpec(
             name="build_overlay",
             action=lambda: assembly.host_assembly.build_overlay(
-                assembly.app,
+                assembly.paths,
+                assembly.host,
+                assembly.runtime,
                 cast(ProviderActivity, assembly.provider_activity),
                 assembly.consumer_manifests,
             ),
@@ -452,28 +470,35 @@ def _run_registry_phases(
     return tuple(results)
 
 
-def _load_host_state(app: App) -> None:
-    app.host.persistence.load_all()
+def _load_host_state(host: HostServices) -> None:
+    host.persistence.load_all()
 
 
-def _register_host_and_start(app: App, host_assembly: HostAssembly) -> None:
-    host_assembly.register_host(app)
-    _load_host_state(app)
-    app.start(plugins=False)
+def _register_host_and_start(
+    host: HostServices,
+    start_runtime: Callable[[], None],
+    host_assembly: HostAssembly,
+) -> None:
+    host_assembly.register_host(host)
+    _load_host_state(host)
+    start_runtime()
 
 
-def _register_consumers(app: App) -> None:
+def _register_consumers(host: HostServices, runtime: RuntimeServices) -> None:
     """Run the consumer registration phase explicitly from the runtime boot path."""
-    app.register_plugins()
+    runtime.plugins.register_all(host, runtime)
 
 
-def _activate_plugins(app: App, scheduler: RuntimeScheduler) -> PluginLifecycleManager:
+def _activate_plugins(
+    runtime: RuntimeServices,
+    scheduler: RuntimeScheduler,
+) -> PluginLifecycleManager:
     lifecycle = PluginLifecycleManager(
-        app.runtime.plugins,
+        runtime.plugins,
         scheduler=scheduler,
         grace_seconds=30.0,
     )
-    plugin_names = [p.name for p in app.runtime.plugins.plugins]
+    plugin_names = [p.name for p in runtime.plugins.plugins]
     if plugin_names:
         lifecycle.activate(plugin_names[0])
     return lifecycle
@@ -488,7 +513,7 @@ def _attach_runtime_surfaces(
 
 
 def _register_providers(
-    app: App,
+    runtime: RuntimeServices,
     manifests: list[PluginManifest],
     provider_activity: ProviderActivity,
 ) -> None:
@@ -497,7 +522,7 @@ def _register_providers(
             continue
         provider = manifest.provider.create()
         provider.open()
-        app.runtime.session.register_provider(manifest.name, provider, manifest.exports)
+        runtime.session.register_provider(manifest.name, provider, manifest.exports)
         provider_activity.provider_registered(manifest.name)
         _log.info(
             "provider registered  plugin=%s  type=%s  exports=%s",
@@ -508,12 +533,12 @@ def _register_providers(
 
 
 def _bind_consumers(
-    app: App,
+    runtime: RuntimeServices,
     manifests: list[PluginManifest],
     provider_activity: ProviderActivity,
 ) -> None:
     for manifest in manifests:
-        bindings = app.runtime.session.bind_consumer(
+        bindings = runtime.session.bind_consumer(
             manifest.name,
             manifest.requires,
             manifest.provider_requests,

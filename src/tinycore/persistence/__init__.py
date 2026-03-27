@@ -18,18 +18,10 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""tinycore.persistence — host-owned persistence infrastructure."""
+"""tinycore.persistence public surface.
 
-from .config import ConfigStore, LoaderRegistry, read_json, write_json
-from .settings import SettingsRegistry
-from .widget_state import WidgetStateRegistry, WidgetStateStore
+Host persistence is primarily consumed through ``tinycore.services`` and direct
+submodule imports. Keep this package root intentionally empty.
+"""
 
-__all__ = [
-    "ConfigStore",
-    "LoaderRegistry",
-    "read_json",
-    "write_json",
-    "SettingsRegistry",
-    "WidgetStateRegistry",
-    "WidgetStateStore",
-]
+__all__: list[str] = []

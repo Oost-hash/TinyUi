@@ -20,7 +20,7 @@
 #  licensed under GPLv3.
 """PluginContext — scoped application context for a single plugin.
 
-Each plugin receives a PluginContext instead of the full App, creating
+Each plugin receives a PluginContext instead of the full host composition, creating
 a VLAN-like boundary: plugins share scoped host services without seeing
 the host's internal registries or stores.
 """
@@ -30,9 +30,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from tinycore.app import App, PersistenceServices
-    from tinycore.capabilities.registry import CapabilityBinding, CapabilityRegistry
+    from tinycore.capabilities.registry import CapabilityBinding
     from tinycore.session.runtime import SessionRuntime
+    from tinycore.services import PersistenceServices
     from tinyui_schema import EditorRegistry
     from tinyui_schema import SettingsSpec
 
@@ -40,7 +40,12 @@ if TYPE_CHECKING:
 class ScopedCapabilities:
     """Capability bindings scoped to one consumer plugin."""
 
-    def __init__(self, session: SessionRuntime, plugin_name: str, required: tuple[str, ...]) -> None:
+    def __init__(
+        self,
+        session: SessionRuntime,
+        plugin_name: str,
+        required: tuple[str, ...],
+    ) -> None:
         self._session = session
         self._plugin_name = plugin_name
         self._required = required
@@ -122,15 +127,22 @@ class ScopedEditors:
 class PluginContext:
     """Scoped application context for a single plugin.
 
-    Plugins receive this instead of the full App. Scoped services such as
+    Plugins receive this instead of the full host composition. Scoped services such as
     settings, config loading, and capabilities are exposed directly, while
     the host keeps ownership of its runtime internals.
     """
 
-    def __init__(self, app: App, plugin_name: str, requires: tuple[str, ...] = ()) -> None:
-        self.name      = plugin_name
-        self.settings  = ScopedSettings(app.host.persistence, plugin_name)
-        self.config    = ScopedConfig(app.host.persistence, plugin_name)
-        self.loaders   = self.config
-        self.capabilities = ScopedCapabilities(app.runtime.session, plugin_name, requires)
-        self.editors   = ScopedEditors(app.host.editors)
+    def __init__(
+        self,
+        persistence: PersistenceServices,
+        editors: EditorRegistry,
+        session: SessionRuntime,
+        plugin_name: str,
+        requires: tuple[str, ...] = (),
+    ) -> None:
+        self.name = plugin_name
+        self.settings = ScopedSettings(persistence, plugin_name)
+        self.config = ScopedConfig(persistence, plugin_name)
+        self.loaders = self.config
+        self.capabilities = ScopedCapabilities(session, plugin_name, requires)
+        self.editors = ScopedEditors(editors)
