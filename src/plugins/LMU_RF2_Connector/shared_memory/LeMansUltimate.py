@@ -27,7 +27,7 @@ from __future__ import annotations
 import math
 from typing import cast
 
-from tinycore.log import get_logger
+from tinycore.logging import get_logger
 
 from ..contracts.telemetry import Brake, ElectricMotor, Engine, Inputs, Lap, Session, State, Switch, Timing, Tyre, Vehicle, Wheel
 from . import _LeMansUltimate_data as lmu_data

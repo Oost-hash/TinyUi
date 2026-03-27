@@ -31,7 +31,7 @@ from numbers import Real
 from typing import cast
 from typing import Callable
 
-from tinycore.log import get_logger
+from tinycore.logging import get_logger
 from tinycore.session.runtime import SessionRuntime
 from .flash import FlashState
 from .fields import read_field

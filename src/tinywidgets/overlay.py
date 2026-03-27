@@ -34,7 +34,7 @@ from typing import cast
 
 from PySide6.QtCore import QUrl
 
-from tinycore.log import get_logger
+from tinycore.logging import get_logger
 from tinycore.qt.engine import create_engine
 from tinycore.qt.loop import PollLoop
 from tinycore.session.runtime import SessionRuntime

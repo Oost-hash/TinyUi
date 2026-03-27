@@ -29,7 +29,7 @@ import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Sequence
 
-from tinycore.log import get_logger
+from tinycore.logging import get_logger
 
 if TYPE_CHECKING:
     from tinycore.session.runtime import SessionRuntime

@@ -38,21 +38,19 @@ import sys
 from pathlib import Path
 from time import perf_counter
 
-import tinycore.log as _log_mod
-_log_mod.configure()  # must run before any other import emits log records
+from tinycore.logging import configure
+configure()  # must run before any other import emits log records
 
 from .bootstrap import bootstrap_runtime, discover_manifests
 from tinycore.plugin.user_files import sync_user_files
 from tinyui.main import launch
-from tinycore.log import get_logger
+from tinycore.logging import get_logger
 
 _log = get_logger(__name__)
 
 
 def _log_startup_phase(phase: str, start: float, **extra: object) -> None:
-    fields = " ".join(f"{key}={value}" for key, value in extra.items())
-    suffix = f" {fields}" if fields else ""
-    _log.info("startup phase=%s ms=%.1f%s", phase, (perf_counter() - start) * 1000, suffix)
+    _log.startup_phase(phase, (perf_counter() - start) * 1000, **extra)
 
 
 def _config_dir() -> Path:
@@ -99,14 +97,16 @@ def main() -> None:
     def _pre_run() -> None:
         pre_run_start = perf_counter()
         runtime.overlay.start()
-        runtime.state_monitor.start()
+        if runtime.state_monitor is not None:
+            runtime.state_monitor.start()
         _log_startup_phase("pre_run", pre_run_start)
 
     phase_start = perf_counter()
     exit_code = launch(runtime.core, runtime.lifecycle, pre_run=_pre_run, extra_context=runtime.extra_context)
     _log_startup_phase("launch_returned", phase_start)
     _log_startup_phase("main_total_until_exit", total_start)
-    runtime.state_monitor.shutdown()
+    if runtime.state_monitor is not None:
+        runtime.state_monitor.shutdown()
     runtime.overlay.stop()
     sys.exit(exit_code)
 

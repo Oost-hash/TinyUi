@@ -26,7 +26,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from tinycore.log import get_logger
+from tinycore.logging import get_logger
 from tinyui_schema import SettingsSpec
 
 log = get_logger(__name__)
