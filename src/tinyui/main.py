@@ -39,11 +39,11 @@ from PySide6.QtQuick import QQuickWindow
 
 from tinycore.app import App
 from tinycore.inspect import LogInspector
+from tinycore.logging import get_logger
 from tinycore.plugin.lifecycle import PluginLifecycleManager
 from tinycore.qt.app import create_application
 from tinycore.qt.engine import create_engine
 from tinyui.const import APP_NAME, VERSION
-from tinyui.devtools import LogSettingsViewModel, LogViewModel
 from tinyui.theme import Theme
 from tinyui.viewmodels.core_viewmodel import CoreViewModel
 from tinyui.viewmodels.menu_viewmodel import MenuViewModel
@@ -52,7 +52,7 @@ from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
 from tinyui.viewmodels.tab_viewmodel import TabViewModel
 
 if TYPE_CHECKING:
-    pass
+    from tinydevtools.host import DevToolsUiAttachment
 
 
 def _qt_message_handler(mode, context, message):
@@ -63,6 +63,24 @@ def _qt_message_handler(mode, context, message):
         _qt_log.warning("Qt: %s", message)
     else:
         _qt_log.debug("Qt: %s", message)
+
+
+def _log_startup_phase(log, phase: str, start: float) -> None:
+    log.startup_phase(phase, (perf_counter() - start) * 1000)
+
+
+def _attach_devtools_ui(engine, log_inspector: LogInspector) -> "DevToolsUiAttachment | None":
+    try:
+        from tinydevtools.host import attach_ui
+    except ImportError:
+        return None
+
+    frozen_root = getattr(sys, "_MEIPASS", None)
+    return attach_ui(
+        engine,
+        log_inspector,
+        frozen_root=frozen_root if isinstance(frozen_root, str) else None,
+    )
 
 
 def launch(core: App, lifecycle: PluginLifecycleManager,
@@ -82,8 +100,8 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     app.setQuitOnLastWindowClosed(False)
     app.setApplicationName(APP_NAME)
     app.setApplicationVersion(VERSION)
-    log = logging.getLogger(__name__)
-    log.info("startup phase=qt_app_setup ms=%.1f", (perf_counter() - phase_start) * 1000)
+    log = get_logger(__name__)
+    _log_startup_phase(log, "qt_app_setup", phase_start)
 
     log.info("── %s %s ──────────────────────────────", APP_NAME, VERSION)
     log.info("OS:      %s %s", platform.system(), platform.release())
@@ -95,8 +113,6 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     # ── ViewModels ────────────────────────────────────────────────────────────
     phase_start = perf_counter()
     log_inspector   = LogInspector()
-    log_vm          = LogViewModel(log_inspector)
-    log_settings_vm = LogSettingsViewModel()
     theme        = Theme()
     menu_vm      = MenuViewModel()
     statusbar_vm = StatusBarViewModel()
@@ -105,7 +121,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     tab_vm       = TabViewModel()
 
     tab_vm.register("widgets", "Widgets")
-    log.info("startup phase=viewmodels ms=%.1f", (perf_counter() - phase_start) * 1000)
+    _log_startup_phase(log, "viewmodels", phase_start)
 
     # ── Plugin switching — driven by the status bar ───────────────────────────
     _plugin_names = [p.name for p in core.runtime.plugins.plugins]
@@ -162,8 +178,10 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     ctx.setContextProperty("statusBarViewModel",     statusbar_vm)
     ctx.setContextProperty("settingsPanelViewModel", settings_vm)
     ctx.setContextProperty("tabViewModel",           tab_vm)
-    ctx.setContextProperty("logViewModel",           log_vm)
-    ctx.setContextProperty("logSettingsViewModel",   log_settings_vm)
+
+    devtools_ui = _attach_devtools_ui(engine, log_inspector)
+    ctx.setContextProperty("devToolsAvailable", devtools_ui is not None)
+    ctx.setContextProperty("devToolsQmlPath", "" if devtools_ui is None else devtools_ui.qml_url)
 
     if extra_context:
         for key, value in extra_context.items():
@@ -175,7 +193,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     else:
         qml_dir = Path(__file__).resolve().parent / "qml"
     engine.load(QUrl.fromLocalFile(str(qml_dir / "main.qml")))
-    log.info("startup phase=qml_load ms=%.1f", (perf_counter() - phase_start) * 1000)
+    _log_startup_phase(log, "qml_load", phase_start)
 
     if not engine.rootObjects():
         core.stop()
@@ -221,7 +239,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
 
     if _win_ctrl is not None:
         engine.rootContext().setContextProperty("windowController", _win_ctrl)
-    log.info("startup phase=windowing ms=%.1f", (perf_counter() - phase_start) * 1000)
+    _log_startup_phase(log, "windowing", phase_start)
 
     # ── Window state restore ──────────────────────────────────────────────────
     if core.host.host_settings.get_value("TinyUI", "remember_position"):
@@ -253,11 +271,12 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
         core.host.host_settings.save("TinyUI")
 
     app.aboutToQuit.connect(_save_window_state)
-    app.aboutToQuit.connect(log_vm.shutdown)
     app.aboutToQuit.connect(log_inspector.shutdown)
     app.aboutToQuit.connect(engine.deleteLater)
     app.aboutToQuit.connect(lifecycle.shutdown)
     app.aboutToQuit.connect(core.stop)
+    if devtools_ui is not None:
+        app.aboutToQuit.connect(devtools_ui.log_view_model.shutdown)
 
     # Closing the main window must explicitly quit so aboutToQuit fires
     # even when other windows (widget overlay) are still open.
@@ -266,20 +285,21 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     if pre_run is not None:
         phase_start = perf_counter()
         pre_run()
-        log.info("startup phase=pre_run_callback ms=%.1f", (perf_counter() - phase_start) * 1000)
-    log_vm.replay()
-    log.info("startup phase=launch_ready_for_exec ms=%.1f", (perf_counter() - total_start) * 1000)
+        _log_startup_phase(log, "pre_run_callback", phase_start)
+    if devtools_ui is not None:
+        devtools_ui.log_view_model.replay()
+    log.startup_phase("launch_ready_for_exec", (perf_counter() - total_start) * 1000)
 
     exit_code = app.exec()
 
     del engine
     del _win_ctrl
-    del log_settings_vm
     del tab_vm
     del settings_vm
     del core_vm
     del menu_vm
     del statusbar_vm
     del theme
+    del devtools_ui
 
     return exit_code

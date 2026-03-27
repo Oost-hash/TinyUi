@@ -26,7 +26,7 @@ toggle individual channels on/off without restarting the application.
 
 from __future__ import annotations
 
-import tinycore.log as _core_log
+import tinycore.logging as _core_log
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
 

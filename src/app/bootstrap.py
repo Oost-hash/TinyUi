@@ -6,24 +6,31 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
+from typing import Protocol
 
 from tinycore.app import App, create_app
-from tinycore.inspect import RuntimeInspector
-from tinycore.log import get_logger
+from tinycore.logging import get_logger
 from tinycore.plugin.lifecycle import PluginLifecycleManager
 from tinycore.plugin.manifest import PluginManifest, scan_plugins
 from tinycore.plugin.subprocess_host import SubprocessPlugin
 from tinyui.plugin import TinyUIPlugin
-from tinyui.devtools import StateMonitorViewModel
-from tinywidgets.fields import read_field
 from tinywidgets.overlay import WidgetOverlay
 from tinywidgets.spec import load_widgets_toml
 
 _log = get_logger(__name__)
 
 
+class _StateMonitorLike(Protocol):
+    def start(self) -> None: ...
+    def shutdown(self) -> None: ...
+
+
 def _ms(start: float) -> float:
     return round((perf_counter() - start) * 1000, 1)
+
+
+def _log_startup_phase(phase: str, start: float) -> None:
+    _log.startup_phase(phase, _ms(start))
 
 
 @dataclass(frozen=True)
@@ -33,7 +40,7 @@ class BootRuntime:
     core: App
     lifecycle: PluginLifecycleManager
     overlay: WidgetOverlay
-    state_monitor: StateMonitorViewModel
+    state_monitor: _StateMonitorLike | None
     extra_context: dict[str, object]
 
 
@@ -56,45 +63,47 @@ def bootstrap_runtime(config_dir: Path, manifests: list[PluginManifest]) -> Boot
             for m in consumer_manifests
         ],
     )
-    _log.info("startup phase=create_app ms=%.1f", _ms(phase_start))
+    _log_startup_phase("create_app", phase_start)
 
     phase_start = perf_counter()
     TinyUIPlugin().register(core)
     _load_host_state(core)
     core.start(plugins=False)
-    _log.info("startup phase=host_state ms=%.1f", _ms(phase_start))
+    _log_startup_phase("host_state", phase_start)
 
     phase_start = perf_counter()
     lifecycle = _activate_plugins(core)
-    _log.info("startup phase=activate_plugins ms=%.1f", _ms(phase_start))
+    _log_startup_phase("activate_plugins", phase_start)
 
     phase_start = perf_counter()
     _register_providers(core, provider_manifests)
-    _log.info("startup phase=register_providers ms=%.1f", _ms(phase_start))
+    _log_startup_phase("register_providers", phase_start)
 
     phase_start = perf_counter()
     _bind_consumers(core, consumer_manifests)
-    _log.info("startup phase=bind_consumers ms=%.1f", _ms(phase_start))
+    _log_startup_phase("bind_consumers", phase_start)
 
     phase_start = perf_counter()
     overlay, widget_sources = _build_overlay(core, config_dir, consumer_manifests)
-    _log.info("startup phase=build_overlay ms=%.1f", _ms(phase_start))
+    _log_startup_phase("build_overlay", phase_start)
 
     phase_start = perf_counter()
-    state_monitor = _build_state_monitor(core, overlay, widget_sources)
-    _log.info("startup phase=build_state_monitor ms=%.1f", _ms(phase_start))
-    _log.info("startup phase=bootstrap_runtime_total ms=%.1f", _ms(total_start))
+    state_monitor, devtools_context = _build_state_monitor(core, overlay, widget_sources)
+    _log_startup_phase("build_state_monitor", phase_start)
+    _log.startup_phase("bootstrap_runtime_total", _ms(total_start))
+
+    extra_context = {
+        "widgetModel": overlay.model,
+        "widgetOverlayState": overlay.state,
+    }
+    extra_context.update(devtools_context)
 
     return BootRuntime(
         core=core,
         lifecycle=lifecycle,
         overlay=overlay,
         state_monitor=state_monitor,
-        extra_context={
-            "widgetModel": overlay.model,
-            "widgetOverlayState": overlay.state,
-            "stateMonitorViewModel": state_monitor,
-        },
+        extra_context=extra_context,
     )
 
 
@@ -173,10 +182,12 @@ def _build_state_monitor(
     core: App,
     overlay: WidgetOverlay,
     widget_sources: list[tuple[str, str, str]],
-) -> StateMonitorViewModel:
-    runtime_inspector = RuntimeInspector()
-    runtime_inspector.setup(core.runtime.session, widget_sources, read_field)
-    state_monitor = StateMonitorViewModel(runtime_inspector)
-    for context in overlay.model.contexts:
-        state_monitor.register_object(f"Widget: {context.title}", context)
-    return state_monitor
+) -> tuple[_StateMonitorLike | None, dict[str, object]]:
+    try:
+        from tinydevtools.host import attach_runtime
+    except ImportError:
+        _log.info("devtools runtime attachment unavailable")
+        return None, {}
+
+    attachment = attach_runtime(core, overlay, widget_sources)
+    return attachment.state_monitor, attachment.extra_context

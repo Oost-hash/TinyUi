@@ -27,7 +27,7 @@ Rectangle {
     id: titleBar
 
     function _menuItems() {
-        return [
+        var items = [
             {
                 label: "Show Overlay",
                 sep: false,
@@ -39,12 +39,17 @@ Rectangle {
                 }
             },
             { label: "",           sep: true,  action: null },
-            { label: "Settings",   sep: false, action: function() { settingsPanelViewModel.openPanel(); menuViewModel.closeMenu() } },
-            { label: "",           sep: true,  action: null },
-            { label: "Dev Tools",  sep: false, action: function() { root.openDevTools(); menuViewModel.closeMenu() } },
+            { label: "Settings",   sep: false, action: function() { settingsPanelViewModel.openPanel(); menuViewModel.closeMenu() } }
+        ]
+        if (root.hasDevTools) {
+            items.push({ label: "", sep: true, action: null })
+            items.push({ label: "Dev Tools", sep: false, action: function() { root.openDevTools(); menuViewModel.closeMenu() } })
+        }
+        items.push(
             { label: "",           sep: true,  action: null },
             { label: "Close",      sep: false, action: function() { root.close() } }
-        ]
+        )
+        return items
     }
 
     height: theme.titleBarHeight

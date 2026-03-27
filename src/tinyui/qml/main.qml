@@ -22,7 +22,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import "devtools" as DevTools
 import "layout"
 import "tabs"
 import "."
@@ -59,7 +58,20 @@ ApplicationWindow {
     //              Our TitleBar acts as a menu bar below the native chrome.
     readonly property bool nativeChrome: Qt.platform.os === "linux" || Qt.platform.os === "osx"
 
-    function openDevTools() { devToolsWindow.show() }
+    readonly property bool hasDevTools: devToolsAvailable && devToolsQmlPath !== ""
+
+    function openDevTools() {
+        if (devToolsLoader.item)
+            devToolsLoader.item.show()
+    }
+    function toggleDevTools() {
+        if (!devToolsLoader.item)
+            return
+        if (devToolsLoader.item.visible)
+            devToolsLoader.item.hide()
+        else
+            devToolsLoader.item.show()
+    }
     flags: nativeChrome ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
     color: theme.surface
 
@@ -131,12 +143,16 @@ ApplicationWindow {
 
     // SettingsDialog and DevToolsWindow are Windows — outside ColumnLayout
     SettingsDialog {}
-    DevTools.DevToolsWindow { id: devToolsWindow }
+    Loader {
+        id: devToolsLoader
+        active: root.hasDevTools
+        source: root.hasDevTools ? devToolsQmlPath : ""
+    }
 
     // F12 — open Dev Tools, just like browser devtools
     // TODO: make keyboard shortcuts configurable in settings
     Shortcut {
         sequence: "F12"
-        onActivated: devToolsWindow.visible ? devToolsWindow.hide() : devToolsWindow.show()
+        onActivated: root.toggleDevTools()
     }
 }
