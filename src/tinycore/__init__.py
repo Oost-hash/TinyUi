@@ -22,12 +22,14 @@
 
 from .app import App, create_app
 from .inspect import LogInspector, RuntimeInspector
+from .paths import AppPaths
 from .plugin.lifecycle import PluginLifecycleManager
 from .plugin.subprocess_host import SubprocessPlugin
 from tinyui_schema import SettingsSpec
 
 __all__ = [
     "App",
+    "AppPaths",
     "create_app",
     "LogInspector",
     "RuntimeInspector",

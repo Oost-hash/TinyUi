@@ -4,12 +4,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 from time import perf_counter
 from typing import Protocol
 
 from tinycore.app import App, create_app
 from tinycore.logging import get_logger
+from tinycore.paths import AppPaths
 from tinycore.plugin.lifecycle import PluginLifecycleManager
 from tinycore.plugin.manifest import PluginManifest, scan_plugins
 from tinycore.plugin.subprocess_host import SubprocessPlugin
@@ -44,12 +44,12 @@ class BootRuntime:
     extra_context: dict[str, object]
 
 
-def discover_manifests(plugins_dir: Path) -> list[PluginManifest]:
+def discover_manifests(plugins_dir) -> list[PluginManifest]:
     """Scan the plugin directory and return runtime manifests."""
     return scan_plugins(plugins_dir)
 
 
-def bootstrap_runtime(config_dir: Path, manifests: list[PluginManifest]) -> BootRuntime:
+def bootstrap_runtime(paths: AppPaths, manifests: list[PluginManifest]) -> BootRuntime:
     """Build and wire the runtime before the Qt event loop starts."""
     total_start = perf_counter()
     consumer_manifests = [m for m in manifests if m.is_consumer]
@@ -57,7 +57,7 @@ def bootstrap_runtime(config_dir: Path, manifests: list[PluginManifest]) -> Boot
 
     phase_start = perf_counter()
     core = create_app(
-        config_dir,
+        paths,
         *[
             (SubprocessPlugin(m.consumer_runtime_spec()), m.requires)
             for m in consumer_manifests
@@ -84,7 +84,7 @@ def bootstrap_runtime(config_dir: Path, manifests: list[PluginManifest]) -> Boot
     _log_startup_phase("bind_consumers", phase_start)
 
     phase_start = perf_counter()
-    overlay, widget_sources = _build_overlay(core, config_dir, consumer_manifests)
+    overlay, widget_sources = _build_overlay(core, consumer_manifests)
     _log_startup_phase("build_overlay", phase_start)
 
     phase_start = perf_counter()
@@ -108,9 +108,9 @@ def bootstrap_runtime(config_dir: Path, manifests: list[PluginManifest]) -> Boot
 
 
 def _load_host_state(core: App) -> None:
-    core.host.loaders.load_all(core.host.config)
-    core.host.plugin_settings.load_persisted()
-    core.host.host_settings.load_persisted()
+    core.host.persistence.loaders.load_all(core.host.persistence.config)
+    core.host.persistence.plugin_settings.load_persisted()
+    core.host.persistence.host_settings.load_persisted()
 
 
 def _activate_plugins(core: App) -> PluginLifecycleManager:
@@ -163,10 +163,9 @@ def _bind_consumers(core: App, manifests: list[PluginManifest]) -> None:
 
 def _build_overlay(
     core: App,
-    config_dir: Path,
     manifests: list[PluginManifest],
 ) -> tuple[WidgetOverlay, list[tuple[str, str, str]]]:
-    overlay = WidgetOverlay(core.runtime.session, config_dir=config_dir)
+    overlay = WidgetOverlay(core.runtime.session, paths=core.paths)
     widget_sources: list[tuple[str, str, str]] = []
     for manifest in manifests:
         widgets_path = manifest.widgets_path()

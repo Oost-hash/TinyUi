@@ -126,7 +126,11 @@ class PluginContext:
 
     def __init__(self, app: App, plugin_name: str, requires: tuple[str, ...] = ()) -> None:
         self.name      = plugin_name
-        self.settings  = ScopedSettings(app.host.plugin_settings, plugin_name)
-        self.loaders   = ScopedLoaders(app.host.loaders, app.host.config, plugin_name)
+        self.settings  = ScopedSettings(app.host.persistence.plugin_settings, plugin_name)
+        self.loaders   = ScopedLoaders(
+            app.host.persistence.loaders,
+            app.host.persistence.config,
+            plugin_name,
+        )
         self.capabilities = ScopedCapabilities(app.runtime.session, plugin_name, requires)
         self.editors   = ScopedEditors(app.host.editors)

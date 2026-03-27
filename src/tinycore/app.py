@@ -23,11 +23,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 
 from .capabilities.registry import CapabilityRegistry
 from .config.loader import LoaderRegistry
 from .config.store import ConfigStore
+from .paths import AppPaths
 from .plugin.registry import PluginRegistry
 from .session.runtime import SessionRuntime
 from .settings import SettingsRegistry
@@ -35,14 +35,22 @@ from tinyui_schema import EditorRegistry
 
 
 @dataclass(frozen=True)
+class PersistenceServices:
+    """Host-owned persistence services."""
+
+    paths: AppPaths
+    config: ConfigStore
+    loaders: LoaderRegistry
+    plugin_settings: SettingsRegistry
+    host_settings: SettingsRegistry
+
+
+@dataclass(frozen=True)
 class HostServices:
     """Host-owned persistence and declaration services."""
 
-    config: ConfigStore
-    loaders: LoaderRegistry
+    persistence: PersistenceServices
     editors: EditorRegistry
-    plugin_settings: SettingsRegistry
-    host_settings: SettingsRegistry
 
 
 @dataclass(frozen=True)
@@ -60,14 +68,18 @@ class App:
     can wire the system together without exposing one flat bucket of registries.
     """
 
-    def __init__(self, config_dir: Path):
+    def __init__(self, paths: AppPaths):
+        self.paths = paths
         capabilities = CapabilityRegistry()
         self.host = HostServices(
-            config=ConfigStore(),
-            loaders=LoaderRegistry(config_dir),
+            persistence=PersistenceServices(
+                paths=paths,
+                config=ConfigStore(),
+                loaders=LoaderRegistry(paths.config_dir),
+                plugin_settings=SettingsRegistry(paths.config_dir),
+                host_settings=SettingsRegistry(paths.config_dir),
+            ),
             editors=EditorRegistry(),
-            plugin_settings=SettingsRegistry(config_dir),
-            host_settings=SettingsRegistry(config_dir),
         )
         self.runtime = RuntimeServices(
             session=SessionRuntime(capabilities),
@@ -88,19 +100,18 @@ class App:
         self.runtime.plugins.stop_all()
 
 
-def create_app(config_dir: Path, *plugins) -> App:
+def create_app(paths: AppPaths, *plugins) -> App:
     """Factory: create an App, add plugins, and run register phase.
 
     Args:
-        config_dir: Root directory for all plugin config files.
-                    Each plugin gets a subdirectory: config_dir/plugin_name/
+        paths: Shared application path ownership for the current runtime mode.
 
     Usage:
-        app = create_app(Path("data/config"), PluginA(), PluginB())
-        app.host.loaders.load_all(app.host.config)
+        app = create_app(AppPaths.detect(), PluginA(), PluginB())
+        app.host.persistence.loaders.load_all(app.host.persistence.config)
         app.start()
     """
-    app = App(config_dir)
+    app = App(paths)
     for plugin in plugins:
         if isinstance(plugin, tuple):
             instance, requires = plugin

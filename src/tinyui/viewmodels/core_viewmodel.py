@@ -80,7 +80,10 @@ class CoreViewModel(QObject):
 
         result = []
         # Host settings first (TinyUI), then plugin settings
-        registries = [self._core.host.host_settings, self._core.host.plugin_settings]
+        registries = [
+            self._core.host.persistence.host_settings,
+            self._core.host.persistence.plugin_settings,
+        ]
         for registry in registries:
             for plugin_name, specs in registry.by_plugin().items():
                 sections: dict[str, list[dict]] = {}
@@ -119,9 +122,9 @@ class CoreViewModel(QObject):
     def setSettingValue(self, plugin_name: str, key: str, value) -> None:
         """Persist a new setting value and notify QML."""
         registry = (
-            self._core.host.host_settings
-            if self._core.host.host_settings.has_plugin(plugin_name)
-            else self._core.host.plugin_settings
+            self._core.host.persistence.host_settings
+            if self._core.host.persistence.host_settings.has_plugin(plugin_name)
+            else self._core.host.persistence.plugin_settings
         )
         registry.set_value(plugin_name, key, value)
         self._settings_cache = None          # invalidate cache — fresh values on next read

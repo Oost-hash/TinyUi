@@ -69,17 +69,16 @@ def _log_startup_phase(log, phase: str, start: float) -> None:
     log.startup_phase(phase, (perf_counter() - start) * 1000)
 
 
-def _attach_devtools_ui(engine, log_inspector: LogInspector) -> "DevToolsUiAttachment | None":
+def _attach_devtools_ui(core: App, engine, log_inspector: LogInspector) -> "DevToolsUiAttachment | None":
     try:
         from tinydevtools.host import attach_ui
     except ImportError:
         return None
 
-    frozen_root = getattr(sys, "_MEIPASS", None)
     return attach_ui(
         engine,
         log_inspector,
-        frozen_root=frozen_root if isinstance(frozen_root, str) else None,
+        qml_path=core.paths.qml_dir("tinydevtools") / "DevToolsWindow.qml",
     )
 
 
@@ -138,15 +137,15 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
 
     # ── Settings — apply theme and persist on change ──────────────────────────
     def _apply_tinyui_settings() -> None:
-        val = core.host.host_settings.get_value("TinyUI", "theme")
+        val = core.host.persistence.host_settings.get_value("TinyUI", "theme")
         if val:
             theme.load(val)
 
     def _save_setting(plugin_name: str) -> None:
-        if core.host.host_settings.has_plugin(plugin_name):
-            core.host.host_settings.save(plugin_name)
+        if core.host.persistence.host_settings.has_plugin(plugin_name):
+            core.host.persistence.host_settings.save(plugin_name)
         else:
-            core.host.plugin_settings.save(plugin_name)
+            core.host.persistence.plugin_settings.save(plugin_name)
 
     core_vm.settingsChanged.connect(_apply_tinyui_settings)
     core_vm.settingValueChanged.connect(_save_setting)
@@ -179,7 +178,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     ctx.setContextProperty("settingsPanelViewModel", settings_vm)
     ctx.setContextProperty("tabViewModel",           tab_vm)
 
-    devtools_ui = _attach_devtools_ui(engine, log_inspector)
+    devtools_ui = _attach_devtools_ui(core, engine, log_inspector)
     ctx.setContextProperty("devToolsAvailable", devtools_ui is not None)
     ctx.setContextProperty("devToolsQmlPath", "" if devtools_ui is None else devtools_ui.qml_url)
 
@@ -187,11 +186,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
         for key, value in extra_context.items():
             ctx.setContextProperty(key, value)
 
-    frozen_root = getattr(sys, "_MEIPASS", None)
-    if getattr(sys, "frozen", False) and isinstance(frozen_root, str):
-        qml_dir = Path(frozen_root) / "tinyui" / "qml"
-    else:
-        qml_dir = Path(__file__).resolve().parent / "qml"
+    qml_dir = core.paths.qml_dir("tinyui")
     engine.load(QUrl.fromLocalFile(str(qml_dir / "main.qml")))
     _log_startup_phase(log, "qml_load", phase_start)
 
@@ -242,18 +237,18 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     _log_startup_phase(log, "windowing", phase_start)
 
     # ── Window state restore ──────────────────────────────────────────────────
-    if core.host.host_settings.get_value("TinyUI", "remember_position"):
-        x = core.host.host_settings.get_value("TinyUI", "_position_x")
-        y = core.host.host_settings.get_value("TinyUI", "_position_y")
+    if core.host.persistence.host_settings.get_value("TinyUI", "remember_position"):
+        x = core.host.persistence.host_settings.get_value("TinyUI", "_position_x")
+        y = core.host.persistence.host_settings.get_value("TinyUI", "_position_y")
         x_pos = _maybe_int(x)
         y_pos = _maybe_int(y)
         if x_pos is not None and y_pos is not None:
             window.setX(x_pos)
             window.setY(y_pos)
 
-    if core.host.host_settings.get_value("TinyUI", "remember_size"):
-        w = core.host.host_settings.get_value("TinyUI", "_window_width")
-        h = core.host.host_settings.get_value("TinyUI", "_window_height")
+    if core.host.persistence.host_settings.get_value("TinyUI", "remember_size"):
+        w = core.host.persistence.host_settings.get_value("TinyUI", "_window_width")
+        h = core.host.persistence.host_settings.get_value("TinyUI", "_window_height")
         width = _maybe_int(w)
         height = _maybe_int(h)
         if width is not None and height is not None:
@@ -262,13 +257,13 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
 
     # ── Run ───────────────────────────────────────────────────────────────────
     def _save_window_state() -> None:
-        if core.host.host_settings.get_value("TinyUI", "remember_position"):
-            core.host.host_settings.set_value("TinyUI", "_position_x", window.x())
-            core.host.host_settings.set_value("TinyUI", "_position_y", window.y())
-        if core.host.host_settings.get_value("TinyUI", "remember_size"):
-            core.host.host_settings.set_value("TinyUI", "_window_width",  window.width())
-            core.host.host_settings.set_value("TinyUI", "_window_height", window.height())
-        core.host.host_settings.save("TinyUI")
+        if core.host.persistence.host_settings.get_value("TinyUI", "remember_position"):
+            core.host.persistence.host_settings.set_value("TinyUI", "_position_x", window.x())
+            core.host.persistence.host_settings.set_value("TinyUI", "_position_y", window.y())
+        if core.host.persistence.host_settings.get_value("TinyUI", "remember_size"):
+            core.host.persistence.host_settings.set_value("TinyUI", "_window_width",  window.width())
+            core.host.persistence.host_settings.set_value("TinyUI", "_window_height", window.height())
+        core.host.persistence.host_settings.save("TinyUI")
 
     app.aboutToQuit.connect(_save_window_state)
     app.aboutToQuit.connect(log_inspector.shutdown)

@@ -35,6 +35,7 @@ from typing import cast
 from PySide6.QtCore import QUrl
 
 from tinycore.logging import get_logger
+from tinycore.paths import AppPaths
 from tinycore.qt.engine import create_engine
 from tinycore.qt.loop import PollLoop
 from tinycore.session.runtime import SessionRuntime
@@ -51,16 +52,17 @@ class WidgetOverlay:
     """Creates and manages all widget windows.
 
     Usage (from composition root):
-        overlay = WidgetOverlay(session, config_dir=_config_dir())
+        overlay = WidgetOverlay(session, paths=core.paths)
         overlay.load(specs, plugin_name="demo")
         exit_code = tinyui.launch(core, lifecycle, pre_run=overlay.start,
                                   extra_context={"widgetModel": overlay.model})
     """
 
     def __init__(self, session: SessionRuntime,
-                 config_dir: Path | None = None) -> None:
+                 paths: AppPaths | None = None) -> None:
         self._session = session
-        self._config_dir = config_dir
+        self._paths = paths
+        self._config_dir = None if paths is None else paths.config_dir
         self._poll_loop  = PollLoop(interval_ms=100)
         self._model      = WidgetModel()
         self._state      = WidgetOverlayState()
@@ -150,12 +152,7 @@ class WidgetOverlay:
         self._engine.rootContext().setContextProperty("widgetModel", self._model)
         self._engine.rootContext().setContextProperty("widgetOverlayState", self._state)
 
-        frozen_root = getattr(sys, "_MEIPASS", None)
-        qml_dir = (
-            Path(frozen_root) / "tinywidgets" / "qml"
-            if getattr(sys, "frozen", False) and isinstance(frozen_root, str)
-            else _QML_DIR
-        )
+        qml_dir = self._paths.qml_dir("tinywidgets") if self._paths is not None else _QML_DIR
         self._engine.load(QUrl.fromLocalFile(str(qml_dir / "WidgetHost.qml")))
         _log.overlay("engine started", widgets=self._model.rowCount())
         self._poll_loop.start()

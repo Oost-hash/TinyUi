@@ -35,9 +35,9 @@ from __future__ import annotations
 
 import multiprocessing as mp
 import sys
-from pathlib import Path
 from time import perf_counter
 
+from tinycore.paths import AppPaths
 from tinycore.logging import configure
 configure()  # must run before any other import emits log records
 
@@ -53,21 +53,10 @@ def _log_startup_phase(phase: str, start: float, **extra: object) -> None:
     _log.startup_phase(phase, (perf_counter() - start) * 1000, **extra)
 
 
-def _config_dir() -> Path:
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).parent / "config"
-    return Path(__file__).resolve().parents[2] / "data" / "plugin-config"
-
-
-def _plugins_dir() -> Path:
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).parent / "plugins"
-    return Path(__file__).resolve().parents[1] / "plugins"
-
-
 def main() -> None:
     total_start = perf_counter()
-    plugins_dir = _plugins_dir()
+    paths = AppPaths.detect()
+    plugins_dir = paths.plugins_dir
 
     phase_start = perf_counter()
     manifests = discover_manifests(plugins_dir)
@@ -80,7 +69,7 @@ def main() -> None:
     )
 
     phase_start = perf_counter()
-    sync_result = sync_user_files(plugins_dir.parent, manifests)
+    sync_result = sync_user_files(paths.app_root, manifests)
     _log_startup_phase(
         "sync_user_files",
         phase_start,
@@ -91,7 +80,7 @@ def main() -> None:
     )
 
     phase_start = perf_counter()
-    runtime = bootstrap_runtime(_config_dir(), manifests)
+    runtime = bootstrap_runtime(paths, manifests)
     _log_startup_phase("bootstrap_runtime", phase_start)
 
     def _pre_run() -> None:
