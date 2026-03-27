@@ -83,7 +83,7 @@ class ProcessSupervisor:
         extra_paths: list[str],
     ) -> SpawnedProcessHandle:
         """Create the subprocess and return the live transport handle."""
-        from tinycore.plugin import runner
+        from tinycore.runtime.plugins import runner
 
         unit_id = plugin_process_unit_id(spec.name)
         if self._registry is not None:

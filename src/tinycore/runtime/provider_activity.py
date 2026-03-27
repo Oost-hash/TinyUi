@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from tinycore.runtime.models import RuntimeState
 from tinycore.runtime.unit_ids import provider_capability_unit_id, provider_runtime_unit_id
-from tinycore.session.runtime import SessionRuntime
+from tinycore.runtime.plugins.facts import PluginParticipationFacts
 
 from .registry import RuntimeRegistry
 
@@ -33,8 +33,8 @@ from .registry import RuntimeRegistry
 class ProviderActivity:
     """Own provider heat, activation state, and provider update routing."""
 
-    def __init__(self, session: SessionRuntime) -> None:
-        self._session = session
+    def __init__(self, participation: PluginParticipationFacts) -> None:
+        self._participation = participation
         self._active_consumers: set[str] = set()
         self._active_provider_names: set[str] = set()
         self._runtime_registry: RuntimeRegistry | None = None
@@ -53,7 +53,7 @@ class ProviderActivity:
     def active_provider_items(self):
         return [
             (provider_name, handle)
-            for provider_name, handle in self._session.provider_items()
+            for provider_name, handle in self._participation.provider_items()
             if provider_name in self._active_provider_names
         ]
 
@@ -86,7 +86,7 @@ class ProviderActivity:
         previous = set(self._active_provider_names)
         active: set[str] = set()
         for consumer_name in self._active_consumers:
-            bindings = self._session.bindings_for(consumer_name)
+            bindings = self._participation.bindings_for(consumer_name)
             active.update(binding.provider_name for binding in bindings.resolved.values())
         self._active_provider_names = active
         self._sync_provider_runtime_states(previous, active)
@@ -102,7 +102,7 @@ class ProviderActivity:
     def _set_provider_runtime_state(self, provider_name: str, state: RuntimeState) -> None:
         if self._runtime_registry is None:
             return
-        handle = self._session.provider(provider_name)
+        handle = self._participation.provider(provider_name)
         runtime_unit_id = provider_runtime_unit_id(provider_name)
         if self._runtime_registry.get(runtime_unit_id) is not None:
             self._runtime_registry.set_state(runtime_unit_id, state)

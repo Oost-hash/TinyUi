@@ -28,12 +28,12 @@ import os
 from typing import Callable, Protocol
 
 from tinycore.diagnostics.runtime_state import RuntimeInspector
-from tinycore.plugin.lifecycle import PluginLifecycleManager
 from tinycore.paths import AppPaths
 from tinycore.services import HostServices, RuntimeServices
 
 from .host_workers import HostWorkerSupervisor
 from .models import RuntimeActivationPolicy, RuntimeExecutionPolicy, RuntimeState, RuntimeUnitInfo, RuntimeUnitSpec
+from .plugins.lifecycle import PluginLifecycleManager
 from .provider_activity import ProviderActivity
 from .process_supervisor import ProcessSupervisor
 from .registry import RuntimeRegistry
@@ -448,7 +448,7 @@ def build_runtime_registry(
             id="plugins.lifecycle",
             kind="timer",
             role="plugins.lifecycle",
-            owner="tinycore.plugin",
+            owner="tinycore.runtime.plugins",
             transport="thread",
             parent_id="host.main",
             pid=host_pid,
@@ -491,7 +491,7 @@ def build_runtime_registry(
             )
         )
 
-    for provider in runtime.session.providers():
+    for provider in runtime.plugin_facts.providers():
         runtime_unit_id = provider_runtime_unit_id(provider.name)
         provider_state: RuntimeState = (
             "running" if provider.name in provider_activity.active_provider_names() else "idle"
@@ -501,7 +501,7 @@ def build_runtime_registry(
                 id=runtime_unit_id,
                 kind="worker",
                 role="provider.host",
-                owner="tinycore.session",
+                owner="tinycore.runtime.plugins",
                 transport="host",
                 parent_id="host.main",
                 pid=host_pid,
@@ -512,7 +512,7 @@ def build_runtime_registry(
                 depends_on=("host.main",),
                 schedule_kind="manual",
                 schedule_clock="host",
-                schedule_driver="tinycore.session",
+                schedule_driver="tinycore.runtime.plugins.provider",
             ),
             state=provider_state,
         )
@@ -522,7 +522,7 @@ def build_runtime_registry(
                     id=provider_capability_unit_id(provider.name, capability),
                     kind="adapter",
                     role="provider.capability",
-                    owner="tinycore.session",
+                    owner="tinycore.runtime.plugins",
                     transport="host",
                     parent_id=runtime_unit_id,
                     pid=host_pid,
@@ -533,19 +533,19 @@ def build_runtime_registry(
                     depends_on=(runtime_unit_id,),
                     schedule_kind="manual",
                     schedule_clock="host",
-                    schedule_driver="tinycore.session",
+                    schedule_driver="tinycore.runtime.plugins.provider",
                 ),
                 state=provider_state,
             )
 
     supervised_infos = {info.plugin_name: info for info in process_supervisor.infos()}
     active_consumers = set(lifecycle.active_consumer_names())
-    for plugin in runtime.plugins.plugins:
-        process_info = supervised_infos.get(plugin.name)
+    for participant in runtime.plugin_runtime.participants:
+        process_info = supervised_infos.get(participant.name)
         pid = process_info.pid if process_info is not None else None
         process_state = process_info.state if process_info is not None else "declared"
-        process_unit_id = plugin_process_unit_id(plugin.name)
-        consumer_unit_id = plugin_consumer_unit_id(plugin.name)
+        process_unit_id = plugin_process_unit_id(participant.name)
+        consumer_unit_id = plugin_consumer_unit_id(participant.name)
 
         if pid is not None:
             registry.declare(
@@ -569,7 +569,7 @@ def build_runtime_registry(
             )
         if process_state == "failed":
             consumer_state = "failed"
-        elif plugin.name in active_consumers:
+        elif participant.name in active_consumers:
             consumer_state = "running"
         else:
             consumer_state = "idle"
@@ -579,7 +579,7 @@ def build_runtime_registry(
                 id=consumer_unit_id,
                 kind="adapter",
                 role="plugin.consumer",
-                owner="tinycore.plugin",
+                owner="tinycore.runtime.plugins",
                 transport="host",
                 parent_id=process_unit_id if pid is not None else "host.main",
                 pid=host_pid,
@@ -590,7 +590,7 @@ def build_runtime_registry(
                 depends_on=((process_unit_id,) if pid is not None else ("host.main",)),
                 schedule_kind="manual",
                 schedule_clock="host",
-                schedule_driver="tinycore.plugin.lifecycle",
+                schedule_driver="tinycore.runtime.plugins.lifecycle",
             ),
             state=consumer_state,
         )

@@ -28,7 +28,7 @@ from typing import cast
 from typing import Callable
 
 from tinycore.logging import get_logger
-from tinycore.session.runtime import SessionRuntime
+from tinycore.runtime.plugins.facts import PluginParticipationFacts
 from .flash import FlashState
 from .fields import read_field
 from .threshold import evaluate
@@ -39,12 +39,12 @@ _log = get_logger(__name__)
 
 
 def _binding_for_widget(
-    session: SessionRuntime,
+    participation: PluginParticipationFacts,
     consumer_name: str,
     spec: WidgetSpec,
 ):
     """Resolve the provider binding used by a widget."""
-    bindings = session.bindings_for(consumer_name)
+    bindings = participation.bindings_for(consumer_name)
     return bindings.require(spec.capability)
 
 
@@ -82,12 +82,12 @@ class TextWidgetRunner:
     def __init__(
         self,
         spec:          WidgetSpec,
-        session:       SessionRuntime,
+        participation: PluginParticipationFacts,
         consumer_name: str,
         on_update:     Callable[[WidgetState], None],
     ) -> None:
         self._spec = spec
-        self._session = session
+        self._participation = participation
         self._consumer_name = consumer_name
         self._on_update = on_update
         self._flash = FlashState()
@@ -101,7 +101,11 @@ class TextWidgetRunner:
 
     def tick(self) -> None:
         try:
-            binding = _binding_for_widget(self._session, self._consumer_name, self._spec)
+            binding = _binding_for_widget(
+                self._participation,
+                self._consumer_name,
+                self._spec,
+            )
         except KeyError as exc:
             if not self._missing_logged:
                 _log.warning(

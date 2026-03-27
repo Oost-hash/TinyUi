@@ -27,12 +27,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import cast
 
-from tinycore.paths import AppPaths
 from tinycore.services import HostServices, RuntimeServices
 from tinycore.logging import get_logger
-from tinycore.plugin.manifest import PluginManifest
+from tinycore.paths import AppPaths
 from tinycore.runtime.boot import HostAssembly, HostOverlayBuild, HostStateMonitorBuild
 from tinycore.runtime.core_runtime import CoreRuntime
+from tinycore.runtime.plugins.consumer import ConsumerPluginParticipant
 from tinycore.runtime.provider_activity import ProviderActivity
 from tinywidgets.overlay import WidgetOverlay
 from tinywidgets.spec import load_widgets_toml
@@ -63,23 +63,23 @@ class TinyUiHostAssembly(HostAssembly):
         host: HostServices,
         runtime: RuntimeServices,
         provider_activity: ProviderActivity,
-        manifests: list[PluginManifest],
+        participants: list[ConsumerPluginParticipant],
     ) -> HostOverlayBuild:
         overlay = WidgetOverlay(
-            runtime.session,
+            runtime.plugin_facts,
             provider_activity,
             paths=paths,
             widget_state_for=host.persistence.widget_state_for,
         )
         widget_sources: list[tuple[str, str, str]] = []
-        for manifest in manifests:
-            widgets_path = manifest.widgets_path()
+        for participant in participants:
+            widgets_path = participant.widgets_path()
             if widgets_path is None or not widgets_path.exists():
                 continue
             specs = load_widgets_toml(widgets_path)
-            overlay.load(specs, plugin_name=manifest.name)
+            overlay.load(specs, plugin_name=participant.name)
             widget_sources.extend(
-                (manifest.name, spec.capability, spec.field)
+                (participant.name, spec.capability, spec.field)
                 for spec in specs
                 if spec.field
             )

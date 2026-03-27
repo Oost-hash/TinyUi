@@ -58,7 +58,7 @@ def bind_statusbar_plugin_switching(core, statusbar_view_model: object) -> None:
     if not isinstance(statusbar_view_model, QObject):
         return
 
-    plugin_names = [plugin.name for plugin in core.runtime.plugins.plugins]
+    plugin_names = [participant.name for participant in core.runtime.plugin_runtime.participants]
     if not plugin_names:
         return
 

@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .paths import AppPaths
+from .runtime.plugins.consumer import ConsumerPluginParticipant
 from .services import HostServices, RuntimeServices, build_host_services, build_runtime_services
 
 
@@ -40,19 +41,19 @@ class RuntimeComposition:
     def start(self, *, plugins: bool = True) -> None:
         """Start the composition, optionally starting all plugins."""
         if plugins:
-            self.runtime.plugins.start_all()
+            self.runtime.plugin_runtime.start_all()
 
     def stop(self) -> None:
         """Stop the composition and all registered plugins."""
-        self.runtime.plugins.stop_all()
+        self.runtime.plugin_runtime.stop_all()
 
     def register_plugins(self) -> None:
         """Run plugin register phase with scoped plugin contexts."""
-        self.runtime.plugins.register_all(self.host, self.runtime)
+        self.runtime.plugin_runtime.register_all(self.host, self.runtime)
 
 def create_runtime_composition(
     paths: AppPaths,
-    *plugins,
+    *plugins: ConsumerPluginParticipant,
     register_plugins: bool = True,
 ) -> RuntimeComposition:
     """Factory: create explicit host/runtime service composition data."""
@@ -62,11 +63,7 @@ def create_runtime_composition(
         runtime=build_runtime_services(),
     )
     for plugin in plugins:
-        if isinstance(plugin, tuple):
-            instance, requires = plugin
-            composition.runtime.plugins.add(instance, requires)
-        else:
-            composition.runtime.plugins.add(plugin)
+        composition.runtime.plugin_runtime.add(plugin)
     if register_plugins:
         composition.register_plugins()
     return composition

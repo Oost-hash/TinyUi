@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""tinycore.plugin — consumer plugin runtime boundary."""
+"""tinycore.plugin — static plugin description boundary."""
 
 from __future__ import annotations
 
@@ -27,29 +27,20 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .context import PluginContext
-    from .lifecycle import PluginLifecycleManager
     from .protocol import Plugin
-    from .registry import PluginRegistry
     from .spec import ConsumerRuntimeSpec
-    from .subprocess_host import SubprocessPlugin
 
 
 _EXPORTS: dict[str, tuple[str, str]] = {
     "ConsumerRuntimeSpec": (".spec", "ConsumerRuntimeSpec"),
     "Plugin": (".protocol", "Plugin"),
     "PluginContext": (".context", "PluginContext"),
-    "PluginLifecycleManager": (".lifecycle", "PluginLifecycleManager"),
-    "PluginRegistry": (".registry", "PluginRegistry"),
-    "SubprocessPlugin": (".subprocess_host", "SubprocessPlugin"),
 }
 
 __all__ = (
     "ConsumerRuntimeSpec",
     "Plugin",
     "PluginContext",
-    "PluginLifecycleManager",
-    "PluginRegistry",
-    "SubprocessPlugin",
 )
 
 

@@ -31,15 +31,21 @@ from tinycore.composition import create_runtime_composition
 from tinycore.diagnostics.runtime_sources import build_runtime_inspector
 from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
-from tinycore.plugin.lifecycle import PluginLifecycleManager
 from tinycore.plugin.manifest import PluginManifest, scan_plugins
-from tinycore.plugin.subprocess_host import SubprocessPlugin
 from tinycore.services import HostServices, RuntimeServices
 
 from .core_runtime import CoreRuntime, build_runtime_registry
 from .host_workers import HostWorkerHandle, HostWorkerSupervisor
 from .models import RuntimeState
 from .process_supervisor import ProcessSupervisor
+from .plugins.bindings import bind_consumer_participants
+from .plugins.consumer import ConsumerPluginParticipant, build_consumer_participants
+from .plugins.lifecycle import PluginLifecycleManager
+from .plugins.provider import (
+    ProviderPluginParticipant,
+    build_provider_participants,
+    register_provider_participants,
+)
 from .provider_activity import ProviderActivity
 from .scheduler import RuntimeScheduler
 from .unit_ids import boot_phase_unit_id
@@ -91,8 +97,8 @@ class _RegistryPhaseSpec:
 class _BootAssembly:
     paths: AppPaths
     manifests: list[PluginManifest]
-    consumer_manifests: list[PluginManifest]
-    provider_manifests: list[PluginManifest]
+    consumer_participants: list[ConsumerPluginParticipant]
+    provider_participants: list[ProviderPluginParticipant]
     boot_phase_states: dict[str, RuntimeState]
     process_supervisor: ProcessSupervisor
     scheduler: RuntimeScheduler
@@ -141,7 +147,7 @@ class HostAssembly(Protocol):
         host: HostServices,
         runtime: RuntimeServices,
         provider_activity: ProviderActivity,
-        manifests: list[PluginManifest],
+        participants: list[ConsumerPluginParticipant],
     ) -> HostOverlayBuild: ...
 
     def build_state_monitor(
@@ -344,22 +350,19 @@ def _create_boot_assembly(
     """Build the early boot assembly inputs before phase orchestration begins."""
     boot_phase_states: dict[str, RuntimeState] = {}
     consumer_manifests = [m for m in manifests if m.is_consumer]
-    provider_manifests = [m for m in manifests if m.is_provider]
     process_supervisor = ProcessSupervisor()
+    consumer_participants = build_consumer_participants(
+        consumer_manifests,
+        process_supervisor=process_supervisor,
+    )
+    provider_participants = build_provider_participants(
+        [m for m in manifests if m.is_provider]
+    )
     scheduler = RuntimeScheduler()
     phase_start = perf_counter()
     composition = create_runtime_composition(
         paths,
-        *[
-            (
-                SubprocessPlugin(
-                    manifest.consumer_runtime_spec(),
-                    process_supervisor=process_supervisor,
-                ),
-                manifest.requires,
-            )
-            for manifest in consumer_manifests
-        ],
+        *consumer_participants,
         register_plugins=False,
     )
     _log_startup_phase("create_runtime_composition", phase_start)
@@ -367,8 +370,8 @@ def _create_boot_assembly(
     return _BootAssembly(
         paths=paths,
         manifests=manifests,
-        consumer_manifests=consumer_manifests,
-        provider_manifests=provider_manifests,
+        consumer_participants=consumer_participants,
+        provider_participants=provider_participants,
         boot_phase_states=boot_phase_states,
         process_supervisor=process_supervisor,
         scheduler=scheduler,
@@ -377,7 +380,7 @@ def _create_boot_assembly(
         start_runtime=lambda: composition.start(plugins=False),
         stop_runtime=composition.stop,
         host_assembly=host_assembly,
-        provider_activity=ProviderActivity(composition.runtime.session),
+        provider_activity=ProviderActivity(composition.runtime.plugin_facts),
     )
 
 
@@ -405,7 +408,7 @@ def _pre_registry_phases(assembly: _BootAssembly) -> tuple[_PreRegistryPhaseSpec
             name="register_providers",
             action=lambda: _register_providers(
                 assembly.runtime,
-                assembly.provider_manifests,
+                assembly.provider_participants,
                 cast(ProviderActivity, assembly.provider_activity),
             ),
         ),
@@ -413,7 +416,7 @@ def _pre_registry_phases(assembly: _BootAssembly) -> tuple[_PreRegistryPhaseSpec
             name="bind_consumers",
             action=lambda: _bind_consumers(
                 assembly.runtime,
-                assembly.consumer_manifests,
+                assembly.consumer_participants,
                 cast(ProviderActivity, assembly.provider_activity),
             ),
         ),
@@ -424,7 +427,7 @@ def _pre_registry_phases(assembly: _BootAssembly) -> tuple[_PreRegistryPhaseSpec
                 assembly.host,
                 assembly.runtime,
                 cast(ProviderActivity, assembly.provider_activity),
-                assembly.consumer_manifests,
+                assembly.consumer_participants,
             ),
             assign=lambda result: setattr(assembly, "overlay_build", result),
         ),
@@ -485,7 +488,7 @@ def _register_host_and_start(
 
 def _register_consumers(host: HostServices, runtime: RuntimeServices) -> None:
     """Run the consumer registration phase explicitly from the runtime boot path."""
-    runtime.plugins.register_all(host, runtime)
+    runtime.plugin_runtime.register_all(host, runtime)
 
 
 def _activate_plugins(
@@ -493,11 +496,11 @@ def _activate_plugins(
     scheduler: RuntimeScheduler,
 ) -> PluginLifecycleManager:
     lifecycle = PluginLifecycleManager(
-        runtime.plugins,
+        runtime.plugin_runtime,
         scheduler=scheduler,
         grace_seconds=30.0,
     )
-    plugin_names = [p.name for p in runtime.plugins.plugins]
+    plugin_names = [participant.name for participant in runtime.plugin_runtime.participants]
     if plugin_names:
         lifecycle.activate(plugin_names[0])
     return lifecycle
@@ -513,52 +516,18 @@ def _attach_runtime_surfaces(
 
 def _register_providers(
     runtime: RuntimeServices,
-    manifests: list[PluginManifest],
+    participants: list[ProviderPluginParticipant],
     provider_activity: ProviderActivity,
 ) -> None:
-    for manifest in manifests:
-        if manifest.provider is None:
-            continue
-        provider = manifest.provider.create()
-        provider.open()
-        runtime.session.register_provider(manifest.name, provider, manifest.exports)
-        provider_activity.provider_registered(manifest.name)
-        _log.info(
-            "provider registered  plugin=%s  type=%s  exports=%s",
-            manifest.name,
-            type(provider).__name__,
-            ", ".join(manifest.exports) if manifest.exports else "-",
-        )
+    register_provider_participants(runtime, participants, provider_activity)
 
 
 def _bind_consumers(
     runtime: RuntimeServices,
-    manifests: list[PluginManifest],
+    participants: list[ConsumerPluginParticipant],
     provider_activity: ProviderActivity,
 ) -> None:
-    for manifest in manifests:
-        bindings = runtime.session.bind_consumer(
-            manifest.name,
-            manifest.requires,
-            manifest.provider_requests,
-        )
-        provider_activity.bindings_changed(manifest.name)
-        if bindings.missing:
-            _log.warning(
-                "consumer requires missing  plugin=%s  missing=%s",
-                manifest.name,
-                ", ".join(bindings.missing),
-            )
-            continue
-        if bindings.resolved:
-            _log.info(
-                "consumer bound  plugin=%s  requires=%s",
-                manifest.name,
-                ", ".join(
-                    f"{capability}->{binding.provider_name}"
-                    for capability, binding in bindings.resolved.items()
-                ),
-            )
+    bind_consumer_participants(runtime, participants, provider_activity)
 
 
 def _build_host_workers(

@@ -18,68 +18,9 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""PluginRegistry — stores consumer plugins and orchestrates their lifecycle."""
 
-from __future__ import annotations
+"""Compatibility shim for the runtime-owned plugin registry."""
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from tinycore.runtime.plugins.registry import PluginRegistry, RegisteredPlugin
 
-if TYPE_CHECKING:
-    from tinycore.services import HostServices, RuntimeServices
-
-    from .protocol import Plugin
-
-
-@dataclass(frozen=True)
-class RegisteredPlugin:
-    """A plugin instance plus its manifest-owned runtime metadata."""
-
-    plugin: Plugin
-    requires: tuple[str, ...] = ()
-
-
-class PluginRegistry:
-    """Stores consumer plugins and orchestrates two-phase init."""
-
-    def __init__(self):
-        self._plugins: list[RegisteredPlugin] = []
-
-    def add(self, plugin: Plugin, requires: tuple[str, ...] = ()) -> None:
-        """Add a plugin to the registry."""
-        self._plugins.append(RegisteredPlugin(plugin=plugin, requires=requires))
-
-    def register_all(self, host: HostServices, runtime: RuntimeServices) -> None:
-        """Phase 1: call register() on all plugins with a scoped PluginContext."""
-        from .context import PluginContext
-        for entry in self._plugins:
-            entry.plugin.register(
-                PluginContext(
-                    host.persistence,
-                    host.editors,
-                    runtime.session,
-                    entry.plugin.name,
-                    entry.requires,
-                )
-            )
-
-    def start_all(self) -> None:
-        """Phase 2: call start() on all plugins in order."""
-        for entry in self._plugins:
-            entry.plugin.start()
-
-    def stop_all(self) -> None:
-        """Teardown: call stop() on all plugins in reverse order."""
-        for entry in reversed(self._plugins):
-            entry.plugin.stop()
-
-    def get(self, name: str) -> Plugin:
-        """Return the plugin with the given name."""
-        for entry in self._plugins:
-            if entry.plugin.name == name:
-                return entry.plugin
-        raise KeyError(f"Plugin '{name}' not registered")
-
-    @property
-    def plugins(self) -> list[Plugin]:
-        return [entry.plugin for entry in self._plugins]
+__all__ = ["PluginRegistry", "RegisteredPlugin"]

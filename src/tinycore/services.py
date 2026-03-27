@@ -34,7 +34,8 @@ from .persistence.config.loader import LoaderRegistry
 from .persistence.config.store import ConfigStore
 from .persistence.settings import SettingsRegistry
 from .persistence.widget_state import WidgetStateRegistry
-from .plugin.registry import PluginRegistry
+from .runtime.plugins.facts import PluginParticipationFacts
+from .runtime.plugins.registry import PluginRuntimeRegistry
 from .session.runtime import SessionRuntime
 
 
@@ -152,7 +153,13 @@ class RuntimeServices:
     """Runtime-owned lifecycle and session services."""
 
     session: SessionRuntime
-    plugins: PluginRegistry
+    plugin_facts: PluginParticipationFacts
+    plugin_runtime: PluginRuntimeRegistry
+
+    @property
+    def plugins(self) -> PluginRuntimeRegistry:
+        """Compatibility alias during the runtime plugin participation transition."""
+        return self.plugin_runtime
 
 
 def build_host_services(paths: AppPaths) -> HostServices:
@@ -166,7 +173,9 @@ def build_host_services(paths: AppPaths) -> HostServices:
 def build_runtime_services() -> RuntimeServices:
     """Create the runtime-owned service group for one runtime composition."""
     capabilities = CapabilityRegistry()
+    session = SessionRuntime(capabilities)
     return RuntimeServices(
-        session=SessionRuntime(capabilities),
-        plugins=PluginRegistry(),
+        session=session,
+        plugin_facts=PluginParticipationFacts(session),
+        plugin_runtime=PluginRuntimeRegistry(),
     )

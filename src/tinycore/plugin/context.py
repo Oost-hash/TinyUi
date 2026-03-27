@@ -31,7 +31,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from tinycore.capabilities.registry import CapabilityBinding
-    from tinycore.session.runtime import SessionRuntime
+    from tinycore.runtime.plugins.facts import PluginParticipationFacts
     from tinycore.services import PersistenceServices
     from tinyui_schema import EditorRegistry
     from tinyui_schema import SettingsSpec
@@ -42,11 +42,11 @@ class ScopedCapabilities:
 
     def __init__(
         self,
-        session: SessionRuntime,
+        participation: PluginParticipationFacts,
         plugin_name: str,
         required: tuple[str, ...],
     ) -> None:
-        self._session = session
+        self._participation = participation
         self._plugin_name = plugin_name
         self._required = required
 
@@ -56,19 +56,19 @@ class ScopedCapabilities:
 
     def all(self) -> dict[str, CapabilityBinding]:
         """All resolved bindings currently known for this plugin."""
-        return dict(self._session.bindings_for(self._plugin_name).resolved)
+        return dict(self._participation.bindings_for(self._plugin_name).resolved)
 
     def get(self, capability: str) -> CapabilityBinding | None:
         """Resolve a capability if it was declared by this plugin."""
         if capability not in self._required:
             raise KeyError(f"Capability '{capability}' was not declared in requires")
-        return self._session.bindings_for(self._plugin_name).get(capability)
+        return self._participation.bindings_for(self._plugin_name).get(capability)
 
     def require(self, capability: str) -> CapabilityBinding:
         """Resolve a declared capability or raise KeyError."""
         if capability not in self._required:
             raise KeyError(f"Capability '{capability}' was not declared in requires")
-        return self._session.bindings_for(self._plugin_name).require(capability)
+        return self._participation.bindings_for(self._plugin_name).require(capability)
 
 
 class ScopedSettings:
@@ -136,7 +136,7 @@ class PluginContext:
         self,
         persistence: PersistenceServices,
         editors: EditorRegistry,
-        session: SessionRuntime,
+        participation: PluginParticipationFacts,
         plugin_name: str,
         requires: tuple[str, ...] = (),
     ) -> None:
@@ -144,5 +144,5 @@ class PluginContext:
         self.settings = ScopedSettings(persistence, plugin_name)
         self.config = ScopedConfig(persistence, plugin_name)
         self.loaders = self.config
-        self.capabilities = ScopedCapabilities(session, plugin_name, requires)
+        self.capabilities = ScopedCapabilities(participation, plugin_name, requires)
         self.editors = ScopedEditors(editors)

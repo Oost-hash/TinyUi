@@ -136,12 +136,12 @@ def build_runtime_inspector(
     for consumer_name, fields_by_capability in by_consumer.items():
         seen_provider_names: set[str] = set()
         for capability, fields in fields_by_capability.items():
-            binding = core.runtime.session.bindings_for(consumer_name).get(capability)
+            binding = core.runtime.plugin_facts.bindings_for(consumer_name).get(capability)
             if binding is None:
                 continue
 
             if binding.provider_name not in seen_provider_names:
-                handle = core.runtime.session.provider(binding.provider_name)
+                handle = core.runtime.plugin_facts.provider(binding.provider_name)
                 if handle is not None:
                     runtime_inspector.add_snapshot_source(
                         f"provider:{binding.provider_name}:telemetry",

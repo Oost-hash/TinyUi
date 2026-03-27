@@ -39,9 +39,9 @@ from tinycore.paths import AppPaths
 from tinycore.persistence.widget_state import WidgetStateStore
 from tinycore.qt.engine import create_engine
 from tinycore.runtime.provider_activity import ProviderActivity
+from tinycore.runtime.plugins.facts import PluginParticipationFacts
 from tinycore.runtime.poll_loop import PollLoop
 from tinycore.runtime.provider_updates import ProviderUpdater
-from tinycore.session.runtime import SessionRuntime
 from .context import WidgetContext, WidgetModel, WidgetOverlayState
 from .runner import TextWidgetRunner
 from .spec import WidgetSpec
@@ -60,11 +60,11 @@ class WidgetOverlay:
                                   extra_context={"widgetModel": overlay.model})
     """
 
-    def __init__(self, session: SessionRuntime,
+    def __init__(self, participation: PluginParticipationFacts,
                  provider_activity: ProviderActivity,
                  paths: AppPaths | None = None,
                  widget_state_for: Callable[[str], WidgetStateStore | None] | None = None) -> None:
-        self._session = session
+        self._participation = participation
         self._provider_activity = provider_activity
         self._paths = paths
         self._widget_state_for = widget_state_for
@@ -119,8 +119,8 @@ class WidgetOverlay:
                             for t in saved["thresholds"]
                         ]
 
-            ctx    = WidgetContext(spec, self._session.controls, plugin_name)
-            runner = TextWidgetRunner(spec, self._session, plugin_name, ctx.update)
+            ctx = WidgetContext(spec, self._participation.controls, plugin_name)
+            runner = TextWidgetRunner(spec, self._participation, plugin_name, ctx.update)
 
             if store:
                 def _save(cx: WidgetContext = ctx, s: WidgetStateStore = store) -> None:
