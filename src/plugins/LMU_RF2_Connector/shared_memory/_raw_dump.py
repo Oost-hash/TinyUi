@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Helpers for walking shared-memory structures into readable raw snapshots."""
+"""Helpers for walking shared-memory structures and buffers into readable snapshots."""
 
 from __future__ import annotations
 
@@ -85,13 +85,31 @@ def iter_raw_fields(root: object, prefix: str) -> list[tuple[str, str]]:
     return rows
 
 
-def annotate_rows(
-    rows: list[tuple[str, str]],
-    mapping_hints: dict[str, str],
-) -> list[tuple[str, str]]:
-    """Attach known normalized mapping hints to raw rows when available."""
+def _render_ascii(data: bytes) -> str:
+    return "".join(chr(byte) if 32 <= byte <= 126 else "." for byte in data)
 
-    return [
-        (key, f"{value} -> {mapping_hints[key]}" if key in mapping_hints else value)
-        for key, value in rows
+
+def iter_memory_rows(
+    prefix: str,
+    data: bytes,
+    *,
+    width: int = 16,
+) -> list[tuple[str, str]]:
+    """Render a byte buffer into offset-addressed hex/ascii rows."""
+
+    rows: list[tuple[str, str]] = [
+        (f"{prefix}.size", str(len(data))),
+        (f"{prefix}.width", str(width)),
     ]
+
+    if not data:
+        rows.append((f"{prefix}.status", "empty"))
+        return rows
+
+    for offset in range(0, len(data), width):
+        chunk = data[offset : offset + width]
+        hex_part = " ".join(f"{byte:02X}" for byte in chunk)
+        ascii_part = _render_ascii(chunk)
+        rows.append((f"{prefix}.{offset:08X}", f"{hex_part:<{width * 3 - 1}} |{ascii_part}|"))
+
+    return rows

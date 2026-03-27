@@ -265,6 +265,14 @@ class RuntimeInspector:
                                 "provider-raw",
                                 cast(SnapshotFn, raw_snapshot),
                             )
+                        memory_snapshot = getattr(handle.provider, "memory_snapshot", None)
+                        if callable(memory_snapshot):
+                            self.add_snapshot_source(
+                                f"provider:{binding.provider_name}:memory",
+                                f"Memory: {binding.provider_name}",
+                                "provider-memory",
+                                cast(SnapshotFn, memory_snapshot),
+                            )
                         seen_provider_names.add(binding.provider_name)
 
                 self.add_source(

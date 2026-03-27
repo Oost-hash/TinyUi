@@ -34,7 +34,7 @@ from ._rFactor2_mmap import (
     MMapControl,
     rFactor2Constants,
 )
-from ._raw_dump import annotate_rows, iter_raw_fields
+from ._raw_dump import iter_memory_rows, iter_raw_fields
 
 
 def bytes_to_str(value: object) -> str:
@@ -61,36 +61,6 @@ def _raw_int(value: object) -> int:
     if isinstance(value, bytes):
         return int.from_bytes(value, byteorder="little", signed=False)
     return int(value)
-
-
-_RAW_MAPPING_HINTS = {
-    "raw.extended.mVersion": "state.version",
-    "raw.scoring_info.mTrackName": "session.track_name / track.name",
-    "raw.scoring_info.mSession": "session.session_kind",
-    "raw.scoring_info.mCurrentET": "session.session_time_elapsed",
-    "raw.scoring_info.mEndET": "session.session_time_left",
-    "raw.scoring_info.mTrackTemp": "session.track_temperature",
-    "raw.scoring_info.mAmbientTemp": "session.ambient_temperature",
-    "raw.scoring_info.mRaining": "session.raininess",
-    "raw.player_scoring.mDriverName": "vehicle.driver_name",
-    "raw.player_scoring.mVehicleName": "vehicle.vehicle_name",
-    "raw.player_scoring.mVehicleClass": "vehicle.class_name",
-    "raw.player_scoring.mPlace": "vehicle.place",
-    "raw.player_scoring.mInPits": "vehicle.in_pits",
-    "raw.player_scoring.mLapDist": "lap.lap_distance",
-    "raw.player_scoring.mLastLapTime": "timing.last_laptime",
-    "raw.player_scoring.mBestLapTime": "timing.best_laptime",
-    "raw.player_scoring.mTimeBehindLeader": "timing.gap_to_leader",
-    "raw.player_telemetry.mFuel": "vehicle.fuel",
-    "raw.player_telemetry.mGear": "engine.gear",
-    "raw.player_telemetry.mEngineRPM": "engine.rpm",
-    "raw.player_telemetry.mEngineMaxRPM": "engine.rpm_max",
-    "raw.player_telemetry.mRearBrakeBias": "brake.bias_front",
-    "raw.player_telemetry.mBatteryChargeFraction": "electric_motor.battery_charge",
-    "raw.player_telemetry.mHeadlights": "switch.headlights",
-    "raw.player_telemetry.mSpeedLimiter": "switch.speed_limiter",
-    "raw.player_telemetry.mRearFlapLegalStatus": "switch.drs_status",
-}
 
 
 class RF2Info:
@@ -232,18 +202,21 @@ class RF2Info:
             ("candidate.telemetry.mWheels[0].mSurfaceType", str(int(wheels[0].mSurfaceType))),
             ("candidate.telemetry.mWheels[0].mGripFract", f"{number_or_zero(wheels[0].mGripFract):.3f}"),
         ]
-        snapshot.extend(
-            annotate_rows(
-                [
-                    *iter_raw_fields(self.rf2Ext, "raw.extended"),
-                    *iter_raw_fields(scor, "raw.scoring_info"),
-                    *iter_raw_fields(player_scor, "raw.player_scoring"),
-                    *iter_raw_fields(player_tele, "raw.player_telemetry"),
-                ],
-                _RAW_MAPPING_HINTS,
-            )
-        )
+        snapshot.extend([
+            *iter_raw_fields(self.rf2Ext, "raw.extended"),
+            *iter_raw_fields(scor, "raw.scoring_info"),
+            *iter_raw_fields(player_scor, "raw.player_scoring"),
+            *iter_raw_fields(player_tele, "raw.player_telemetry"),
+        ])
         return snapshot
+
+    def memory_snapshot(self) -> list[tuple[str, str]]:
+        return [
+            *iter_memory_rows("memory.scoring", self._scor.buffer_bytes()),
+            *iter_memory_rows("memory.telemetry", self._tele.buffer_bytes()),
+            *iter_memory_rows("memory.extended", self._ext.buffer_bytes()),
+            *iter_memory_rows("memory.force_feedback", self._ffb.buffer_bytes()),
+        ]
 
     def _sync_indexes(self) -> None:
         tele_data = self._require_tele_data()

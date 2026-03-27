@@ -23,7 +23,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Protocol, cast
 
 from .contracts.inspect_schema import provider_inspection_schema
@@ -32,15 +31,6 @@ from .contracts.telemetry import TelemetryReader
 from .sources.lmu import LMULiveSource
 from .sources.mock import MockSource
 from .sources.rf2 import RF2LiveSource
-
-
-@dataclass(frozen=True)
-class SourceDescriptor:
-    name: str
-    kind: str
-    game: str
-    description: str
-
 
 class ConfigurableMockSource(Protocol):
     @property
@@ -79,17 +69,6 @@ class ConnectorRuntime(TelemetryReader):
 
     def source_names(self) -> tuple[str, ...]:
         return tuple(self._sources.keys())
-
-    def descriptors(self) -> tuple[SourceDescriptor, ...]:
-        return tuple(
-            SourceDescriptor(
-                name=source.name,
-                kind=source.kind,
-                game=source.game,
-                description=source.description,
-            )
-            for source in self._sources.values()
-        )
 
     def source(self, name: str) -> ConnectorSource | None:
         return self._sources.get(name)
@@ -190,6 +169,12 @@ class ConnectorRuntime(TelemetryReader):
         return provider_inspection_schema()
 
     def raw_snapshot(self) -> list[tuple[str, str]]:
+        return self._snapshot_with_meta("raw_snapshot", "meta.raw")
+
+    def memory_snapshot(self) -> list[tuple[str, str]]:
+        return self._snapshot_with_meta("memory_snapshot", "meta.memory")
+
+    def _snapshot_with_meta(self, method_name: str, unsupported_key: str) -> list[tuple[str, str]]:
         active = self.active_source_handle()
         if active is None:
             return [("meta.status", "inactive")]
@@ -199,15 +184,14 @@ class ConnectorRuntime(TelemetryReader):
             ("meta.game", active.game),
             ("meta.kind", active.kind),
         ]
-        raw_snapshot_fn = getattr(active.reader, "raw_snapshot", None)
-        if not callable(raw_snapshot_fn):
-            snapshot.append(("meta.raw", "not supported"))
+        snapshot_fn = getattr(active.reader, method_name, None)
+        if not callable(snapshot_fn):
+            snapshot.append((unsupported_key, "not supported"))
             return snapshot
         try:
-            raw_entries = cast(list[tuple[str, str]], raw_snapshot_fn())
-            snapshot.extend(raw_entries)
+            snapshot.extend(cast(list[tuple[str, str]], snapshot_fn()))
         except Exception as exc:
-            snapshot.append(("meta.raw", f"err: {exc}"))
+            snapshot.append((unsupported_key, f"err: {exc}"))
         return snapshot
 
     @property

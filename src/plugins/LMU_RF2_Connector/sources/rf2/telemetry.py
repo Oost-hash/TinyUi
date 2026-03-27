@@ -260,6 +260,7 @@ class RF2TelemetryReader(TelemetryReader):
     def close(self) -> None: self._info.close()
     def update(self) -> None: self._info.update()
     def raw_snapshot(self) -> list[tuple[str, str]]: return self._info.raw_snapshot()
+    def memory_snapshot(self) -> list[tuple[str, str]]: return self._info.memory_snapshot()
     @property
     def state(self) -> State: return self._state
     @property

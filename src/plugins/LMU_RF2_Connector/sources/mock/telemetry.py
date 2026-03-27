@@ -269,6 +269,12 @@ class MockTelemetryReader(TelemetryReader):
             ("candidate.mock.note", "synthetic connector source"),
         ]
 
+    def memory_snapshot(self) -> list[tuple[str, str]]:
+        return [
+            ("memory.status", "not available"),
+            ("memory.note", "mock source does not read from shared memory"),
+        ]
+
     @property
     def state(self) -> State: return self._state
     @property

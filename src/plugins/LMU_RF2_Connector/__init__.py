@@ -23,7 +23,6 @@
 
 from .runtime import (
     ConnectorRuntime,
-    SourceDescriptor,
     create_lmu_provider,
     create_lmu_rf2_provider,
     create_provider,
@@ -31,7 +30,6 @@ from .runtime import (
 
 __all__ = [
     "ConnectorRuntime",
-    "SourceDescriptor",
     "create_provider",
     "create_lmu_provider",
     "create_lmu_rf2_provider",

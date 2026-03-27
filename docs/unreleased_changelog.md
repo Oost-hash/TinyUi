@@ -21,7 +21,8 @@ Known packages:
 
 ## Entries
 - [0.3.2][plugins][changed] Rebuilt the LMU and rF2 connector stack into a single TinyUi-owned `LMU_RF2_Connector` family with shared contracts, source switching, full capability coverage, and no remaining legacy or vendor runtime dependency
-- [0.3.2][tinycore][changed] Extended runtime inspection so providers can expose a raw diagnostics source alongside normalized telemetry, making connector-side raw versus mapped data visible from the existing Dev Tools flow
+- [0.3.2][plugins][changed] Cleaned up the new connector family further by removing transitional raw auto-mapping hints, trimming dead runtime exports, and improving LMU electric and flap decoding so more values now come from real shared-memory fields instead of placeholders
+- [0.3.2][tinycore][changed] Extended runtime inspection so providers can expose normalized telemetry, struct-level raw snapshots, and real shared-memory memory dumps from the existing Dev Tools flow for connector discovery and decoding work
 - [0.3.2][tinyui][changed] Added `Copy all`, source recording, and capture path copy actions to the state dev tools so full connector snapshots can be collected during live driving sessions for later analysis
 - [0.3.1][app][changed] Cleaned up the startup import path to delay heavy UI and Qt loading, reducing a measured bootstrap profiling run from about 1.6s to about 0.48s
 - [0.3.1][app][changed] Added built-in startup timing logs across manifest discovery, runtime bootstrap, Qt setup, QML load, and pre-run phases so boot costs are visible without ad-hoc profiling

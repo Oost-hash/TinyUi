@@ -33,44 +33,11 @@ from ..contracts.telemetry import Brake, ElectricMotor, Engine, Inputs, Lap, Ses
 from . import _LeMansUltimate_data as lmu_data
 from ._LeMansUltimate_data import LMUConstants
 from ._LeMansUltimate_mmap import MMapControl
-from ._raw_dump import annotate_rows, iter_raw_fields
+from ._raw_dump import iter_memory_rows, iter_raw_fields
 
 _log = get_logger(__name__)
 _KELVIN = 273.15
 _SESSION_NAMES = {0: "test", 1: "practice", 2: "qualify", 3: "warmup", 4: "race"}
-_RAW_MAPPING_HINTS = {
-    "raw.generic.gameVersion": "state.version",
-    "raw.generic.FFBTorque": "inputs.force_feedback",
-    "raw.scoring_info.mTrackName": "session.track_name / track.name",
-    "raw.scoring_info.mGamePhase": "state.active / state.paused",
-    "raw.scoring_info.mSession": "session.session_kind",
-    "raw.scoring_info.mCurrentET": "session.session_time_elapsed",
-    "raw.scoring_info.mEndET": "session.session_time_left",
-    "raw.scoring_info.mTrackTemp": "session.track_temperature",
-    "raw.scoring_info.mAmbientTemp": "session.ambient_temperature",
-    "raw.scoring_info.mRaining": "session.raininess",
-    "raw.player_scoring.mDriverName": "vehicle.driver_name",
-    "raw.player_scoring.mVehicleClass": "vehicle.class_name",
-    "raw.player_scoring.mPlace": "vehicle.place",
-    "raw.player_scoring.mInPits": "vehicle.in_pits",
-    "raw.player_scoring.mLapNumber": "lap.current_lap",
-    "raw.player_scoring.mTotalLaps": "lap.completed_laps",
-    "raw.player_scoring.mLapDist": "lap.lap_distance",
-    "raw.player_scoring.mTimeBehindLeader": "timing.gap_to_leader",
-    "raw.player_telemetry.mVehicleName": "vehicle.vehicle_name",
-    "raw.player_telemetry.mFuel": "vehicle.fuel",
-    "raw.player_telemetry.mGear": "engine.gear",
-    "raw.player_telemetry.mEngineRPM": "engine.rpm",
-    "raw.player_telemetry.mEngineMaxRPM": "engine.rpm_max",
-    "raw.player_telemetry.mRearBrakeBias": "brake.bias_front",
-    "raw.player_telemetry.mBatteryChargeFraction": "electric_motor.battery_charge",
-    "raw.player_telemetry.mFrontTireCompoundName": "tyre.compound_name",
-    "raw.player_telemetry.mRearTireCompoundName": "tyre.compound_name",
-    "raw.player_telemetry.mHeadlights": "switch.headlights",
-    "raw.player_telemetry.mSpeedLimiter": "switch.speed_limiter",
-}
-
-
 def decode_bytes(raw: bytes) -> str:
     return raw.rstrip(b"\x00").decode("utf-8", errors="replace")
 
@@ -263,12 +230,16 @@ class LMUBrakeProvider(Brake):
 
 
 class LMUElectricMotorProvider(ElectricMotor):
-    def state(self, index: int | None = None) -> int: return 0
-    def battery_charge(self, index: int | None = None) -> float: return 0.0
-    def rpm(self, index: int | None = None) -> float: return 0.0
-    def torque(self, index: int | None = None) -> float: return 0.0
-    def motor_temperature(self, index: int | None = None) -> float: return 0.0
-    def water_temperature(self, index: int | None = None) -> float: return 0.0
+    def __init__(self, source: LMUSource) -> None: self._source = source
+    def _telem(self, index: int | None):
+        idx = self._source.info.data.telemetry.playerVehicleIdx if index is None else index
+        return self._source.info.data.telemetry.telemInfo[idx]
+    def state(self, index: int | None = None) -> int: return int(self._telem(index).mElectricBoostMotorState)
+    def battery_charge(self, index: int | None = None) -> float: return float(self._telem(index).mBatteryChargeFraction)
+    def rpm(self, index: int | None = None) -> float: return float(self._telem(index).mElectricBoostMotorRPM)
+    def torque(self, index: int | None = None) -> float: return float(self._telem(index).mElectricBoostMotorTorque)
+    def motor_temperature(self, index: int | None = None) -> float: return float(self._telem(index).mElectricBoostMotorTemperature)
+    def water_temperature(self, index: int | None = None) -> float: return float(self._telem(index).mElectricBoostWaterTemperature)
 
 
 class LMUEngineProvider(Engine):
@@ -308,7 +279,14 @@ class LMUSwitchProvider(Switch):
         return self._source.info.data.telemetry.telemInfo[idx]
     def headlights(self, index: int | None = None) -> int: return int(self._telem(index).mHeadlights)
     def speed_limiter(self, index: int | None = None) -> int: return int(self._telem(index).mSpeedLimiter)
-    def drs_status(self, index: int | None = None) -> int: return 0
+    def drs_status(self, index: int | None = None) -> int:
+        telem = self._telem(index)
+        status = int(telem.mRearFlapLegalStatus)
+        if status == 1:
+            return 1
+        if status == 2:
+            return 3 if int(telem.mRearFlapActivated) else 2
+        return 0
 
 
 class LMUVehicleProvider(Vehicle):
@@ -392,7 +370,7 @@ class LMURealConnector:
         self._source = LMUSource()
         self._state = LMUStateProvider(self._source)
         self._brake = LMUBrakeProvider(self._source)
-        self._electric_motor = LMUElectricMotorProvider()
+        self._electric_motor = LMUElectricMotorProvider(self._source)
         self._engine = LMUEngineProvider(self._source)
         self._inputs = LMUInputsProvider(self._source)
         self._lap = LMULapProvider(self._source)
@@ -444,18 +422,19 @@ class LMURealConnector:
             ("candidate.telemetry.telemInfo[player].mWheels[0].mSurfaceType", str(int(wheels[0].mSurfaceType))),
             ("candidate.telemetry.telemInfo[player].mWheels[0].mGripFract", f"{float(wheels[0].mGripFract):.3f}"),
         ]
-        snapshot.extend(
-            annotate_rows(
-                [
-                    *iter_raw_fields(info.generic, "raw.generic"),
-                    *iter_raw_fields(info.scoring.scoringInfo, "raw.scoring_info"),
-                    *iter_raw_fields(scor, "raw.player_scoring"),
-                    *iter_raw_fields(telem, "raw.player_telemetry"),
-                ],
-                _RAW_MAPPING_HINTS,
-            )
-        )
+        snapshot.extend([
+            *iter_raw_fields(info.generic, "raw.generic"),
+            *iter_raw_fields(info.scoring.scoringInfo, "raw.scoring_info"),
+            *iter_raw_fields(scor, "raw.player_scoring"),
+            *iter_raw_fields(telem, "raw.player_telemetry"),
+        ])
         return snapshot
+
+    def memory_snapshot(self) -> list[tuple[str, str]]:
+        return [
+            ("meta.buffer", "LMU_SHARED_MEMORY_FILE"),
+            *iter_memory_rows("memory.main", self._source.info.buffer_bytes()),
+        ]
     @property
     def state(self): return self._state
     @property
