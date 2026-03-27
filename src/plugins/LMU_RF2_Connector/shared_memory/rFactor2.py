@@ -34,8 +34,6 @@ from ._rFactor2_mmap import (
     MMapControl,
     rFactor2Constants,
 )
-from ._raw_dump import iter_memory_rows, iter_raw_fields
-
 
 def bytes_to_str(value: object) -> str:
     if isinstance(value, bytes):
@@ -48,21 +46,6 @@ def number_or_zero(value: object) -> float:
         return 0.0
     result = float(value)
     return result if math.isfinite(result) else 0.0
-
-
-def _fmt_mapping(value: object, mapped_to: str | None = None) -> str:
-    rendered = str(value)
-    if mapped_to is None:
-        return rendered
-    return f"{rendered} -> {mapped_to}"
-
-
-def _raw_int(value: object) -> int:
-    if isinstance(value, bytes):
-        return int.from_bytes(value, byteorder="little", signed=False)
-    return int(value)
-
-
 class RF2Info:
     """Minimal synchronous RF2 shared-memory view."""
 
@@ -168,55 +151,6 @@ class RF2Info:
         if self._paused or self._player_scor_index < 0:
             return False
         return bool(self.rf2ScorInfo.mInRealtime or self.rf2TeleVeh().mIgnitionStarter > 0)
-
-    def raw_snapshot(self) -> list[tuple[str, str]]:
-        scor = self.rf2ScorInfo
-        player_scor = self.rf2ScorVeh()
-        player_tele = self.rf2TeleVeh()
-        wheels = player_tele.mWheels
-        snapshot = [
-            ("mapped.extended.mVersion", _fmt_mapping(bytes_to_str(self.rf2Ext.mVersion), "state.version")),
-            ("mapped.scoring.mTrackName", _fmt_mapping(bytes_to_str(scor.mTrackName), "session.track_name / track.name")),
-            ("mapped.scoring.mSession", _fmt_mapping(int(scor.mSession), "session.session_kind")),
-            ("mapped.scoring.mCurrentET", _fmt_mapping(f"{number_or_zero(scor.mCurrentET):.3f}", "session.session_time_elapsed")),
-            ("mapped.scoring.mEndET", _fmt_mapping(f"{number_or_zero(scor.mEndET):.3f}", "session.session_time_left")),
-            ("mapped.scoring.mTrackTemp", _fmt_mapping(f"{number_or_zero(scor.mTrackTemp):.2f}", "session.track_temperature")),
-            ("mapped.scoring.mAmbientTemp", _fmt_mapping(f"{number_or_zero(scor.mAmbientTemp):.2f}", "session.ambient_temperature")),
-            ("mapped.scoring.mRaining", _fmt_mapping(f"{number_or_zero(scor.mRaining):.3f}", "session.raininess")),
-            ("mapped.telemetry.playerIndex", _fmt_mapping(self.playerIndex, "vehicle.player_index")),
-            ("mapped.telemetry.mVehicleName", _fmt_mapping(bytes_to_str(player_scor.mVehicleName), "vehicle.vehicle_name")),
-            ("mapped.telemetry.mFuel", _fmt_mapping(f"{number_or_zero(player_tele.mFuel):.2f}", "vehicle.fuel")),
-            ("mapped.telemetry.mGear", _fmt_mapping(int(player_tele.mGear), "engine.gear")),
-            ("mapped.telemetry.mEngineRPM", _fmt_mapping(f"{number_or_zero(player_tele.mEngineRPM):.1f}", "engine.rpm")),
-            ("mapped.telemetry.mRearBrakeBias", _fmt_mapping(f"{number_or_zero(player_tele.mRearBrakeBias):.3f}", "brake.bias_front")),
-            ("mapped.telemetry.mBatteryChargeFraction", _fmt_mapping(f"{number_or_zero(player_tele.mBatteryChargeFraction):.3f}", "electric_motor.battery_charge")),
-            ("mapped.telemetry.mRearFlapLegalStatus", _fmt_mapping(int(player_tele.mRearFlapLegalStatus), "switch.drs_status")),
-            ("mapped.scoring.mPlace", _fmt_mapping(int(player_scor.mPlace), "vehicle.place")),
-            ("mapped.scoring.mInPits", _fmt_mapping(bool(player_scor.mInPits), "vehicle.in_pits")),
-            ("candidate.telemetry.mScheduledStops", str(int(player_tele.mScheduledStops))),
-            ("candidate.scoring.mNumPitstops", str(int(player_scor.mNumPitstops))),
-            ("candidate.scoring.mFlag", str(int(player_scor.mFlag))),
-            ("candidate.scoring.mYellowFlagState", str(_raw_int(scor.mYellowFlagState))),
-            ("candidate.scoring.mWind", f"{number_or_zero(scor.mWind.x):.2f}, {number_or_zero(scor.mWind.y):.2f}, {number_or_zero(scor.mWind.z):.2f}"),
-            ("candidate.telemetry.mRearFlapActivated", str(int(player_tele.mRearFlapActivated))),
-            ("candidate.telemetry.mWheels[0].mSurfaceType", str(int(wheels[0].mSurfaceType))),
-            ("candidate.telemetry.mWheels[0].mGripFract", f"{number_or_zero(wheels[0].mGripFract):.3f}"),
-        ]
-        snapshot.extend([
-            *iter_raw_fields(self.rf2Ext, "raw.extended"),
-            *iter_raw_fields(scor, "raw.scoring_info"),
-            *iter_raw_fields(player_scor, "raw.player_scoring"),
-            *iter_raw_fields(player_tele, "raw.player_telemetry"),
-        ])
-        return snapshot
-
-    def memory_snapshot(self) -> list[tuple[str, str]]:
-        return [
-            *iter_memory_rows("memory.scoring", self._scor.buffer_bytes()),
-            *iter_memory_rows("memory.telemetry", self._tele.buffer_bytes()),
-            *iter_memory_rows("memory.extended", self._ext.buffer_bytes()),
-            *iter_memory_rows("memory.force_feedback", self._ffb.buffer_bytes()),
-        ]
 
     def _sync_indexes(self) -> None:
         tele_data = self._require_tele_data()

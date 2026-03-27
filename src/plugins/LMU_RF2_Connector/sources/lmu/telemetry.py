@@ -71,8 +71,6 @@ class LMUTelemetryReader(TelemetryReader):
     def open(self) -> None: self._real.open()
     def close(self) -> None: self._real.close()
     def update(self) -> None: self._real.update()
-    def raw_snapshot(self) -> list[tuple[str, str]]: return self._real.raw_snapshot()
-    def memory_snapshot(self) -> list[tuple[str, str]]: return self._real.memory_snapshot()
     @property
     def state(self) -> State: return cast(State, self._real.state)
     @property

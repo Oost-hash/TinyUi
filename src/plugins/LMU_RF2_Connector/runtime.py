@@ -168,32 +168,6 @@ class ConnectorRuntime(TelemetryReader):
     def inspect_schema(self):
         return provider_inspection_schema()
 
-    def raw_snapshot(self) -> list[tuple[str, str]]:
-        return self._snapshot_with_meta("raw_snapshot", "meta.raw")
-
-    def memory_snapshot(self) -> list[tuple[str, str]]:
-        return self._snapshot_with_meta("memory_snapshot", "meta.memory")
-
-    def _snapshot_with_meta(self, method_name: str, unsupported_key: str) -> list[tuple[str, str]]:
-        active = self.active_source_handle()
-        if active is None:
-            return [("meta.status", "inactive")]
-        snapshot: list[tuple[str, str]] = [
-            ("meta.family", self.family_name),
-            ("meta.source", active.name),
-            ("meta.game", active.game),
-            ("meta.kind", active.kind),
-        ]
-        snapshot_fn = getattr(active.reader, method_name, None)
-        if not callable(snapshot_fn):
-            snapshot.append((unsupported_key, "not supported"))
-            return snapshot
-        try:
-            snapshot.extend(cast(list[tuple[str, str]], snapshot_fn()))
-        except Exception as exc:
-            snapshot.append((unsupported_key, f"err: {exc}"))
-        return snapshot
-
     @property
     def state(self): return self._reader.state
     @property

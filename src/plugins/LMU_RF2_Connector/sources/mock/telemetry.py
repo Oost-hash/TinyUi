@@ -259,22 +259,6 @@ class MockTelemetryReader(TelemetryReader):
         self._track_temp.ping_pong()
         self._ambient.ping_pong()
 
-    def raw_snapshot(self) -> list[tuple[str, str]]:
-        return [
-            ("mapped.signal.fuel", f"{self._fuel.value:.2f} -> vehicle.fuel"),
-            ("mapped.signal.speed_kmh", f"{self._speed.value:.2f} -> vehicle.speed"),
-            ("mapped.signal.remaining", f"{self._remaining.value:.2f} -> session.session_time_left"),
-            ("mapped.signal.track_temp", f"{self._track_temp.value:.2f} -> track.temperature"),
-            ("mapped.signal.ambient", f"{self._ambient.value:.2f} -> track.ambient_temperature"),
-            ("candidate.mock.note", "synthetic connector source"),
-        ]
-
-    def memory_snapshot(self) -> list[tuple[str, str]]:
-        return [
-            ("memory.status", "not available"),
-            ("memory.note", "mock source does not read from shared memory"),
-        ]
-
     @property
     def state(self) -> State: return self._state
     @property

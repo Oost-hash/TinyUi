@@ -33,26 +33,11 @@ from ..contracts.telemetry import Brake, ElectricMotor, Engine, Inputs, Lap, Ses
 from . import _LeMansUltimate_data as lmu_data
 from ._LeMansUltimate_data import LMUConstants
 from ._LeMansUltimate_mmap import MMapControl
-from ._raw_dump import iter_memory_rows, iter_raw_fields
-
 _log = get_logger(__name__)
 _KELVIN = 273.15
 _SESSION_NAMES = {0: "test", 1: "practice", 2: "qualify", 3: "warmup", 4: "race"}
 def decode_bytes(raw: bytes) -> str:
     return raw.rstrip(b"\x00").decode("utf-8", errors="replace")
-
-
-def _fmt_mapping(value: object, mapped_to: str | None = None) -> str:
-    rendered = str(value)
-    if mapped_to is None:
-        return rendered
-    return f"{rendered} -> {mapped_to}"
-
-
-def _raw_int(value: object) -> int:
-    if isinstance(value, bytes):
-        return int.from_bytes(value, byteorder="little", signed=False)
-    return int(value)
 
 
 class LMUSource:
@@ -384,57 +369,6 @@ class LMURealConnector:
     def open(self) -> None: self._source.open()
     def close(self) -> None: self._source.close()
     def update(self) -> None: self._source.update()
-    def raw_snapshot(self) -> list[tuple[str, str]]:
-        info = self._source.info.data
-        player_idx = int(self._source.info.data.telemetry.playerVehicleIdx)
-        telem = info.telemetry.telemInfo[player_idx]
-        scor = info.scoring.vehScoringInfo[player_idx]
-        wheels = telem.mWheels
-        snapshot = [
-            ("mapped.generic.gameVersion", _fmt_mapping(info.generic.gameVersion, "state.version")),
-            ("mapped.generic.FFBTorque", _fmt_mapping(f"{float(info.generic.FFBTorque):.3f}", "inputs.force_feedback")),
-            ("mapped.scoring.scoringInfo.mTrackName", _fmt_mapping(decode_bytes(info.scoring.scoringInfo.mTrackName), "session.track_name / track.name")),
-            ("mapped.scoring.scoringInfo.mGamePhase", _fmt_mapping(int(info.scoring.scoringInfo.mGamePhase), "state.active / state.paused")),
-            ("mapped.scoring.scoringInfo.mSession", _fmt_mapping(int(info.scoring.scoringInfo.mSession), "session.session_kind")),
-            ("mapped.scoring.scoringInfo.mCurrentET", _fmt_mapping(f"{float(info.scoring.scoringInfo.mCurrentET):.3f}", "session.session_time_elapsed")),
-            ("mapped.scoring.scoringInfo.mEndET", _fmt_mapping(f"{float(info.scoring.scoringInfo.mEndET):.3f}", "session.session_time_left")),
-            ("mapped.scoring.scoringInfo.mTrackTemp", _fmt_mapping(f"{float(info.scoring.scoringInfo.mTrackTemp):.2f}", "session.track_temperature")),
-            ("mapped.scoring.scoringInfo.mAmbientTemp", _fmt_mapping(f"{float(info.scoring.scoringInfo.mAmbientTemp):.2f}", "session.ambient_temperature")),
-            ("mapped.scoring.scoringInfo.mRaining", _fmt_mapping(f"{float(info.scoring.scoringInfo.mRaining):.3f}", "session.raininess")),
-            ("mapped.telemetry.playerVehicleIdx", _fmt_mapping(player_idx, "vehicle.player_index")),
-            ("mapped.telemetry.telemInfo[player].mVehicleName", _fmt_mapping(decode_bytes(telem.mVehicleName), "vehicle.vehicle_name")),
-            ("mapped.telemetry.telemInfo[player].mFuel", _fmt_mapping(f"{float(telem.mFuel):.2f}", "vehicle.fuel")),
-            ("mapped.telemetry.telemInfo[player].mGear", _fmt_mapping(int(telem.mGear), "engine.gear")),
-            ("mapped.telemetry.telemInfo[player].mEngineRPM", _fmt_mapping(f"{float(telem.mEngineRPM):.1f}", "engine.rpm")),
-            ("mapped.telemetry.telemInfo[player].mRearBrakeBias", _fmt_mapping(f"{float(telem.mRearBrakeBias):.3f}", "brake.bias_front")),
-            ("mapped.telemetry.telemInfo[player].mBatteryChargeFraction", _fmt_mapping(f"{float(telem.mBatteryChargeFraction):.3f}", "electric_motor.battery_charge")),
-            ("mapped.telemetry.telemInfo[player].mFrontTireCompoundName", _fmt_mapping(decode_bytes(telem.mFrontTireCompoundName), "tyre.compound_name")),
-            ("mapped.telemetry.telemInfo[player].mRearTireCompoundName", _fmt_mapping(decode_bytes(telem.mRearTireCompoundName), "tyre.compound_name")),
-            ("mapped.scoring.vehScoringInfo[player].mPlace", _fmt_mapping(int(scor.mPlace), "vehicle.place")),
-            ("mapped.scoring.vehScoringInfo[player].mInPits", _fmt_mapping(bool(scor.mInPits), "vehicle.in_pits")),
-            ("candidate.telemetry.telemInfo[player].mScheduledStops", str(int(telem.mScheduledStops))),
-            ("candidate.scoring.vehScoringInfo[player].mNumPitstops", str(int(scor.mNumPitstops))),
-            ("candidate.scoring.vehScoringInfo[player].mFlag", str(int(scor.mFlag))),
-            ("candidate.scoring.scoringInfo.mYellowFlagState", str(_raw_int(info.scoring.scoringInfo.mYellowFlagState))),
-            ("candidate.scoring.scoringInfo.mWind", f"{float(info.scoring.scoringInfo.mWind.x):.2f}, {float(info.scoring.scoringInfo.mWind.y):.2f}, {float(info.scoring.scoringInfo.mWind.z):.2f}"),
-            ("candidate.telemetry.telemInfo[player].mRearFlapActivated", str(int(telem.mRearFlapActivated))),
-            ("candidate.telemetry.telemInfo[player].mRearFlapLegalStatus", str(int(telem.mRearFlapLegalStatus))),
-            ("candidate.telemetry.telemInfo[player].mWheels[0].mSurfaceType", str(int(wheels[0].mSurfaceType))),
-            ("candidate.telemetry.telemInfo[player].mWheels[0].mGripFract", f"{float(wheels[0].mGripFract):.3f}"),
-        ]
-        snapshot.extend([
-            *iter_raw_fields(info.generic, "raw.generic"),
-            *iter_raw_fields(info.scoring.scoringInfo, "raw.scoring_info"),
-            *iter_raw_fields(scor, "raw.player_scoring"),
-            *iter_raw_fields(telem, "raw.player_telemetry"),
-        ])
-        return snapshot
-
-    def memory_snapshot(self) -> list[tuple[str, str]]:
-        return [
-            ("meta.buffer", "LMU_SHARED_MEMORY_FILE"),
-            *iter_memory_rows("memory.main", self._source.info.buffer_bytes()),
-        ]
     @property
     def state(self): return self._state
     @property

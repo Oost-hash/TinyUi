@@ -27,7 +27,7 @@ from __future__ import annotations
 import inspect
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, cast
+from typing import TYPE_CHECKING, Callable
 
 from tinycore.log import get_logger
 
@@ -257,22 +257,6 @@ class RuntimeInspector:
                                 handle.provider,
                             )
                         )
-                        raw_snapshot = getattr(handle.provider, "raw_snapshot", None)
-                        if callable(raw_snapshot):
-                            self.add_snapshot_source(
-                                f"provider:{binding.provider_name}:raw",
-                                f"Raw: {binding.provider_name}",
-                                "provider-raw",
-                                cast(SnapshotFn, raw_snapshot),
-                            )
-                        memory_snapshot = getattr(handle.provider, "memory_snapshot", None)
-                        if callable(memory_snapshot):
-                            self.add_snapshot_source(
-                                f"provider:{binding.provider_name}:memory",
-                                f"Memory: {binding.provider_name}",
-                                "provider-memory",
-                                cast(SnapshotFn, memory_snapshot),
-                            )
                         seen_provider_names.add(binding.provider_name)
 
                 self.add_source(
@@ -292,16 +276,6 @@ class RuntimeInspector:
         """Register one inspection source."""
         self._sources.append(source)
         self._sources_by_id[source.id] = source
-
-    def add_snapshot_source(
-        self,
-        source_id: str,
-        label: str,
-        kind: str,
-        snapshot_fn: SnapshotFn,
-    ) -> None:
-        """Register a generic snapshot source."""
-        self.add_source(_Source(source_id, label, kind, snapshot_fn))
 
     def sources(self) -> list[InspectionSourceInfo]:
         """Return all available inspection sources."""

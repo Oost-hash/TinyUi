@@ -140,14 +140,6 @@ class MMapControl:
             logger.error("sharedmemory: buffer error while closing %s", self._mmap_name)
         self.update = None  # unassign update method (for proper garbage collection)
 
-    def buffer_bytes(self) -> bytes:
-        """Return the current mapped buffer as bytes."""
-        if self._buffer:
-            return bytes(self._buffer)
-        if self._mmap_buffer is None:
-            return b""
-        return self._mmap_buffer[:]
-
     def __buffer_share(self) -> None:
         """Share buffer access, may result data desync"""
 
