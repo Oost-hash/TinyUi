@@ -19,10 +19,12 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Core-owned runtime vocabulary and top-level runtime shell.
+#  TinyUI
+"""tinycore.runtime public surface.
 
-Keep runtime exports lazy so lightweight helpers such as ``unit_ids`` can be
-imported without constructing the full runtime boot dependency chain.
+Only expose the top-level runtime entrypoints that consumers should reasonably
+treat as public. Internal scheduling, diagnostics, adapter, and supervision
+details belong to their owning modules.
 """
 
 from __future__ import annotations
@@ -32,100 +34,19 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .boot import boot_runtime, discover_manifests
-    from .core_runtime import CoreRuntime, build_runtime_registry
-    from .host_workers import HostWorkerHandle, HostWorkerSupervisor
-    from .models import (
-        RuntimeActivationPolicy,
-        RuntimeExecutionPolicy,
-        RuntimeState,
-        RuntimeTransport,
-        RuntimeUnitInfo,
-        RuntimeUnitKind,
-        RuntimeUnitSpec,
-    )
-    from .scheduling import RuntimeClock, RuntimeScheduleKind, RuntimeScheduleSpec
-    from .process_supervisor import ProcessInfo, ProcessSupervisor, SpawnedProcessHandle
-    from .registry import RuntimeRegistry
-    from .scheduler import RuntimeScheduler, ScheduledTaskHandle
-    from .unit_ids import (
-        boot_phase_unit_id,
-        plugin_consumer_unit_id,
-        plugin_process_unit_id,
-        provider_capability_unit_id,
-        provider_runtime_unit_id,
-    )
-    from tinycore.diagnostics.runtime_state import InspectionEntry, InspectionSourceInfo, RuntimeInspector
-    from tinycore.diagnostics.snapshot_protocols import InspectionSnapshot, InspectionSnapshotProvider
+    from .core_runtime import CoreRuntime
 
 
 _EXPORTS: dict[str, tuple[str, str]] = {
     "CoreRuntime": (".core_runtime", "CoreRuntime"),
-    "HostWorkerHandle": (".host_workers", "HostWorkerHandle"),
-    "HostWorkerSupervisor": (".host_workers", "HostWorkerSupervisor"),
-    "InspectionEntry": ("tinycore.diagnostics.runtime_state", "InspectionEntry"),
-    "InspectionSnapshot": ("tinycore.diagnostics.snapshot_protocols", "InspectionSnapshot"),
-    "InspectionSnapshotProvider": ("tinycore.diagnostics.snapshot_protocols", "InspectionSnapshotProvider"),
-    "InspectionSourceInfo": ("tinycore.diagnostics.runtime_state", "InspectionSourceInfo"),
-    "ProcessInfo": (".process_supervisor", "ProcessInfo"),
-    "ProcessSupervisor": (".process_supervisor", "ProcessSupervisor"),
-    "RuntimeActivationPolicy": (".models", "RuntimeActivationPolicy"),
-    "RuntimeClock": (".scheduling", "RuntimeClock"),
-    "RuntimeExecutionPolicy": (".models", "RuntimeExecutionPolicy"),
-    "RuntimeInspector": ("tinycore.diagnostics.runtime_state", "RuntimeInspector"),
-    "RuntimeRegistry": (".registry", "RuntimeRegistry"),
-    "RuntimeScheduleKind": (".scheduling", "RuntimeScheduleKind"),
-    "RuntimeScheduleSpec": (".scheduling", "RuntimeScheduleSpec"),
-    "RuntimeScheduler": (".scheduler", "RuntimeScheduler"),
-    "RuntimeState": (".models", "RuntimeState"),
-    "RuntimeTransport": (".models", "RuntimeTransport"),
-    "RuntimeUnitInfo": (".models", "RuntimeUnitInfo"),
-    "RuntimeUnitKind": (".models", "RuntimeUnitKind"),
-    "RuntimeUnitSpec": (".models", "RuntimeUnitSpec"),
-    "SpawnedProcessHandle": (".process_supervisor", "SpawnedProcessHandle"),
-    "ScheduledTaskHandle": (".scheduler", "ScheduledTaskHandle"),
-    "boot_phase_unit_id": (".unit_ids", "boot_phase_unit_id"),
     "boot_runtime": (".boot", "boot_runtime"),
-    "build_runtime_registry": (".core_runtime", "build_runtime_registry"),
     "discover_manifests": (".boot", "discover_manifests"),
-    "plugin_consumer_unit_id": (".unit_ids", "plugin_consumer_unit_id"),
-    "plugin_process_unit_id": (".unit_ids", "plugin_process_unit_id"),
-    "provider_capability_unit_id": (".unit_ids", "provider_capability_unit_id"),
-    "provider_runtime_unit_id": (".unit_ids", "provider_runtime_unit_id"),
 }
 
 __all__ = (
     "CoreRuntime",
-    "HostWorkerHandle",
-    "HostWorkerSupervisor",
-    "InspectionEntry",
-    "InspectionSnapshot",
-    "InspectionSnapshotProvider",
-    "InspectionSourceInfo",
-    "ProcessInfo",
-    "ProcessSupervisor",
-    "RuntimeActivationPolicy",
-    "RuntimeClock",
-    "RuntimeExecutionPolicy",
-    "RuntimeInspector",
-    "RuntimeRegistry",
-    "RuntimeScheduleKind",
-    "RuntimeScheduleSpec",
-    "RuntimeScheduler",
-    "RuntimeState",
-    "RuntimeTransport",
-    "RuntimeUnitInfo",
-    "RuntimeUnitKind",
-    "RuntimeUnitSpec",
-    "SpawnedProcessHandle",
-    "ScheduledTaskHandle",
-    "boot_phase_unit_id",
     "boot_runtime",
-    "build_runtime_registry",
     "discover_manifests",
-    "plugin_consumer_unit_id",
-    "plugin_process_unit_id",
-    "provider_capability_unit_id",
-    "provider_runtime_unit_id",
 )
 
 

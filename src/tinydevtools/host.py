@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from PySide6.QtQml import QQmlApplicationEngine
 
 from tinycore.logging import LogInspector
-from tinycore.runtime import CoreRuntime
+from tinycore.runtime.core_runtime import CoreRuntime
 from tinywidgets.overlay import WidgetOverlay
 
 from .log_settings_viewmodel import LogSettingsViewModel

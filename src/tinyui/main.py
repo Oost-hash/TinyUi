@@ -31,16 +31,24 @@ import platform
 import sys
 from pathlib import Path
 from time import perf_counter
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import Callable, cast
 
 import PySide6
-from PySide6.QtCore import QObject, QUrl, QtMsgType, qInstallMessageHandler, qVersion
+from PySide6.QtCore import QUrl, QtMsgType, qInstallMessageHandler, qVersion
 from PySide6.QtQuick import QQuickWindow
 
 from tinycore.logging import LogInspector, get_logger
 from tinycore.qt.app import create_application
 from tinycore.qt.engine import create_engine
-from tinycore.runtime import CoreRuntime
+from tinycore.runtime.core_runtime import CoreRuntime
+from tinyui.ui_adapters import (
+    attach_optional_devtools_ui,
+    bind_statusbar_plugin_switching,
+    bind_theme_settings,
+    restore_main_window_state,
+    wire_app_shutdown,
+    wire_devtools_monitor,
+)
 from tinyui.const import APP_NAME, VERSION
 from tinyui.theme import Theme
 from tinyui.viewmodels.core_viewmodel import CoreViewModel
@@ -48,9 +56,6 @@ from tinyui.viewmodels.menu_viewmodel import MenuViewModel
 from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
 from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
 from tinyui.viewmodels.tab_viewmodel import TabViewModel
-
-if TYPE_CHECKING:
-    from tinydevtools.host import DevToolsUiAttachment
 
 
 def _qt_message_handler(mode, context, message):
@@ -65,46 +70,6 @@ def _qt_message_handler(mode, context, message):
 
 def _log_startup_phase(log, phase: str, start: float) -> None:
     log.startup_phase(phase, (perf_counter() - start) * 1000)
-
-
-def _attach_devtools_ui(core: CoreRuntime, engine, log_inspector: LogInspector) -> "DevToolsUiAttachment | None":
-    try:
-        from tinydevtools.host import attach_ui
-    except ImportError:
-        return None
-
-    return attach_ui(
-        engine,
-        log_inspector,
-        qml_path=core.paths.qml_dir("tinydevtools") / "DevToolsWindow.qml",
-    )
-
-
-def _wire_devtools_monitor(core: CoreRuntime, window: QObject) -> None:
-    """Run the devtools monitor only while the Dev Tools window is visible."""
-    loader = window.findChild(QObject, "devToolsLoader")
-    if loader is None:
-        return
-
-    devtools_window = loader.property("item")
-    if not isinstance(devtools_window, QObject):
-        return
-
-    def _sync_visibility() -> None:
-        visible = bool(devtools_window.property("visible"))
-        if visible:
-            core.activate_host_unit("devtools.monitor")
-            return
-        try:
-            core.deactivate_host_unit("devtools.monitor")
-        except RuntimeError:
-            # Ignore shutdown races while the app is exiting.
-            pass
-
-    visible_changed = cast(Any, getattr(devtools_window, "visibleChanged", None))
-    if visible_changed is not None:
-        visible_changed.connect(_sync_visibility)
-    _sync_visibility()
 
 
 def launch(core: CoreRuntime,
@@ -147,33 +112,9 @@ def launch(core: CoreRuntime,
     tab_vm.register("widgets", "Widgets")
     _log_startup_phase(log, "viewmodels", phase_start)
 
-    # ── Plugin switching — driven by the status bar ───────────────────────────
-    _plugin_names = [p.name for p in core.runtime.plugins.plugins]
+    bind_statusbar_plugin_switching(core, statusbar_vm)
 
-    def _on_plugin_switch() -> None:
-        idx = cast(int, statusbar_vm.property("activePluginIndex"))
-        if 0 <= idx < len(_plugin_names):
-            lifecycle.activate(_plugin_names[idx])
-
-    def _maybe_int(value: object) -> int | None:
-        return int(value) if isinstance(value, int | float | str) else None
-
-    statusbar_vm.activePluginIndexChanged.connect(_on_plugin_switch)
-    lifecycle = core.lifecycle
-
-    # ── Settings — apply theme and persist on change ──────────────────────────
-    def _apply_tinyui_settings() -> None:
-        val = core.host.persistence.get_setting("TinyUI", "theme")
-        if val:
-            theme.load(val)
-
-    def _save_setting(plugin_name: str) -> None:
-        core.host.persistence.save_settings(plugin_name)
-
-    core_vm.settingsChanged.connect(_apply_tinyui_settings)
-    core_vm.settingValueChanged.connect(_save_setting)
-    settings_vm.settingChangeRequested.connect(core_vm.setSettingValue)
-    _apply_tinyui_settings()
+    bind_theme_settings(core, core_vm, settings_vm, theme)
 
     # Mutual exclusion: opening one panel closes the others
     menu_vm.menuOpenChanged.connect(
@@ -201,7 +142,7 @@ def launch(core: CoreRuntime,
     ctx.setContextProperty("settingsPanelViewModel", settings_vm)
     ctx.setContextProperty("tabViewModel",           tab_vm)
 
-    devtools_ui = _attach_devtools_ui(core, engine, log_inspector)
+    devtools_ui = attach_optional_devtools_ui(core, engine, log_inspector)
     ctx.setContextProperty("devToolsAvailable", devtools_ui is not None)
     ctx.setContextProperty("devToolsQmlPath", "" if devtools_ui is None else devtools_ui.qml_url)
 
@@ -224,7 +165,7 @@ def launch(core: CoreRuntime,
         core.stop()
         return -1
     window = window_obj
-    _wire_devtools_monitor(core, window)
+    wire_devtools_monitor(core, window)
     dpr = app.devicePixelRatio()
 
     _wnd_proc = None   # Windows only: MUST be kept alive — otherwise GC → crash
@@ -261,40 +202,17 @@ def launch(core: CoreRuntime,
     _log_startup_phase(log, "windowing", phase_start)
 
     # ── Window state restore ──────────────────────────────────────────────────
-    if core.host.persistence.get_setting("TinyUI", "remember_position"):
-        x = core.host.persistence.get_setting("TinyUI", "_position_x")
-        y = core.host.persistence.get_setting("TinyUI", "_position_y")
-        x_pos = _maybe_int(x)
-        y_pos = _maybe_int(y)
-        if x_pos is not None and y_pos is not None:
-            window.setX(x_pos)
-            window.setY(y_pos)
-
-    if core.host.persistence.get_setting("TinyUI", "remember_size"):
-        w = core.host.persistence.get_setting("TinyUI", "_window_width")
-        h = core.host.persistence.get_setting("TinyUI", "_window_height")
-        width = _maybe_int(w)
-        height = _maybe_int(h)
-        if width is not None and height is not None:
-            window.setWidth(width)
-            window.setHeight(height)
+    restore_main_window_state(core, window)
 
     # ── Run ───────────────────────────────────────────────────────────────────
-    def _save_window_state() -> None:
-        if core.host.persistence.get_setting("TinyUI", "remember_position"):
-            core.host.persistence.set_setting("TinyUI", "_position_x", window.x())
-            core.host.persistence.set_setting("TinyUI", "_position_y", window.y())
-        if core.host.persistence.get_setting("TinyUI", "remember_size"):
-            core.host.persistence.set_setting("TinyUI", "_window_width",  window.width())
-            core.host.persistence.set_setting("TinyUI", "_window_height", window.height())
-        core.host.persistence.save_settings("TinyUI")
-
-    app.aboutToQuit.connect(_save_window_state)
-    app.aboutToQuit.connect(log_inspector.shutdown)
-    app.aboutToQuit.connect(engine.deleteLater)
-    app.aboutToQuit.connect(core.shutdown)
-    if devtools_ui is not None:
-        app.aboutToQuit.connect(devtools_ui.log_view_model.shutdown)
+    wire_app_shutdown(
+        app,
+        core,
+        window=window,
+        log_inspector=log_inspector,
+        engine=engine,
+        devtools_ui=devtools_ui,
+    )
 
     # Closing the main window must explicitly quit so aboutToQuit fires
     # even when other windows (widget overlay) are still open.

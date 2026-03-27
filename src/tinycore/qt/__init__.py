@@ -26,10 +26,8 @@ tinycore itself (outside this subpackage) has no Qt dependency.
 
 from .app import create_application
 from .engine import create_engine
-from .loop import PollLoop
 
 __all__ = [
     "create_application",
     "create_engine",
-    "PollLoop",
 ]

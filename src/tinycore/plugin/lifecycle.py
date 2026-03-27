@@ -34,8 +34,8 @@ from tinycore.runtime.unit_ids import plugin_consumer_unit_id
 
 if TYPE_CHECKING:
     from tinycore.plugin.registry import PluginRegistry
+    from tinycore.runtime.provider_activity import ProviderActivity
     from tinycore.runtime.scheduler import RuntimeScheduler, ScheduledTaskHandle
-    from tinycore.session.runtime import SessionRuntime
     from tinycore.runtime.models import RuntimeState
     from tinycore.runtime.registry import RuntimeRegistry
 
@@ -70,7 +70,7 @@ class PluginLifecycleManager:
         self._running:      set[str]             = set()
         self._pending:      dict[str, ScheduledTaskHandle] = {}
         self._runtime_registry: RuntimeRegistry | None = None
-        self._session: SessionRuntime | None = None
+        self._provider_activity: ProviderActivity | None = None
 
     # ── Public API ────────────────────────────────────────────────────────
 
@@ -117,11 +117,11 @@ class PluginLifecycleManager:
             if registry.get(unit_id) is not None:
                 registry.set_state(unit_id, "running")
 
-    def attach_session(self, session: SessionRuntime) -> None:
-        """Attach the session so active consumers drive provider updates."""
-        self._session = session
+    def attach_provider_activity(self, provider_activity: ProviderActivity) -> None:
+        """Attach runtime-owned provider activity so consumer heat drives providers."""
+        self._provider_activity = provider_activity
         for name in self._running:
-            session.activate_consumer(name)
+            provider_activity.activate_consumer(name)
 
     def active_consumer_names(self) -> tuple[str, ...]:
         """Return the currently active or warm-running consumer names."""
@@ -140,8 +140,8 @@ class PluginLifecycleManager:
         self._set_runtime_state(name, "starting")
         plugin.start()
         self._running.add(name)
-        if self._session is not None:
-            self._session.activate_consumer(name)
+        if self._provider_activity is not None:
+            self._provider_activity.activate_consumer(name)
         self._set_runtime_state(name, "running")
 
     def _stop(self, name: str) -> None:
@@ -150,8 +150,8 @@ class PluginLifecycleManager:
         self._set_runtime_state(name, "stopping")
         plugin.stop()
         self._running.discard(name)
-        if self._session is not None:
-            self._session.deactivate_consumer(name)
+        if self._provider_activity is not None:
+            self._provider_activity.deactivate_consumer(name)
         self._set_runtime_state(name, "stopped")
 
     def _schedule_stop(self, name: str) -> None:

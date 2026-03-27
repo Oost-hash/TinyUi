@@ -119,7 +119,6 @@ def _pyinstaller_cmd(*, with_devtools: bool) -> list[str]:
         "--collect-all", "tinyui",
         "--collect-all", "tinyui_schema",
         "--collect-all", "tinywidgets",
-        "--collect-all", "app",
         "--paths", str(ROOT / "src"),
         "--distpath", str(DIST),
         "--workpath", str(BUILD),

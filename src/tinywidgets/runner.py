@@ -18,11 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""Widget runners — Tickable implementations driven by the PollLoop.
-
-ProviderUpdater    — calls provider.update() once per tick for active runtimes.
-TextWidgetRunner   — reads one telemetry value, evaluates threshold and flash.
-"""
+"""Widget runners — Tickable implementations driven by the PollLoop."""
 
 from __future__ import annotations
 
@@ -72,60 +68,6 @@ class WidgetState:
                 and self.visible      == other.visible
                 and self.text_visible == other.text_visible
                 and self.flash_target == other.flash_target)
-
-
-# ---------------------------------------------------------------------------
-
-
-class ProviderUpdater:
-    """Calls provider.update() once per tick for every active provider runtime.
-
-    Also tracks active/paused state transitions per provider and logs them
-    via the ``connector`` debug category.
-
-    Register this as the FIRST Tickable in the PollLoop so that all runners
-    see a fresh frame on every cycle.
-    """
-
-    def __init__(self, session: SessionRuntime) -> None:
-        self._session = session
-        # {provider_name: {"active": bool|None, "paused": bool|None}}
-        self._prev: dict[str, dict[str, bool | None]] = {}
-
-    def tick(self) -> None:
-        errors = self._session.update_providers()
-        for name, error in errors:
-            _log.connector("update error", plugin=name, error=error)
-        for name, handle in self._session.active_provider_items():
-            self._check_state(name, handle.provider)
-
-    def _check_state(self, name: str, provider) -> None:
-        """Detect and log active/paused transitions for one provider runtime."""
-        try:
-            active = provider.state.active()
-            paused = provider.state.paused()
-        except Exception:
-            return  # provider doesn't support state — skip
-
-        prev = self._prev.get(name)
-        if prev is None:
-            # First observation — record without logging (no "previous" to compare)
-            self._prev[name] = {"active": active, "paused": paused}
-            return
-
-        if active != prev["active"]:
-            prev["active"] = active
-            if active:
-                _log.connector("game started", plugin=name)
-            else:
-                _log.connector("game stopped", plugin=name)
-
-        if paused != prev["paused"]:
-            prev["paused"] = paused
-            if paused:
-                _log.connector("game paused", plugin=name)
-            else:
-                _log.connector("game resumed", plugin=name)
 
 
 # ---------------------------------------------------------------------------

@@ -88,7 +88,7 @@ def _runtime_unit_snapshot(core: CoreRuntime) -> InspectionSnapshot:
 
 
 def _runtime_activation_snapshot(core: CoreRuntime) -> InspectionSnapshot:
-    active_providers = ", ".join(core.runtime.session.active_provider_names()) or "-"
+    active_providers = ", ".join(core.provider_activity.active_provider_names()) or "-"
     active_consumers = ", ".join(core.lifecycle.active_consumer_names()) or "-"
     return [
         ("consumers.active", active_consumers),

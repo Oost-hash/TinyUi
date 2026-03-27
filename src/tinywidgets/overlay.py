@@ -38,10 +38,12 @@ from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
 from tinycore.persistence.widget_state import WidgetStateStore
 from tinycore.qt.engine import create_engine
-from tinycore.qt.loop import PollLoop
+from tinycore.runtime.provider_activity import ProviderActivity
+from tinycore.runtime.poll_loop import PollLoop
+from tinycore.runtime.provider_updates import ProviderUpdater
 from tinycore.session.runtime import SessionRuntime
 from .context import WidgetContext, WidgetModel, WidgetOverlayState
-from .runner import ProviderUpdater, TextWidgetRunner
+from .runner import TextWidgetRunner
 from .spec import WidgetSpec
 
 _QML_DIR = Path(__file__).resolve().parent / "qml"
@@ -59,9 +61,11 @@ class WidgetOverlay:
     """
 
     def __init__(self, session: SessionRuntime,
+                 provider_activity: ProviderActivity,
                  paths: AppPaths | None = None,
                  widget_state_for: Callable[[str], WidgetStateStore | None] | None = None) -> None:
         self._session = session
+        self._provider_activity = provider_activity
         self._paths = paths
         self._widget_state_for = widget_state_for
         self._poll_loop  = PollLoop(interval_ms=100)
@@ -69,7 +73,7 @@ class WidgetOverlay:
         self._state      = WidgetOverlayState()
         self._engine     = None
 
-        self._poll_loop.register(ProviderUpdater(session))
+        self._poll_loop.register(ProviderUpdater(provider_activity))
 
     @property
     def model(self) -> WidgetModel:

@@ -24,13 +24,12 @@ from .context import WidgetContext, WidgetModel, WidgetOverlayState
 from .flash import FlashState
 from .overlay import WidgetOverlay
 from .registry import WidgetRegistry
-from .runner import ProviderUpdater, TextWidgetRunner, WidgetState
+from .runner import TextWidgetRunner, WidgetState
 from .spec import WidgetSpec, load_widgets_toml
 from .threshold import ThresholdEntry, evaluate
 
 __all__ = [
     "FlashState",
-    "ProviderUpdater",
     "TextWidgetRunner",
     "ThresholdEntry",
     "WidgetContext",

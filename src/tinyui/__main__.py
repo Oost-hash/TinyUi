@@ -20,7 +20,7 @@
 #  licensed under GPLv3.
 import multiprocessing as mp
 
-from app.main import main
+from tinyui_boot import main
 
 if __name__ == "__main__":
     mp.freeze_support()

@@ -34,14 +34,12 @@ from tinycore.paths import AppPaths
 from tinycore.plugin.lifecycle import PluginLifecycleManager
 from tinycore.plugin.manifest import PluginManifest, scan_plugins
 from tinycore.plugin.subprocess_host import SubprocessPlugin
-from tinyui.plugin import TinyUIPlugin
-from tinywidgets.overlay import WidgetOverlay
-from tinywidgets.spec import load_widgets_toml
 
 from .core_runtime import CoreRuntime, build_runtime_registry
 from .host_workers import HostWorkerHandle, HostWorkerSupervisor
-from .models import RuntimeState, RuntimeUnitSpec
+from .models import RuntimeState
 from .process_supervisor import ProcessSupervisor
+from .provider_activity import ProviderActivity
 from .scheduler import RuntimeScheduler
 from .unit_ids import boot_phase_unit_id
 
@@ -59,13 +57,13 @@ _BOOT_PHASE_ORDER = (
 
 
 @dataclass(frozen=True)
-class _OverlayBuild:
-    overlay: WidgetOverlay
+class HostOverlayBuild:
+    overlay: _OverlayLike
     widget_sources: list[tuple[str, str, str]]
 
 
 @dataclass(frozen=True)
-class _StateMonitorBuild:
+class HostStateMonitorBuild:
     state_monitor: _StateMonitorLike | None
     extra_context: dict[str, object]
 
@@ -98,10 +96,25 @@ class _BootAssembly:
     process_supervisor: ProcessSupervisor
     scheduler: RuntimeScheduler
     app: App
-    devtools_monitor_interval_ms: int | None
+    host_assembly: HostAssembly
+    provider_activity: ProviderActivity | None = None
     lifecycle: PluginLifecycleManager | None = None
-    overlay_build: _OverlayBuild | None = None
+    overlay_build: HostOverlayBuild | None = None
     host_worker_build: _HostWorkerBuild | None = None
+
+
+class _OverlayLike(Protocol):
+    @property
+    def model(self) -> object: ...
+
+    @property
+    def state(self) -> object: ...
+
+    @property
+    def poll_interval_ms(self) -> int: ...
+
+    def start(self) -> None: ...
+    def stop(self) -> None: ...
 
 
 class _StateMonitorLike(Protocol):
@@ -110,6 +123,27 @@ class _StateMonitorLike(Protocol):
 
     def start(self) -> None: ...
     def shutdown(self) -> None: ...
+
+
+class HostAssembly(Protocol):
+    @property
+    def devtools_monitor_interval_ms(self) -> int | None: ...
+
+    def register_host(self, app: App) -> None: ...
+
+    def build_overlay(
+        self,
+        app: App,
+        provider_activity: ProviderActivity,
+        manifests: list[PluginManifest],
+    ) -> HostOverlayBuild: ...
+
+    def build_state_monitor(
+        self,
+        runtime: CoreRuntime,
+        overlay: _OverlayLike,
+        widget_sources: list[tuple[str, str, str]],
+    ) -> HostStateMonitorBuild: ...
 
 
 def _ms(start: float) -> float:
@@ -189,15 +223,22 @@ def discover_manifests(plugins_dir) -> list[PluginManifest]:
     return scan_plugins(plugins_dir)
 
 
-def boot_runtime(paths: AppPaths, manifests: list[PluginManifest]) -> CoreRuntime:
+def boot_runtime(
+    paths: AppPaths,
+    manifests: list[PluginManifest],
+    *,
+    host_assembly: HostAssembly,
+) -> CoreRuntime:
     """Build and wire the runtime before the Qt event loop starts."""
     total_start = perf_counter()
-    assembly = _create_boot_assembly(paths, manifests)
+    assembly = _create_boot_assembly(paths, manifests, host_assembly)
     _run_pre_registry_phases(assembly, _pre_registry_phases(assembly))
     lifecycle = assembly.lifecycle
     overlay_build = assembly.overlay_build
-    if lifecycle is None or overlay_build is None:
+    provider_activity = assembly.provider_activity
+    if lifecycle is None or overlay_build is None or provider_activity is None:
         raise RuntimeError("boot assembly is incomplete after required runtime phases")
+    _attach_runtime_surfaces(lifecycle, provider_activity)
 
     extra_context = {
         "widgetModel": overlay_build.overlay.model,
@@ -209,14 +250,15 @@ def boot_runtime(paths: AppPaths, manifests: list[PluginManifest]) -> CoreRuntim
         assembly.app,
         lifecycle,
         assembly.process_supervisor,
+        provider_activity,
         overlay_build.overlay,
         None,
-        devtools_monitor_interval_ms=assembly.devtools_monitor_interval_ms,
+        devtools_monitor_interval_ms=assembly.host_assembly.devtools_monitor_interval_ms,
         boot_phase_states=assembly.boot_phase_states,
     )
     assembly.process_supervisor.attach_registry(registry)
     lifecycle.attach_runtime_registry(registry)
-    assembly.app.runtime.session.attach_runtime_registry(registry)
+    provider_activity.attach_runtime_registry(registry)
     host_workers.attach_registry(registry)
 
     def _start_overlay() -> None:
@@ -243,6 +285,7 @@ def boot_runtime(paths: AppPaths, manifests: list[PluginManifest]) -> CoreRuntim
         app=assembly.app,
         lifecycle=lifecycle,
         process_supervisor=assembly.process_supervisor,
+        provider_activity=provider_activity,
         scheduler=assembly.scheduler,
         host_workers=host_workers,
         runtime_inspector=None,
@@ -252,20 +295,18 @@ def boot_runtime(paths: AppPaths, manifests: list[PluginManifest]) -> CoreRuntim
         units=registry,
     )
     state_monitor_build = cast(
-        _StateMonitorBuild,
+        HostStateMonitorBuild,
         _run_registry_phases(
-        runtime,
-        assembly.boot_phase_states,
-        (
-            _RegistryPhaseSpec(
-                name="build_state_monitor",
-                action=lambda: _build_state_monitor(
-                    runtime,
-                    overlay_build.overlay,
-                    overlay_build.widget_sources,
+            runtime,
+            assembly.boot_phase_states,
+            (
+                _RegistryPhaseSpec(
+                    name="build_state_monitor",
+                    action=lambda: assembly.host_assembly.build_state_monitor(
+                        runtime, overlay_build.overlay, overlay_build.widget_sources
+                    ),
                 ),
             ),
-        ),
         )[0],
     )
     _log.startup_phase("bootstrap_runtime_total", _ms(total_start))
@@ -288,7 +329,9 @@ def boot_runtime(paths: AppPaths, manifests: list[PluginManifest]) -> CoreRuntim
 
 
 def _create_boot_assembly(
-    paths: AppPaths, manifests: list[PluginManifest]
+    paths: AppPaths,
+    manifests: list[PluginManifest],
+    host_assembly: HostAssembly,
 ) -> _BootAssembly:
     """Build the early boot assembly inputs before phase orchestration begins."""
     boot_phase_states: dict[str, RuntimeState] = {}
@@ -296,8 +339,6 @@ def _create_boot_assembly(
     provider_manifests = [m for m in manifests if m.is_provider]
     process_supervisor = ProcessSupervisor()
     scheduler = RuntimeScheduler()
-    devtools_monitor_interval_ms = _devtools_monitor_interval_ms()
-
     phase_start = perf_counter()
     app = create_app(
         paths,
@@ -324,7 +365,8 @@ def _create_boot_assembly(
         process_supervisor=process_supervisor,
         scheduler=scheduler,
         app=app,
-        devtools_monitor_interval_ms=devtools_monitor_interval_ms,
+        host_assembly=host_assembly,
+        provider_activity=ProviderActivity(app.runtime.session),
     )
 
 
@@ -337,7 +379,7 @@ def _pre_registry_phases(assembly: _BootAssembly) -> tuple[_PreRegistryPhaseSpec
         ),
         _PreRegistryPhaseSpec(
             name="register_host",
-            action=lambda: _register_host_and_start(assembly.app),
+            action=lambda: _register_host_and_start(assembly.app, assembly.host_assembly),
         ),
         _PreRegistryPhaseSpec(
             name="activate_plugins",
@@ -346,15 +388,27 @@ def _pre_registry_phases(assembly: _BootAssembly) -> tuple[_PreRegistryPhaseSpec
         ),
         _PreRegistryPhaseSpec(
             name="register_providers",
-            action=lambda: _register_providers(assembly.app, assembly.provider_manifests),
+            action=lambda: _register_providers(
+                assembly.app,
+                assembly.provider_manifests,
+                cast(ProviderActivity, assembly.provider_activity),
+            ),
         ),
         _PreRegistryPhaseSpec(
             name="bind_consumers",
-            action=lambda: _bind_consumers(assembly.app, assembly.consumer_manifests),
+            action=lambda: _bind_consumers(
+                assembly.app,
+                assembly.consumer_manifests,
+                cast(ProviderActivity, assembly.provider_activity),
+            ),
         ),
         _PreRegistryPhaseSpec(
             name="build_overlay",
-            action=lambda: _build_overlay(assembly.app, assembly.consumer_manifests),
+            action=lambda: assembly.host_assembly.build_overlay(
+                assembly.app,
+                cast(ProviderActivity, assembly.provider_activity),
+                assembly.consumer_manifests,
+            ),
             assign=lambda result: setattr(assembly, "overlay_build", result),
         ),
     )
@@ -398,21 +452,12 @@ def _run_registry_phases(
     return tuple(results)
 
 
-def _devtools_monitor_interval_ms() -> int | None:
-    """Return the optional devtools monitor refresh interval for boot assembly."""
-    try:
-        from tinydevtools.state_monitor_viewmodel import StateMonitorViewModel
-    except ImportError:
-        return None
-    return StateMonitorViewModel.REFRESH_INTERVAL_MS
-
-
 def _load_host_state(app: App) -> None:
     app.host.persistence.load_all()
 
 
-def _register_host_and_start(app: App) -> None:
-    _register_host(app)
+def _register_host_and_start(app: App, host_assembly: HostAssembly) -> None:
+    host_assembly.register_host(app)
     _load_host_state(app)
     app.start(plugins=False)
 
@@ -422,31 +467,38 @@ def _register_consumers(app: App) -> None:
     app.register_plugins()
 
 
-def _register_host(app: App) -> None:
-    """Run host-side registration outside the plugin registry."""
-    TinyUIPlugin().register(app)
-
-
 def _activate_plugins(app: App, scheduler: RuntimeScheduler) -> PluginLifecycleManager:
     lifecycle = PluginLifecycleManager(
         app.runtime.plugins,
         scheduler=scheduler,
         grace_seconds=30.0,
     )
-    lifecycle.attach_session(app.runtime.session)
     plugin_names = [p.name for p in app.runtime.plugins.plugins]
     if plugin_names:
         lifecycle.activate(plugin_names[0])
     return lifecycle
 
 
-def _register_providers(app: App, manifests: list[PluginManifest]) -> None:
+def _attach_runtime_surfaces(
+    lifecycle: PluginLifecycleManager,
+    provider_activity: ProviderActivity,
+) -> None:
+    """Attach runtime-owned provider activity to the plugin lifecycle."""
+    lifecycle.attach_provider_activity(provider_activity)
+
+
+def _register_providers(
+    app: App,
+    manifests: list[PluginManifest],
+    provider_activity: ProviderActivity,
+) -> None:
     for manifest in manifests:
         if manifest.provider is None:
             continue
         provider = manifest.provider.create()
         provider.open()
         app.runtime.session.register_provider(manifest.name, provider, manifest.exports)
+        provider_activity.provider_registered(manifest.name)
         _log.info(
             "provider registered  plugin=%s  type=%s  exports=%s",
             manifest.name,
@@ -455,13 +507,18 @@ def _register_providers(app: App, manifests: list[PluginManifest]) -> None:
         )
 
 
-def _bind_consumers(app: App, manifests: list[PluginManifest]) -> None:
+def _bind_consumers(
+    app: App,
+    manifests: list[PluginManifest],
+    provider_activity: ProviderActivity,
+) -> None:
     for manifest in manifests:
         bindings = app.runtime.session.bind_consumer(
             manifest.name,
             manifest.requires,
             manifest.provider_requests,
         )
+        provider_activity.bindings_changed(manifest.name)
         if bindings.missing:
             _log.warning(
                 "consumer requires missing  plugin=%s  missing=%s",
@@ -478,46 +535,6 @@ def _bind_consumers(app: App, manifests: list[PluginManifest]) -> None:
                     for capability, binding in bindings.resolved.items()
                 ),
             )
-
-
-def _build_overlay(
-    app: App,
-    manifests: list[PluginManifest],
-) -> _OverlayBuild:
-    overlay = WidgetOverlay(
-        app.runtime.session,
-        paths=app.paths,
-        widget_state_for=app.host.persistence.widget_state_for,
-    )
-    widget_sources: list[tuple[str, str, str]] = []
-    for manifest in manifests:
-        widgets_path = manifest.widgets_path()
-        if widgets_path is None or not widgets_path.exists():
-            continue
-        specs = load_widgets_toml(widgets_path)
-        overlay.load(specs, plugin_name=manifest.name)
-        widget_sources.extend(
-            (manifest.name, spec.capability, spec.field) for spec in specs if spec.field
-        )
-    return _OverlayBuild(overlay=overlay, widget_sources=widget_sources)
-
-
-def _build_state_monitor(
-    runtime: CoreRuntime,
-    overlay: WidgetOverlay,
-    widget_sources: list[tuple[str, str, str]],
-) -> _StateMonitorBuild:
-    try:
-        from tinydevtools.host import attach_runtime
-    except ImportError:
-        _log.info("devtools runtime attachment unavailable")
-        return _StateMonitorBuild(state_monitor=None, extra_context={})
-
-    attachment = attach_runtime(runtime, overlay)
-    return _StateMonitorBuild(
-        state_monitor=attachment.state_monitor,
-        extra_context=attachment.extra_context,
-    )
 
 
 def _build_host_workers(

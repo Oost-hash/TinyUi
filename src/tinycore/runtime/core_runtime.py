@@ -33,6 +33,7 @@ from tinycore.plugin.lifecycle import PluginLifecycleManager
 
 from .host_workers import HostWorkerSupervisor
 from .models import RuntimeActivationPolicy, RuntimeExecutionPolicy, RuntimeState, RuntimeUnitInfo, RuntimeUnitSpec
+from .provider_activity import ProviderActivity
 from .process_supervisor import ProcessSupervisor
 from .registry import RuntimeRegistry
 from .scheduler import RuntimeScheduler
@@ -68,6 +69,7 @@ class CoreRuntime:
     app: App
     lifecycle: PluginLifecycleManager
     process_supervisor: ProcessSupervisor
+    provider_activity: ProviderActivity
     scheduler: RuntimeScheduler
     host_workers: HostWorkerSupervisor
     runtime_inspector: RuntimeInspector | None
@@ -157,6 +159,7 @@ def build_runtime_registry(
     app: App,
     lifecycle: PluginLifecycleManager,
     process_supervisor: ProcessSupervisor,
+    provider_activity: ProviderActivity,
     overlay: _OverlayLike,
     state_monitor: _StateMonitorLike | None,
     *,
@@ -499,7 +502,7 @@ def build_runtime_registry(
     for provider in app.runtime.session.providers():
         runtime_unit_id = provider_runtime_unit_id(provider.name)
         provider_state: RuntimeState = (
-            "running" if provider.name in app.runtime.session.active_provider_names() else "idle"
+            "running" if provider.name in provider_activity.active_provider_names() else "idle"
         )
         registry.declare(
             RuntimeUnitSpec(

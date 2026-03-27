@@ -24,7 +24,7 @@
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
 from tinycore.logging import get_logger
-from tinycore.runtime import CoreRuntime
+from tinycore.runtime.core_runtime import CoreRuntime
 
 log = get_logger(__name__)
 

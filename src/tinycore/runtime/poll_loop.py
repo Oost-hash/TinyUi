@@ -18,28 +18,18 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""PollLoop — central QTimer-based tick loop.
 
-tinycore owns the loop. Anything that implements Tickable can register here.
-tinywidgets registers its runners; the loop drives them without knowing what they are.
-"""
+"""Runtime-owned Qt poll loop for recurring host ticks."""
 
 from __future__ import annotations
 
 from tinycore.poll.tickable import Tickable
-from tinycore.runtime.qt_timer import RuntimeQtTimer
+
+from .qt_timer import RuntimeQtTimer
 
 
 class PollLoop:
-    """Drives all registered Tickables at a fixed interval via QTimer.
-
-    Usage:
-        loop = PollLoop(interval_ms=100)
-        loop.register(my_runner)
-        loop.start()
-        # ... app runs ...
-        loop.stop()
-    """
+    """Drive registered tickables at a fixed interval via a runtime-owned Qt timer."""
 
     def __init__(self, interval_ms: int = 100) -> None:
         self._tickables: list[Tickable] = []
@@ -50,15 +40,12 @@ class PollLoop:
         return self._timer.interval_ms
 
     def register(self, tickable: Tickable) -> None:
-        """Add a Tickable to the loop."""
         self._tickables.append(tickable)
 
     def start(self) -> None:
-        """Start polling."""
         self._timer.start()
 
     def stop(self) -> None:
-        """Stop polling."""
         self._timer.stop()
 
     def _tick(self) -> None:
