@@ -1,14 +1,61 @@
 # Roadmap
 
-TinyUi tracks roadmap items latest-first so the current direction is visible
-without scrolling through older releases first.
+TinyUi tracks roadmap items latest-first.
 
-## Current focus: 0.3.1
+## Next update: still being planned
 
-This update is about making the platform itself cleaner and more stable before
+The next update is not locked yet. The current roadmap is a live document and
+will be adjusted once the next scope is clearer.
+
+## 0.3.3 — tinyDevTools and release logging
+
+This step is about separating development tooling from the main app runtime so
+release builds stay smaller, quieter, and easier to reason about.
+
+Planned direction:
+
+- [ ] Move devtools into their own `tinyDevTools` / `tinydevtools` package
+- [ ] Keep `tinyui` focused on the app UI instead of dev-only tooling
+- [ ] Split minimal product logging from development diagnostics
+- [ ] Keep release logging to `info`, `warning`, and `error`
+- [ ] Make release builds work without the devtools package present
+- [ ] Prepare the diagnostics boundary so heavier tooling can later move into its own thread or process
+
+## Later
+
+These are on the radar, but not tied to a release yet:
+
+- Processing / derived data layer
+- Editor surface for compounds, vehicle-specific data, and other user-managed plugin data.
+- Spotter?
+- Custom widgets
+- Grouping widgets
+- Provider selection UI
+- Game detection and source handoff inside provider families
+- Widget globals (fonts, bkg_color, size, layout)
+
+## 0.3.2 — Connector consolidation
+
+This step pulled the connector-related submodule work into one coherent
+TinyUi-owned program shape so the integration surface is easier to maintain and
+easier to inspect.
+
+Completed:
+
+- [x] Consolidate LMU, rF2, and mock into one connector family
+- [x] Replace the old connector/submodule layout with a TinyUi-owned runtime, contracts, sources, and shared-memory layer
+- [x] Keep full capability coverage inside the new connector family
+- [x] Remove legacy and vendor runtime dependencies from the active connector path
+
+Bonus goals completed:
+
+- [x] Add copy-all and snapshot recording tools so live sessions can be captured for later analysis
+- [x] Keep connector inspection contract-first so Dev Tools read normalized provider data instead of bolting more discovery logic into the live app path
+
+## 0.3.1 — Foundation extension and release cleanup
+
+This update was about making the platform itself cleaner and more stable before
 adding a larger wave of user-facing features.
-
-### 0.3.1 — Foundation extension and release cleanup
 
 Focus areas:
 
@@ -16,35 +63,11 @@ Focus areas:
 - startup cleanup
 - plugin packaging
 
-Planned:
+Completed:
 
-- [ ] Improve startup behavior and reduce eager loading
-- [ ] Clean up the build output and distribution structure
-- [ ] Define the plugin packaging direction
-
-## 0.3.2 — Connector consolidation
-
-This step is about pulling the connector-related submodule work into one more
-coherent program shape so the integration surface is easier to maintain.
-
-Planned:
-
-- [ ] Consolidate the connector submodules
-- [ ] Reduce connector-specific fragmentation in the current workflow
-
-## Later
-
-These are on the radar, but not tied to a release yet:
-
-- Offload the original connector submodule into its own repository once the integration boundary is clean
-- Editor surface for compounds, vehicle-specific data, and other user-managed plugin data once that workflow becomes relevant
-- Processing / derived data layer
-- Spotter?
-- Custom widgets
-- Grouping widgets
-- Provider selection UI
-- Game detection and source handoff inside provider families
-- Widget globals (fonts, bkg_color, size, layout)
+- [x] Improve startup behavior and reduce eager loading
+- [x] Clean up the build output and distribution structure
+- [x] Define the plugin packaging direction
 
 # Released
 

@@ -1,7 +1,6 @@
 # TinyUi
 
 [![Release](https://img.shields.io/badge/released-0.3.0-green)](https://github.com/Oost-hash/TinyUi/releases/tag/v0.3.0)
-[![Status](https://img.shields.io/badge/being%20worked%20on-0.3.1-orange)](docs/ROADMAP.md)
 [![License](https://img.shields.io/badge/license-GPLv3-green)](LICENSE)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-%23db61a2?logo=github)](https://github.com/sponsors/oost-hash)
 
@@ -9,26 +8,13 @@
 
 ## Table of Contents
 
-- [Latest update](#latest-update)
+- [Development](#latest-update)
 - [What is TinyUi?](#what-is-tinyui)
 - [Supported platforms](#supported-platforms)
 - [Help Wanted: Logo](#help-wanted-tinyui-logo)
 - [Credits](#credits)
 - [AI use](#ai-use)
 - [License](#license)
-
----
-
-## Latest update
-
-**TinyUi is now moving toward `0.3.1`.**
-
-- tightening the build and distribution structure
-- improving startup behavior and reducing eager loading
-- locking down the plugin packaging direction
-- making the project easier to understand for users and plugin developers
-
-If you want the full release overview and roadmap, see [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ---
 
@@ -50,6 +36,14 @@ The architecture is split into four hard layers:
 TinyUi is still early, but the direction is clear: build a clean
 plugin platform, make the runtime fast and understandable, and then layer a
 better day-to-day overlay experience on top.
+
+---
+
+## Development
+
+For the latest release overview and current direction, see [docs/ROADMAP.md](docs/ROADMAP.md). It is a live document, gets updated most often, and the next update is still being planned there.
+
+Legend: `[ ]` planned, `[x]` completed.
 
 ---
 
