@@ -18,33 +18,20 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""WidgetConfigStore — persists all user-editable widget config to JSON.
 
-Saved per plugin in:
-  <config_dir>/<plugin_name>/widget-config.json
-
-Format:
-  {
-    "fuel": {
-      "x": 100, "y": 200,
-      "enable": true,
-      "label": "FUEL",
-      "flash_below": 2.0,
-      "thresholds": [{"value": 0.0, "color": "#FF4444"}, ...]
-    }
-  }
-"""
+"""Host-owned widget state persistence."""
 
 from __future__ import annotations
 
 import json
-import logging
 from pathlib import Path
 
-_log = logging.getLogger(__name__)
+from tinycore.logging import get_logger
+
+_log = get_logger(__name__)
 
 
-class WidgetConfigStore:
+class WidgetStateStore:
     """Loads and saves all user-editable config for one plugin's widgets."""
 
     _FILENAME = "widget-config.json"
@@ -68,22 +55,36 @@ class WidgetConfigStore:
     ) -> None:
         """Persist all user-editable fields for widget_id."""
         self._data[widget_id] = {
-            "enable":     enable,
-            "x":          x,
-            "y":          y,
-            "label":      label,
+            "enable": enable,
+            "x": x,
+            "y": y,
+            "label": label,
             "thresholds": thresholds,
         }
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
-            with self._path.open("w", encoding="utf-8") as f:
-                json.dump(self._data, f, indent=2)
+            with self._path.open("w", encoding="utf-8") as file_obj:
+                json.dump(self._data, file_obj, indent=2, ensure_ascii=False)
+                file_obj.write("\n")
         except OSError as exc:
             _log.warning("Could not save widget config: %s", exc)
 
     def _load(self) -> dict:
         try:
-            with self._path.open(encoding="utf-8") as f:
-                return json.load(f)
+            with self._path.open(encoding="utf-8") as file_obj:
+                return json.load(file_obj)
         except (FileNotFoundError, json.JSONDecodeError):
             return {}
+
+
+class WidgetStateRegistry:
+    """Factory for plugin-scoped widget state stores."""
+
+    def __init__(self, config_dir: Path | None = None) -> None:
+        self._config_dir = config_dir
+
+    def for_plugin(self, plugin_name: str) -> WidgetStateStore | None:
+        """Return the widget state store for one plugin, if persistence is enabled."""
+        if self._config_dir is None:
+            return None
+        return WidgetStateStore(self._config_dir, plugin_name)

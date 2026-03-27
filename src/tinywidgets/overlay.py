@@ -30,16 +30,16 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import cast
+from typing import Callable, cast
 
 from PySide6.QtCore import QUrl
 
 from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
+from tinycore.persistence.widget_state import WidgetStateStore
 from tinycore.qt.engine import create_engine
 from tinycore.qt.loop import PollLoop
 from tinycore.session.runtime import SessionRuntime
-from .config_store import WidgetConfigStore
 from .context import WidgetContext, WidgetModel, WidgetOverlayState
 from .runner import ProviderUpdater, TextWidgetRunner
 from .spec import WidgetSpec
@@ -59,10 +59,11 @@ class WidgetOverlay:
     """
 
     def __init__(self, session: SessionRuntime,
-                 paths: AppPaths | None = None) -> None:
+                 paths: AppPaths | None = None,
+                 widget_state_for: Callable[[str], WidgetStateStore | None] | None = None) -> None:
         self._session = session
         self._paths = paths
-        self._config_dir = None if paths is None else paths.config_dir
+        self._widget_state_for = widget_state_for
         self._poll_loop  = PollLoop(interval_ms=100)
         self._model      = WidgetModel()
         self._state      = WidgetOverlayState()
@@ -82,10 +83,7 @@ class WidgetOverlay:
 
     def load(self, specs: list[WidgetSpec], plugin_name: str) -> None:
         """Create a runner + context for every enabled widget spec."""
-        store = (
-            WidgetConfigStore(self._config_dir, plugin_name)
-            if self._config_dir else None
-        )
+        store = self._widget_state_for(plugin_name) if self._widget_state_for is not None else None
 
         for spec in specs:
             if not spec.capability or not spec.field:
@@ -116,7 +114,7 @@ class WidgetOverlay:
             runner = TextWidgetRunner(spec, self._session, plugin_name, ctx.update)
 
             if store:
-                def _save(cx: WidgetContext = ctx, s: WidgetConfigStore = store) -> None:
+                def _save(cx: WidgetContext = ctx, s: WidgetStateStore = store) -> None:
                     s.save(
                         cx._spec.id,
                         cx._spec.enable,

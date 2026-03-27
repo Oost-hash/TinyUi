@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""tinycore.config — generic config store and JSON loader infrastructure."""
+"""tinycore.persistence.config — generic config store and JSON loader infrastructure."""
 
 from .store import ConfigStore
 from .loader import LoaderRegistry, read_json, write_json

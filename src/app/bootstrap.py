@@ -108,9 +108,7 @@ def bootstrap_runtime(paths: AppPaths, manifests: list[PluginManifest]) -> BootR
 
 
 def _load_host_state(core: App) -> None:
-    core.host.persistence.loaders.load_all(core.host.persistence.config)
-    core.host.persistence.plugin_settings.load_persisted()
-    core.host.persistence.host_settings.load_persisted()
+    core.host.persistence.load_all()
 
 
 def _activate_plugins(core: App) -> PluginLifecycleManager:
@@ -165,7 +163,11 @@ def _build_overlay(
     core: App,
     manifests: list[PluginManifest],
 ) -> tuple[WidgetOverlay, list[tuple[str, str, str]]]:
-    overlay = WidgetOverlay(core.runtime.session, paths=core.paths)
+    overlay = WidgetOverlay(
+        core.runtime.session,
+        paths=core.paths,
+        widget_state_for=core.host.persistence.widget_state_for,
+    )
     widget_sources: list[tuple[str, str, str]] = []
     for manifest in manifests:
         widgets_path = manifest.widgets_path()

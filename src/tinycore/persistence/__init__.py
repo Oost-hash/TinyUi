@@ -18,25 +18,18 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""tinycore — generic application engine."""
+"""tinycore.persistence — host-owned persistence infrastructure."""
 
-from .app import App, create_app
-from .inspect import LogInspector, RuntimeInspector
-from .paths import AppPaths
-from .persistence import WidgetStateRegistry, WidgetStateStore
-from .plugin.lifecycle import PluginLifecycleManager
-from .plugin.subprocess_host import SubprocessPlugin
-from tinyui_schema import SettingsSpec
+from .config import ConfigStore, LoaderRegistry, read_json, write_json
+from .settings import SettingsRegistry
+from .widget_state import WidgetStateRegistry, WidgetStateStore
 
 __all__ = [
-    "App",
-    "AppPaths",
-    "create_app",
-    "LogInspector",
-    "RuntimeInspector",
-    "PluginLifecycleManager",
-    "SubprocessPlugin",
-    "SettingsSpec",
+    "ConfigStore",
+    "LoaderRegistry",
+    "read_json",
+    "write_json",
+    "SettingsRegistry",
     "WidgetStateRegistry",
     "WidgetStateStore",
 ]
