@@ -22,6 +22,8 @@ Known packages:
 ## Entries
 - [0.3.5][tinycore][changed] Moved live consumer and provider participation into `tinycore.runtime.plugins`, including runtime-owned registry, lifecycle, bindings, provider registration, and subprocess runner paths, so `tinycore.plugin` keeps shrinking toward static plugin description only
 - [0.3.5][tinycore][changed] Added a runtime-owned plugin facts seam over session-backed bindings and providers so plugin context, widgets, provider heat, and runtime diagnostics stop reading live participation state directly from `SessionRuntime`
+- [0.3.5][tinycore][changed] Renamed live runtime participation around activation, participants, exports, and updates so the runtime graph, service API, and boot paths stop mixing older consumer, capability, lifecycle, and poll terminology into active code
+- [0.3.5][tinycore][removed] Removed the remaining `tinycore.plugin` runtime shims and the last `tinycore.poll` compatibility surface so live plugin participation and update driving now only exist under `tinycore.runtime`
 - [0.3.5][tinydevtools][changed] Added a dedicated Runtime devtools tab that shows live runtime units, scheduling context, and parent/process relationships outside the state monitor view
 - [0.3.5][tinydevtools][changed] Added a copy-all runtime overview action so the live runtime graph can be pasted into reviews while working through the next runtime cleanup pass
 - [0.3.5][tinydevtools][changed] Turned the Runtime devtools view into a collapsible tree with state filters, column sorting, and resizable columns so host, provider, and plugin participation reads more like a real process/runtime inspector
