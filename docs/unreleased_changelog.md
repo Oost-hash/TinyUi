@@ -20,8 +20,11 @@ Known packages:
   - other
 
 ## Entries
+- [0.3.5][tinycore][changed] Moved live consumer and provider participation into `tinycore.runtime.plugins`, including runtime-owned registry, lifecycle, bindings, provider registration, and subprocess runner paths, so `tinycore.plugin` keeps shrinking toward static plugin description only
+- [0.3.5][tinycore][changed] Added a runtime-owned plugin facts seam over session-backed bindings and providers so plugin context, widgets, provider heat, and runtime diagnostics stop reading live participation state directly from `SessionRuntime`
 - [0.3.5][tinydevtools][changed] Added a dedicated Runtime devtools tab that shows live runtime units, scheduling context, and parent/process relationships outside the state monitor view
 - [0.3.5][tinydevtools][changed] Added a copy-all runtime overview action so the live runtime graph can be pasted into reviews while working through the next runtime cleanup pass
+- [0.3.5][tinydevtools][changed] Turned the Runtime devtools view into a collapsible tree with state filters, column sorting, and resizable columns so host, provider, and plugin participation reads more like a real process/runtime inspector
 - [0.3.4][tinycore][fixed] Reduced the runtime inspector to generic snapshot registration and change tracking so plugin-specific devtools source composition no longer lives in core
 - [0.3.4][plugins][fixed] Moved connector inspection ownership to the provider runtime through `inspect_snapshot()` so new plugins do not need central inspection schemas to become inspectable
 - [0.3.4][tinycore][fixed] Added shared `AppPaths` ownership for source and frozen runtime roots so boot and QML loading stop rebuilding app paths locally
