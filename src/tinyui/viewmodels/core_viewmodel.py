@@ -19,12 +19,12 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""CoreViewModel — exposes tinycore.App to QML."""
+"""CoreViewModel — exposes the core-owned runtime to QML."""
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
-from tinycore.app import App
 from tinycore.logging import get_logger
+from tinycore.runtime import CoreRuntime
 
 log = get_logger(__name__)
 
@@ -35,7 +35,7 @@ class CoreViewModel(QObject):
     settingsChanged    = Signal()
     settingValueChanged = Signal(str)   # emits plugin_name — voor persistence
 
-    def __init__(self, core: App, parent: QObject | None = None) -> None:
+    def __init__(self, core: CoreRuntime, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._core = core
         self._settings_cache: list[dict] | None = None

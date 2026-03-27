@@ -44,9 +44,14 @@ class PollLoop:
 
     def __init__(self, interval_ms: int = 100) -> None:
         self._tickables: list[Tickable] = []
+        self._interval_ms = interval_ms
         self._timer = QTimer()
         self._timer.setInterval(interval_ms)
         self._timer.timeout.connect(self._tick)
+
+    @property
+    def interval_ms(self) -> int:
+        return self._interval_ms
 
     def register(self, tickable: Tickable) -> None:
         """Add a Tickable to the loop."""

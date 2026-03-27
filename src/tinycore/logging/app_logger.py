@@ -1,4 +1,4 @@
-"""Product logging primitives used by the shipped app runtime."""
+"""App logging primitives used by the shipped app runtime."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ _LEVEL_MAP: dict[str, int] = {
 }
 
 
-def read_logging_config() -> dict[str, object]:
+def read_app_logging_config() -> dict[str, object]:
     """Read the nearest TinyUi debug config from pyproject.toml."""
     current = pathlib.Path(__file__).resolve().parent
     for _ in range(7):
@@ -33,8 +33,8 @@ def read_logging_config() -> dict[str, object]:
     return {}
 
 
-def configure_root_logger(console_level: str | None) -> logging.Logger:
-    """Configure root logging for product-safe runtime output."""
+def configure_app_logger(console_level: str | None) -> logging.Logger:
+    """Configure root logging for app-safe runtime output."""
     root = logging.getLogger()
     root.setLevel(logging.INFO)
 
@@ -54,8 +54,8 @@ def configure_root_logger(console_level: str | None) -> logging.Logger:
 
 
 @dataclass(frozen=True)
-class ProductLogger:
-    """Minimal logger surface intended for product runtime usage."""
+class AppLogger:
+    """Minimal logger surface intended for app runtime usage."""
 
     _log: logging.Logger
 
@@ -72,6 +72,6 @@ class ProductLogger:
         self._log.exception(msg, *args, **kwargs)
 
 
-def get_product_logger(name: str) -> ProductLogger:
-    """Return the product logger for one module."""
-    return ProductLogger(logging.getLogger(name))
+def get_app_logger(name: str) -> AppLogger:
+    """Return the app logger for one module."""
+    return AppLogger(logging.getLogger(name))

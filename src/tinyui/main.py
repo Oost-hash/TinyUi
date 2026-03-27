@@ -31,18 +31,16 @@ import platform
 import sys
 from pathlib import Path
 from time import perf_counter
-from typing import TYPE_CHECKING, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 import PySide6
 from PySide6.QtCore import QObject, QUrl, QtMsgType, qInstallMessageHandler, qVersion
 from PySide6.QtQuick import QQuickWindow
 
-from tinycore.app import App
-from tinycore.inspect import LogInspector
-from tinycore.logging import get_logger
-from tinycore.plugin.lifecycle import PluginLifecycleManager
+from tinycore.logging import LogInspector, get_logger
 from tinycore.qt.app import create_application
 from tinycore.qt.engine import create_engine
+from tinycore.runtime import CoreRuntime
 from tinyui.const import APP_NAME, VERSION
 from tinyui.theme import Theme
 from tinyui.viewmodels.core_viewmodel import CoreViewModel
@@ -69,7 +67,7 @@ def _log_startup_phase(log, phase: str, start: float) -> None:
     log.startup_phase(phase, (perf_counter() - start) * 1000)
 
 
-def _attach_devtools_ui(core: App, engine, log_inspector: LogInspector) -> "DevToolsUiAttachment | None":
+def _attach_devtools_ui(core: CoreRuntime, engine, log_inspector: LogInspector) -> "DevToolsUiAttachment | None":
     try:
         from tinydevtools.host import attach_ui
     except ImportError:
@@ -82,7 +80,34 @@ def _attach_devtools_ui(core: App, engine, log_inspector: LogInspector) -> "DevT
     )
 
 
-def launch(core: App, lifecycle: PluginLifecycleManager,
+def _wire_devtools_monitor(core: CoreRuntime, window: QObject) -> None:
+    """Run the devtools monitor only while the Dev Tools window is visible."""
+    loader = window.findChild(QObject, "devToolsLoader")
+    if loader is None:
+        return
+
+    devtools_window = loader.property("item")
+    if not isinstance(devtools_window, QObject):
+        return
+
+    def _sync_visibility() -> None:
+        visible = bool(devtools_window.property("visible"))
+        if visible:
+            core.activate_host_unit("devtools.monitor")
+            return
+        try:
+            core.deactivate_host_unit("devtools.monitor")
+        except RuntimeError:
+            # Ignore shutdown races while the app is exiting.
+            pass
+
+    visible_changed = cast(Any, getattr(devtools_window, "visibleChanged", None))
+    if visible_changed is not None:
+        visible_changed.connect(_sync_visibility)
+    _sync_visibility()
+
+
+def launch(core: CoreRuntime,
            *, pre_run: Callable[[], None] | None = None,
            extra_context: dict[str, object] | None = None) -> int:
     """Initialize and run the tinyui main window.
@@ -134,6 +159,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
         return int(value) if isinstance(value, int | float | str) else None
 
     statusbar_vm.activePluginIndexChanged.connect(_on_plugin_switch)
+    lifecycle = core.lifecycle
 
     # ── Settings — apply theme and persist on change ──────────────────────────
     def _apply_tinyui_settings() -> None:
@@ -198,6 +224,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
         core.stop()
         return -1
     window = window_obj
+    _wire_devtools_monitor(core, window)
     dpr = app.devicePixelRatio()
 
     _wnd_proc = None   # Windows only: MUST be kept alive — otherwise GC → crash
@@ -265,8 +292,7 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     app.aboutToQuit.connect(_save_window_state)
     app.aboutToQuit.connect(log_inspector.shutdown)
     app.aboutToQuit.connect(engine.deleteLater)
-    app.aboutToQuit.connect(lifecycle.shutdown)
-    app.aboutToQuit.connect(core.stop)
+    app.aboutToQuit.connect(core.shutdown)
     if devtools_ui is not None:
         app.aboutToQuit.connect(devtools_ui.log_view_model.shutdown)
 

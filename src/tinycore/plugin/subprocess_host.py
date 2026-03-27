@@ -26,14 +26,13 @@ goes through a multiprocessing.Pipe (pickle-serialised).
 
 from __future__ import annotations
 
-import multiprocessing as mp
 import sys
-from typing import TYPE_CHECKING, cast
-from multiprocessing.connection import Connection
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from tinycore.plugin.context import PluginContext
     from tinycore.plugin.spec import ConsumerRuntimeSpec
+    from tinycore.runtime.process_supervisor import ProcessSupervisor, SpawnedProcessHandle
 
 
 class SubprocessPlugin:
@@ -43,10 +42,10 @@ class SubprocessPlugin:
     drops in wherever a regular plugin is expected.
     """
 
-    def __init__(self, spec: ConsumerRuntimeSpec) -> None:
+    def __init__(self, spec: ConsumerRuntimeSpec, *, process_supervisor: "ProcessSupervisor") -> None:
         self._spec = spec
-        self._proc: mp.Process | None = None
-        self._conn: Connection | None = None   # parent-side pipe end
+        self._process_supervisor = process_supervisor
+        self._handle: SpawnedProcessHandle | None = None
 
     # ── Plugin protocol ───────────────────────────────────────────────────
 
@@ -54,60 +53,79 @@ class SubprocessPlugin:
     def name(self) -> str:
         return self._spec.name
 
+    @property
+    def pid(self) -> int | None:
+        """Return the child PID when the subprocess has been spawned."""
+        return self._handle.pid if self._handle is not None else None
+
     def register(self, ctx: PluginContext) -> None:
         """Spawn the plugin subprocess and collect its registrations."""
-        from tinycore.plugin import runner
-
-        parent_conn, child_conn = mp.Pipe(duplex=True)
-
-        self._proc = mp.Process(
-            target=runner.run,
-            args=(
-                child_conn,
-                self._spec.module,
-                self._spec.cls,
-                self._spec.requires,
-                self._spec.artifact_path,
-                sys.path,
-            ),
-            daemon=True,
-            name=f"plugin-{self._spec.name}",
+        self._handle = self._process_supervisor.spawn_consumer_plugin(
+            self._spec,
+            extra_paths=list(sys.path),
         )
-        self._proc.start()
-        child_conn.close()   # host does not use the child end
-        self._conn = cast(Connection, parent_conn)
+        conn = self._handle.conn
 
-        # ── Hello ─────────────────────────────────────────────────────────
-        msg = parent_conn.recv()
-        if msg.get("type") != "hello":
-            raise RuntimeError(f"Plugin '{self._spec.name}': expected hello, got {msg}")
-        if msg["name"] != self._spec.name:
-            raise RuntimeError(
-                f"Plugin name mismatch: spec='{self._spec.name}' plugin='{msg['name']}'. "
-                f"Update ConsumerRuntimeSpec to use name='{msg['name']}'."
-            )
+        try:
+            # ── Hello ─────────────────────────────────────────────────────────
+            msg = conn.recv()
+            if msg.get("type") != "hello":
+                raise RuntimeError(f"Plugin '{self._spec.name}': expected hello, got {msg}")
+            if msg["name"] != self._spec.name:
+                raise RuntimeError(
+                    f"Plugin name mismatch: spec='{self._spec.name}' plugin='{msg['name']}'. "
+                    f"Update ConsumerRuntimeSpec to use name='{msg['name']}'."
+                )
 
-        # ── Collect registrations ─────────────────────────────────────────
-        while True:
-            msg = parent_conn.recv()
-            if msg["type"] == "register.done":
-                break
-            self._dispatch(msg, ctx)
+            # ── Collect registrations ─────────────────────────────────────────
+            while True:
+                msg = conn.recv()
+                if msg["type"] == "register.done":
+                    break
+                self._dispatch(msg, ctx)
+            self._process_supervisor.mark_running(self._handle.unit_id)
+        except Exception:
+            handle = self._handle
+            if handle is not None:
+                self._process_supervisor.mark_failed(handle.unit_id)
+                try:
+                    self._process_supervisor.stop(handle, timeout=0.5)
+                except Exception:
+                    try:
+                        handle.conn.close()
+                    finally:
+                        if handle.process.is_alive():
+                            handle.process.terminate()
+                            handle.process.join(timeout=0.5)
+                finally:
+                    self._handle = None
+            raise
 
     def start(self) -> None:
-        if self._conn:
-            self._conn.send({"type": "start"})
-            self._conn.recv()   # wait for ack
+        if self._handle is not None:
+            self._handle.conn.send({"type": "start"})
+            self._handle.conn.recv()   # wait for ack
 
     def stop(self) -> None:
-        if self._conn:
-            self._conn.send({"type": "stop"})
-            self._conn.recv()   # wait for ack
-            if self._proc:
-                self._proc.join(timeout=5)
-                if self._proc.is_alive():
-                    self._proc.terminate()
-            self._conn = None
+        if self._handle is None:
+            return
+
+        handle = self._handle
+        failed = False
+        try:
+            handle.conn.send({"type": "stop"})
+            handle.conn.recv()   # wait for ack
+        except Exception:
+            failed = True
+            self._process_supervisor.mark_failed(handle.unit_id)
+            raise
+        finally:
+            try:
+                self._process_supervisor.stop(handle)
+                if failed:
+                    self._process_supervisor.mark_failed(handle.unit_id)
+            finally:
+                self._handle = None
 
     # ── Internal ──────────────────────────────────────────────────────────
 

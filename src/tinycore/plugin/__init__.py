@@ -20,14 +20,45 @@
 #  licensed under GPLv3.
 """tinycore.plugin — consumer plugin runtime boundary."""
 
-from .context import PluginContext
-from .lifecycle import PluginLifecycleManager
-from .protocol import Plugin
-from .registry import PluginRegistry
-from .spec import ConsumerRuntimeSpec
-from .subprocess_host import SubprocessPlugin
+from __future__ import annotations
 
-__all__ = [
-    "Plugin", "PluginContext", "PluginLifecycleManager",
-    "PluginRegistry", "ConsumerRuntimeSpec", "SubprocessPlugin",
-]
+from importlib import import_module
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .context import PluginContext
+    from .lifecycle import PluginLifecycleManager
+    from .protocol import Plugin
+    from .registry import PluginRegistry
+    from .spec import ConsumerRuntimeSpec
+    from .subprocess_host import SubprocessPlugin
+
+
+_EXPORTS: dict[str, tuple[str, str]] = {
+    "ConsumerRuntimeSpec": (".spec", "ConsumerRuntimeSpec"),
+    "Plugin": (".protocol", "Plugin"),
+    "PluginContext": (".context", "PluginContext"),
+    "PluginLifecycleManager": (".lifecycle", "PluginLifecycleManager"),
+    "PluginRegistry": (".registry", "PluginRegistry"),
+    "SubprocessPlugin": (".subprocess_host", "SubprocessPlugin"),
+}
+
+__all__ = (
+    "ConsumerRuntimeSpec",
+    "Plugin",
+    "PluginContext",
+    "PluginLifecycleManager",
+    "PluginRegistry",
+    "SubprocessPlugin",
+)
+
+
+def __getattr__(name: str):
+    target = _EXPORTS.get(name)
+    if target is None:
+        raise AttributeError(f"module 'tinycore.plugin' has no attribute '{name}'")
+    module_name, attr_name = target
+    module = import_module(module_name, __name__)
+    value = getattr(module, attr_name)
+    globals()[name] = value
+    return value

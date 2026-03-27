@@ -28,11 +28,16 @@ the user switches back — avoiding a full process restart on every click.
 from __future__ import annotations
 
 import logging
-import threading
 from typing import TYPE_CHECKING
+
+from tinycore.runtime.unit_ids import plugin_consumer_unit_id
 
 if TYPE_CHECKING:
     from tinycore.plugin.registry import PluginRegistry
+    from tinycore.runtime.scheduler import RuntimeScheduler, ScheduledTaskHandle
+    from tinycore.session.runtime import SessionRuntime
+    from tinycore.runtime.models import RuntimeState
+    from tinycore.runtime.registry import RuntimeRegistry
 
 log = logging.getLogger(__name__)
 
@@ -51,12 +56,21 @@ class PluginLifecycleManager:
         lifecycle.shutdown()
     """
 
-    def __init__(self, registry: PluginRegistry, grace_seconds: float = 30.0) -> None:
+    def __init__(
+        self,
+        registry: PluginRegistry,
+        *,
+        scheduler: RuntimeScheduler,
+        grace_seconds: float = 30.0,
+    ) -> None:
         self._registry      = registry
+        self._scheduler     = scheduler
         self._grace         = grace_seconds
         self._active:       str | None           = None
         self._running:      set[str]             = set()
-        self._pending:      dict[str, threading.Timer] = {}
+        self._pending:      dict[str, ScheduledTaskHandle] = {}
+        self._runtime_registry: RuntimeRegistry | None = None
+        self._session: SessionRuntime | None = None
 
     # ── Public API ────────────────────────────────────────────────────────
 
@@ -88,43 +102,94 @@ class PluginLifecycleManager:
 
     def shutdown(self) -> None:
         """Cancel all pending timers and stop all running plugins cleanly."""
-        for timer in list(self._pending.values()):
-            timer.cancel()
+        for task_id in [self._task_id(name) for name in self._pending]:
+            self._scheduler.cancel(task_id)
         self._pending.clear()
 
         for name in list(self._running):
             self._stop(name)
+
+    def attach_runtime_registry(self, registry: RuntimeRegistry) -> None:
+        """Attach runtime unit tracking for plugin consumer lifecycle units."""
+        self._runtime_registry = registry
+        for name in self._running:
+            unit_id = plugin_consumer_unit_id(name)
+            if registry.get(unit_id) is not None:
+                registry.set_state(unit_id, "running")
+
+    def attach_session(self, session: SessionRuntime) -> None:
+        """Attach the session so active consumers drive provider updates."""
+        self._session = session
+        for name in self._running:
+            session.activate_consumer(name)
+
+    def active_consumer_names(self) -> tuple[str, ...]:
+        """Return the currently active or warm-running consumer names."""
+        return tuple(sorted(self._running))
+
+    @property
+    def grace_period_ms(self) -> int:
+        """Return the warm shutdown grace period in milliseconds."""
+        return int(self._grace * 1000)
 
     # ── Internal ──────────────────────────────────────────────────────────
 
     def _start(self, name: str) -> None:
         plugin = self._registry.get(name)
         log.info("Starting plugin '%s'", name)
+        self._set_runtime_state(name, "starting")
         plugin.start()
         self._running.add(name)
+        if self._session is not None:
+            self._session.activate_consumer(name)
+        self._set_runtime_state(name, "running")
 
     def _stop(self, name: str) -> None:
         plugin = self._registry.get(name)
         log.info("Stopping plugin '%s'", name)
+        self._set_runtime_state(name, "stopping")
         plugin.stop()
         self._running.discard(name)
+        if self._session is not None:
+            self._session.deactivate_consumer(name)
+        self._set_runtime_state(name, "stopped")
 
     def _schedule_stop(self, name: str) -> None:
         if name in self._pending:
             return   # already scheduled
         log.debug("Scheduling stop for plugin '%s' in %.0fs", name, self._grace)
-        timer = threading.Timer(self._grace, self._on_timer, args=(name,))
-        timer.daemon = True
-        self._pending[name] = timer
-        timer.start()
+        task_id = self._task_id(name)
+        handle = self._scheduler.schedule_delay(
+            task_id,
+            delay_ms=self.grace_period_ms,
+            callback=lambda name=name: self._on_timer(name),
+        )
+        self._pending[name] = handle
 
     def _cancel_pending_stop(self, name: str) -> None:
-        timer = self._pending.pop(name, None)
-        if timer:
+        handle = self._pending.pop(name, None)
+        if handle:
             log.debug("Cancelled scheduled stop for plugin '%s'", name)
-            timer.cancel()
+            self._scheduler.cancel(handle.task_id)
 
     def _on_timer(self, name: str) -> None:
         self._pending.pop(name, None)
         if name in self._running and name != self._active:
             self._stop(name)
+
+    def _set_runtime_state(self, name: str, state: RuntimeState) -> None:
+        if self._runtime_registry is None:
+            return
+        unit_id = plugin_consumer_unit_id(name)
+        info = self._runtime_registry.get(unit_id)
+        if info is None:
+            return
+        if info.activation_policy not in {"warm", "on_demand"}:
+            raise RuntimeError(
+                f"plugin consumer unit '{unit_id}' cannot change activation state; "
+                f"activation policy is '{info.activation_policy}'"
+            )
+        self._runtime_registry.set_state(unit_id, state)
+
+    def _task_id(self, name: str) -> str:
+        return f"{plugin_consumer_unit_id(name)}:grace-stop"

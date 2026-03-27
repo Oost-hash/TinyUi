@@ -41,8 +41,8 @@ from tinycore.paths import AppPaths
 from tinycore.logging import configure
 configure()  # must run before any other import emits log records
 
-from .bootstrap import bootstrap_runtime, discover_manifests
 from tinycore.plugin.user_files import sync_user_files
+from tinycore.runtime.boot import boot_runtime, discover_manifests
 from tinyui.main import launch
 from tinycore.logging import get_logger
 
@@ -80,23 +80,18 @@ def main() -> None:
     )
 
     phase_start = perf_counter()
-    runtime = bootstrap_runtime(paths, manifests)
+    runtime = boot_runtime(paths, manifests)
     _log_startup_phase("bootstrap_runtime", phase_start)
 
     def _pre_run() -> None:
         pre_run_start = perf_counter()
-        runtime.overlay.start()
-        if runtime.state_monitor is not None:
-            runtime.state_monitor.start()
+        runtime.start_host_workers()
         _log_startup_phase("pre_run", pre_run_start)
 
     phase_start = perf_counter()
-    exit_code = launch(runtime.core, runtime.lifecycle, pre_run=_pre_run, extra_context=runtime.extra_context)
+    exit_code = launch(runtime, pre_run=_pre_run, extra_context=runtime.extra_context)
     _log_startup_phase("launch_returned", phase_start)
     _log_startup_phase("main_total_until_exit", total_start)
-    if runtime.state_monitor is not None:
-        runtime.state_monitor.shutdown()
-    runtime.overlay.stop()
     sys.exit(exit_code)
 
 

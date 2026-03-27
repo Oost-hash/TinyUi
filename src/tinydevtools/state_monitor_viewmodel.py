@@ -45,7 +45,7 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QGuiApplication
 
-from tinycore.inspect.runtime_inspector import RuntimeInspector
+from tinycore.diagnostics.runtime_state import RuntimeInspector
 
 _SKIP_PROPS = frozenset({"objectName"})
 
@@ -164,6 +164,9 @@ class _StateRowsModel(QAbstractListModel):
 class StateMonitorViewModel(QObject):
     """Expose runtime inspector state to QML."""
 
+    _REFRESH_INTERVAL_MS = 200
+    _CAPTURE_FLUSH_INTERVAL_MS = 1000
+
     sourcesChanged = Signal()
     selectedChanged = Signal()
     entriesChanged = Signal()
@@ -179,17 +182,25 @@ class StateMonitorViewModel(QObject):
         self._rows_model = _StateRowsModel(self)
         self._collapsed_by_source: dict[str, set[str]] = {}
         self._timer = QTimer(self)
-        self._timer.setInterval(200)
+        self._timer.setInterval(self._REFRESH_INTERVAL_MS)
         self._timer.timeout.connect(self._refresh)
         self._capture_source_id: str | None = None
         self._capture_path: Path | None = None
         self._capture_queue: list[dict[str, object]] = []
         self._capture_flush_timer = QTimer(self)
-        self._capture_flush_timer.setInterval(1000)
+        self._capture_flush_timer.setInterval(self._CAPTURE_FLUSH_INTERVAL_MS)
         self._capture_flush_timer.timeout.connect(self._flush_capture_queue)
 
         if self._inspector.sources():
             self._selected_index = 0
+
+    @property
+    def refresh_interval_ms(self) -> int:
+        return self._REFRESH_INTERVAL_MS
+
+    @property
+    def capture_flush_interval_ms(self) -> int:
+        return self._CAPTURE_FLUSH_INTERVAL_MS
 
     def register_object(self, label: str, obj: QObject) -> None:
         """Register a QObject source locally in the Qt adapter layer."""

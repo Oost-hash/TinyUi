@@ -1,11 +1,11 @@
-"""Optional diagnostics logging layered on top of product logging."""
+"""Optional diagnostics logging layered on top of app logging."""
 
 from __future__ import annotations
 
 import logging
 import os
 
-from .core import ProductLogger, get_product_logger, read_logging_config
+from tinycore.logging.app_logger import AppLogger, get_app_logger, read_app_logging_config
 
 
 ALL_CATEGORIES: tuple[str, ...] = (
@@ -23,10 +23,10 @@ _enabled: set[str] = set()
 
 
 def configure_diagnostics() -> None:
-    """Apply optional diagnostics config without redefining product logging."""
+    """Apply optional diagnostics config without redefining app logging."""
     global _dev_mode, _enabled
 
-    cfg = read_logging_config()
+    cfg = read_app_logging_config()
     raw = os.environ.get("TINYUI_DEBUG") or str(cfg.get("categories", "") or "")
     categories = {value.strip() for value in raw.split(",") if value.strip()}
 
@@ -75,8 +75,8 @@ def set_category_enabled(category: str, enabled: bool) -> None:
     logging.getLogger().setLevel(logging.DEBUG if _dev_mode else logging.INFO)
 
 
-class DiagnosticsLogger(ProductLogger):
-    """Product logger plus category-gated diagnostics helpers."""
+class DiagnosticsLogger(AppLogger):
+    """App logger plus category-gated diagnostics helpers."""
 
     def _category(self, category: str, msg: str, **kwargs: object) -> None:
         if not (_dev_mode and self._log.isEnabledFor(logging.DEBUG)):
@@ -121,4 +121,4 @@ class DiagnosticsLogger(ProductLogger):
 
 def get_logger(name: str) -> DiagnosticsLogger:
     """Return the shared diagnostics-capable logger wrapper."""
-    return DiagnosticsLogger(get_product_logger(name)._log)
+    return DiagnosticsLogger(get_app_logger(name)._log)

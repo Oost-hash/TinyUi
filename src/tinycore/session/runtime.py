@@ -23,7 +23,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from tinycore.capabilities.registry import (
     CapabilityBinding,
@@ -31,7 +31,12 @@ from tinycore.capabilities.registry import (
     CapabilityRegistry,
 )
 from tinycore.plugin.manifest import ProviderRequest
+from tinycore.runtime.models import RuntimeState
+from tinycore.runtime.unit_ids import provider_capability_unit_id, provider_runtime_unit_id
 from .control import ProviderControlService
+
+if TYPE_CHECKING:
+    from tinycore.runtime.registry import RuntimeRegistry
 
 
 @dataclass(frozen=True)
@@ -77,6 +82,9 @@ class SessionRuntime:
         self._capabilities = capabilities
         self._providers: dict[str, ProviderHandle] = {}
         self._bindings_by_consumer: dict[str, ConsumerBindingSet] = {}
+        self._active_consumers: set[str] = set()
+        self._active_provider_names: set[str] = set()
+        self._runtime_registry: RuntimeRegistry | None = None
         self.controls = ProviderControlService(self)
 
     def register_provider(
@@ -93,6 +101,7 @@ class SessionRuntime:
         )
         self._providers[provider_name] = handle
         self._capabilities.register_many(provider_name, exports, provider)
+        self._refresh_active_providers()
         return handle
 
     def bind_consumer(
@@ -123,6 +132,8 @@ class SessionRuntime:
             missing=tuple(missing),
         )
         self._bindings_by_consumer[consumer_name] = binding_set
+        if consumer_name in self._active_consumers:
+            self._refresh_active_providers()
         return binding_set
 
     def provider(self, provider_name: str) -> ProviderHandle | None:
@@ -137,12 +148,39 @@ class SessionRuntime:
         """Return all active providers keyed by provider name."""
         return list(self._providers.items())
 
+    def active_provider_items(self) -> list[tuple[str, ProviderHandle]]:
+        """Return providers that are currently activated by active consumers."""
+        return [
+            (provider_name, handle)
+            for provider_name, handle in self._providers.items()
+            if provider_name in self._active_provider_names
+        ]
+
     def bindings_for(self, consumer_name: str) -> ConsumerBindingSet:
         """Return the binding set for a consumer plugin."""
         return self._bindings_by_consumer.get(
             consumer_name,
             ConsumerBindingSet(consumer_name=consumer_name, requires=()),
         )
+
+    def activate_consumer(self, consumer_name: str) -> None:
+        """Mark one consumer runtime as active for provider update purposes."""
+        self._active_consumers.add(consumer_name)
+        self._refresh_active_providers()
+
+    def deactivate_consumer(self, consumer_name: str) -> None:
+        """Mark one consumer runtime as inactive for provider update purposes."""
+        self._active_consumers.discard(consumer_name)
+        self._refresh_active_providers()
+
+    def active_provider_names(self) -> tuple[str, ...]:
+        """Return provider names currently active through consumer bindings."""
+        return tuple(sorted(self._active_provider_names))
+
+    def attach_runtime_registry(self, registry: RuntimeRegistry) -> None:
+        """Attach runtime graph tracking for provider runtime and capability units."""
+        self._runtime_registry = registry
+        self._sync_provider_runtime_states(set(), self._active_provider_names)
 
     def update_providers(self) -> list[tuple[str, str]]:
         """Tick all provider runtimes that expose ``update()``.
@@ -151,7 +189,7 @@ class SessionRuntime:
             A list of ``(provider_name, error)`` pairs for providers that failed.
         """
         errors: list[tuple[str, str]] = []
-        for provider_name, handle in self._providers.items():
+        for provider_name, handle in self.active_provider_items():
             update = getattr(handle.provider, "update", None)
             if not callable(update):
                 continue
@@ -180,3 +218,39 @@ class SessionRuntime:
                 if not selected:
                     return None
         return provider
+
+    def _refresh_active_providers(self) -> None:
+        previous = set(self._active_provider_names)
+        active: set[str] = set()
+        for consumer_name in self._active_consumers:
+            bindings = self._bindings_by_consumer.get(consumer_name)
+            if bindings is None:
+                continue
+            active.update(binding.provider_name for binding in bindings.resolved.values())
+        self._active_provider_names = active
+        self._sync_provider_runtime_states(previous, active)
+
+    def _sync_provider_runtime_states(self, previous: set[str], current: set[str]) -> None:
+        if self._runtime_registry is None:
+            return
+
+        for provider_name in previous - current:
+            self._set_provider_runtime_state(provider_name, "idle")
+        for provider_name in current - previous:
+            self._set_provider_runtime_state(provider_name, "running")
+        for provider_name in current & previous:
+            self._set_provider_runtime_state(provider_name, "running")
+
+    def _set_provider_runtime_state(self, provider_name: str, state: RuntimeState) -> None:
+        if self._runtime_registry is None:
+            return
+        handle = self._providers.get(provider_name)
+        runtime_unit_id = provider_runtime_unit_id(provider_name)
+        if self._runtime_registry.get(runtime_unit_id) is not None:
+            self._runtime_registry.set_state(runtime_unit_id, state)
+        if handle is None:
+            return
+        for capability in handle.exports:
+            capability_unit_id = provider_capability_unit_id(provider_name, capability)
+            if self._runtime_registry.get(capability_unit_id) is not None:
+                self._runtime_registry.set_state(capability_unit_id, state)

@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject, Signal, Slot
 
-from tinycore.inspect.log_inspector import LogInspector, LogRecordEntry
+from tinycore.logging import LogInspector, LogRecordEntry
 
 
 class LogViewModel(QObject):

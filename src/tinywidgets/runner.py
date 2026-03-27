@@ -96,7 +96,7 @@ class ProviderUpdater:
         errors = self._session.update_providers()
         for name, error in errors:
             _log.connector("update error", plugin=name, error=error)
-        for name, handle in self._session.provider_items():
+        for name, handle in self._session.active_provider_items():
             self._check_state(name, handle.provider)
 
     def _check_state(self, name: str, provider) -> None:

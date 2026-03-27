@@ -179,8 +179,12 @@ class App:
         """Stop the application and all registered plugins."""
         self.runtime.plugins.stop_all()
 
+    def register_plugins(self) -> None:
+        """Run plugin register phase with scoped plugin contexts."""
+        self.runtime.plugins.register_all(self)
 
-def create_app(paths: AppPaths, *plugins) -> App:
+
+def create_app(paths: AppPaths, *plugins, register_plugins: bool = True) -> App:
     """Factory: create an App, add plugins, and run register phase.
 
     Args:
@@ -198,5 +202,6 @@ def create_app(paths: AppPaths, *plugins) -> App:
             app.runtime.plugins.add(instance, requires)
         else:
             app.runtime.plugins.add(plugin)
-    app.runtime.plugins.register_all(app)
+    if register_plugins:
+        app.register_plugins()
     return app

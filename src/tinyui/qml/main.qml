@@ -145,6 +145,7 @@ ApplicationWindow {
     SettingsDialog {}
     Loader {
         id: devToolsLoader
+        objectName: "devToolsLoader"
         active: root.hasDevTools
         source: root.hasDevTools ? devToolsQmlPath : ""
     }

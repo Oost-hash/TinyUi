@@ -81,6 +81,11 @@ class WidgetOverlay:
         """Shared overlay state used by both the main UI and widget engine."""
         return self._state
 
+    @property
+    def poll_interval_ms(self) -> int:
+        """Return the interval of the runtime-owned widget poll loop."""
+        return self._poll_loop.interval_ms
+
     def load(self, specs: list[WidgetSpec], plugin_name: str) -> None:
         """Create a runner + context for every enabled widget spec."""
         store = self._widget_state_for(plugin_name) if self._widget_state_for is not None else None

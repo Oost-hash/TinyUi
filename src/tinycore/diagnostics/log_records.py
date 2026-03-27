@@ -1,5 +1,5 @@
 #  TinyUI
-"""Runtime-owned log inspection service."""
+"""Diagnostics buffer for captured log records."""
 
 from __future__ import annotations
 
