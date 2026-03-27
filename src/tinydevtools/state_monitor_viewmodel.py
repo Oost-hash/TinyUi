@@ -39,13 +39,13 @@ from PySide6.QtCore import (
     QPersistentModelIndex,
     QStandardPaths,
     Qt,
-    QTimer,
     Signal,
     Slot,
 )
 from PySide6.QtGui import QGuiApplication
 
 from tinycore.diagnostics.runtime_state import RuntimeInspector
+from tinycore.runtime.qt_timer import RuntimeQtTimer
 
 _SKIP_PROPS = frozenset({"objectName"})
 
@@ -164,8 +164,8 @@ class _StateRowsModel(QAbstractListModel):
 class StateMonitorViewModel(QObject):
     """Expose runtime inspector state to QML."""
 
-    _REFRESH_INTERVAL_MS = 200
-    _CAPTURE_FLUSH_INTERVAL_MS = 1000
+    REFRESH_INTERVAL_MS = 200
+    CAPTURE_FLUSH_INTERVAL_MS = 1000
 
     sourcesChanged = Signal()
     selectedChanged = Signal()
@@ -181,26 +181,30 @@ class StateMonitorViewModel(QObject):
         self._entries: list[dict[str, object]] = []
         self._rows_model = _StateRowsModel(self)
         self._collapsed_by_source: dict[str, set[str]] = {}
-        self._timer = QTimer(self)
-        self._timer.setInterval(self._REFRESH_INTERVAL_MS)
-        self._timer.timeout.connect(self._refresh)
+        self._timer = RuntimeQtTimer(
+            interval_ms=self.REFRESH_INTERVAL_MS,
+            callback=self._refresh,
+            parent=self,
+        )
         self._capture_source_id: str | None = None
         self._capture_path: Path | None = None
         self._capture_queue: list[dict[str, object]] = []
-        self._capture_flush_timer = QTimer(self)
-        self._capture_flush_timer.setInterval(self._CAPTURE_FLUSH_INTERVAL_MS)
-        self._capture_flush_timer.timeout.connect(self._flush_capture_queue)
+        self._capture_flush_timer = RuntimeQtTimer(
+            interval_ms=self.CAPTURE_FLUSH_INTERVAL_MS,
+            callback=self._flush_capture_queue,
+            parent=self,
+        )
 
         if self._inspector.sources():
             self._selected_index = 0
 
     @property
     def refresh_interval_ms(self) -> int:
-        return self._REFRESH_INTERVAL_MS
+        return self.REFRESH_INTERVAL_MS
 
     @property
     def capture_flush_interval_ms(self) -> int:
-        return self._CAPTURE_FLUSH_INTERVAL_MS
+        return self.CAPTURE_FLUSH_INTERVAL_MS
 
     def register_object(self, label: str, obj: QObject) -> None:
         """Register a QObject source locally in the Qt adapter layer."""

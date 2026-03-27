@@ -63,6 +63,7 @@ class RuntimeUnitSpec:
     depends_on: tuple[str, ...] = ()
     schedule_kind: RuntimeScheduleKind = "manual"
     schedule_clock: RuntimeClock = "host"
+    schedule_driver: str | None = None
     interval_ms: int | None = None
     delay_ms: int | None = None
 
@@ -86,5 +87,6 @@ class RuntimeUnitInfo:
     depends_on: tuple[str, ...] = ()
     schedule_kind: RuntimeScheduleKind = "manual"
     schedule_clock: RuntimeClock = "host"
+    schedule_driver: str | None = None
     interval_ms: int | None = None
     delay_ms: int | None = None

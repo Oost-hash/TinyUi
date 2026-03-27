@@ -50,6 +50,7 @@ class RuntimeRegistry:
             depends_on=spec.depends_on,
             schedule_kind=spec.schedule_kind,
             schedule_clock=spec.schedule_clock,
+            schedule_driver=spec.schedule_driver,
             interval_ms=spec.interval_ms,
             delay_ms=spec.delay_ms,
         )
@@ -75,6 +76,7 @@ class RuntimeRegistry:
             depends_on=current.depends_on,
             schedule_kind=current.schedule_kind,
             schedule_clock=current.schedule_clock,
+            schedule_driver=current.schedule_driver,
             interval_ms=current.interval_ms,
             delay_ms=current.delay_ms,
         )
@@ -100,6 +102,7 @@ class RuntimeRegistry:
             depends_on=current.depends_on,
             schedule_kind=current.schedule_kind,
             schedule_clock=current.schedule_clock,
+            schedule_driver=current.schedule_driver,
             interval_ms=current.interval_ms,
             delay_ms=current.delay_ms,
         )

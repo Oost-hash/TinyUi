@@ -76,6 +76,7 @@ def _runtime_unit_snapshot(core: CoreRuntime) -> InspectionSnapshot:
                 (f"{prefix}.transport", unit.transport),
                 (f"{prefix}.schedule.kind", unit.schedule_kind),
                 (f"{prefix}.schedule.clock", unit.schedule_clock),
+                (f"{prefix}.schedule.driver", unit.schedule_driver or ""),
                 (f"{prefix}.schedule.intervalMs", "" if unit.interval_ms is None else str(unit.interval_ms)),
                 (f"{prefix}.schedule.delayMs", "" if unit.delay_ms is None else str(unit.delay_ms)),
                 (f"{prefix}.state", unit.state),

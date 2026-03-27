@@ -26,9 +26,8 @@ tinywidgets registers its runners; the loop drives them without knowing what the
 
 from __future__ import annotations
 
-from PySide6.QtCore import QTimer
-
 from tinycore.poll.tickable import Tickable
+from tinycore.runtime.qt_timer import RuntimeQtTimer
 
 
 class PollLoop:
@@ -44,14 +43,11 @@ class PollLoop:
 
     def __init__(self, interval_ms: int = 100) -> None:
         self._tickables: list[Tickable] = []
-        self._interval_ms = interval_ms
-        self._timer = QTimer()
-        self._timer.setInterval(interval_ms)
-        self._timer.timeout.connect(self._tick)
+        self._timer = RuntimeQtTimer(interval_ms=interval_ms, callback=self._tick)
 
     @property
     def interval_ms(self) -> int:
-        return self._interval_ms
+        return self._timer.interval_ms
 
     def register(self, tickable: Tickable) -> None:
         """Add a Tickable to the loop."""

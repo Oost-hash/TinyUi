@@ -61,6 +61,7 @@ class HostWorkerSupervisor:
         stop: Callable[[], None] | None = None,
     ) -> None:
         """Register one host-side worker."""
+        self._workers = [worker for worker in self._workers if worker.unit_id != unit_id]
         self._workers.append(
             HostWorkerHandle(
                 unit_id=unit_id,

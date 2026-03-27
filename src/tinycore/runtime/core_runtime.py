@@ -159,6 +159,8 @@ def build_runtime_registry(
     process_supervisor: ProcessSupervisor,
     overlay: _OverlayLike,
     state_monitor: _StateMonitorLike | None,
+    *,
+    devtools_monitor_interval_ms: int | None = None,
     boot_phase_states: dict[str, RuntimeState] | None = None,
 ) -> RuntimeRegistry:
     """Build the initial runtime graph for the current process arrangement."""
@@ -184,6 +186,7 @@ def build_runtime_registry(
             stop_order=1000,
             schedule_kind="manual",
             schedule_clock="host",
+            schedule_driver="runtime.host",
         ),
         state="running",
     )
@@ -203,6 +206,7 @@ def build_runtime_registry(
             depends_on=("host.main",),
             schedule_kind="manual",
             schedule_clock="host",
+            schedule_driver="runtime.process_supervisor",
         ),
         state="running",
     )
@@ -222,6 +226,7 @@ def build_runtime_registry(
             depends_on=("host.main",),
             schedule_kind="manual",
             schedule_clock="host",
+            schedule_driver="runtime.scheduler",
         ),
         state="running",
     )
@@ -241,6 +246,7 @@ def build_runtime_registry(
             depends_on=("host.main",),
             schedule_kind="manual",
             schedule_clock="host",
+            schedule_driver="runtime.host_workers",
         ),
         state="running",
     )
@@ -260,6 +266,7 @@ def build_runtime_registry(
             depends_on=("host.main",),
             schedule_kind="oneshot",
             schedule_clock="host",
+            schedule_driver="runtime.boot",
         ),
         state=_boot_state("register_consumers"),
     )
@@ -279,6 +286,7 @@ def build_runtime_registry(
             depends_on=("host.main",),
             schedule_kind="oneshot",
             schedule_clock="host",
+            schedule_driver="runtime.boot",
         ),
         state=_boot_state("register_host"),
     )
@@ -298,6 +306,7 @@ def build_runtime_registry(
             depends_on=("host.main",),
             schedule_kind="oneshot",
             schedule_clock="host",
+            schedule_driver="runtime.boot",
         ),
         state=_boot_state("activate_plugins"),
     )
@@ -317,6 +326,7 @@ def build_runtime_registry(
             depends_on=("host.main",),
             schedule_kind="oneshot",
             schedule_clock="host",
+            schedule_driver="runtime.boot",
         ),
         state=_boot_state("register_providers"),
     )
@@ -336,6 +346,7 @@ def build_runtime_registry(
             depends_on=("host.main",),
             schedule_kind="oneshot",
             schedule_clock="host",
+            schedule_driver="runtime.boot",
         ),
         state=_boot_state("bind_consumers"),
     )
@@ -355,6 +366,7 @@ def build_runtime_registry(
             depends_on=("host.main",),
             schedule_kind="oneshot",
             schedule_clock="host",
+            schedule_driver="runtime.boot",
         ),
         state=_boot_state("build_overlay"),
     )
@@ -374,6 +386,7 @@ def build_runtime_registry(
             depends_on=("host.main",),
             schedule_kind="oneshot",
             schedule_clock="host",
+            schedule_driver="runtime.boot",
         ),
         state=_boot_state("build_state_monitor"),
     )
@@ -393,6 +406,7 @@ def build_runtime_registry(
             depends_on=("host.main",),
             schedule_kind="manual",
             schedule_clock="host",
+            schedule_driver="tinyui.launch",
         )
     )
     registry.declare(
@@ -411,6 +425,7 @@ def build_runtime_registry(
             depends_on=("ui.main",),
             schedule_kind="manual",
             schedule_clock="host",
+            schedule_driver="runtime.host_workers",
         )
     )
     registry.declare(
@@ -429,6 +444,7 @@ def build_runtime_registry(
             depends_on=("ui.widgets.overlay",),
             schedule_kind="interval",
             schedule_clock="qt",
+            schedule_driver="runtime.qt_timer",
             interval_ms=overlay.poll_interval_ms,
         )
     )
@@ -448,11 +464,17 @@ def build_runtime_registry(
             depends_on=("host.main",),
             schedule_kind="grace",
             schedule_clock="thread",
+            schedule_driver="runtime.scheduler",
             delay_ms=lifecycle.grace_period_ms,
         )
     )
 
-    if state_monitor is not None:
+    monitor_interval_ms = (
+        state_monitor.refresh_interval_ms
+        if state_monitor is not None
+        else devtools_monitor_interval_ms
+    )
+    if monitor_interval_ms is not None:
         registry.declare(
             RuntimeUnitSpec(
                 id="devtools.monitor",
@@ -469,7 +491,8 @@ def build_runtime_registry(
                 depends_on=("ui.widgets.overlay",),
                 schedule_kind="interval",
                 schedule_clock="qt",
-                interval_ms=state_monitor.refresh_interval_ms,
+                schedule_driver="runtime.qt_timer",
+                interval_ms=monitor_interval_ms,
             )
         )
 
@@ -494,6 +517,7 @@ def build_runtime_registry(
                 depends_on=("host.main",),
                 schedule_kind="manual",
                 schedule_clock="host",
+                schedule_driver="tinycore.session",
             ),
             state=provider_state,
         )
@@ -514,6 +538,7 @@ def build_runtime_registry(
                     depends_on=(runtime_unit_id,),
                     schedule_kind="manual",
                     schedule_clock="host",
+                    schedule_driver="tinycore.session",
                 ),
                 state=provider_state,
             )
@@ -544,6 +569,7 @@ def build_runtime_registry(
                     depends_on=("runtime.process_supervisor",),
                     schedule_kind="manual",
                     schedule_clock="host",
+                    schedule_driver="runtime.process_supervisor",
                 )
             )
         if process_state == "failed":
@@ -569,6 +595,7 @@ def build_runtime_registry(
                 depends_on=((process_unit_id,) if pid is not None else ("host.main",)),
                 schedule_kind="manual",
                 schedule_clock="host",
+                schedule_driver="tinycore.plugin.lifecycle",
             ),
             state=consumer_state,
         )
