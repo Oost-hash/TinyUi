@@ -108,7 +108,7 @@ class HostWorkerSupervisor:
         worker = self._worker(unit_id)
         if worker is None or worker.unit_id not in self._started_units:
             return
-        if self._registry is not None and not self._registry.dependents_stopped(worker.unit_id):
+        if self._registry is not None and self._active_worker_dependents(worker.unit_id):
             raise RuntimeError(
                 f"cannot stop runtime unit '{worker.unit_id}' while dependents are still active"
             )
@@ -167,6 +167,19 @@ class HostWorkerSupervisor:
             if (dependency := self._registry.get(dependency_id)) is None or dependency.state != "running"
         ]
         return ", ".join(missing) if missing else "-"
+
+    def _active_worker_dependents(self, unit_id: str) -> list[str]:
+        if self._registry is None:
+            return []
+        active_workers = self._started_units - {unit_id}
+        dependents: list[str] = []
+        for dependent_id in active_workers:
+            info = self._registry.get(dependent_id)
+            if info is None or unit_id not in info.depends_on:
+                continue
+            if info.state in {"starting", "running", "stopping"}:
+                dependents.append(dependent_id)
+        return dependents
 
     def _autostart_unit_ids(self) -> list[str]:
         if self._registry is None:

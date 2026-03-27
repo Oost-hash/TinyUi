@@ -303,6 +303,9 @@ def boot_runtime(
         extra_context=extra_context,
         units=registry,
     )
+    runtime.runtime_inspector = build_runtime_inspector(
+        runtime, overlay_build.widget_sources
+    )
     state_monitor_build = cast(
         HostStateMonitorBuild,
         _run_registry_phases(
@@ -330,10 +333,6 @@ def boot_runtime(
             stop_overlay=_stop_overlay,
         )
         _register_host_workers(runtime.host_workers, assembly.host_worker_build)
-
-    runtime.runtime_inspector = build_runtime_inspector(
-        runtime, overlay_build.widget_sources
-    )
     return runtime
 
 

@@ -200,6 +200,8 @@ def launch(core: CoreRuntime,
     if _win_ctrl is not None:
         engine.rootContext().setContextProperty("windowController", _win_ctrl)
     _log_startup_phase(log, "windowing", phase_start)
+    if core.units.get("ui.main") is not None:
+        core.units.set_state("ui.main", "running")
 
     # ── Window state restore ──────────────────────────────────────────────────
     restore_main_window_state(core, window)

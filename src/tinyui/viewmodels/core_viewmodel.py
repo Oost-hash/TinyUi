@@ -112,10 +112,24 @@ class CoreViewModel(QObject):
         self._settings_cache = result
         return result
 
-    @Slot(str, str, "QVariant")
-    def setSettingValue(self, plugin_name: str, key: str, value) -> None:
-        """Persist a new setting value and notify QML."""
+    def _set_setting_value(self, plugin_name: str, key: str, value) -> None:
         self._core.host.persistence.set_setting(plugin_name, key, value)
         self._settings_cache = None          # invalidate cache — fresh values on next read
         self.settingsChanged.emit()
         self.settingValueChanged.emit(plugin_name)
+
+    @Slot(str, str, str)
+    def setStringSettingValue(self, plugin_name: str, key: str, value: str) -> None:
+        self._set_setting_value(plugin_name, key, value)
+
+    @Slot(str, str, bool)
+    def setBoolSettingValue(self, plugin_name: str, key: str, value: bool) -> None:
+        self._set_setting_value(plugin_name, key, value)
+
+    @Slot(str, str, int)
+    def setIntSettingValue(self, plugin_name: str, key: str, value: int) -> None:
+        self._set_setting_value(plugin_name, key, value)
+
+    @Slot(str, str, float)
+    def setFloatSettingValue(self, plugin_name: str, key: str, value: float) -> None:
+        self._set_setting_value(plugin_name, key, value)

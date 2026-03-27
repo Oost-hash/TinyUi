@@ -57,11 +57,40 @@ BaseDialog {
         pendingChanges = p
     }
 
+    function _settingType(plugin, key) {
+        for (var i = 0; i < coreViewModel.settingsByPlugin.length; ++i) {
+            var pluginGroup = coreViewModel.settingsByPlugin[i]
+            if (pluginGroup.plugin !== plugin)
+                continue
+            for (var j = 0; j < pluginGroup.sections.length; ++j) {
+                var section = pluginGroup.sections[j]
+                for (var k = 0; k < section.settings.length; ++k) {
+                    var setting = section.settings[k]
+                    if (setting.key === key)
+                        return setting.type
+                }
+            }
+        }
+        return ""
+    }
+
+    function _savePendingSetting(plugin, key, value) {
+        var type = _settingType(plugin, key)
+        if (type === "bool")
+            coreViewModel.setBoolSettingValue(plugin, key, value === true)
+        else if (type === "int")
+            coreViewModel.setIntSettingValue(plugin, key, Math.round(value))
+        else if (type === "float")
+            coreViewModel.setFloatSettingValue(plugin, key, Number(value))
+        else
+            coreViewModel.setStringSettingValue(plugin, key, String(value))
+    }
+
     function _applyAndSave() {
         for (var plugin in pendingChanges) {
             var changes = pendingChanges[plugin]
             for (var key in changes)
-                coreViewModel.setSettingValue(plugin, key, changes[key])
+                _savePendingSetting(plugin, key, changes[key])
         }
         pendingChanges = ({})
     }
