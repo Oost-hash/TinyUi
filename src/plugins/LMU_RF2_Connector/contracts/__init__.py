@@ -19,10 +19,9 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Connector-facing declarative contracts."""
+"""Connector-facing telemetry and source contracts."""
 
-from .inspect_schema import provider_inspection_schema
 from .source import ConnectorSource
 from .telemetry import TelemetryReader, WeatherNode
 
-__all__ = ["ConnectorSource", "TelemetryReader", "WeatherNode", "provider_inspection_schema"]
+__all__ = ["ConnectorSource", "TelemetryReader", "WeatherNode"]

@@ -23,9 +23,10 @@
 
 from __future__ import annotations
 
+from numbers import Real
 from typing import Protocol, cast
 
-from .contracts.inspect_schema import provider_inspection_schema
+from tinycore.inspect import InspectionSnapshot
 from .contracts.source import ConnectorSource
 from .contracts.telemetry import TelemetryReader
 from .sources.lmu import LMULiveSource
@@ -44,6 +45,62 @@ class ConfigurableMockSource(Protocol):
     def step(self) -> float: ...
 
     def configure(self, minimum: float, maximum: float, step: float) -> None: ...
+
+
+def _render_bool(value: object) -> str:
+    return str(bool(value))
+
+
+def _to_int(value: object) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        return int(value)
+    raise TypeError(f"cannot render int from {type(value).__name__}")
+
+
+def _to_float(value: object) -> float:
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, Real):
+        return float(value)
+    if isinstance(value, str):
+        return float(value)
+    raise TypeError(f"cannot render float from {type(value).__name__}")
+
+
+def _render_int(value: object) -> str:
+    return str(_to_int(value))
+
+
+def _render_float(value: object, digits: int = 2) -> str:
+    return f"{_to_float(value):.{digits}f}"
+
+
+def _render_kmh(value: object) -> str:
+    return f"{_to_float(value) * 3.6:.1f} km/h"
+
+
+def _render_seconds(value: object, digits: int = 1) -> str:
+    return f"{_to_float(value):.{digits}f} s"
+
+
+def _render_celsius(value: object) -> str:
+    return f"{_to_float(value):.1f} C"
+
+
+def _render_percent(value: object) -> str:
+    return f"{_to_float(value) * 100:.1f} %"
+
+
+def _render_join(values: object) -> str:
+    if isinstance(values, tuple | list):
+        return ", ".join(str(item) for item in values)
+    return str(values)
 
 
 class ConnectorRuntime(TelemetryReader):
@@ -169,8 +226,79 @@ class ConnectorRuntime(TelemetryReader):
         mock = self._mock_source()
         mock.configure(mock.min_val, mock.max_val, value)
 
-    def inspect_schema(self):
-        return provider_inspection_schema()
+    def inspect_snapshot(self) -> InspectionSnapshot:
+        return [
+            ("provider.family", self.family_name),
+            ("provider.mode", self.mode()),
+            ("provider.active_game", self.active_game()),
+            ("provider.active_source", self.active_source()),
+            ("provider.available_sources", _render_join(self.source_names())),
+            ("provider.supports_demo", _render_bool(self.supports_demo_mode())),
+            ("provider.demo_owner_count", _render_int(self.demo_owner_count())),
+            ("provider.source_request_count", _render_int(self.source_request_count())),
+            ("provider.demo_min", _render_float(self.demo_min())),
+            ("provider.demo_max", _render_float(self.demo_max())),
+            ("provider.demo_speed", _render_float(self.demo_speed())),
+            ("state.active", _render_bool(self.state.active())),
+            ("state.paused", _render_bool(self.state.paused())),
+            ("state.version", str(self.state.version())),
+            ("session.track", str(self.session.track_name())),
+            ("session.kind", _render_int(self.session.session_kind())),
+            ("session.is_race", _render_bool(self.session.is_race_session())),
+            ("session.time_elapsed", _render_seconds(self.session.session_time_elapsed())),
+            ("session.time_left", _render_seconds(self.session.session_time_left())),
+            ("session.t_track", _render_celsius(self.session.track_temperature())),
+            ("session.t_amb", _render_celsius(self.session.ambient_temperature())),
+            ("session.raininess", _render_float(self.session.raininess())),
+            ("track.name", str(self.track.name())),
+            ("track.length", _render_float(self.track.length(), 1)),
+            ("track.temperature", _render_celsius(self.track.temperature())),
+            ("track.ambient_temperature", _render_celsius(self.track.ambient_temperature())),
+            ("track.raininess", _render_float(self.track.raininess())),
+            ("vehicle.player_idx", _render_int(self.vehicle.player_index())),
+            ("vehicle.total", _render_int(self.vehicle.total_vehicles())),
+            ("vehicle.driver", str(self.vehicle.driver_name())),
+            ("vehicle.car", str(self.vehicle.vehicle_name())),
+            ("vehicle.class", str(self.vehicle.class_name())),
+            ("vehicle.place", _render_int(self.vehicle.place())),
+            ("vehicle.in_pits", _render_bool(self.vehicle.in_pits())),
+            ("vehicle.fuel", _render_float(self.vehicle.fuel())),
+            ("vehicle.speed", _render_kmh(self.vehicle.speed())),
+            ("opponents.total", _render_int(self.opponents.total())),
+            ("opponents.p1.driver", str(self.opponents.driver_name(0))),
+            ("opponents.p1.place", _render_int(self.opponents.place(0))),
+            ("opponents.p1.in_pits", _render_bool(self.opponents.in_pits(0))),
+            ("opponents.p1.gap_to_leader", _render_seconds(self.opponents.gap_to_leader(0), 3)),
+            ("lap.current", _render_int(self.lap.current_lap())),
+            ("lap.completed", _render_int(self.lap.completed_laps())),
+            ("lap.distance", _render_float(self.lap.lap_distance(), 1)),
+            ("lap.track_length", _render_float(self.lap.track_length(), 1)),
+            ("lap.progress", _render_percent(self.lap.lap_progress())),
+            ("lap.current_sector", _render_int(self.lap.current_sector())),
+            ("engine.gear", _render_int(self.engine.gear())),
+            ("engine.gear_max", _render_int(self.engine.gear_max())),
+            ("engine.rpm", _render_int(self.engine.rpm())),
+            ("engine.rpm_max", _render_int(self.engine.rpm_max())),
+            ("engine.torque", _render_float(self.engine.torque())),
+            ("engine.temp_oil", _render_celsius(self.engine.oil_temperature())),
+            ("engine.temp_water", _render_celsius(self.engine.water_temperature())),
+            ("emotor.state", _render_int(self.electric_motor.state())),
+            ("emotor.battery", _render_float(self.electric_motor.battery_charge())),
+            ("inputs.throttle", _render_float(self.inputs.throttle(), 3)),
+            ("inputs.brake", _render_float(self.inputs.brake(), 3)),
+            ("inputs.clutch", _render_float(self.inputs.clutch(), 3)),
+            ("inputs.steering", _render_float(self.inputs.steering(), 3)),
+            ("inputs.ffb", _render_float(self.inputs.force_feedback(), 3)),
+            ("brake.bias_front", _render_float(self.brake.bias_front(), 3)),
+            ("tyre.compound_f", str(self.tyre.compound_name()[0])),
+            ("tyre.compound_r", str(self.tyre.compound_name()[1])),
+            ("switch.headlights", _render_int(self.switch.headlights())),
+            ("switch.speed_limiter", _render_int(self.switch.speed_limiter())),
+            ("switch.drs", _render_int(self.switch.drs_status())),
+            ("timing.current_lap", _render_seconds(self.timing.current_laptime(), 3)),
+            ("timing.last_lap", _render_seconds(self.timing.last_laptime(), 3)),
+            ("timing.best_lap", _render_seconds(self.timing.best_laptime(), 3)),
+        ]
 
     @property
     def state(self):
