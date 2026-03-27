@@ -137,15 +137,12 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
 
     # ── Settings — apply theme and persist on change ──────────────────────────
     def _apply_tinyui_settings() -> None:
-        val = core.host.persistence.host_settings.get_value("TinyUI", "theme")
+        val = core.host.persistence.get_setting("TinyUI", "theme")
         if val:
             theme.load(val)
 
     def _save_setting(plugin_name: str) -> None:
-        if core.host.persistence.host_settings.has_plugin(plugin_name):
-            core.host.persistence.host_settings.save(plugin_name)
-        else:
-            core.host.persistence.plugin_settings.save(plugin_name)
+        core.host.persistence.save_settings(plugin_name)
 
     core_vm.settingsChanged.connect(_apply_tinyui_settings)
     core_vm.settingValueChanged.connect(_save_setting)
@@ -237,18 +234,18 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
     _log_startup_phase(log, "windowing", phase_start)
 
     # ── Window state restore ──────────────────────────────────────────────────
-    if core.host.persistence.host_settings.get_value("TinyUI", "remember_position"):
-        x = core.host.persistence.host_settings.get_value("TinyUI", "_position_x")
-        y = core.host.persistence.host_settings.get_value("TinyUI", "_position_y")
+    if core.host.persistence.get_setting("TinyUI", "remember_position"):
+        x = core.host.persistence.get_setting("TinyUI", "_position_x")
+        y = core.host.persistence.get_setting("TinyUI", "_position_y")
         x_pos = _maybe_int(x)
         y_pos = _maybe_int(y)
         if x_pos is not None and y_pos is not None:
             window.setX(x_pos)
             window.setY(y_pos)
 
-    if core.host.persistence.host_settings.get_value("TinyUI", "remember_size"):
-        w = core.host.persistence.host_settings.get_value("TinyUI", "_window_width")
-        h = core.host.persistence.host_settings.get_value("TinyUI", "_window_height")
+    if core.host.persistence.get_setting("TinyUI", "remember_size"):
+        w = core.host.persistence.get_setting("TinyUI", "_window_width")
+        h = core.host.persistence.get_setting("TinyUI", "_window_height")
         width = _maybe_int(w)
         height = _maybe_int(h)
         if width is not None and height is not None:
@@ -257,13 +254,13 @@ def launch(core: App, lifecycle: PluginLifecycleManager,
 
     # ── Run ───────────────────────────────────────────────────────────────────
     def _save_window_state() -> None:
-        if core.host.persistence.host_settings.get_value("TinyUI", "remember_position"):
-            core.host.persistence.host_settings.set_value("TinyUI", "_position_x", window.x())
-            core.host.persistence.host_settings.set_value("TinyUI", "_position_y", window.y())
-        if core.host.persistence.host_settings.get_value("TinyUI", "remember_size"):
-            core.host.persistence.host_settings.set_value("TinyUI", "_window_width",  window.width())
-            core.host.persistence.host_settings.set_value("TinyUI", "_window_height", window.height())
-        core.host.persistence.host_settings.save("TinyUI")
+        if core.host.persistence.get_setting("TinyUI", "remember_position"):
+            core.host.persistence.set_setting("TinyUI", "_position_x", window.x())
+            core.host.persistence.set_setting("TinyUI", "_position_y", window.y())
+        if core.host.persistence.get_setting("TinyUI", "remember_size"):
+            core.host.persistence.set_setting("TinyUI", "_window_width",  window.width())
+            core.host.persistence.set_setting("TinyUI", "_window_height", window.height())
+        core.host.persistence.save_settings("TinyUI")
 
     app.aboutToQuit.connect(_save_window_state)
     app.aboutToQuit.connect(log_inspector.shutdown)

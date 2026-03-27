@@ -79,9 +79,9 @@ class DemoPlugin:
     name = "demo"
 
     def register(self, ctx: PluginContext) -> None:
-        ctx.loaders.register("heatmaps",  "heatmaps.json",  DEFAULT_HEATMAPS)
-        ctx.loaders.register("compounds", "compounds.json", DEFAULT_COMPOUNDS)
-        ctx.loaders.load_all()
+        ctx.config.register("heatmaps",  "heatmaps.json",  DEFAULT_HEATMAPS)
+        ctx.config.register("compounds", "compounds.json", DEFAULT_COMPOUNDS)
+        ctx.config.load_all()
 
         plugin_dir = Path(__file__).parent
         for spec in load_editors_toml(plugin_dir / "editors" / "editors.toml"):

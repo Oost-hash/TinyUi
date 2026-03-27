@@ -62,7 +62,7 @@ class _ProxySettings:
         raise NotImplementedError("settings.set is not available during register phase")
 
 
-class _ProxyLoaders:
+class _ProxyConfig:
     def __init__(self, conn: Connection) -> None:
         self._conn = conn
 
@@ -82,6 +82,12 @@ class _ProxyLoaders:
 
     def save(self, key: str) -> None:
         self._conn.send({"type": "loaders.save", "key": key})
+
+    def get(self, key: str, default=None):
+        raise NotImplementedError("config.get is not available during register phase")
+
+    def set(self, key: str, value) -> None:
+        raise NotImplementedError("config.set is not available during register phase")
 
 
 class _ProxyEditors:
@@ -118,7 +124,8 @@ class _ProxyContext:
     def __init__(self, conn: Connection, plugin_name: str, requires: tuple[str, ...]) -> None:
         self.name      = plugin_name
         self.settings  = _ProxySettings(conn)
-        self.loaders   = _ProxyLoaders(conn)
+        self.config    = _ProxyConfig(conn)
+        self.loaders   = self.config
         self.editors   = _ProxyEditors(conn)
         self.capabilities = _ProxyCapabilities(requires)
 

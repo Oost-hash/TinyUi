@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""TinyUIPlugin — registers host settings directly on ``App.host.persistence.host_settings``.
+"""TinyUIPlugin — registers host settings directly on ``App.host.persistence``.
 
 TinyUI is the host application, not a plugin. It registers its settings
 on the host settings registry which is not exposed to plugins via PluginContext.
@@ -40,11 +40,10 @@ class TinyUIPlugin:
     name = "TinyUI"
 
     def register(self, app: App) -> None:
-        _r = app.host.persistence.host_settings.register
-        _n = self.name
+        _r = lambda spec: app.host.persistence.register_host_setting(self.name, spec)
 
         # ── Application ───────────────────────────────────────────────────
-        _r(_n, SettingsSpec(
+        _r(SettingsSpec(
             key="theme", label="Theme", type="enum",
             default="dark", options=["dark", "light"],
             description="Application color theme",
@@ -52,13 +51,13 @@ class TinyUIPlugin:
         ))
 
         # ── Window ────────────────────────────────────────────────────────
-        _r(_n, SettingsSpec(
+        _r(SettingsSpec(
             key="remember_position", label="Remember position", type="bool",
             default=True,
             description="Restore window position on startup",
             section="Window",
         ))
-        _r(_n, SettingsSpec(
+        _r(SettingsSpec(
             key="remember_size", label="Remember size", type="bool",
             default=True,
             description="Restore window size on startup",

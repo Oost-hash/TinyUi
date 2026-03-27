@@ -30,11 +30,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from tinycore.app import App
+    from tinycore.app import App, PersistenceServices
     from tinycore.capabilities.registry import CapabilityBinding, CapabilityRegistry
-    from tinycore.config.loader import LoaderRegistry
     from tinycore.session.runtime import SessionRuntime
-    from tinycore.settings import SettingsRegistry
     from tinyui_schema import EditorRegistry
     from tinyui_schema import SettingsSpec
 
@@ -71,39 +69,44 @@ class ScopedCapabilities:
 class ScopedSettings:
     """Settings registry scoped to one plugin — no cross-plugin access."""
 
-    def __init__(self, registry: SettingsRegistry, plugin_name: str) -> None:
-        self._registry = registry
+    def __init__(self, persistence: PersistenceServices, plugin_name: str) -> None:
+        self._persistence = persistence
         self._name = plugin_name
 
     def register(self, spec: SettingsSpec) -> None:
-        self._registry.register(self._name, spec)
+        self._persistence.register_plugin_setting(self._name, spec)
 
     def get(self, key: str) -> Any:
-        return self._registry.get_value(self._name, key)
+        return self._persistence.get_setting(self._name, key)
 
     def set(self, key: str, value: Any) -> None:
-        self._registry.set_value(self._name, key, value)
+        self._persistence.set_setting(self._name, key, value)
 
 
-class ScopedLoaders:
-    """Config loader registry scoped to one plugin."""
+class ScopedConfig:
+    """Plugin-scoped config document access."""
 
-    def __init__(self, loaders: LoaderRegistry, config, plugin_name: str) -> None:
-        self._loaders = loaders
-        self._config = config
+    def __init__(self, persistence: PersistenceServices, plugin_name: str) -> None:
+        self._persistence = persistence
         self._name = plugin_name
 
     def register(self, key: str, filename: str, defaults: dict | None = None) -> None:
-        self._loaders.register(key, filename, self._name, defaults)
+        self._persistence.register_config(self._name, key, filename, defaults)
 
     def load_all(self) -> None:
-        self._loaders.load_all(self._config)
+        self._persistence.load_all_configs()
 
     def load(self, key: str) -> None:
-        self._loaders.load_one(self._config, key)
+        self._persistence.load_config(key)
 
     def save(self, key: str) -> None:
-        self._loaders.save(self._config, key)
+        self._persistence.save_config(key)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return self._persistence.get_config(key, default)
+
+    def set(self, key: str, value: Any) -> None:
+        self._persistence.update_config(key, value)
 
 
 class ScopedEditors:
@@ -126,11 +129,8 @@ class PluginContext:
 
     def __init__(self, app: App, plugin_name: str, requires: tuple[str, ...] = ()) -> None:
         self.name      = plugin_name
-        self.settings  = ScopedSettings(app.host.persistence.plugin_settings, plugin_name)
-        self.loaders   = ScopedLoaders(
-            app.host.persistence.loaders,
-            app.host.persistence.config,
-            plugin_name,
-        )
+        self.settings  = ScopedSettings(app.host.persistence, plugin_name)
+        self.config    = ScopedConfig(app.host.persistence, plugin_name)
+        self.loaders   = self.config
         self.capabilities = ScopedCapabilities(app.runtime.session, plugin_name, requires)
         self.editors   = ScopedEditors(app.host.editors)

@@ -122,13 +122,13 @@ class SubprocessPlugin:
             ctx.editors.register(msg["spec"])
 
         elif t == "loaders.register":
-            ctx.loaders.register(msg["key"], msg["filename"], msg.get("defaults"))
+            ctx.config.register(msg["key"], msg["filename"], msg.get("defaults"))
 
         elif t == "loaders.load_all":
-            ctx.loaders.load_all()
+            ctx.config.load_all()
 
         elif t == "loaders.load":
-            ctx.loaders.load(msg["key"])
+            ctx.config.load(msg["key"])
 
         elif t == "loaders.save":
-            ctx.loaders.save(msg["key"])
+            ctx.config.save(msg["key"])

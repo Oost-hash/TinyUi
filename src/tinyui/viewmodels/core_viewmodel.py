@@ -79,38 +79,32 @@ class CoreViewModel(QObject):
             return self._settings_cache
 
         result = []
-        # Host settings first (TinyUI), then plugin settings
-        registries = [
-            self._core.host.persistence.host_settings,
-            self._core.host.persistence.plugin_settings,
-        ]
-        for registry in registries:
-            for plugin_name, specs in registry.by_plugin().items():
-                sections: dict[str, list[dict]] = {}
-                section_order: list[str] = []
-                for s in specs:
-                    sec = s.section or ""
-                    if sec not in sections:
-                        sections[sec] = []
-                        section_order.append(sec)
-                    sections[sec].append({
-                        "key":         s.key,
-                        "label":       s.label,
-                        "type":        s.type,
-                        "value":       registry.get_value(plugin_name, s.key),
-                        "description": s.description,
-                        "options":     s.options,
-                        "min":         s.min,
-                        "max":         s.max,
-                        "step":        s.step,
-                    })
-                result.append({
-                    "plugin":   plugin_name,
-                    "sections": [
-                        {"name": name, "settings": sections[name]}
-                        for name in section_order
-                    ],
+        for plugin_name, specs in self._core.host.persistence.settings_groups():
+            sections: dict[str, list[dict]] = {}
+            section_order: list[str] = []
+            for s in specs:
+                sec = s.section or ""
+                if sec not in sections:
+                    sections[sec] = []
+                    section_order.append(sec)
+                sections[sec].append({
+                    "key":         s.key,
+                    "label":       s.label,
+                    "type":        s.type,
+                    "value":       self._core.host.persistence.get_setting(plugin_name, s.key),
+                    "description": s.description,
+                    "options":     s.options,
+                    "min":         s.min,
+                    "max":         s.max,
+                    "step":        s.step,
                 })
+            result.append({
+                "plugin":   plugin_name,
+                "sections": [
+                    {"name": name, "settings": sections[name]}
+                    for name in section_order
+                ],
+            })
 
         log.settings("settingsByPlugin",
                      plugins=len(result),
@@ -121,12 +115,7 @@ class CoreViewModel(QObject):
     @Slot(str, str, "QVariant")
     def setSettingValue(self, plugin_name: str, key: str, value) -> None:
         """Persist a new setting value and notify QML."""
-        registry = (
-            self._core.host.persistence.host_settings
-            if self._core.host.persistence.host_settings.has_plugin(plugin_name)
-            else self._core.host.persistence.plugin_settings
-        )
-        registry.set_value(plugin_name, key, value)
+        self._core.host.persistence.set_setting(plugin_name, key, value)
         self._settings_cache = None          # invalidate cache — fresh values on next read
         self.settingsChanged.emit()
         self.settingValueChanged.emit(plugin_name)
