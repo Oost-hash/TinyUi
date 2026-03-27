@@ -2,24 +2,30 @@
 
 TinyUi tracks roadmap items latest-first.
 
-## Next update: still being planned
+## 0.3.4 — Threading and runtime weight
 
-The next update is not locked yet. The current roadmap is a live document and
-will be adjusted once the next scope is clearer.
+This step is about making the runtime less heavy and less fragile where work is
+split across subprocesses, threads, polling loops, and Qt handoff points.
+
+Current focus:
+
+- [ ] Re-map where work is running now across app boot, providers, plugins, and UI handoff
+- [ ] Reduce unnecessary thread/process churn in the active runtime path
+- [ ] Make ownership of polling, buffering, and cross-thread updates easier to reason about
+- [ ] Tighten the boundaries between background work and UI-facing state updates
 
 ## 0.3.3 — tinyDevTools and release logging
 
 This step is about separating development tooling from the main app runtime so
-release builds stay smaller, quieter, and easier to reason about.
+release builds stay smaller, quieter.
 
-Planned direction:
+Completed:
 
-- [ ] Move devtools into their own `tinyDevTools` / `tinydevtools` package
-- [ ] Keep `tinyui` focused on the app UI instead of dev-only tooling
-- [ ] Split minimal product logging from development diagnostics
-- [ ] Keep release logging to `info`, `warning`, and `error`
-- [ ] Make release builds work without the devtools package present
-- [ ] Prepare the diagnostics boundary so heavier tooling can later move into its own thread or process
+- [x] Move devtools into their own `tinydevtools` package
+- [x] Keep `tinyui` focused on the app UI instead of dev-only tooling
+- [x] Split minimal product logging from development diagnostics
+- [x] Keep release logging to `info`, `warning`, and `error`
+- [x] Make release builds work without the devtools package present
 
 ## Later
 
@@ -50,7 +56,6 @@ Completed:
 Bonus goals completed:
 
 - [x] Add copy-all and snapshot recording tools so live sessions can be captured for later analysis
-- [x] Keep connector inspection contract-first so Dev Tools read normalized provider data instead of bolting more discovery logic into the live app path
 
 ## 0.3.1 — Foundation extension and release cleanup
 

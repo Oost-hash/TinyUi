@@ -20,6 +20,11 @@ Known packages:
   - other
 
 ## Entries
+- [0.3.3][tinycore][changed] Split logging into product logging and optional diagnostics under `tinycore.logging`, removed the old `tinycore.log` shim, and moved startup timing output behind the diagnostics path
+- [0.3.3][app][changed] Moved devtools runtime wiring behind an optional `tinydevtools.host.attach_runtime(...)` path so bootstrap can run without a direct devtools package dependency
+- [0.3.3][tinyui][changed] Stopped treating Dev Tools as part of the main UI package by loading the devtools window through an optional QML loader and only showing the menu entry when devtools are available
+- [0.3.3][plugins][fixed] Mirrored packaged `editors` and `widgets` files into the extracted runtime cache so packaged plugins can keep loading manifest files relative to their runtime module path
+- [0.3.3][other][changed] Added a new `tinydevtools` package for the devtools viewmodels, host attachment, and QML window, updated the build script with a `--with-devtools` switch, and clear source-tree `__pycache__` and `*.pyc` files before packaging
 - [0.3.2][plugins][changed] Rebuilt the LMU and rF2 connector stack into a single TinyUi-owned `LMU_RF2_Connector` family with shared contracts, source switching, full capability coverage, and no remaining legacy or vendor runtime dependency
 - [0.3.2][tinycore][changed] Kept provider inspection contract-first while making the inspection schema more declarative, so connector-specific indexing and tuple selection now live in schema definitions instead of hard-coded string cases inside the runtime inspector
 - [0.3.2][tinyui][changed] Added `Copy all`, source recording, and capture path copy actions to the state dev tools, then moved capture writes off the 200 ms refresh path and into a buffered flush flow that records to a user-writable app data location

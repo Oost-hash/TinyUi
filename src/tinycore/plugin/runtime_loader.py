@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 import importlib
+import shutil
 import sys
 from pathlib import Path
 import zipfile
@@ -32,6 +33,24 @@ import zipfile
 def _runtime_cache_dir(artifact: Path) -> Path:
     stamp = artifact.stat().st_mtime_ns
     return artifact.parent.parent / "_internal" / "_runtime_cache" / f"{artifact.stem}-{stamp}"
+
+
+def _mirror_plugin_assets_into_cache(artifact: Path, cache_dir: Path) -> None:
+    """Mirror packaged plugin asset folders into the extracted runtime cache."""
+    plugin_dir = artifact.parent.parent
+    plugin_name = plugin_dir.name
+    cache_plugin_dir = cache_dir / "plugins" / plugin_name
+    cache_plugin_dir.mkdir(parents=True, exist_ok=True)
+
+    for asset_name in ("editors", "widgets"):
+        source_dir = plugin_dir / asset_name
+        if not source_dir.is_dir():
+            continue
+
+        target_dir = cache_plugin_dir / asset_name
+        if target_dir.exists():
+            shutil.rmtree(target_dir)
+        shutil.copytree(source_dir, target_dir)
 
 
 def _materialize_runtime_artifact(artifact: Path) -> Path:
@@ -45,6 +64,7 @@ def _materialize_runtime_artifact(artifact: Path) -> Path:
     cache_dir.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(artifact) as zf:
         zf.extractall(cache_dir)
+    _mirror_plugin_assets_into_cache(artifact, cache_dir)
     return cache_dir
 
 
