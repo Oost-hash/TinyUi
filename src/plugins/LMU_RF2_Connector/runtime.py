@@ -32,13 +32,17 @@ from .sources.lmu import LMULiveSource
 from .sources.mock import MockSource
 from .sources.rf2 import RF2LiveSource
 
+
 class ConfigurableMockSource(Protocol):
     @property
     def min_val(self) -> float: ...
+
     @property
     def max_val(self) -> float: ...
+
     @property
     def step(self) -> float: ...
+
     def configure(self, minimum: float, maximum: float, step: float) -> None: ...
 
 
@@ -169,33 +173,60 @@ class ConnectorRuntime(TelemetryReader):
         return provider_inspection_schema()
 
     @property
-    def state(self): return self._reader.state
+    def state(self):
+        return self._reader.state
+
     @property
-    def brake(self): return self._reader.brake
+    def brake(self):
+        return self._reader.brake
+
     @property
-    def electric_motor(self): return self._reader.electric_motor
+    def electric_motor(self):
+        return self._reader.electric_motor
+
     @property
-    def engine(self): return self._reader.engine
+    def engine(self):
+        return self._reader.engine
+
     @property
-    def inputs(self): return self._reader.inputs
+    def inputs(self):
+        return self._reader.inputs
+
     @property
-    def lap(self): return self._reader.lap
+    def lap(self):
+        return self._reader.lap
+
     @property
-    def session(self): return self._reader.session
+    def session(self):
+        return self._reader.session
+
     @property
-    def track(self): return self._reader.track
+    def track(self):
+        return self._reader.track
+
     @property
-    def opponents(self): return self._reader.opponents
+    def opponents(self):
+        return self._reader.opponents
+
     @property
-    def switch(self): return self._reader.switch
+    def switch(self):
+        return self._reader.switch
+
     @property
-    def timing(self): return self._reader.timing
+    def timing(self):
+        return self._reader.timing
+
     @property
-    def tyre(self): return self._reader.tyre
+    def tyre(self):
+        return self._reader.tyre
+
     @property
-    def vehicle(self): return self._reader.vehicle
+    def vehicle(self):
+        return self._reader.vehicle
+
     @property
-    def wheel(self): return self._reader.wheel
+    def wheel(self):
+        return self._reader.wheel
 
     @property
     def _reader(self) -> TelemetryReader:

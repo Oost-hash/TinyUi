@@ -37,6 +37,7 @@ from PySide6.QtCore import (
     QModelIndex,
     QObject,
     QPersistentModelIndex,
+    QStandardPaths,
     Qt,
     QTimer,
     Signal,
@@ -182,6 +183,10 @@ class StateMonitorViewModel(QObject):
         self._timer.timeout.connect(self._refresh)
         self._capture_source_id: str | None = None
         self._capture_path: Path | None = None
+        self._capture_queue: list[dict[str, object]] = []
+        self._capture_flush_timer = QTimer(self)
+        self._capture_flush_timer.setInterval(1000)
+        self._capture_flush_timer.timeout.connect(self._flush_capture_queue)
 
         if self._inspector.sources():
             self._selected_index = 0
@@ -200,6 +205,8 @@ class StateMonitorViewModel(QObject):
 
     def shutdown(self) -> None:
         self._timer.stop()
+        self._flush_capture_queue()
+        self._capture_flush_timer.stop()
 
     def _refresh(self) -> None:
         if self._selected_index < 0:
@@ -229,7 +236,7 @@ class StateMonitorViewModel(QObject):
                 )
         self._entries = entries
         self._rows_model.replace_rows(self._build_rows(selected["id"], entries))
-        self._write_capture(selected["id"], selected["label"], entries)
+        self._queue_capture(selected["id"], selected["label"], entries)
         self.entriesChanged.emit()
 
     def _all_sources(self) -> list[dict[str, str]]:
@@ -398,6 +405,8 @@ class StateMonitorViewModel(QObject):
     @Slot()
     def toggleCapture(self) -> None:
         if self._capture_source_id is not None:
+            self._flush_capture_queue()
+            self._capture_flush_timer.stop()
             self._capture_source_id = None
             self._capture_path = None
             self.captureChanged.emit()
@@ -418,6 +427,8 @@ class StateMonitorViewModel(QObject):
         capture_dir.mkdir(parents=True, exist_ok=True)
         self._capture_source_id = selected["id"]
         self._capture_path = capture_dir / filename
+        self._capture_queue.clear()
+        self._capture_flush_timer.start()
         self.captureChanged.emit()
 
     @Slot()
@@ -428,11 +439,14 @@ class StateMonitorViewModel(QObject):
         clipboard.setText(str(self._capture_path))
 
     def _capture_dir(self) -> Path:
-        if getattr(sys, "frozen", False):
-            return Path(sys.executable).resolve().parent / "devtools-captures"
-        return Path(__file__).resolve().parents[3] / "data" / "devtools-captures"
+        appdata_root = QStandardPaths.writableLocation(
+            QStandardPaths.StandardLocation.AppDataLocation
+        )
+        if appdata_root:
+            return Path(appdata_root) / "TinyUi" / "devtools-captures"
+        return Path.home() / ".tinyui" / "devtools-captures"
 
-    def _write_capture(
+    def _queue_capture(
         self,
         source_id: str,
         source_label: str,
@@ -441,14 +455,27 @@ class StateMonitorViewModel(QObject):
         if self._capture_source_id != source_id or self._capture_path is None or not entries:
             return
 
-        payload = {
-            "ts": datetime.now(timezone.utc).isoformat(),
-            "source_id": source_id,
-            "source_label": source_label,
-            "entries": entries,
-        }
+        self._capture_queue.append(
+            {
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "source_id": source_id,
+                "source_label": source_label,
+                "entries": entries,
+            }
+        )
+
+    def _flush_capture_queue(self) -> None:
+        if self._capture_path is None or not self._capture_queue:
+            return
+
+        payloads = self._capture_queue
+        self._capture_queue = []
+        lines = [
+            json.dumps(payload, ensure_ascii=True)
+            for payload in payloads
+        ]
         with self._capture_path.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(payload, ensure_ascii=True))
+            handle.write("\n".join(lines))
             handle.write("\n")
 
     @Property(list, notify=entriesChanged)

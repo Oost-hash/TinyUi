@@ -26,8 +26,15 @@ from __future__ import annotations
 from tinycore.inspect.schema import InspectionFieldSchema, RenderKind
 
 
-def _field(key: str, path: str, render: RenderKind = "auto") -> InspectionFieldSchema:
-    return InspectionFieldSchema(key, path, render)
+def _field(
+    key: str,
+    path: str,
+    render: RenderKind = "auto",
+    *,
+    args: tuple[object, ...] = (),
+    item: int | None = None,
+) -> InspectionFieldSchema:
+    return InspectionFieldSchema(key, path, render, args, item)
 
 
 _PROVIDER_FIELDS = (
@@ -83,10 +90,10 @@ _VEHICLE_FIELDS = (
 
 _OPPONENT_FIELDS = (
     _field("opponents.total", "opponents.total", "int"),
-    _field("opponents.p1.driver", "opponents.driver_name", "str"),
-    _field("opponents.p1.place", "opponents.place", "int"),
-    _field("opponents.p1.in_pits", "opponents.in_pits", "bool"),
-    _field("opponents.p1.gap_to_leader", "opponents.gap_to_leader", "seconds_3"),
+    _field("opponents.p1.driver", "opponents.driver_name", "str", args=(0,)),
+    _field("opponents.p1.place", "opponents.place", "int", args=(0,)),
+    _field("opponents.p1.in_pits", "opponents.in_pits", "bool", args=(0,)),
+    _field("opponents.p1.gap_to_leader", "opponents.gap_to_leader", "seconds_3", args=(0,)),
 )
 
 _LAP_FIELDS = (
@@ -126,8 +133,8 @@ _BRAKE_FIELDS = (
 )
 
 _TYRE_FIELDS = (
-    _field("tyre.compound_f", "tyre.compound_name", "str"),
-    _field("tyre.compound_r", "tyre.compound_name", "str"),
+    _field("tyre.compound_f", "tyre.compound_name", "str", item=0),
+    _field("tyre.compound_r", "tyre.compound_name", "str", item=1),
 )
 
 _SWITCH_FIELDS = (

@@ -51,4 +51,6 @@ class InspectionFieldSchema:
     key: str
     path: str
     render: RenderKind = "auto"
+    args: tuple[object, ...] = ()
+    item: int | None = None
 

@@ -27,7 +27,7 @@ from __future__ import annotations
 import inspect
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Sequence
 
 from tinycore.log import get_logger
 
@@ -116,6 +116,19 @@ def _resolve_path_value(root: object, path: str) -> object:
     return value
 
 
+def _resolve_schema_value(root: object, field) -> object:
+    value = _resolve_path_value(root, field.path)
+    if field.args:
+        if not callable(value):
+            raise TypeError(f"path '{field.path}' does not resolve to a callable")
+        value = value(*field.args)
+    if field.item is not None:
+        if not isinstance(value, Sequence):
+            raise TypeError(f"path '{field.path}' does not resolve to an indexable value")
+        value = value[field.item]
+    return value
+
+
 @dataclass(frozen=True)
 class InspectionSourceInfo:
     """User-facing source metadata."""
@@ -201,19 +214,7 @@ class _ProviderTelemetrySource(_Source):
         entries: list[tuple[str, str]] = []
         for field in schema:
             try:
-                value = _resolve_path_value(self._provider, field.path)
-                if field.key == "opponents.p1.driver":
-                    value = self._provider.opponents.driver_name(0)
-                elif field.key == "opponents.p1.place":
-                    value = self._provider.opponents.place(0)
-                elif field.key == "opponents.p1.in_pits":
-                    value = self._provider.opponents.in_pits(0)
-                elif field.key == "opponents.p1.gap_to_leader":
-                    value = self._provider.opponents.gap_to_leader(0)
-                elif field.key == "tyre.compound_f":
-                    value = self._provider.tyre.compound_name()[0]
-                elif field.key == "tyre.compound_r":
-                    value = self._provider.tyre.compound_name()[1]
+                value = _resolve_schema_value(self._provider, field)
                 entries.append((field.key, _render_schema_value(value, field.render)))
             except Exception as exc:
                 entries.append((field.key, f"err: {exc}"))

@@ -33,9 +33,12 @@ from ..contracts.telemetry import Brake, ElectricMotor, Engine, Inputs, Lap, Ses
 from . import _LeMansUltimate_data as lmu_data
 from ._LeMansUltimate_data import LMUConstants
 from ._LeMansUltimate_mmap import MMapControl
+
 _log = get_logger(__name__)
 _KELVIN = 273.15
 _SESSION_NAMES = {0: "test", 1: "practice", 2: "qualify", 3: "warmup", 4: "race"}
+
+
 def decode_bytes(raw: bytes) -> str:
     return raw.rstrip(b"\x00").decode("utf-8", errors="replace")
 
@@ -132,50 +135,94 @@ class LMUSource:
 
 
 class LMUStateProvider(State):
-    def __init__(self, source: LMUSource) -> None: self._source = source
+    def __init__(self, source: LMUSource) -> None:
+        self._source = source
+
     def active(self) -> bool:
         phase = int(self._source.info.data.scoring.scoringInfo.mGamePhase)
         return bool(self._source.info.data.telemetry.playerHasVehicle and phase not in (0, 7, 8, 9))
-    def paused(self) -> bool: return self._source.info.data.scoring.scoringInfo.mGamePhase == 9
-    def version(self) -> str: return str(self._source.info.data.generic.gameVersion)
+
+    def paused(self) -> bool:
+        return self._source.info.data.scoring.scoringInfo.mGamePhase == 9
+
+    def version(self) -> str:
+        return str(self._source.info.data.generic.gameVersion)
 
 
 class LMULapProvider(Lap):
-    def __init__(self, source: LMUSource) -> None: self._source = source
+    def __init__(self, source: LMUSource) -> None:
+        self._source = source
+
     def _scor(self, index: int | None):
         idx = self._source.info.data.telemetry.playerVehicleIdx if index is None else index
         return self._source.info.data.scoring.vehScoringInfo[idx]
+
     def _telem(self, index: int | None):
         idx = self._source.info.data.telemetry.playerVehicleIdx if index is None else index
         return self._source.info.data.telemetry.telemInfo[idx]
-    def current_lap(self, index: int | None = None) -> int: return int(self._telem(index).mLapNumber)
-    def completed_laps(self, index: int | None = None) -> int: return int(self._scor(index).mTotalLaps)
-    def track_length(self) -> float: return float(self._source.info.data.scoring.scoringInfo.mLapDist)
-    def lap_distance(self, index: int | None = None) -> float: return float(self._scor(index).mLapDist)
+
+    def current_lap(self, index: int | None = None) -> int:
+        return int(self._telem(index).mLapNumber)
+
+    def completed_laps(self, index: int | None = None) -> int:
+        return int(self._scor(index).mTotalLaps)
+
+    def track_length(self) -> float:
+        return float(self._source.info.data.scoring.scoringInfo.mLapDist)
+
+    def lap_distance(self, index: int | None = None) -> float:
+        return float(self._scor(index).mLapDist)
+
     def lap_progress(self, index: int | None = None) -> float:
         length = self.track_length()
         return self.lap_distance(index) / length if length > 0 else 0.0
-    def current_sector(self, index: int | None = None) -> int: return {0: 2, 1: 0, 2: 1}.get(int(self._scor(index).mSector), 0)
+
+    def current_sector(self, index: int | None = None) -> int:
+        return {0: 2, 1: 0, 2: 1}.get(int(self._scor(index).mSector), 0)
 
 
 class LMUSessionProvider(Session):
-    def __init__(self, source: LMUSource) -> None: self._source = source
-    def _si(self): return self._source.info.data.scoring.scoringInfo
-    def track_name(self) -> str: return decode_bytes(self._si().mTrackName)
-    def session_time_elapsed(self) -> float: return float(self._si().mCurrentET)
-    def session_time_left(self) -> float: return float(self._si().mEndET - self._si().mCurrentET)
+    def __init__(self, source: LMUSource) -> None:
+        self._source = source
+
+    def _si(self):
+        return self._source.info.data.scoring.scoringInfo
+
+    def track_name(self) -> str:
+        return decode_bytes(self._si().mTrackName)
+
+    def session_time_elapsed(self) -> float:
+        return float(self._si().mCurrentET)
+
+    def session_time_left(self) -> float:
+        return float(self._si().mEndET - self._si().mCurrentET)
+
     def session_kind(self) -> int:
         raw = int(self._si().mSession)
-        if raw == 0: return 0
-        if 1 <= raw <= 4: return 1
-        if 5 <= raw <= 8: return 2
-        if raw == 9: return 3
+        if raw == 0:
+            return 0
+        if 1 <= raw <= 4:
+            return 1
+        if 5 <= raw <= 8:
+            return 2
+        if raw == 9:
+            return 3
         return 4
-    def is_race_session(self) -> bool: return self.session_kind() == 4
-    def track_temperature(self) -> float: return float(self._si().mTrackTemp)
-    def ambient_temperature(self) -> float: return float(self._si().mAmbientTemp)
-    def raininess(self) -> float: return float(self._si().mRaining)
-    def weather_forecast(self): return ()
+
+    def is_race_session(self) -> bool:
+        return self.session_kind() == 4
+
+    def track_temperature(self) -> float:
+        return float(self._si().mTrackTemp)
+
+    def ambient_temperature(self) -> float:
+        return float(self._si().mAmbientTemp)
+
+    def raininess(self) -> float:
+        return float(self._si().mRaining)
+
+    def weather_forecast(self):
+        return ()
 
 
 class LMUTimingProvider(Timing):
