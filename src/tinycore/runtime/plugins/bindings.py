@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING
 from tinycore.logging import get_logger
 from tinycore.runtime.provider_activity import ProviderActivity
 
-from .consumer import ConsumerPluginParticipant
+from .consumer import PluginParticipant
 
 if TYPE_CHECKING:
     from tinycore.services import RuntimeServices
@@ -36,24 +36,24 @@ if TYPE_CHECKING:
 _log = get_logger(__name__)
 
 
-def bind_consumer_participants(
+def bind_plugin_participants(
     runtime: RuntimeServices,
-    participants: list[ConsumerPluginParticipant],
+    participants: list[PluginParticipant],
     provider_activity: ProviderActivity,
 ) -> None:
-    """Resolve and log capability bindings for live consumer participants."""
+    """Resolve and log runtime bindings for live plugin participants."""
     for participant in participants:
         bindings = participant.bind(runtime, provider_activity)
         if bindings.missing:
             _log.warning(
-                "consumer requires missing  plugin=%s  missing=%s",
+                "participant missing bindings  plugin=%s  missing=%s",
                 participant.name,
                 ", ".join(bindings.missing),
             )
             continue
         if bindings.resolved:
             _log.info(
-                "consumer bound  plugin=%s  requires=%s",
+                "participant bound  plugin=%s  bindings=%s",
                 participant.name,
                 ", ".join(
                     f"{capability}->{binding.provider_name}"

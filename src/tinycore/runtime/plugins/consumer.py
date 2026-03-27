@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime-owned consumer plugin participation."""
+"""Runtime-owned plugin participation."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from tinycore.plugin.context import PluginContext
     from tinycore.runtime.process_supervisor import ProcessSupervisor, SpawnedProcessHandle
     from tinycore.services import RuntimeServices
-    from tinycore.session.runtime import ConsumerBindingSet
+    from .facts import ConsumerParticipationBindings
 
 
 class SubprocessPlugin:
@@ -142,8 +142,8 @@ class SubprocessPlugin:
 
 
 @dataclass(frozen=True)
-class ConsumerPluginParticipant:
-    """Runtime-owned consumer participant plus its static declaration data."""
+class PluginParticipant:
+    """Runtime-owned plugin participant plus its static declaration data."""
 
     manifest: PluginManifest
     plugin: SubprocessPlugin
@@ -167,7 +167,7 @@ class ConsumerPluginParticipant:
         self,
         runtime: "RuntimeServices",
         provider_activity: ProviderActivity,
-    ) -> "ConsumerBindingSet":
+    ) -> "ConsumerParticipationBindings":
         """Resolve and store runtime capability bindings for this consumer."""
         bindings = runtime.plugin_facts.bind_consumer(
             self.name,
@@ -178,18 +178,18 @@ class ConsumerPluginParticipant:
         return bindings
 
 
-def build_consumer_participants(
+def build_plugin_participants(
     manifests: list[PluginManifest],
     *,
     process_supervisor: "ProcessSupervisor",
-) -> list[ConsumerPluginParticipant]:
-    """Build live consumer participants from manifests for runtime composition."""
-    participants: list[ConsumerPluginParticipant] = []
+) -> list[PluginParticipant]:
+    """Build live plugin participants from manifests for runtime composition."""
+    participants: list[PluginParticipant] = []
     for manifest in manifests:
         if not manifest.is_consumer:
             continue
         participants.append(
-            ConsumerPluginParticipant(
+            PluginParticipant(
                 manifest=manifest,
                 plugin=SubprocessPlugin(
                     manifest.consumer_runtime_spec(),

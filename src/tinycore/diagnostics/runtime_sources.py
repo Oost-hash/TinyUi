@@ -89,9 +89,9 @@ def _runtime_unit_snapshot(core: CoreRuntime) -> InspectionSnapshot:
 
 def _runtime_activation_snapshot(core: CoreRuntime) -> InspectionSnapshot:
     active_providers = ", ".join(core.provider_activity.active_provider_names()) or "-"
-    active_consumers = ", ".join(core.lifecycle.active_consumer_names()) or "-"
+    active_participants = ", ".join(core.lifecycle.active_participant_names()) or "-"
     return [
-        ("consumers.active", active_consumers),
+        ("participants.active", active_participants),
         ("providers.active", active_providers),
     ]
 
@@ -145,7 +145,7 @@ def build_runtime_inspector(
                 if handle is not None:
                     runtime_inspector.add_snapshot_source(
                         f"provider:{binding.provider_name}:telemetry",
-                        f"State: {binding.provider_name}",
+                        f"Provider: {binding.provider_name}",
                         "provider",
                         lambda provider=handle.provider: _provider_snapshot(provider),
                     )
@@ -153,7 +153,7 @@ def build_runtime_inspector(
 
             runtime_inspector.add_snapshot_source(
                 f"field:{consumer_name}:{capability}",
-                f"Polling: {consumer_name} [{capability}]",
+                f"Fields: {consumer_name} [{capability}]",
                 "field",
                 lambda capability=capability, provider=binding.provider, fields=list(fields): (
                     _field_snapshot(capability, provider, fields)

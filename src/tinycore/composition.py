@@ -26,7 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .paths import AppPaths
-from .runtime.plugins.consumer import ConsumerPluginParticipant
+from .runtime.plugins.consumer import PluginParticipant
 from .services import HostServices, RuntimeServices, build_host_services, build_runtime_services
 
 
@@ -53,7 +53,7 @@ class RuntimeComposition:
 
 def create_runtime_composition(
     paths: AppPaths,
-    *plugins: ConsumerPluginParticipant,
+    *plugins: PluginParticipant,
     register_plugins: bool = True,
 ) -> RuntimeComposition:
     """Factory: create explicit host/runtime service composition data."""

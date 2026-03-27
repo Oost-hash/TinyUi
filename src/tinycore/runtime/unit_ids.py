@@ -29,9 +29,9 @@ def plugin_process_unit_id(plugin_name: str) -> str:
     return f"plugin.process:{plugin_name}"
 
 
-def plugin_consumer_unit_id(plugin_name: str) -> str:
-    """Return the runtime unit id for one plugin consumer lifecycle adapter."""
-    return f"plugin.consumer:{plugin_name}"
+def plugin_participant_unit_id(plugin_name: str) -> str:
+    """Return the runtime unit id for one plugin participation adapter."""
+    return f"plugin.participant:{plugin_name}"
 
 
 def provider_runtime_unit_id(provider_name: str) -> str:
@@ -39,9 +39,9 @@ def provider_runtime_unit_id(provider_name: str) -> str:
     return f"provider.runtime:{provider_name}"
 
 
-def provider_capability_unit_id(provider_name: str, capability: str) -> str:
-    """Return the runtime unit id for one provider-exported capability surface."""
-    return f"provider.capability:{provider_name}:{capability}"
+def provider_export_unit_id(provider_name: str, export_name: str) -> str:
+    """Return the runtime unit id for one provider-exported surface."""
+    return f"provider.export:{provider_name}:{export_name}"
 
 
 def boot_phase_unit_id(phase_name: str) -> str:

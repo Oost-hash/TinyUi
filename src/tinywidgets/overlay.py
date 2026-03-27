@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""WidgetOverlay — manages widget windows and the poll loop.
+"""WidgetOverlay — manages widget windows and the runtime update loop.
 
 Each widget is its own small top-level window (Qt.Tool), so click-through on
 the background is free — no overlay window or setMask() needed.
@@ -40,7 +40,7 @@ from tinycore.persistence.widget_state import WidgetStateStore
 from tinycore.qt.engine import create_engine
 from tinycore.runtime.provider_activity import ProviderActivity
 from tinycore.runtime.plugins.facts import PluginParticipationFacts
-from tinycore.runtime.poll_loop import PollLoop
+from tinycore.runtime.poll_loop import RuntimeUpdateLoop
 from tinycore.runtime.provider_updates import ProviderUpdater
 from .context import WidgetContext, WidgetModel, WidgetOverlayState
 from .runner import TextWidgetRunner
@@ -68,7 +68,7 @@ class WidgetOverlay:
         self._provider_activity = provider_activity
         self._paths = paths
         self._widget_state_for = widget_state_for
-        self._poll_loop  = PollLoop(interval_ms=100)
+        self._poll_loop  = RuntimeUpdateLoop(interval_ms=100)
         self._model      = WidgetModel()
         self._state      = WidgetOverlayState()
         self._engine     = None
@@ -86,8 +86,8 @@ class WidgetOverlay:
         return self._state
 
     @property
-    def poll_interval_ms(self) -> int:
-        """Return the interval of the runtime-owned widget poll loop."""
+    def update_interval_ms(self) -> int:
+        """Return the interval of the runtime-owned widget update loop."""
         return self._poll_loop.interval_ms
 
     def load(self, specs: list[WidgetSpec], plugin_name: str) -> None:
@@ -146,7 +146,7 @@ class WidgetOverlay:
             )
 
     def start(self) -> None:
-        """Create widget windows and start polling.
+        """Create widget windows and start runtime-driven updates.
 
         Must be called after QApplication exists (i.e. inside pre_run).
         """

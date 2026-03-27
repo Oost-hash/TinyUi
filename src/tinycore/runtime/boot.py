@@ -38,9 +38,9 @@ from .core_runtime import CoreRuntime, build_runtime_registry
 from .host_workers import HostWorkerHandle, HostWorkerSupervisor
 from .models import RuntimeState
 from .process_supervisor import ProcessSupervisor
-from .plugins.bindings import bind_consumer_participants
-from .plugins.consumer import ConsumerPluginParticipant, build_consumer_participants
-from .plugins.lifecycle import PluginLifecycleManager
+from .plugins.bindings import bind_plugin_participants
+from .plugins.consumer import PluginParticipant, build_plugin_participants
+from .plugins.lifecycle import PluginActivationManager
 from .plugins.provider import (
     ProviderPluginParticipant,
     build_provider_participants,
@@ -97,7 +97,7 @@ class _RegistryPhaseSpec:
 class _BootAssembly:
     paths: AppPaths
     manifests: list[PluginManifest]
-    consumer_participants: list[ConsumerPluginParticipant]
+    plugin_participants: list[PluginParticipant]
     provider_participants: list[ProviderPluginParticipant]
     boot_phase_states: dict[str, RuntimeState]
     process_supervisor: ProcessSupervisor
@@ -108,7 +108,7 @@ class _BootAssembly:
     stop_runtime: Callable[[], None]
     host_assembly: HostAssembly
     provider_activity: ProviderActivity | None = None
-    lifecycle: PluginLifecycleManager | None = None
+    activation: PluginActivationManager | None = None
     overlay_build: HostOverlayBuild | None = None
     host_worker_build: _HostWorkerBuild | None = None
 
@@ -121,7 +121,7 @@ class _OverlayLike(Protocol):
     def state(self) -> object: ...
 
     @property
-    def poll_interval_ms(self) -> int: ...
+    def update_interval_ms(self) -> int: ...
 
     def start(self) -> None: ...
     def stop(self) -> None: ...
@@ -147,7 +147,7 @@ class HostAssembly(Protocol):
         host: HostServices,
         runtime: RuntimeServices,
         provider_activity: ProviderActivity,
-        participants: list[ConsumerPluginParticipant],
+        participants: list[PluginParticipant],
     ) -> HostOverlayBuild: ...
 
     def build_state_monitor(
@@ -245,12 +245,12 @@ def boot_runtime(
     total_start = perf_counter()
     assembly = _create_boot_assembly(paths, manifests, host_assembly)
     _run_pre_registry_phases(assembly, _pre_registry_phases(assembly))
-    lifecycle = assembly.lifecycle
+    activation = assembly.activation
     overlay_build = assembly.overlay_build
     provider_activity = assembly.provider_activity
-    if lifecycle is None or overlay_build is None or provider_activity is None:
+    if activation is None or overlay_build is None or provider_activity is None:
         raise RuntimeError("boot assembly is incomplete after required runtime phases")
-    _attach_runtime_surfaces(lifecycle, provider_activity)
+    _attach_runtime_surfaces(activation, provider_activity)
 
     extra_context = {
         "widgetModel": overlay_build.overlay.model,
@@ -260,7 +260,7 @@ def boot_runtime(
 
     registry = build_runtime_registry(
         assembly.runtime,
-        lifecycle,
+        activation,
         assembly.process_supervisor,
         provider_activity,
         overlay_build.overlay,
@@ -269,24 +269,21 @@ def boot_runtime(
         boot_phase_states=assembly.boot_phase_states,
     )
     assembly.process_supervisor.attach_registry(registry)
-    lifecycle.attach_runtime_registry(registry)
+    activation.attach_runtime_registry(registry)
     provider_activity.attach_runtime_registry(registry)
     host_workers.attach_registry(registry)
 
     def _start_overlay() -> None:
         overlay_build.overlay.start()
-        if registry.get("ui.widgets.poll") is not None:
-            registry.set_state("ui.widgets.poll", "running")
+        registry.set_state("ui.widgets.update", "running")
 
     def _stop_overlay() -> None:
-        if registry.get("ui.widgets.poll") is not None:
-            registry.set_state("ui.widgets.poll", "stopping")
+        registry.set_state("ui.widgets.update", "stopping")
         overlay_build.overlay.stop()
-        if registry.get("ui.widgets.poll") is not None:
-            registry.set_state("ui.widgets.poll", "stopped")
+        registry.set_state("ui.widgets.update", "stopped")
 
     assembly.host_worker_build = _build_host_workers(
-        lifecycle,
+        activation,
         state_monitor=None,
         start_overlay=_start_overlay,
         stop_overlay=_stop_overlay,
@@ -298,7 +295,7 @@ def boot_runtime(
         host=assembly.host,
         runtime=assembly.runtime,
         stop_runtime=assembly.stop_runtime,
-        lifecycle=lifecycle,
+        lifecycle=activation,
         process_supervisor=assembly.process_supervisor,
         provider_activity=provider_activity,
         scheduler=assembly.scheduler,
@@ -333,7 +330,7 @@ def boot_runtime(
     if state_monitor_build.state_monitor is not None:
         runtime.state_monitor = state_monitor_build.state_monitor
         assembly.host_worker_build = _build_host_workers(
-            lifecycle,
+            activation,
             state_monitor=state_monitor_build.state_monitor,
             start_overlay=_start_overlay,
             stop_overlay=_stop_overlay,
@@ -351,7 +348,7 @@ def _create_boot_assembly(
     boot_phase_states: dict[str, RuntimeState] = {}
     consumer_manifests = [m for m in manifests if m.is_consumer]
     process_supervisor = ProcessSupervisor()
-    consumer_participants = build_consumer_participants(
+    plugin_participants = build_plugin_participants(
         consumer_manifests,
         process_supervisor=process_supervisor,
     )
@@ -362,7 +359,7 @@ def _create_boot_assembly(
     phase_start = perf_counter()
     composition = create_runtime_composition(
         paths,
-        *consumer_participants,
+        *plugin_participants,
         register_plugins=False,
     )
     _log_startup_phase("create_runtime_composition", phase_start)
@@ -370,7 +367,7 @@ def _create_boot_assembly(
     return _BootAssembly(
         paths=paths,
         manifests=manifests,
-        consumer_participants=consumer_participants,
+        plugin_participants=plugin_participants,
         provider_participants=provider_participants,
         boot_phase_states=boot_phase_states,
         process_supervisor=process_supervisor,
@@ -402,7 +399,7 @@ def _pre_registry_phases(assembly: _BootAssembly) -> tuple[_PreRegistryPhaseSpec
         _PreRegistryPhaseSpec(
             name="activate_plugins",
             action=lambda: _activate_plugins(assembly.runtime, assembly.scheduler),
-            assign=lambda result: setattr(assembly, "lifecycle", result),
+            assign=lambda result: setattr(assembly, "activation", result),
         ),
         _PreRegistryPhaseSpec(
             name="register_providers",
@@ -414,9 +411,9 @@ def _pre_registry_phases(assembly: _BootAssembly) -> tuple[_PreRegistryPhaseSpec
         ),
         _PreRegistryPhaseSpec(
             name="bind_consumers",
-            action=lambda: _bind_consumers(
+            action=lambda: _bind_plugin_participants(
                 assembly.runtime,
-                assembly.consumer_participants,
+                assembly.plugin_participants,
                 cast(ProviderActivity, assembly.provider_activity),
             ),
         ),
@@ -427,7 +424,7 @@ def _pre_registry_phases(assembly: _BootAssembly) -> tuple[_PreRegistryPhaseSpec
                 assembly.host,
                 assembly.runtime,
                 cast(ProviderActivity, assembly.provider_activity),
-                assembly.consumer_participants,
+                assembly.plugin_participants,
             ),
             assign=lambda result: setattr(assembly, "overlay_build", result),
         ),
@@ -494,24 +491,24 @@ def _register_consumers(host: HostServices, runtime: RuntimeServices) -> None:
 def _activate_plugins(
     runtime: RuntimeServices,
     scheduler: RuntimeScheduler,
-) -> PluginLifecycleManager:
-    lifecycle = PluginLifecycleManager(
+) -> PluginActivationManager:
+    activation = PluginActivationManager(
         runtime.plugin_runtime,
         scheduler=scheduler,
         grace_seconds=30.0,
     )
     plugin_names = [participant.name for participant in runtime.plugin_runtime.participants]
     if plugin_names:
-        lifecycle.activate(plugin_names[0])
-    return lifecycle
+        activation.activate(plugin_names[0])
+    return activation
 
 
 def _attach_runtime_surfaces(
-    lifecycle: PluginLifecycleManager,
+    activation: PluginActivationManager,
     provider_activity: ProviderActivity,
 ) -> None:
-    """Attach runtime-owned provider activity to the plugin lifecycle."""
-    lifecycle.attach_provider_activity(provider_activity)
+    """Attach runtime-owned provider activity to the plugin activation manager."""
+    activation.attach_provider_activity(provider_activity)
 
 
 def _register_providers(
@@ -522,16 +519,16 @@ def _register_providers(
     register_provider_participants(runtime, participants, provider_activity)
 
 
-def _bind_consumers(
+def _bind_plugin_participants(
     runtime: RuntimeServices,
-    participants: list[ConsumerPluginParticipant],
+    participants: list[PluginParticipant],
     provider_activity: ProviderActivity,
 ) -> None:
-    bind_consumer_participants(runtime, participants, provider_activity)
+    bind_plugin_participants(runtime, participants, provider_activity)
 
 
 def _build_host_workers(
-    lifecycle: PluginLifecycleManager,
+    activation: PluginActivationManager,
     *,
     state_monitor: _StateMonitorLike | None,
     start_overlay: Callable[[], None],
@@ -545,8 +542,8 @@ def _build_host_workers(
             stop=stop_overlay,
         ),
         HostWorkerHandle(
-            unit_id="plugins.lifecycle",
-            stop=lifecycle.shutdown,
+            unit_id="runtime.plugins.activation",
+            stop=activation.shutdown,
         ),
     ]
     if state_monitor is not None:

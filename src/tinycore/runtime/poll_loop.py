@@ -19,17 +19,16 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime-owned Qt poll loop for recurring host ticks."""
+"""Runtime-owned Qt update loop for recurring host ticks."""
 
 from __future__ import annotations
 
-from tinycore.poll.tickable import Tickable
-
 from .qt_timer import RuntimeQtTimer
+from .tickables import Tickable
 
 
-class PollLoop:
-    """Drive registered tickables at a fixed interval via a runtime-owned Qt timer."""
+class RuntimeUpdateLoop:
+    """Drive registered update participants at a fixed interval via a runtime-owned Qt timer."""
 
     def __init__(self, interval_ms: int = 100) -> None:
         self._tickables: list[Tickable] = []

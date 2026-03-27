@@ -21,26 +21,34 @@
 
 """Runtime-owned plugin participation layer."""
 
-from .bindings import bind_consumer_participants
-from .consumer import ConsumerPluginParticipant, SubprocessPlugin, build_consumer_participants
-from .facts import PluginParticipationFacts
-from .lifecycle import PluginLifecycleManager
+from .bindings import bind_plugin_participants
+from .consumer import PluginParticipant, SubprocessPlugin, build_plugin_participants
+from .controls import PluginParticipationControls
+from .facts import (
+    ConsumerParticipationBindings,
+    PluginParticipationFacts,
+    ProviderParticipationHandle,
+)
+from .lifecycle import PluginActivationManager
 from .provider import (
     ProviderPluginParticipant,
     build_provider_participants,
     register_provider_participants,
 )
-from .registry import PluginRegistry
+from .registry import PluginRuntimeRegistry
 
 __all__ = [
-    "bind_consumer_participants",
-    "ConsumerPluginParticipant",
+    "bind_plugin_participants",
+    "ConsumerParticipationBindings",
+    "PluginActivationManager",
+    "PluginParticipant",
+    "PluginParticipationControls",
     "PluginParticipationFacts",
-    "SubprocessPlugin",
-    "build_consumer_participants",
-    "PluginLifecycleManager",
+    "PluginRuntimeRegistry",
+    "ProviderParticipationHandle",
     "ProviderPluginParticipant",
+    "SubprocessPlugin",
+    "build_plugin_participants",
     "build_provider_participants",
     "register_provider_participants",
-    "PluginRegistry",
 ]

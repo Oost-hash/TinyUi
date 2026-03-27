@@ -19,13 +19,13 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime-owned registry for live consumer plugin participants."""
+"""Runtime-owned registry for live plugin participants."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .consumer import ConsumerPluginParticipant
+from .consumer import PluginParticipant
 
 if TYPE_CHECKING:
     from tinycore.services import HostServices, RuntimeServices
@@ -33,13 +33,13 @@ if TYPE_CHECKING:
 
 
 class PluginRuntimeRegistry:
-    """Stores live consumer participants and orchestrates two-phase init."""
+    """Stores live plugin participants and orchestrates two-phase init."""
 
     def __init__(self):
-        self._participants: list[ConsumerPluginParticipant] = []
+        self._participants: list[PluginParticipant] = []
 
-    def add(self, participant: ConsumerPluginParticipant) -> None:
-        """Add one live consumer plugin participant to the runtime registry."""
+    def add(self, participant: PluginParticipant) -> None:
+        """Add one live plugin participant to the runtime registry."""
         self._participants.append(participant)
 
     def register_all(self, host: HostServices, runtime: RuntimeServices) -> None:
@@ -75,13 +75,5 @@ class PluginRuntimeRegistry:
         raise KeyError(f"Plugin '{name}' not registered")
 
     @property
-    def participants(self) -> list[ConsumerPluginParticipant]:
+    def participants(self) -> list[PluginParticipant]:
         return list(self._participants)
-
-    @property
-    def plugins(self) -> list[Plugin]:
-        return [participant.plugin for participant in self._participants]
-
-
-PluginRegistry = PluginRuntimeRegistry
-RegisteredPlugin = ConsumerPluginParticipant

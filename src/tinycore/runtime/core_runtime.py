@@ -33,23 +33,23 @@ from tinycore.services import HostServices, RuntimeServices
 
 from .host_workers import HostWorkerSupervisor
 from .models import RuntimeActivationPolicy, RuntimeExecutionPolicy, RuntimeState, RuntimeUnitInfo, RuntimeUnitSpec
-from .plugins.lifecycle import PluginLifecycleManager
+from .plugins.lifecycle import PluginActivationManager
 from .provider_activity import ProviderActivity
 from .process_supervisor import ProcessSupervisor
 from .registry import RuntimeRegistry
 from .scheduler import RuntimeScheduler
 from .unit_ids import (
     boot_phase_unit_id,
-    plugin_consumer_unit_id,
+    plugin_participant_unit_id,
     plugin_process_unit_id,
-    provider_capability_unit_id,
+    provider_export_unit_id,
     provider_runtime_unit_id,
 )
 
 
 class _OverlayLike(Protocol):
     @property
-    def poll_interval_ms(self) -> int: ...
+    def update_interval_ms(self) -> int: ...
 
     def start(self) -> None: ...
     def stop(self) -> None: ...
@@ -71,7 +71,7 @@ class CoreRuntime:
     host: HostServices
     runtime: RuntimeServices
     stop_runtime: Callable[[], None]
-    lifecycle: PluginLifecycleManager
+    lifecycle: PluginActivationManager
     process_supervisor: ProcessSupervisor
     provider_activity: ProviderActivity
     scheduler: RuntimeScheduler
@@ -124,10 +124,6 @@ class CoreRuntime:
         self.scheduler.shutdown()
         self.stop_runtime()
 
-    def stop(self) -> None:
-        """Compatibility alias for shutdown during the transition."""
-        self.shutdown()
-
     def unit_infos(self) -> list[RuntimeUnitInfo]:
         """Expose declared runtime units for diagnostics and future supervision."""
         return self.units.all()
@@ -149,7 +145,7 @@ class CoreRuntime:
 
 def build_runtime_registry(
     runtime: RuntimeServices,
-    lifecycle: PluginLifecycleManager,
+    lifecycle: PluginActivationManager,
     process_supervisor: ProcessSupervisor,
     provider_activity: ProviderActivity,
     overlay: _OverlayLike,
@@ -425,9 +421,9 @@ def build_runtime_registry(
     )
     registry.declare(
         RuntimeUnitSpec(
-            id="ui.widgets.poll",
+            id="ui.widgets.update",
             kind="timer",
-            role="ui.widgets.poll",
+            role="ui.widgets.update",
             owner="tinywidgets",
             transport="qt_timer",
             parent_id="ui.widgets.overlay",
@@ -440,14 +436,14 @@ def build_runtime_registry(
             schedule_kind="interval",
             schedule_clock="qt",
             schedule_driver="runtime.qt_timer",
-            interval_ms=overlay.poll_interval_ms,
+            interval_ms=overlay.update_interval_ms,
         )
     )
     registry.declare(
         RuntimeUnitSpec(
-            id="plugins.lifecycle",
+            id="runtime.plugins.activation",
             kind="timer",
-            role="plugins.lifecycle",
+            role="runtime.plugins.activation",
             owner="tinycore.runtime.plugins",
             transport="thread",
             parent_id="host.main",
@@ -500,7 +496,7 @@ def build_runtime_registry(
             RuntimeUnitSpec(
                 id=runtime_unit_id,
                 kind="worker",
-                role="provider.host",
+                role="provider.runtime",
                 owner="tinycore.runtime.plugins",
                 transport="host",
                 parent_id="host.main",
@@ -519,9 +515,9 @@ def build_runtime_registry(
         for capability in provider.exports:
             registry.declare(
                 RuntimeUnitSpec(
-                    id=provider_capability_unit_id(provider.name, capability),
-                    kind="adapter",
-                    role="provider.capability",
+                    id=provider_export_unit_id(provider.name, capability),
+                    kind="surface",
+                    role="provider.export",
                     owner="tinycore.runtime.plugins",
                     transport="host",
                     parent_id=runtime_unit_id,
@@ -539,13 +535,13 @@ def build_runtime_registry(
             )
 
     supervised_infos = {info.plugin_name: info for info in process_supervisor.infos()}
-    active_consumers = set(lifecycle.active_consumer_names())
+    active_participants = set(lifecycle.active_participant_names())
     for participant in runtime.plugin_runtime.participants:
         process_info = supervised_infos.get(participant.name)
         pid = process_info.pid if process_info is not None else None
         process_state = process_info.state if process_info is not None else "declared"
         process_unit_id = plugin_process_unit_id(participant.name)
-        consumer_unit_id = plugin_consumer_unit_id(participant.name)
+        participant_unit_id = plugin_participant_unit_id(participant.name)
 
         if pid is not None:
             registry.declare(
@@ -568,17 +564,17 @@ def build_runtime_registry(
                 )
             )
         if process_state == "failed":
-            consumer_state = "failed"
-        elif participant.name in active_consumers:
-            consumer_state = "running"
+            participant_state = "failed"
+        elif participant.name in active_participants:
+            participant_state = "running"
         else:
-            consumer_state = "idle"
+            participant_state = "idle"
 
         registry.declare(
             RuntimeUnitSpec(
-                id=consumer_unit_id,
+                id=participant_unit_id,
                 kind="adapter",
-                role="plugin.consumer",
+                role="plugin.participant",
                 owner="tinycore.runtime.plugins",
                 transport="host",
                 parent_id=process_unit_id if pid is not None else "host.main",
@@ -590,9 +586,9 @@ def build_runtime_registry(
                 depends_on=((process_unit_id,) if pid is not None else ("host.main",)),
                 schedule_kind="manual",
                 schedule_clock="host",
-                schedule_driver="tinycore.runtime.plugins.lifecycle",
+                schedule_driver="tinycore.runtime.plugins.activation",
             ),
-            state=consumer_state,
+            state=participant_state,
         )
 
     return registry

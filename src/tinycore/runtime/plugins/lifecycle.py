@@ -19,18 +19,18 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime-owned warm activation for consumer plugin participation."""
+"""Runtime-owned warm activation for plugin participation."""
 
 from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
 
-from tinycore.runtime.unit_ids import plugin_consumer_unit_id
+from tinycore.runtime.unit_ids import plugin_participant_unit_id
 
 if TYPE_CHECKING:
     from tinycore.runtime.models import RuntimeState
-    from tinycore.runtime.plugins.registry import PluginRegistry
+    from tinycore.runtime.plugins.registry import PluginRuntimeRegistry
     from tinycore.runtime.provider_activity import ProviderActivity
     from tinycore.runtime.registry import RuntimeRegistry
     from tinycore.runtime.scheduler import RuntimeScheduler, ScheduledTaskHandle
@@ -38,12 +38,12 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class PluginLifecycleManager:
-    """Manages runtime-owned consumer activation with a configurable grace period."""
+class PluginActivationManager:
+    """Manages runtime-owned plugin activation with a configurable warm grace period."""
 
     def __init__(
         self,
-        registry: PluginRegistry,
+        registry: PluginRuntimeRegistry,
         *,
         scheduler: RuntimeScheduler,
         grace_seconds: float = 30.0,
@@ -79,21 +79,21 @@ class PluginLifecycleManager:
             self._stop(name)
 
     def attach_runtime_registry(self, registry: RuntimeRegistry) -> None:
-        """Attach runtime unit tracking for plugin consumer lifecycle units."""
+        """Attach runtime unit tracking for plugin participation activation units."""
         self._runtime_registry = registry
         for name in self._running:
-            unit_id = plugin_consumer_unit_id(name)
+            unit_id = plugin_participant_unit_id(name)
             if registry.get(unit_id) is not None:
                 registry.set_state(unit_id, "running")
 
     def attach_provider_activity(self, provider_activity: ProviderActivity) -> None:
-        """Attach runtime-owned provider activity so consumer heat drives providers."""
+        """Attach runtime-owned provider activity so participant heat drives providers."""
         self._provider_activity = provider_activity
         for name in self._running:
-            provider_activity.activate_consumer(name)
+            provider_activity.activate_participant(name)
 
-    def active_consumer_names(self) -> tuple[str, ...]:
-        """Return the currently active or warm-running consumer names."""
+    def active_participant_names(self) -> tuple[str, ...]:
+        """Return the currently active or warm-running participant names."""
         return tuple(sorted(self._running))
 
     @property
@@ -108,7 +108,7 @@ class PluginLifecycleManager:
         plugin.start()
         self._running.add(name)
         if self._provider_activity is not None:
-            self._provider_activity.activate_consumer(name)
+            self._provider_activity.activate_participant(name)
         self._set_runtime_state(name, "running")
 
     def _stop(self, name: str) -> None:
@@ -118,7 +118,7 @@ class PluginLifecycleManager:
         plugin.stop()
         self._running.discard(name)
         if self._provider_activity is not None:
-            self._provider_activity.deactivate_consumer(name)
+            self._provider_activity.deactivate_participant(name)
         self._set_runtime_state(name, "stopped")
 
     def _schedule_stop(self, name: str) -> None:
@@ -147,16 +147,16 @@ class PluginLifecycleManager:
     def _set_runtime_state(self, name: str, state: RuntimeState) -> None:
         if self._runtime_registry is None:
             return
-        unit_id = plugin_consumer_unit_id(name)
+        unit_id = plugin_participant_unit_id(name)
         info = self._runtime_registry.get(unit_id)
         if info is None:
             return
         if info.activation_policy not in {"warm", "on_demand"}:
             raise RuntimeError(
-                f"plugin consumer unit '{unit_id}' cannot change activation state; "
+                f"plugin participant unit '{unit_id}' cannot change activation state; "
                 f"activation policy is '{info.activation_policy}'"
             )
         self._runtime_registry.set_state(unit_id, state)
 
     def _task_id(self, name: str) -> str:
-        return f"{plugin_consumer_unit_id(name)}:grace-stop"
+        return f"{plugin_participant_unit_id(name)}:grace-stop"

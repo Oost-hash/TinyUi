@@ -227,20 +227,20 @@ class RuntimeViewModel(QObject):
         raw_units: list[dict[str, object]] = [
             {
                 "id": unit.id,
-                "role": unit.role,
-                "kind": unit.kind,
+                "role": self._display_role(unit.role),
+                "kind": self._display_kind(unit.kind, unit.role),
                 "owner": unit.owner,
                 "state": unit.state,
-                "activation": unit.activation_policy,
-                "execution": unit.execution_policy,
+                "activation": self._display_activation(unit.activation_policy, unit.role),
+                "execution": self._display_execution(unit.execution_policy, unit.role),
                 "transport": unit.transport,
                 "driver": unit.schedule_driver or "",
                 "schedule": unit.schedule_kind,
                 "clock": unit.schedule_clock,
                 "intervalMs": "" if unit.interval_ms is None else str(unit.interval_ms),
                 "delayMs": "" if unit.delay_ms is None else str(unit.delay_ms),
-                "pid": "" if unit.pid is None else str(unit.pid),
-                "parent": unit.parent_id or "",
+                "pid": self._display_pid(unit.pid, unit.role),
+                "parent": self._display_parent(unit.parent_id or ""),
             }
             for unit in self._core.unit_infos()
         ]
@@ -299,7 +299,7 @@ class RuntimeViewModel(QObject):
             has_children = len(child_units) > 0
             row = dict(unit)
             row["depth"] = depth
-            row["displayId"] = unit_id
+            row["displayId"] = self._display_unit_id(unit_id)
             row["hasChildren"] = has_children
             row["expanded"] = has_children and unit_id not in self._collapsed_unit_ids
             grouped.append(row)
@@ -377,6 +377,40 @@ class RuntimeViewModel(QObject):
                 )
             )
         return rows
+
+    def _display_unit_id(self, unit_id: str) -> str:
+        if unit_id.startswith("provider.export:"):
+            _, provider_name, export_name = unit_id.split(":", 2)
+            return f"provider.export:{provider_name}:{export_name}"
+        return unit_id
+
+    def _display_parent(self, parent_id: str) -> str:
+        return self._display_unit_id(parent_id) if parent_id else ""
+
+    def _display_role(self, role: str) -> str:
+        if role == "provider.export":
+            return "provider.surface"
+        return role
+
+    def _display_kind(self, kind: str, role: str) -> str:
+        if role == "provider.export":
+            return "export"
+        return kind
+
+    def _display_execution(self, execution: str, role: str) -> str:
+        if role == "provider.export":
+            return "surface"
+        return execution
+
+    def _display_activation(self, activation: str, role: str) -> str:
+        if role == "provider.export":
+            return "inherits"
+        return activation
+
+    def _display_pid(self, pid: int | None, role: str) -> str:
+        if role == "provider.export" or pid is None:
+            return ""
+        return str(pid)
 
     @Slot()
     def copyOverview(self) -> None:

@@ -32,7 +32,7 @@ from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
 from tinycore.runtime.boot import HostAssembly, HostOverlayBuild, HostStateMonitorBuild
 from tinycore.runtime.core_runtime import CoreRuntime
-from tinycore.runtime.plugins.consumer import ConsumerPluginParticipant
+from tinycore.runtime.plugins.consumer import PluginParticipant
 from tinycore.runtime.provider_activity import ProviderActivity
 from tinywidgets.overlay import WidgetOverlay
 from tinywidgets.spec import load_widgets_toml
@@ -63,7 +63,7 @@ class TinyUiHostAssembly(HostAssembly):
         host: HostServices,
         runtime: RuntimeServices,
         provider_activity: ProviderActivity,
-        participants: list[ConsumerPluginParticipant],
+        participants: list[PluginParticipant],
     ) -> HostOverlayBuild:
         overlay = WidgetOverlay(
             runtime.plugin_facts,

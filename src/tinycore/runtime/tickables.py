@@ -18,8 +18,16 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""Compatibility wrapper for the runtime-owned subprocess runner."""
 
-from tinycore.runtime.plugins.runner import run
+"""Runtime-owned protocols for recurring update drivers."""
 
-__all__ = ["run"]
+from __future__ import annotations
+
+from typing import Protocol, runtime_checkable
+
+
+@runtime_checkable
+class Tickable(Protocol):
+    """Anything that can be driven by the runtime update loop."""
+
+    def tick(self) -> None: ...

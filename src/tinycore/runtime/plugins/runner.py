@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime-owned subprocess runner for consumer plugin participation."""
+"""Runtime-owned subprocess runner for plugin participation."""
 
 from __future__ import annotations
 

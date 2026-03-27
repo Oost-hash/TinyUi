@@ -155,14 +155,14 @@ def launch(core: CoreRuntime,
     _log_startup_phase(log, "qml_load", phase_start)
 
     if not engine.rootObjects():
-        core.stop()
+        core.shutdown()
         return -1
 
     # ── Platform windowing ────────────────────────────────────────────────────
     phase_start = perf_counter()
     window_obj = engine.rootObjects()[0]
     if not isinstance(window_obj, QQuickWindow):
-        core.stop()
+        core.shutdown()
         return -1
     window = window_obj
     wire_devtools_monitor(core, window)

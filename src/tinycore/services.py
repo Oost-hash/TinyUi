@@ -150,16 +150,11 @@ class HostServices:
 
 @dataclass(frozen=True)
 class RuntimeServices:
-    """Runtime-owned lifecycle and session services."""
+    """Runtime-owned participation services with session as backing compatibility state."""
 
     session: SessionRuntime
     plugin_facts: PluginParticipationFacts
     plugin_runtime: PluginRuntimeRegistry
-
-    @property
-    def plugins(self) -> PluginRuntimeRegistry:
-        """Compatibility alias during the runtime plugin participation transition."""
-        return self.plugin_runtime
 
 
 def build_host_services(paths: AppPaths) -> HostServices:

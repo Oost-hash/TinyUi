@@ -30,7 +30,7 @@ from typing import Literal
 
 from tinycore.plugin.spec import ConsumerRuntimeSpec
 from .registry import RuntimeRegistry
-from .unit_ids import plugin_consumer_unit_id, plugin_process_unit_id
+from .unit_ids import plugin_participant_unit_id, plugin_process_unit_id
 
 ProcessState = Literal["starting", "running", "stopping", "stopped", "failed"]
 
@@ -145,14 +145,14 @@ class ProcessSupervisor:
         self._handles[unit_id].state = "failed"
         if self._registry is not None and self._registry.get(unit_id) is not None:
             self._registry.set_state(unit_id, "failed")
-        self._sync_consumer_state(unit_id, "failed")
+        self._sync_participant_state(unit_id, "failed")
 
     def stop(self, handle: SpawnedProcessHandle, *, timeout: float = 5.0) -> None:
         """Stop and reap one supervised subprocess."""
         handle.state = "stopping"  # keep local truth during join/terminate
         if self._registry is not None and self._registry.get(handle.unit_id) is not None:
             self._registry.set_state(handle.unit_id, "stopping")
-        self._sync_consumer_state(handle.unit_id, "stopping")
+        self._sync_participant_state(handle.unit_id, "stopping")
         process = handle.process
         process.join(timeout=timeout)
         if process.is_alive():
@@ -161,7 +161,7 @@ class ProcessSupervisor:
         handle.state = "stopped"
         if self._registry is not None and self._registry.get(handle.unit_id) is not None:
             self._registry.set_state(handle.unit_id, "stopped")
-        self._sync_consumer_state(handle.unit_id, "stopped")
+        self._sync_participant_state(handle.unit_id, "stopped")
 
     def pid_for_plugin(self, plugin_name: str) -> int | None:
         """Return the current PID for one plugin-backed subprocess."""
@@ -180,11 +180,11 @@ class ProcessSupervisor:
             for handle in self._handles.values()
         ]
 
-    def _sync_consumer_state(self, unit_id: str, state: ProcessState) -> None:
+    def _sync_participant_state(self, unit_id: str, state: ProcessState) -> None:
         if self._registry is None:
             return
         plugin_name = unit_id.removeprefix("plugin.process:")
-        consumer_unit_id = plugin_consumer_unit_id(plugin_name)
-        if self._registry.get(consumer_unit_id) is None:
+        participant_unit_id = plugin_participant_unit_id(plugin_name)
+        if self._registry.get(participant_unit_id) is None:
             return
-        self._registry.set_state(consumer_unit_id, state)
+        self._registry.set_state(participant_unit_id, state)
