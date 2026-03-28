@@ -20,8 +20,8 @@
 #  licensed under GPLv3.
 """tinyui.launch — Qt main window host.
 
-Receives a fully booted core and lifecycle from the composition root.
-Responsible only for Qt setup, viewmodels, engine, and windowing.
+Receives a booted CoreRuntime from tinyui_boot.
+Responsible only for Qt setup, viewmodels, signal wiring, engine, and windowing.
 """
 
 from __future__ import annotations
@@ -44,6 +44,7 @@ from tinycore.runtime.core_runtime import CoreRuntime
 from tinyui.ui_adapters import (
     attach_optional_devtools_ui,
     bind_statusbar_plugin_switching,
+    bind_tab_plugin_switching,
     bind_theme_settings,
     restore_main_window_state,
     wire_app_shutdown,
@@ -77,7 +78,7 @@ def launch(core: CoreRuntime,
            extra_context: dict[str, object] | None = None) -> int:
     """Initialize and run the tinyui main window.
 
-    Called by the composition root after tinycore is fully booted.
+    Called by tinyui_boot after boot_runtime completes.
     Returns the Qt exit code.
     """
     total_start = perf_counter()
@@ -109,9 +110,12 @@ def launch(core: CoreRuntime,
     core_vm      = CoreViewModel(core)
     tab_vm       = TabViewModel()
 
-    tab_vm.register("widgets", "Widgets")
+    for participant in core.runtime.plugin_runtime.registered_participants:
+        label = participant.manifest.display_name or participant.name
+        tab_vm.register(participant.name, label)
     _log_startup_phase(log, "viewmodels", phase_start)
 
+    bind_tab_plugin_switching(core, tab_vm)
     bind_statusbar_plugin_switching(core, statusbar_vm)
 
     bind_theme_settings(core, core_vm, settings_vm, theme)

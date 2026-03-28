@@ -57,6 +57,9 @@ class TinyUiHostAssembly(HostAssembly):
     def register_host(self, host: HostServices) -> None:
         TinyUIPlugin().register(host)
 
+    def startup_participant(self, host: HostServices) -> str | None:
+        return host.persistence.get_setting("TinyUI", "startup_plugin") or None
+
     def build_overlay(
         self,
         paths: AppPaths,

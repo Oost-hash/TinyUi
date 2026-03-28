@@ -144,6 +144,8 @@ class HostAssembly(Protocol):
 
     def register_host(self, host: HostServices) -> None: ...
 
+    def startup_participant(self, host: HostServices) -> str | None: ...
+
     def build_overlay(
         self,
         paths: AppPaths,
@@ -329,6 +331,12 @@ def boot_runtime(
     )
     _log.startup_phase("bootstrap_runtime_total", _ms(total_start))
 
+    startup = assembly.host_assembly.startup_participant(assembly.host)
+    if startup is not None:
+        known = {p.name for p in assembly.runtime.plugin_runtime.registered_participants}
+        if startup in known:
+            runtime.activation.activate(startup)
+
     runtime.extra_context.update(state_monitor_build.extra_context)
     if state_monitor_build.state_monitor is not None:
         runtime.state_monitor = state_monitor_build.state_monitor
@@ -495,17 +503,11 @@ def _activate_plugins(
     runtime: RuntimeServices,
     scheduler: RuntimeScheduler,
 ) -> PluginActivationManager:
-    activation = PluginActivationManager(
+    return PluginActivationManager(
         runtime.plugin_runtime,
         scheduler=scheduler,
         grace_seconds=30.0,
     )
-    plugin_names = [
-        participant.name for participant in runtime.plugin_runtime.registered_participants
-    ]
-    if plugin_names:
-        activation.activate(plugin_names[0])
-    return activation
 
 
 def _attach_runtime_surfaces(

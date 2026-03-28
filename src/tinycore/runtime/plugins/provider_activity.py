@@ -92,11 +92,21 @@ class ProviderActivity:
         self._sync_provider_runtime_states(previous, active)
 
     def _sync_provider_runtime_states(self, previous: set[str], current: set[str]) -> None:
-        if self._runtime_registry is None:
-            return
         for provider_name in previous - current:
+            handle = self._participation.provider(provider_name)
+            if handle is not None:
+                close = getattr(handle.provider, "close", None)
+                if callable(close):
+                    close()
             self._set_provider_runtime_state(provider_name, "idle")
-        for provider_name in current:
+        for provider_name in current - previous:
+            handle = self._participation.provider(provider_name)
+            if handle is not None:
+                open_ = getattr(handle.provider, "open", None)
+                if callable(open_):
+                    open_()
+            self._set_provider_runtime_state(provider_name, "running")
+        for provider_name in current & previous:
             self._set_provider_runtime_state(provider_name, "running")
 
     def _set_provider_runtime_state(self, provider_name: str, state: RuntimeState) -> None:

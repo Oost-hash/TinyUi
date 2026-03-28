@@ -76,6 +76,29 @@ def bind_statusbar_plugin_switching(core, statusbar_view_model: object) -> None:
         active_changed.connect(_on_plugin_switch)
 
 
+def bind_tab_plugin_switching(core, tab_view_model: object) -> None:
+    """Drive plugin lifecycle activation from the tab bar selection surface."""
+    if not isinstance(tab_view_model, QObject):
+        return
+
+    plugin_names = [
+        participant.name for participant in core.runtime.plugin_runtime.registered_participants
+    ]
+    if not plugin_names:
+        return
+
+    def _on_tab_switch() -> None:
+        index = _maybe_int(tab_view_model.property("currentIndex"))
+        if index is None:
+            return
+        if 0 <= index < len(plugin_names):
+            core.activation.activate(plugin_names[index])
+
+    current_index_changed = cast(Any, getattr(tab_view_model, "currentIndexChanged", None))
+    if current_index_changed is not None:
+        current_index_changed.connect(_on_tab_switch)
+
+
 def bind_theme_settings(
     core,
     core_view_model: object,

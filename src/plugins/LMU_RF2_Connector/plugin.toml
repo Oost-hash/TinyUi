@@ -1,4 +1,5 @@
 name = "LMU_RF2_Connector"
+display_name = "LMU / RF2 Connector"
 type = "plugin.provider"
 version = "0.1.0"
 

@@ -49,6 +49,12 @@ class TinyUIPlugin:
             description="Application color theme",
             section="Application",
         ))
+        _r(SettingsSpec(
+            key="startup_plugin", label="Startup plugin", type="string",
+            default="demo",
+            description="Plugin to activate on startup",
+            section="Application",
+        ))
 
         # ── Window ────────────────────────────────────────────────────────
         _r(SettingsSpec(

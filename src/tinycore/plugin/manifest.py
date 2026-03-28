@@ -113,6 +113,7 @@ class PluginManifest:
     version: str
     plugin_dir: Path
     manifest_path: Path
+    display_name: str = ""
     requires: tuple[str, ...] = field(default_factory=tuple)
     exports: tuple[str, ...] = field(default_factory=tuple)
     provider_requests: tuple[ProviderRequest, ...] = field(default_factory=tuple)
@@ -306,6 +307,7 @@ def load_manifest(path: Path) -> PluginManifest:
         version=data["version"],
         plugin_dir=plugin_dir,
         manifest_path=path,
+        display_name=data.get("display_name", ""),
         requires=_tuple_of_strings(data, "requires"),
         exports=_tuple_of_strings(data, "exports"),
         provider_requests=_provider_requests(data),

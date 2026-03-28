@@ -183,6 +183,8 @@ class ConnectorRuntime(TelemetryReader):
         return True
 
     def mode(self) -> str:
+        if not self._opened:
+            return "inactive"
         active = self.active_source_handle()
         if active is None:
             return "inactive"

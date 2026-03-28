@@ -98,7 +98,6 @@ class ProviderParticipant:
         if provider_decl is None:
             return
         provider = provider_decl.create()
-        provider.open()
         runtime.plugin_facts.register_provider(self.name, provider, self.exports)
         provider_activity.provider_registered(self.name)
         _log.info(
