@@ -32,3 +32,16 @@ where = ["src"]
 [tool.tinyui.debug]
 categories    = "all"
 console_level = "INFO"
+
+[tool.basedpyright]
+typeCheckingMode = "standard"
+pythonVersion = "3.12"
+include = ["src", "scripts"]
+exclude = [
+    "**/.git",
+    "**/__pycache__",
+    ".venv",
+    ".pytest_cache",
+    "data",
+    "dist",
+]
