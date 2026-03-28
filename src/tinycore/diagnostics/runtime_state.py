@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-#  TinyUI
+
 """Runtime-owned inspection snapshots and change tracking."""
 
 from __future__ import annotations
@@ -29,6 +29,8 @@ from dataclasses import dataclass
 from typing import Callable
 
 SnapshotFn = Callable[[], list[tuple[str, str]]]
+
+
 @dataclass(frozen=True)
 class InspectionSourceInfo:
     """User-facing source metadata."""
@@ -49,7 +51,9 @@ class InspectionEntry:
 
 
 class _Source:
-    def __init__(self, source_id: str, label: str, kind: str, snapshot_fn: SnapshotFn) -> None:
+    def __init__(
+        self, source_id: str, label: str, kind: str, snapshot_fn: SnapshotFn
+    ) -> None:
         self.id = source_id
         self.label = label
         self.kind = kind
