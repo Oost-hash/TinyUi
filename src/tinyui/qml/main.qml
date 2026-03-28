@@ -61,16 +61,14 @@ ApplicationWindow {
     readonly property bool hasDevTools: devToolsAvailable && devToolsQmlPath !== ""
 
     function openDevTools() {
-        if (devToolsLoader.item)
-            devToolsLoader.item.show()
+        var w = devToolsLoader.item as Window
+        if (w) w.show()
     }
     function toggleDevTools() {
-        if (!devToolsLoader.item)
-            return
-        if (devToolsLoader.item.visible)
-            devToolsLoader.item.hide()
-        else
-            devToolsLoader.item.show()
+        var w = devToolsLoader.item as Window
+        if (!w) return
+        if (w.visible) w.hide()
+        else w.show()
     }
     flags: nativeChrome ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
     color: theme.surface

@@ -47,7 +47,7 @@ BaseDialog {
         // Tab strip
         Rectangle {
             Layout.fillWidth: true
-            height: 32
+            implicitHeight: 32
             color: theme.surfaceAlt
 
             Rectangle {
@@ -122,7 +122,7 @@ BaseDialog {
                 // ── Source selector ───────────────────────────────────────────
                 Rectangle {
                     Layout.fillWidth: true
-                    height: 34
+                    implicitHeight: 34
                     color: theme.surfaceAlt
 
                     Rectangle {
@@ -258,7 +258,7 @@ BaseDialog {
                 // ── Column headers ────────────────────────────────────────────
                 Rectangle {
                     Layout.fillWidth: true
-                    height: 24
+                    implicitHeight: 24
                     color: theme.surfaceAlt
 
                     Rectangle {
@@ -487,7 +487,7 @@ BaseDialog {
 
                 Rectangle {
                     Layout.fillWidth: true
-                    height: 34
+                    implicitHeight: 34
                     color: theme.surfaceAlt
 
                     Rectangle {
@@ -547,7 +547,7 @@ BaseDialog {
 
                 Rectangle {
                     Layout.fillWidth: true
-                    height: 30
+                    implicitHeight: 30
                     color: theme.surface
 
                     Rectangle {
@@ -643,7 +643,7 @@ BaseDialog {
 
                 Rectangle {
                     Layout.fillWidth: true
-                    height: 24
+                    implicitHeight: 24
                     color: theme.surfaceAlt
 
                     Rectangle {
@@ -882,7 +882,7 @@ BaseDialog {
 
                 Rectangle {
                     Layout.fillWidth: true
-                    height: 28
+                    implicitHeight: 28
                     color: theme.surfaceAlt
                     visible: runtimeTab._vm && runtimeTab._vm.taskIds.length > 0
 
@@ -945,7 +945,7 @@ BaseDialog {
                 // Toolbar
                 Rectangle {
                     Layout.fillWidth: true
-                    height: 36
+                    implicitHeight: 36
                     color: theme.surfaceAlt
 
                     Rectangle {
@@ -1007,7 +1007,7 @@ BaseDialog {
                         Item { Layout.fillWidth: true }
 
                         Rectangle {
-                            width: 100; height: 22; radius: 3
+                            implicitWidth: 100; implicitHeight: 22; radius: 3
                             color: autoScrollMouse.containsMouse ? theme.surfaceRaised : "transparent"
                             Text {
                                 anchors.centerIn: parent
@@ -1024,7 +1024,7 @@ BaseDialog {
                         }
 
                         Rectangle {
-                            width: 48; height: 22; radius: 3
+                            implicitWidth: 48; implicitHeight: 22; radius: 3
                             color: clearMouse.containsMouse ? theme.surfaceRaised : "transparent"
                             Text {
                                 anchors.centerIn: parent; text: "Clear"
@@ -1043,7 +1043,7 @@ BaseDialog {
                 // Category filter bar — dev mode toggle + per-category chips
                 Rectangle {
                     Layout.fillWidth: true
-                    height: 30
+                    implicitHeight: 30
                     color: theme.surface
 
                     Rectangle {
@@ -1164,7 +1164,7 @@ BaseDialog {
                                 rightPadding: 8
                             }
                             Rectangle {
-                                width: 52; height: 16; radius: 2
+                                implicitWidth: 52; implicitHeight: 16; radius: 2
                                 color: Qt.rgba(consolePane.levelColor(model.level).r,
                                                consolePane.levelColor(model.level).g,
                                                consolePane.levelColor(model.level).b, 0.15)

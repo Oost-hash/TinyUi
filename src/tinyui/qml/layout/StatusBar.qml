@@ -20,7 +20,6 @@
 //  licensed under GPLv3.
 
 import QtQuick
-import QtQuick.Controls
 import "../components"
 
 Rectangle {

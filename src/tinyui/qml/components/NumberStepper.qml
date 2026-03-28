@@ -20,7 +20,6 @@
 //  licensed under GPLv3.
 
 import QtQuick
-import QtQuick.Controls
 
 // − [value] +
 // Value field is read-only until clicked; commits on Enter or focus loss.

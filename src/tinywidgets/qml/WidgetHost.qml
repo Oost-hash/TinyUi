@@ -38,7 +38,7 @@ Window {
             widgetContext:   model.widgetContext
             transientParent: null
         }
-        onObjectAdded:   (index, object) => object.show()
-        onObjectRemoved: (index, object) => object.close()
+        onObjectAdded:   (index, object) => { var w = object as Window; if (w) w.show() }
+        onObjectRemoved: (index, object) => { var w = object as Window; if (w) w.close() }
     }
 }

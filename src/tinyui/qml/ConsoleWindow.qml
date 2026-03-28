@@ -62,7 +62,7 @@ BaseDialog {
         // ── Toolbar ───────────────────────────────────────────────────────────
         Rectangle {
             Layout.fillWidth: true
-            height: 36
+            implicitHeight: 36
             color: theme.surfaceAlt
 
             Rectangle {
@@ -131,7 +131,7 @@ BaseDialog {
 
                 // ── Auto-scroll toggle ─────────────────────────────────────
                 Rectangle {
-                    width: 100; height: 22
+                    implicitWidth: 100; implicitHeight: 22
                     radius: 3
                     color: autoScrollMouse.containsMouse ? theme.surfaceRaised : "transparent"
 
@@ -153,7 +153,7 @@ BaseDialog {
 
                 // ── Clear button ───────────────────────────────────────────
                 Rectangle {
-                    width: 48; height: 22
+                    implicitWidth: 48; implicitHeight: 22
                     radius: 3
                     color: clearMouse.containsMouse ? theme.surfaceRaised : "transparent"
 
@@ -206,7 +206,7 @@ BaseDialog {
 
                     // Level badge
                     Rectangle {
-                        width: 52; height: 16
+                        implicitWidth: 52; implicitHeight: 16
                         radius: 2
                         color: Qt.rgba(
                             Qt.darker(consoleWin._levelColor(model.level), 1.0).r,
