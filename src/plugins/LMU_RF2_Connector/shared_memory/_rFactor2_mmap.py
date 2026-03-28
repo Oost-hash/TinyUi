@@ -20,14 +20,13 @@
 #  licensed under GPLv3.
 
 """
-rF2 Memory Map Control
+rF2 memory map control.
 
-Inherit Python mapping of The Iron Wolf's rF2 Shared Memory Tools
+Based on pyRfactor2SharedMemory / TinyPedal by S.Victor:
+  https://github.com/TinyPedal/pyRfactor2SharedMemory
 
-Memory map control (by S.Victor)
-Cross-platform Linux support (by Bernat)
+Memory map control by S.Victor; cross-platform Linux support by Bernat.
 """
-# pyright: reportArgumentType=false, reportOptionalMemberAccess=false, reportOptionalCall=false, reportCallIssue=false
 
 from __future__ import annotations
 
@@ -35,6 +34,8 @@ import ctypes
 import logging
 import mmap
 import platform
+from collections.abc import Callable
+from typing import cast
 
 from . import _rFactor2_data as rF2data
 from ._rFactor2_data import rFactor2Constants
@@ -63,7 +64,7 @@ def platform_mmap(name: str, size: int, pid: str = "") -> mmap.mmap:
 
 def windows_mmap(name: str, size: int, pid: str) -> mmap.mmap:
     """Windows mmap"""
-    return mmap.mmap(-1, size, f"{name}{pid}")
+    return mmap.mmap(-1, size, f"{name}{pid}")  # type: ignore[arg-type]  # tagname: str, stubs are wrong
 
 
 def linux_mmap(name: str, size: int) -> mmap.mmap:
@@ -88,7 +89,15 @@ class MMapControl:
         "data",
     )
 
-    def __init__(self, mmap_name: str, data_struct: ctypes.Structure) -> None:
+    _mmap_name: str
+    _mmap_buffer: mmap.mmap | None
+    _struct: type[ctypes.Structure]
+    _buffer: bytearray
+    _version: rF2data.rF2MappedBufferVersionBlock | None
+    update: Callable[[], None] | None
+    data: ctypes.Structure | None
+
+    def __init__(self, mmap_name: str, data_struct: type[ctypes.Structure]) -> None:
         """Initialize memory map setting
 
         Args:
@@ -114,9 +123,7 @@ class MMapControl:
             rf2_pid: rF2 Process ID for accessing server data.
         """
         self._mmap_buffer = platform_mmap(
-            name=self._mmap_name,
-            size=ctypes.sizeof(self._struct),
-            pid=rf2_pid
+            name=self._mmap_name, size=ctypes.sizeof(self._struct), pid=rf2_pid
         )
 
         if access_mode:
@@ -125,7 +132,9 @@ class MMapControl:
         else:
             self._buffer[:] = self._mmap_buffer
             self.data = self._struct.from_buffer(self._buffer)
-            self._version = rF2data.rF2MappedBufferVersionBlock.from_buffer(self._mmap_buffer)
+            self._version = rF2data.rF2MappedBufferVersionBlock.from_buffer(
+                self._mmap_buffer
+            )
             self.update = self.__buffer_copy
 
         mode = "Direct" if access_mode else "Copy"
@@ -136,6 +145,7 @@ class MMapControl:
 
         Create a final accessible mmap data copy before closing mmap instance.
         """
+        assert self._mmap_buffer is not None
         self.data = self._struct.from_buffer_copy(self._mmap_buffer)
         self._version = None
         try:
@@ -150,8 +160,14 @@ class MMapControl:
 
     def __buffer_copy(self) -> None:
         """Copy buffer access, helps avoid data desync"""
+        assert self._version is not None
+        assert self._mmap_buffer is not None
         # Copy if data version changed
-        if self.data.mVersionUpdateEnd != self._version.mVersionUpdateEnd == self._version.mVersionUpdateBegin:
+        if (
+            self.data.mVersionUpdateEnd  # type: ignore[union-attr]
+            != self._version.mVersionUpdateEnd
+            == self._version.mVersionUpdateBegin
+        ):
             self._buffer[:] = self._mmap_buffer
 
 
@@ -167,16 +183,18 @@ def test_api():
     print("Test API - Start")
     scoring = MMapControl(rFactor2Constants.MM_SCORING_FILE_NAME, rF2data.rF2Scoring)
     scoring.create(1)
-    telemetry = MMapControl(rFactor2Constants.MM_TELEMETRY_FILE_NAME, rF2data.rF2Telemetry)
+    telemetry = MMapControl(
+        rFactor2Constants.MM_TELEMETRY_FILE_NAME, rF2data.rF2Telemetry
+    )
     telemetry.create(1)
     extended = MMapControl(rFactor2Constants.MM_EXTENDED_FILE_NAME, rF2data.rF2Extended)
     extended.create(1)
 
     print(SEPARATOR)
     print("Test API - Read")
-    version = extended.data.mVersion.decode()
-    track = scoring.data.mScoringInfo.mTrackName.decode(encoding="iso-8859-1")
-    vehicles = telemetry.data.mNumVehicles
+    version = cast(rF2data.rF2Extended, extended.data).mVersion.decode()
+    track = cast(rF2data.rF2Scoring, scoring.data).mScoringInfo.mTrackName.decode(encoding="iso-8859-1")
+    vehicles = cast(rF2data.rF2Telemetry, telemetry.data).mNumVehicles
     print(f"plugin ver: {version if version else 'not running'}")
     print(f"track name: {track if version else 'not running'}")
     print(f"total cars: {vehicles if version else 'not running'}")

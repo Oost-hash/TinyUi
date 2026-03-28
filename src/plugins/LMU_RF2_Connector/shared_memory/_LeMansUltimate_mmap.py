@@ -20,11 +20,13 @@
 #  licensed under GPLv3.
 
 """
-LMU Memory Map Control
+LMU memory map control.
 
-Inherit Python mapping of LMU Shared Memory Interface
+Based on pyLMUSharedMemory / TinyPedal by S.Victor:
+  https://github.com/TinyPedal/pyLMUSharedMemory
+
+Memory map control by S.Victor; cross-platform Linux support by Bernat.
 """
-# pyright: reportArgumentType=false, reportOptionalMemberAccess=false, reportOptionalCall=false, reportCallIssue=false
 
 from __future__ import annotations
 
@@ -32,6 +34,8 @@ import ctypes
 import logging
 import mmap
 import platform
+from collections.abc import Callable
+from typing import cast
 
 from . import _LeMansUltimate_data as lmu_data
 from ._LeMansUltimate_data import LMUConstants
@@ -60,7 +64,7 @@ def platform_mmap(name: str, size: int) -> mmap.mmap:
 
 def windows_mmap(name: str, size: int) -> mmap.mmap:
     """Windows mmap"""
-    return mmap.mmap(-1, size, name)
+    return mmap.mmap(-1, size, name)  # type: ignore[arg-type]  # tagname: str, stubs are wrong
 
 
 def linux_mmap(name: str, size: int) -> mmap.mmap:
@@ -85,12 +89,20 @@ class MMapControl:
         "data",
     )
 
-    def __init__(self, mmap_name: str, data_struct: ctypes.Structure) -> None:
+    _mmap_name: str
+    _mmap_buffer: mmap.mmap | None
+    _struct: type[ctypes.Structure]
+    _buffer: bytearray
+    _realtime: lmu_data.LMUObjectOut | None
+    update: Callable[[], None] | None
+    data: ctypes.Structure | None
+
+    def __init__(self, mmap_name: str, data_struct: type[ctypes.Structure]) -> None:
         """Initialize memory map setting
 
         Args:
             mmap_name: mmap filename.
-            data_struct: ctypes data structure, ex. lmu_data.SharedMemoryEvent.
+            data_struct: ctypes data structure, ex. lmu_data.LMUObjectOut.
         """
         self._mmap_name = mmap_name
         self._mmap_buffer = None
@@ -119,7 +131,7 @@ class MMapControl:
             self.update = self.__buffer_share
         else:
             self._buffer[:] = self._mmap_buffer
-            self._realtime = self._struct.from_buffer(self._mmap_buffer)
+            self._realtime = cast(lmu_data.LMUObjectOut, self._struct.from_buffer(self._mmap_buffer))
             self.data = self._struct.from_buffer(self._buffer)
             self.update = self.__buffer_copy
 
@@ -131,6 +143,7 @@ class MMapControl:
 
         Create a final accessible mmap data copy before closing mmap instance.
         """
+        assert self._mmap_buffer is not None
         self.data = self._struct.from_buffer_copy(self._mmap_buffer)
         self._realtime = None
         try:
@@ -145,6 +158,8 @@ class MMapControl:
 
     def __buffer_copy(self) -> None:
         """Copy buffer access, helps avoid data desync"""
+        assert self._realtime is not None
+        assert self._mmap_buffer is not None
         # Check if game updating data
         if (
             self._realtime.generic.events.SME_UPDATE_SCORING
@@ -168,6 +183,7 @@ def test_api():
     print("Test API - Direct Access")
     info = MMapControl(LMUConstants.LMU_SHARED_MEMORY_FILE, lmu_data.LMUObjectOut)
     info.create(1)
+    assert info.update is not None
     info.update()
 
     print(SEPARATOR)
@@ -177,14 +193,16 @@ def test_api():
     print(SEPARATOR)
     print("Test API - Copy Access")
     info.create(0)
+    assert info.update is not None
     info.update()
 
     print(SEPARATOR)
     print("Test API - Read")
-    version = info.data.generic.gameVersion
-    track = info.data.scoring.scoringInfo.mTrackName.decode()
-    vehicle = info.data.telemetry.telemInfo[0].mVehicleName.decode()
-    total = info.data.scoring.scoringInfo.mNumVehicles
+    data = cast(lmu_data.LMUObjectOut, info.data)
+    version = data.generic.gameVersion
+    track = data.scoring.scoringInfo.mTrackName.decode()
+    vehicle = data.telemetry.telemInfo[0].mVehicleName.decode()
+    total = data.scoring.scoringInfo.mNumVehicles
     print(f"version: {version if version else 'not running'}")
     print(f"track name: {track if version else 'not running'}")
     print(f"vehicle name: {vehicle if version else 'not running'}")

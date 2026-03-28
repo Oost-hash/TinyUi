@@ -20,12 +20,15 @@
 #  licensed under GPLv3.
 
 """
-Python mapping of The Iron Wolf's rF2 Shared Memory Tools
-Auto-generated from rF2data.cs
+rFactor 2 shared-memory ctypes definitions.
+
+Based on:
+- rF2 Shared Memory Tools by The Iron Wolf (rF2data.cs):
+  https://github.com/TheIronWolfModding/rF2SharedMemoryMapPlugin
+- Python mapping by S.Victor (pyRfactor2SharedMemory / TinyPedal):
+  https://github.com/TinyPedal/pyRfactor2SharedMemory
 """
 # pylint: disable=C,R,W
-
-"""Private rFactor 2 shared-memory ctypes definitions."""
 # pyright: reportCallIssue=false, reportOptionalMemberAccess=false
 
 import ctypes

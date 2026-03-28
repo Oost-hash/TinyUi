@@ -20,14 +20,14 @@
 #  licensed under GPLv3.
 
 """
-Python mapping of LMU's built-in Shared Memory Interface
+Le Mans Ultimate shared-memory ctypes definitions.
 
-This library is based on:
-- LMU SharedMemoryInterface header file by S397, found in game's `Support\\SharedMemoryInterface` folder.
+Based on:
+- LMU SharedMemoryInterface header by S397 (found in game's Support/SharedMemoryInterface folder)
 - pyRfactor2SharedMemory by Tony Whitley: https://github.com/TonyWhitley/pyRfactor2SharedMemory
+- Python mapping by S.Victor (pyLMUSharedMemory / TinyPedal):
+  https://github.com/TinyPedal/pyLMUSharedMemory
 """
-
-"""Private Le Mans Ultimate shared-memory ctypes definitions."""
 # pyright: reportCallIssue=false, reportOptionalMemberAccess=false
 
 import ctypes
