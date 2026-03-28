@@ -121,6 +121,11 @@ ApplicationWindow {
         TitleBar {
             Layout.fillWidth: true
             z: 1  // dropdowns render above StyledTabBar and content
+            hasDevTools: root.hasDevTools
+            nativeChrome: root.nativeChrome
+            windowVisibility: root.visibility
+            onCloseWindow: root.close()
+            onOpenDevToolsRequested: root.openDevTools()
         }
 
         StyledTabBar {

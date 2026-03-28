@@ -19,6 +19,8 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import TinyUI
 
@@ -71,7 +73,7 @@ Item {
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: _openPicker()
+                onClicked: root._openPicker()
             }
         }
 
@@ -91,7 +93,7 @@ Item {
                 color: Theme.text
                 font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
                 maximumLength: 7; selectByMouse: true
-                Keys.onReturnPressed: _commitHex(text)
+                Keys.onReturnPressed: root._commitHex(text)
                 Keys.onEscapePressed: { text = root._toHex(root.value); focus = false }
                 onActiveFocusChanged: if (!activeFocus) text = root._toHex(root.value)
             }

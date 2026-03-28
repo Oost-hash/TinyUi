@@ -32,3 +32,5 @@ Known packages:
 - [0.4.1][plugins] Cleaned up shared memory type annotations — removed pyright suppressions, added proper types and attribution
 - [0.4.1][tinyui][tinydevtools] Fixed QML warnings — removed unused imports, fixed missing-property on Window casts, corrected layout-positioning (width/height → implicitWidth/implicitHeight)
 - [0.4.1][tinyui][tinydevtools][tinywidgets] Migrated all QML types from setContextProperty to @QmlElement + qmlRegisterSingletonInstance — eliminates unqualified qmllint warnings and enables static QML analysis
+- [0.4.1][tinyui][tinydevtools] Added pragma ComponentBehavior: Bound to all QML files — delegates now use required properties and qualified id access
+- [0.4.1][tinydevtools] Split DevToolsWindow into DevToolsStateTab, DevToolsRuntimeTab, and ConsolePane components — ConsoleWindow reuses ConsolePane

@@ -19,6 +19,8 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import TinyUI
@@ -27,6 +29,13 @@ import "../components"
 
 Rectangle {
     id: titleBar
+
+    // ── Properties bound by the parent window ─────────────────────────────────
+    property bool hasDevTools: false
+    property bool nativeChrome: false
+    property int  windowVisibility: Window.Windowed
+    signal closeWindow()
+    signal openDevToolsRequested()
 
     function _menuItems() {
         var items = [
@@ -43,13 +52,13 @@ Rectangle {
             { label: "",           sep: true,  action: null },
             { label: "Settings",   sep: false, action: function() { SettingsPanelViewModel.openPanel(); MenuViewModel.closeMenu() } }
         ]
-        if (root.hasDevTools) {
+        if (titleBar.hasDevTools) {
             items.push({ label: "", sep: true, action: null })
-            items.push({ label: "Dev Tools", sep: false, action: function() { root.openDevTools(); MenuViewModel.closeMenu() } })
+            items.push({ label: "Dev Tools", sep: false, action: function() { titleBar.openDevToolsRequested(); MenuViewModel.closeMenu() } })
         }
         items.push(
             { label: "",           sep: true,  action: null },
-            { label: "Close",      sep: false, action: function() { root.close() } }
+            { label: "Close",      sep: false, action: function() { titleBar.closeWindow() } }
         )
         return items
     }
@@ -113,15 +122,16 @@ Rectangle {
     // ── Delegate for menu items (shared by all dropdowns) ─────────────────────
 
     component MenuItemDelegate: Rectangle {
+        id: menuItem
         required property var modelData
         required property int index
 
         width: ListView.view ? ListView.view.width : parent.width
-        height: modelData.sep ? 9 : 28
-        color: (!modelData.sep && rowMouse.containsMouse) ? Theme.surfaceRaised : "transparent"
+        height: menuItem.modelData.sep ? 9 : 28
+        color: (!menuItem.modelData.sep && rowMouse.containsMouse) ? Theme.surfaceRaised : "transparent"
 
         Rectangle {
-            visible: modelData.sep
+            visible: menuItem.modelData.sep
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: parent.left; anchors.right: parent.right
             anchors.leftMargin: 8;     anchors.rightMargin: 8
@@ -129,31 +139,31 @@ Rectangle {
         }
 
         Text {
-            visible: !modelData.sep
+            visible: !menuItem.modelData.sep
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: checkboxIndicator.visible ? checkboxIndicator.right : parent.left
             anchors.leftMargin: checkboxIndicator.visible ? 10 : 12
-            text: modelData.label
+            text: menuItem.modelData.label
             color: Theme.text
             font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
         }
 
         Rectangle {
             id: checkboxIndicator
-            visible: !modelData.sep && !!modelData.checkable
+            visible: !menuItem.modelData.sep && !!menuItem.modelData.checkable
             anchors.left: parent.left
             anchors.leftMargin: 8
             anchors.verticalCenter: parent.verticalCenter
             width: 14
             height: 14
             radius: 3
-            color: !!modelData.checked ? Theme.accent : "transparent"
+            color: !!menuItem.modelData.checked ? Theme.accent : "transparent"
             border.width: 1
-            border.color: !!modelData.checked ? Theme.accent : Theme.border
+            border.color: !!menuItem.modelData.checked ? Theme.accent : Theme.border
 
             Text {
                 anchors.centerIn: parent
-                visible: !!modelData.checked
+                visible: !!menuItem.modelData.checked
                 text: "✓"
                 color: Theme.accentText
                 font.pixelSize: 9
@@ -166,8 +176,8 @@ Rectangle {
             id: rowMouse
             anchors.fill: parent
             hoverEnabled: true
-            enabled: !modelData.sep
-            onClicked: modelData.action ? modelData.action() : undefined
+            enabled: !menuItem.modelData.sep
+            onClicked: menuItem.modelData.action ? menuItem.modelData.action() : undefined
         }
     }
 
@@ -201,8 +211,8 @@ Rectangle {
         anchors.bottom: parent.bottom
         spacing: 0
 
-        onWidthChanged: _updateLeftZone()
-        Component.onCompleted: _updateLeftZone()
+        onWidthChanged: titleBar._updateLeftZone()
+        Component.onCompleted: titleBar._updateLeftZone()
 
         HoverHandler {
             onHoveredChanged: {
@@ -267,7 +277,7 @@ Rectangle {
     // ── Right: window buttons (not on Linux/macOS — native chrome provides them) ──
 
     Row {
-        visible: !root.nativeChrome
+        visible: !titleBar.nativeChrome
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom
@@ -281,7 +291,7 @@ Rectangle {
 
         TitleBarButton {
             height: parent.height
-            iconSource: root.visibility === Window.Maximized
+            iconSource: titleBar.windowVisibility === Window.Maximized
                 ? "../../assets/icons/window-restore.svg"
                 : "../../assets/icons/window-maximize.svg"
             onClicked: WindowController.toggleMaximize()
@@ -291,7 +301,7 @@ Rectangle {
             height: parent.height
             iconSource: "../../assets/icons/window-close.svg"
             isCloseButton: true
-            onClicked: root.close()
+            onClicked: titleBar.closeWindow()
         }
     }
 }

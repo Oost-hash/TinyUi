@@ -19,6 +19,8 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Window
 import TinyWidgets
@@ -36,7 +38,7 @@ Window {
     Instantiator {
         model: WidgetModel
         delegate: TextWidget {
-            widgetContext:   model.widgetContext
+            required property var widgetContext
             transientParent: null
         }
         onObjectAdded:   (index, object) => { var w = object as Window; if (w) w.show() }

@@ -19,6 +19,8 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import TinyUI
 import "../components"
@@ -49,6 +51,7 @@ Rectangle {
             model: CoreViewModel.editors
 
             StatusBarIconButton {
+                required property var modelData
                 // First letter as temporary icon — TODO: add icon field to editors.toml
                 iconText: modelData.title.charAt(0).toUpperCase()
                 textFont: Theme.fontFamily
@@ -120,6 +123,9 @@ Rectangle {
                     model: CoreViewModel.pluginNames
 
                     Rectangle {
+                        id: pluginItem
+                        required property string modelData
+                        required property int index
                         width: parent.width
                         height: 28
                         color: dropItemHover.containsMouse ? Theme.surfaceRaised : "transparent"
@@ -128,18 +134,18 @@ Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
                             anchors.leftMargin: 12
-                            text: modelData
-                            color: StatusBarViewModel.activePluginIndex === index ? Theme.accent : Theme.text
+                            text: pluginItem.modelData
+                            color: StatusBarViewModel.activePluginIndex === pluginItem.index ? Theme.accent : Theme.text
                             font.pixelSize: Theme.fontSizeSmall
                             font.family: Theme.fontFamily
-                            font.weight: StatusBarViewModel.activePluginIndex === index ? Font.DemiBold : Font.Normal
+                            font.weight: StatusBarViewModel.activePluginIndex === pluginItem.index ? Font.DemiBold : Font.Normal
                         }
 
                         MouseArea {
                             id: dropItemHover
                             anchors.fill: parent
                             hoverEnabled: true
-                            onClicked: StatusBarViewModel.selectPlugin(index)
+                            onClicked: StatusBarViewModel.selectPlugin(pluginItem.index)
                         }
                     }
                 }

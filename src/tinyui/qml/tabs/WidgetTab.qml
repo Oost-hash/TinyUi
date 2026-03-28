@@ -19,6 +19,8 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import TinyUI
 import TinyWidgets
@@ -70,7 +72,7 @@ Item {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.bottom: parent.bottom
-        width: selectedContext ? parent.width * 0.4 : parent.width
+        width: widgetTab.selectedContext ? parent.width * 0.4 : parent.width
         Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
         // Header
@@ -115,12 +117,12 @@ Item {
 
                 readonly property bool isSelected:
                     widgetTab.selectedContext !== null
-                    && widgetContext !== null
-                    && widgetTab.selectedContext.widgetId === widgetContext.widgetId
+                    && row.widgetContext !== null
+                    && widgetTab.selectedContext.widgetId === row.widgetContext.widgetId
 
                 width: ListView.view.width; height: 40
-                color: isSelected ? Theme.surfaceRaised
-                     : (index % 2 === 0 ? Theme.surfaceAlt : "transparent")
+                color: row.isSelected ? Theme.surfaceRaised
+                     : (row.index % 2 === 0 ? Theme.surfaceAlt : "transparent")
                 Behavior on color { ColorAnimation { duration: 80 } }
 
                 Rectangle { width: 2; height: parent.height; color: Theme.accent; visible: row.isSelected }
@@ -480,6 +482,7 @@ Item {
 
     // ── SectionHeader: same as SettingsDialog section headers ─────────────────
     component SectionHeader: Rectangle {
+        id: sectionHeaderRoot
         property string text: ""
         anchors.left: parent ? parent.left : undefined
         anchors.right: parent ? parent.right : undefined
@@ -487,13 +490,13 @@ Item {
         color: Theme.surfaceAlt
 
         Text {
-            anchors.left: parent.left; anchors.leftMargin: 16
-            anchors.verticalCenter: parent.verticalCenter
-            text: parent.text
+            anchors.left: sectionHeaderRoot.left; anchors.leftMargin: 16
+            anchors.verticalCenter: sectionHeaderRoot.verticalCenter
+            text: sectionHeaderRoot.text
             color: Theme.textSecondary
             font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
             font.weight: Font.Medium
         }
-        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
+        Rectangle { anchors.bottom: sectionHeaderRoot.bottom; width: sectionHeaderRoot.width; height: 1; color: Theme.border }
     }
 }

@@ -19,6 +19,8 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import TinyUI
 
@@ -28,6 +30,7 @@ import TinyUI
 // is invisible and inactive there.
 
 Item {
+    id: resizeHandles
     anchors.fill: parent
     z: 20
 
@@ -37,22 +40,22 @@ Item {
     // ── Hoeken ────────────────────────────────────────────────────────────
 
     Item {
-        x: 0; y: 0; width: c; height: c
+        x: 0; y: 0; width: resizeHandles.c; height: resizeHandles.c
         HoverHandler { cursorShape: Qt.SizeFDiagCursor }
         DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.TopEdge    | Qt.LeftEdge)  }
     }
     Item {
-        x: parent.width - c; y: 0; width: c; height: c
+        x: resizeHandles.width - resizeHandles.c; y: 0; width: resizeHandles.c; height: resizeHandles.c
         HoverHandler { cursorShape: Qt.SizeBDiagCursor }
         DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.TopEdge    | Qt.RightEdge) }
     }
     Item {
-        x: 0; y: parent.height - c; width: c; height: c
+        x: 0; y: resizeHandles.height - resizeHandles.c; width: resizeHandles.c; height: resizeHandles.c
         HoverHandler { cursorShape: Qt.SizeBDiagCursor }
         DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.BottomEdge | Qt.LeftEdge)  }
     }
     Item {
-        x: parent.width - c; y: parent.height - c; width: c; height: c
+        x: resizeHandles.width - resizeHandles.c; y: resizeHandles.height - resizeHandles.c; width: resizeHandles.c; height: resizeHandles.c
         HoverHandler { cursorShape: Qt.SizeFDiagCursor }
         DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.BottomEdge | Qt.RightEdge) }
     }
@@ -60,22 +63,22 @@ Item {
     // ── Randen ────────────────────────────────────────────────────────────
 
     Item {
-        x: c; y: 0; width: parent.width - 2 * c; height: b
+        x: resizeHandles.c; y: 0; width: resizeHandles.width - 2 * resizeHandles.c; height: resizeHandles.b
         HoverHandler { cursorShape: Qt.SizeVerCursor }
         DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.TopEdge)    }
     }
     Item {
-        x: c; y: parent.height - b; width: parent.width - 2 * c; height: b
+        x: resizeHandles.c; y: resizeHandles.height - resizeHandles.b; width: resizeHandles.width - 2 * resizeHandles.c; height: resizeHandles.b
         HoverHandler { cursorShape: Qt.SizeVerCursor }
         DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.BottomEdge) }
     }
     Item {
-        x: 0; y: c; width: b; height: parent.height - 2 * c
+        x: 0; y: resizeHandles.c; width: resizeHandles.b; height: resizeHandles.height - 2 * resizeHandles.c
         HoverHandler { cursorShape: Qt.SizeHorCursor }
         DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.LeftEdge)   }
     }
     Item {
-        x: parent.width - b; y: c; width: b; height: parent.height - 2 * c
+        x: resizeHandles.width - resizeHandles.b; y: resizeHandles.c; width: resizeHandles.b; height: resizeHandles.height - 2 * resizeHandles.c
         HoverHandler { cursorShape: Qt.SizeHorCursor }
         DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.RightEdge)  }
     }

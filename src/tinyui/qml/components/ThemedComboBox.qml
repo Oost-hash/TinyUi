@@ -19,6 +19,8 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls
 import TinyUI
@@ -76,13 +78,18 @@ ComboBox {
     }
 
     delegate: ItemDelegate {
+        id: delegateItem
+
+        required property int index
+        required property string modelData
+
         width: root.popup.width
         height: 32
         highlighted: root.highlightedIndex === index
 
         contentItem: Text {
-            text: modelData
-            color: highlighted ? "#dec184" : Theme.text
+            text: delegateItem.modelData
+            color: delegateItem.highlighted ? "#dec184" : Theme.text
             font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
             verticalAlignment: Text.AlignVCenter
             leftPadding: 8
@@ -90,7 +97,7 @@ ComboBox {
         }
 
         background: Rectangle {
-            color: highlighted ? Theme.surfaceRaised : "transparent"
+            color: delegateItem.highlighted ? Theme.surfaceRaised : "transparent"
         }
     }
 }
