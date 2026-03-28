@@ -43,8 +43,6 @@ better day-to-day overlay experience on top.
 
 For the latest release overview and current direction, see [docs/ROADMAP.md](docs/ROADMAP.md). It is a live document, gets updated most often, and the next update is still being planned there.
 
-Legend: `[ ]` planned, `[x]` completed.
-
 ---
 
 ## Supported platforms
