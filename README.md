@@ -1,6 +1,6 @@
 # TinyUi
 
-[![Release](https://img.shields.io/badge/released-0.3.0-green)](https://github.com/Oost-hash/TinyUi/releases/tag/v0.3.0)
+[![Release](https://img.shields.io/badge/released-0.4.0-green)](https://github.com/Oost-hash/TinyUi/releases/tag/v0.4.0)
 [![License](https://img.shields.io/badge/license-GPLv3-green)](LICENSE)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-%23db61a2?logo=github)](https://github.com/sponsors/oost-hash)
 
@@ -42,8 +42,6 @@ better day-to-day overlay experience on top.
 ## Development
 
 For the latest release overview and current direction, see [docs/ROADMAP.md](docs/ROADMAP.md). It is a live document, gets updated most often, and the next update is still being planned there.
-
-Legend: `[ ]` planned, `[x]` completed.
 
 ---
 
