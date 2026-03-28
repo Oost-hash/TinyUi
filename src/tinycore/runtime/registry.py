@@ -51,6 +51,7 @@ class RuntimeRegistry:
             schedule_kind=spec.schedule_kind,
             schedule_clock=spec.schedule_clock,
             schedule_driver=spec.schedule_driver,
+            schedule_stage=spec.schedule_stage,
             interval_ms=spec.interval_ms,
             delay_ms=spec.delay_ms,
         )
@@ -77,6 +78,7 @@ class RuntimeRegistry:
             schedule_kind=current.schedule_kind,
             schedule_clock=current.schedule_clock,
             schedule_driver=current.schedule_driver,
+            schedule_stage=current.schedule_stage,
             interval_ms=current.interval_ms,
             delay_ms=current.delay_ms,
         )
@@ -103,6 +105,7 @@ class RuntimeRegistry:
             schedule_kind=current.schedule_kind,
             schedule_clock=current.schedule_clock,
             schedule_driver=current.schedule_driver,
+            schedule_stage=current.schedule_stage,
             interval_ms=current.interval_ms,
             delay_ms=current.delay_ms,
         )

@@ -65,7 +65,10 @@ class CoreViewModel(QObject):
     @Property(list, constant=True)
     def pluginNames(self) -> list[str]:
         """Name of each loaded plugin — used by the status bar plugin switcher."""
-        return [participant.name for participant in self._core.runtime.plugin_runtime.participants]
+        return [
+            participant.name
+            for participant in self._core.runtime.plugin_runtime.registered_participants
+        ]
 
     @Property(list, notify=settingsChanged)
     def settingsByPlugin(self) -> list[dict]:

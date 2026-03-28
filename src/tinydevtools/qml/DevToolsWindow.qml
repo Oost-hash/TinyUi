@@ -473,11 +473,12 @@ BaseDialog {
             property real kindColumnWidth: 78
             property real policyColumnWidth: 96
             property real activationColumnWidth: 96
+            property real stageColumnWidth: 76
             property real pidColumnWidth: 84
             property real parentColumnWidth: 220
             readonly property real tableWidth:
                 unitColumnWidth + stateColumnWidth + kindColumnWidth
-                + policyColumnWidth + activationColumnWidth
+                + policyColumnWidth + activationColumnWidth + stageColumnWidth
                 + pidColumnWidth + parentColumnWidth + 48
 
             ColumnLayout {
@@ -737,6 +738,7 @@ BaseDialog {
                             Text { width: runtimeTab.kindColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Kind"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
                             Text { width: runtimeTab.policyColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Policy"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
                             Text { width: runtimeTab.activationColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Activation"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                            Text { width: runtimeTab.stageColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Stage"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
                             Text { width: runtimeTab.pidColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "PID"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
 
                             Rectangle {
@@ -861,6 +863,7 @@ BaseDialog {
                                 Text { width: runtimeTab.kindColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.kind; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
                                 Text { width: runtimeTab.policyColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.execution; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
                                 Text { width: runtimeTab.activationColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.activation; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
+                                Text { width: runtimeTab.stageColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.stage; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
                                 Text { width: runtimeTab.pidColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.pid; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
                                 Text { width: runtimeTab.parentColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.parent; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
                             }

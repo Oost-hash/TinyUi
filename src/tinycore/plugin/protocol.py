@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""Consumer plugin protocol — two-phase registration and lifecycle."""
+"""Plugin protocol — two-phase registration and lifecycle."""
 
 from __future__ import annotations
 
@@ -30,13 +30,13 @@ if TYPE_CHECKING:
 
 @runtime_checkable
 class Plugin(Protocol):
-    """A consumer plugin registers declarations and has a start/stop lifecycle."""
+    """A plugin registers scoped declarations and has a start/stop lifecycle."""
 
     @property
     def name(self) -> str: ...
 
     def register(self, ctx: PluginContext) -> None:
-        """Phase 1: register consumer-side declarations such as loaders or editors."""
+        """Phase 1: register scoped config, editors, and other declarations."""
         ...
 
     def start(self) -> None:

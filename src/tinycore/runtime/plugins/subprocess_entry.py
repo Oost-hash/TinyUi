@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime-owned subprocess runner for plugin participation."""
+"""Runtime-owned subprocess entrypoint for plugin participation."""
 
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ class _ProxyConfig:
     def register(self, key: str, filename: str, defaults: dict | None = None) -> None:
         self._conn.send(
             {
-                "type": "loaders.register",
+                "type": "config.register",
                 "key": key,
                 "filename": filename,
                 "defaults": defaults,
@@ -59,13 +59,13 @@ class _ProxyConfig:
         )
 
     def load_all(self) -> None:
-        self._conn.send({"type": "loaders.load_all"})
+        self._conn.send({"type": "config.load_all"})
 
     def load(self, key: str) -> None:
-        self._conn.send({"type": "loaders.load", "key": key})
+        self._conn.send({"type": "config.load", "key": key})
 
     def save(self, key: str) -> None:
-        self._conn.send({"type": "loaders.save", "key": key})
+        self._conn.send({"type": "config.save", "key": key})
 
     def get(self, key: str, default=None):
         raise NotImplementedError("config.get is not available during register phase")
@@ -105,7 +105,6 @@ class _ProxyContext:
         self.name = plugin_name
         self.settings = _ProxySettings(conn)
         self.config = _ProxyConfig(conn)
-        self.loaders = self.config
         self.editors = _ProxyEditors(conn)
         self.exports = _ProxyExports(requires)
 
@@ -118,7 +117,7 @@ def run(
     artifact_path: str | None,
     extra_paths: list[str],
 ) -> None:
-    """Load and run a consumer plugin inside a subprocess."""
+    """Load and run one plugin subprocess runtime."""
     for path in extra_paths:
         if path not in sys.path:
             sys.path.insert(0, path)

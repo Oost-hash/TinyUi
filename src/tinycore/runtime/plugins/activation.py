@@ -30,20 +30,20 @@ from tinycore.runtime.unit_ids import plugin_participant_unit_id
 
 if TYPE_CHECKING:
     from tinycore.runtime.models import RuntimeState
-    from tinycore.runtime.plugins.registry import PluginRuntimeRegistry
-    from tinycore.runtime.provider_activity import ProviderActivity
     from tinycore.runtime.registry import RuntimeRegistry
     from tinycore.runtime.scheduler import RuntimeScheduler, ScheduledTaskHandle
+    from .provider_activity import ProviderActivity
+    from .participation_runtime import PluginParticipationRuntime
 
 log = logging.getLogger(__name__)
 
 
 class PluginActivationManager:
-    """Manages runtime-owned plugin activation with a configurable warm grace period."""
+    """Manage runtime-owned plugin activation with a configurable warm grace period."""
 
     def __init__(
         self,
-        registry: PluginRuntimeRegistry,
+        registry: PluginParticipationRuntime,
         *,
         scheduler: RuntimeScheduler,
         grace_seconds: float = 30.0,
@@ -58,7 +58,6 @@ class PluginActivationManager:
         self._provider_activity: ProviderActivity | None = None
 
     def activate(self, plugin_name: str) -> None:
-        """Switch to a plugin participant and keep the old one warm briefly."""
         if plugin_name == self._active:
             return
         log.debug("Activating plugin '%s' (was '%s')", plugin_name, self._active)
@@ -71,7 +70,6 @@ class PluginActivationManager:
         self._active = plugin_name
 
     def shutdown(self) -> None:
-        """Cancel all pending timers and stop all running plugin participants."""
         for task_id in [self._task_id(name) for name in self._pending]:
             self._scheduler.cancel(task_id)
         self._pending.clear()
@@ -79,7 +77,6 @@ class PluginActivationManager:
             self._stop(name)
 
     def attach_runtime_registry(self, registry: RuntimeRegistry) -> None:
-        """Attach runtime unit tracking for plugin participation activation units."""
         self._runtime_registry = registry
         for name in self._running:
             unit_id = plugin_participant_unit_id(name)
@@ -87,22 +84,19 @@ class PluginActivationManager:
                 registry.set_state(unit_id, "running")
 
     def attach_provider_activity(self, provider_activity: ProviderActivity) -> None:
-        """Attach runtime-owned provider activity so participant heat drives providers."""
         self._provider_activity = provider_activity
         for name in self._running:
             provider_activity.activate_participant(name)
 
     def active_participant_names(self) -> tuple[str, ...]:
-        """Return the currently active or warm-running participant names."""
         return tuple(sorted(self._running))
 
     @property
     def grace_period_ms(self) -> int:
-        """Return the warm shutdown grace period in milliseconds."""
         return int(self._grace * 1000)
 
     def _start(self, name: str) -> None:
-        plugin = self._registry.get(name)
+        plugin = self._registry.participant_plugin(name)
         log.info("Starting plugin '%s'", name)
         self._set_runtime_state(name, "starting")
         plugin.start()
@@ -112,7 +106,7 @@ class PluginActivationManager:
         self._set_runtime_state(name, "running")
 
     def _stop(self, name: str) -> None:
-        plugin = self._registry.get(name)
+        plugin = self._registry.participant_plugin(name)
         log.info("Stopping plugin '%s'", name)
         self._set_runtime_state(name, "stopping")
         plugin.stop()

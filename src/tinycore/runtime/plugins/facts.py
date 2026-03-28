@@ -28,7 +28,7 @@ from typing import Any
 
 from tinycore.plugin.manifest import ProviderRequest
 
-from .exports import ExportBinding, ExportProvider, ExportRegistry
+from .exports import ExportBinding, ParticipantExports
 
 
 def _float_or_zero(value: object) -> float:
@@ -80,53 +80,101 @@ class ProviderDemoConfig:
     speed: float = 0.0
 
 
+@dataclass(frozen=True)
+class _ExportProvider:
+    """Registered provider for one exported runtime surface."""
+
+    export_name: str
+    provider_name: str
+    provider: object
+
+
+class _ExportRegistry:
+    """Register exported surfaces and resolve providers by export name."""
+
+    def __init__(self) -> None:
+        self._exports: dict[str, _ExportProvider] = {}
+
+    def register(
+        self,
+        export_name: str,
+        provider_name: str,
+        provider: object,
+    ) -> None:
+        existing = self._exports.get(export_name)
+        if existing is not None and existing.provider_name != provider_name:
+            raise ValueError(
+                f"Export '{export_name}' is already owned by provider "
+                f"'{existing.provider_name}', cannot also register '{provider_name}'"
+            )
+        self._exports[export_name] = _ExportProvider(
+            export_name=export_name,
+            provider_name=provider_name,
+            provider=provider,
+        )
+
+    def register_many(
+        self,
+        provider_name: str,
+        export_names: tuple[str, ...],
+        provider: object,
+    ) -> None:
+        for export_name in export_names:
+            self.register(export_name, provider_name, provider)
+
+    def provider_for(self, export_name: str) -> _ExportProvider | None:
+        return self._exports.get(export_name)
+
+
 class _BoundProviderControls:
     """Provider-bound access surface backed by participation facts."""
 
     def __init__(self, facts: PluginParticipationFacts) -> None:
         self._facts = facts
 
-    def provider_name_for(self, consumer_name: str, export_name: str) -> str:
-        binding = self._binding(consumer_name, export_name)
+    def provider_name_for(self, participant_name: str, export_name: str) -> str:
+        binding = self._binding(participant_name, export_name)
         return binding.provider_name if binding is not None else ""
 
-    def supports_demo_mode(self, consumer_name: str, export_name: str) -> bool:
-        provider = self._provider(consumer_name, export_name)
+    def supports_demo_mode(self, participant_name: str, export_name: str) -> bool:
+        provider = self._provider(participant_name, export_name)
         if provider is None:
             return False
         supports_demo = getattr(provider, "supports_demo_mode", None)
         return bool(supports_demo()) if callable(supports_demo) else False
 
-    def request_demo_mode(self, consumer_name: str, export_name: str, owner: str) -> bool:
-        provider = self._provider(consumer_name, export_name)
-        if provider is None or not hasattr(provider, "request_demo_mode"):
+    def request_demo_mode(self, participant_name: str, export_name: str, owner: str) -> bool:
+        provider = self._provider(participant_name, export_name)
+        request_demo_mode = getattr(provider, "request_demo_mode", None) if provider is not None else None
+        if not callable(request_demo_mode):
             return False
-        provider.request_demo_mode(owner)
+        request_demo_mode(owner)
         return True
 
-    def release_demo_mode(self, consumer_name: str, export_name: str, owner: str) -> bool:
-        provider = self._provider(consumer_name, export_name)
-        if provider is None or not hasattr(provider, "release_demo_mode"):
+    def release_demo_mode(self, participant_name: str, export_name: str, owner: str) -> bool:
+        provider = self._provider(participant_name, export_name)
+        release_demo_mode = getattr(provider, "release_demo_mode", None) if provider is not None else None
+        if not callable(release_demo_mode):
             return False
-        provider.release_demo_mode(owner)
+        release_demo_mode(owner)
         return True
 
-    def provider_mode(self, consumer_name: str, export_name: str) -> str:
-        provider = self._provider(consumer_name, export_name)
+    def provider_mode(self, participant_name: str, export_name: str) -> str:
+        provider = self._provider(participant_name, export_name)
         if provider is None:
             return "missing"
         mode = getattr(provider, "mode", None)
         return str(mode()) if callable(mode) else "real"
 
-    def active_game(self, consumer_name: str, export_name: str) -> str:
-        provider = self._provider(consumer_name, export_name)
+    def active_game(self, participant_name: str, export_name: str) -> str:
+        provider = self._provider(participant_name, export_name)
         if provider is None:
             return "none"
         active_game = getattr(provider, "active_game", None)
         return str(active_game()) if callable(active_game) else "unknown"
 
-    def demo_config(self, consumer_name: str, export_name: str) -> ProviderDemoConfig:
-        provider = self._provider(consumer_name, export_name)
+    def demo_config(self, participant_name: str, export_name: str) -> ProviderDemoConfig:
+        provider = self._provider(participant_name, export_name)
         if provider is None:
             return ProviderDemoConfig()
         return ProviderDemoConfig(
@@ -135,20 +183,20 @@ class _BoundProviderControls:
             speed=self._call_float(provider, "demo_speed"),
         )
 
-    def set_demo_min(self, consumer_name: str, export_name: str, value: float) -> bool:
-        return self._set_demo_value(consumer_name, export_name, "set_demo_min", value)
+    def set_demo_min(self, participant_name: str, export_name: str, value: float) -> bool:
+        return self._set_demo_value(participant_name, export_name, "set_demo_min", value)
 
-    def set_demo_max(self, consumer_name: str, export_name: str, value: float) -> bool:
-        return self._set_demo_value(consumer_name, export_name, "set_demo_max", value)
+    def set_demo_max(self, participant_name: str, export_name: str, value: float) -> bool:
+        return self._set_demo_value(participant_name, export_name, "set_demo_max", value)
 
-    def set_demo_speed(self, consumer_name: str, export_name: str, value: float) -> bool:
-        return self._set_demo_value(consumer_name, export_name, "set_demo_speed", value)
+    def set_demo_speed(self, participant_name: str, export_name: str, value: float) -> bool:
+        return self._set_demo_value(participant_name, export_name, "set_demo_speed", value)
 
-    def _binding(self, consumer_name: str, export_name: str):
-        return self._facts.bindings_for(consumer_name).get(export_name)
+    def _binding(self, participant_name: str, export_name: str):
+        return self._facts.bindings_for(participant_name).get(export_name)
 
-    def _provider(self, consumer_name: str, export_name: str):
-        binding = self._binding(consumer_name, export_name)
+    def _provider(self, participant_name: str, export_name: str):
+        binding = self._binding(participant_name, export_name)
         return binding.provider if binding is not None else None
 
     @staticmethod
@@ -156,8 +204,8 @@ class _BoundProviderControls:
         getter = getattr(provider, name, None)
         return _float_or_zero(getter()) if callable(getter) else 0.0
 
-    def _set_demo_value(self, consumer_name: str, export_name: str, name: str, value: float) -> bool:
-        provider = self._provider(consumer_name, export_name)
+    def _set_demo_value(self, participant_name: str, export_name: str, name: str, value: float) -> bool:
+        provider = self._provider(participant_name, export_name)
         setter = getattr(provider, name, None) if provider is not None else None
         if not callable(setter):
             return False
@@ -168,7 +216,7 @@ class _BoundProviderControls:
 class _PluginBindingStore:
     """Internal backing store for runtime participation facts."""
 
-    def __init__(self, exports: ExportRegistry) -> None:
+    def __init__(self, exports: _ExportRegistry) -> None:
         self._exports = exports
         self._providers: dict[str, ProviderRuntimeHandle] = {}
         self._bindings_by_participant: dict[str, ParticipantBindingSet] = {}
@@ -188,9 +236,9 @@ class _PluginBindingStore:
         self._exports.register_many(provider_name, exports, provider)
         return handle
 
-    def bind_consumer(
+    def bind_participant(
         self,
-        consumer_name: str,
+        participant_name: str,
         requires: tuple[str, ...],
         provider_requests: tuple[ProviderRequest, ...] = (),
     ) -> ParticipantBindingSet:
@@ -209,12 +257,12 @@ class _PluginBindingStore:
             )
 
         binding_set = ParticipantBindingSet(
-            participant_name=consumer_name,
+            participant_name=participant_name,
             requires=requires,
             resolved=resolved,
             missing=tuple(missing),
         )
-        self._bindings_by_participant[consumer_name] = binding_set
+        self._bindings_by_participant[participant_name] = binding_set
         return binding_set
 
     def provider(self, provider_name: str) -> ProviderRuntimeHandle | None:
@@ -226,17 +274,17 @@ class _PluginBindingStore:
     def provider_items(self) -> list[tuple[str, ProviderRuntimeHandle]]:
         return list(self._providers.items())
 
-    def bindings_for(self, consumer_name: str) -> ParticipantBindingSet:
+    def bindings_for(self, participant_name: str) -> ParticipantBindingSet:
         return self._bindings_by_participant.get(
-            consumer_name,
-            ParticipantBindingSet(participant_name=consumer_name, requires=()),
+            participant_name,
+            ParticipantBindingSet(participant_name=participant_name, requires=()),
         )
 
     def _select_provider(
         self,
         export_name: str,
         request: ProviderRequest | None,
-    ) -> ExportProvider | None:
+    ) -> _ExportProvider | None:
         provider = self._exports.provider_for(export_name)
         if provider is None:
             return None
@@ -255,8 +303,8 @@ class _PluginBindingStore:
 class PluginParticipationFacts:
     """Expose plugin/provider binding facts through the canonical runtime seam."""
 
-    def __init__(self, exports: ExportRegistry) -> None:
-        self._store = _PluginBindingStore(exports)
+    def __init__(self) -> None:
+        self._store = _PluginBindingStore(_ExportRegistry())
         self.controls = _BoundProviderControls(self)
 
     def register_provider(
@@ -267,13 +315,13 @@ class PluginParticipationFacts:
     ) -> ProviderRuntimeHandle:
         return self._store.register_provider(provider_name, provider, exports)
 
-    def bind_consumer(
+    def bind_participant(
         self,
-        consumer_name: str,
+        participant_name: str,
         requires: tuple[str, ...],
         provider_requests=(),
     ) -> ParticipantBindingSet:
-        return self._store.bind_consumer(consumer_name, requires, provider_requests)
+        return self._store.bind_participant(participant_name, requires, provider_requests)
 
     def provider(self, provider_name: str) -> ProviderRuntimeHandle | None:
         return self._store.provider(provider_name)
@@ -284,5 +332,13 @@ class PluginParticipationFacts:
     def provider_items(self) -> list[tuple[str, ProviderRuntimeHandle]]:
         return self._store.provider_items()
 
-    def bindings_for(self, consumer_name: str) -> ParticipantBindingSet:
-        return self._store.bindings_for(consumer_name)
+    def bindings_for(self, participant_name: str) -> ParticipantBindingSet:
+        return self._store.bindings_for(participant_name)
+
+    def exports_for(
+        self,
+        participant_name: str,
+        requires: tuple[str, ...],
+    ) -> ParticipantExports:
+        """Return a resolved export view scoped to one participant."""
+        return ParticipantExports(self, participant_name, requires)

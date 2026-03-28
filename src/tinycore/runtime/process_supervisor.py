@@ -76,14 +76,14 @@ class ProcessSupervisor:
             registry.set_pid(handle.unit_id, handle.pid)
             registry.set_state(handle.unit_id, handle.state)
 
-    def spawn_consumer_plugin(
+    def spawn_plugin_subprocess(
         self,
         spec: ConsumerRuntimeSpec,
         *,
         extra_paths: list[str],
     ) -> SpawnedProcessHandle:
         """Create the subprocess and return the live transport handle."""
-        from tinycore.runtime.plugins import runner
+        from tinycore.runtime.plugins import subprocess_entry
 
         unit_id = plugin_process_unit_id(spec.name)
         if self._registry is not None:
@@ -106,7 +106,7 @@ class ProcessSupervisor:
 
         parent_conn, child_conn = mp.Pipe(duplex=True)
         process = mp.Process(
-            target=runner.run,
+            target=subprocess_entry.run,
             args=(
                 child_conn,
                 spec.module,

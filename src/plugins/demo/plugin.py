@@ -18,9 +18,9 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""DemoPlugin — consumer-side development plugin.
+"""DemoPlugin — development plugin for the subprocess participation path.
 
-The demo plugin is intended to become the reference shape for a consumer-side
+The demo plugin is intended to become the reference shape for a plugin-side
 plugin:
 1. register local config data
 2. register editor definitions
@@ -74,7 +74,7 @@ DEFAULT_COMPOUNDS = {
 
 
 class DemoPlugin:
-    """Development consumer plugin — registers config and editors."""
+    """Development plugin — registers config and editors."""
 
     name = "demo"
 

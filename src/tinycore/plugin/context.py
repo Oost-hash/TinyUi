@@ -18,61 +18,22 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""PluginContext — scoped application context for a single plugin.
-
-Each plugin receives a PluginContext instead of the full host composition, creating
-a VLAN-like boundary: plugins share scoped host services without seeing
-the host's internal registries or stores.
-"""
+"""Stable plugin-facing context built from the runtime participation seam."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from tinycore.runtime.plugins.exports import ExportBinding
+    from tinycore.runtime.plugins.exports import ParticipantExports
     from tinycore.runtime.plugins.facts import PluginParticipationFacts
     from tinycore.services import PersistenceServices
     from tinyui_schema import EditorRegistry
     from tinyui_schema import SettingsSpec
 
 
-class ScopedExports:
-    """Export bindings scoped to one plugin participant."""
-
-    def __init__(
-        self,
-        participation: PluginParticipationFacts,
-        plugin_name: str,
-        required: tuple[str, ...],
-    ) -> None:
-        self._participation = participation
-        self._plugin_name = plugin_name
-        self._required = required
-
-    def required(self) -> tuple[str, ...]:
-        """Declared capability requirements for this plugin."""
-        return self._required
-
-    def all(self) -> dict[str, ExportBinding]:
-        """All resolved bindings currently known for this plugin."""
-        return dict(self._participation.bindings_for(self._plugin_name).resolved)
-
-    def get(self, export_name: str) -> ExportBinding | None:
-        """Resolve an exported surface if it was declared by this plugin."""
-        if export_name not in self._required:
-            raise KeyError(f"Export '{export_name}' was not declared in requires")
-        return self._participation.bindings_for(self._plugin_name).get(export_name)
-
-    def require(self, export_name: str) -> ExportBinding:
-        """Resolve a declared export or raise KeyError."""
-        if export_name not in self._required:
-            raise KeyError(f"Export '{export_name}' was not declared in requires")
-        return self._participation.bindings_for(self._plugin_name).require(export_name)
-
-
-class ScopedSettings:
-    """Settings registry scoped to one plugin — no cross-plugin access."""
+class PluginSettings:
+    """Settings access scoped to one plugin."""
 
     def __init__(self, persistence: PersistenceServices, plugin_name: str) -> None:
         self._persistence = persistence
@@ -88,8 +49,8 @@ class ScopedSettings:
         self._persistence.set_setting(self._name, key, value)
 
 
-class ScopedConfig:
-    """Plugin-scoped config document access."""
+class PluginConfig:
+    """Config document access scoped to one plugin."""
 
     def __init__(self, persistence: PersistenceServices, plugin_name: str) -> None:
         self._persistence = persistence
@@ -114,7 +75,7 @@ class ScopedConfig:
         self._persistence.update_config(key, value)
 
 
-class ScopedEditors:
+class PluginEditors:
     """Editor registration scoped to one plugin."""
 
     def __init__(self, registry: EditorRegistry) -> None:
@@ -125,12 +86,9 @@ class ScopedEditors:
 
 
 class PluginContext:
-    """Scoped application context for a single plugin.
+    """Stable plugin API surface for scoped host and runtime access."""
 
-    Plugins receive this instead of the full host composition. Scoped services such as
-    settings, config loading, and exports are exposed directly, while
-    the host keeps ownership of its runtime internals.
-    """
+    exports: "ParticipantExports"
 
     def __init__(
         self,
@@ -141,8 +99,7 @@ class PluginContext:
         requires: tuple[str, ...] = (),
     ) -> None:
         self.name = plugin_name
-        self.settings = ScopedSettings(persistence, plugin_name)
-        self.config = ScopedConfig(persistence, plugin_name)
-        self.loaders = self.config
-        self.exports = ScopedExports(participation, plugin_name, requires)
-        self.editors = ScopedEditors(editors)
+        self.settings = PluginSettings(persistence, plugin_name)
+        self.config = PluginConfig(persistence, plugin_name)
+        self.exports = participation.exports_for(plugin_name, requires)
+        self.editors = PluginEditors(editors)

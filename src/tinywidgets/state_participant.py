@@ -18,21 +18,22 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""Widget runners — update participants driven by the runtime update loop."""
+
+"""Widget state derivation participants driven by the runtime update loop."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from numbers import Real
-from typing import cast
-from typing import Callable
+from typing import Callable, cast
 
 from tinycore.logging import get_logger
 from tinycore.runtime.plugins.facts import PluginParticipationFacts
-from .flash import FlashState
+
 from .fields import read_field
-from .threshold import evaluate
+from .flash import FlashState
 from .spec import WidgetSpec
+from .threshold import evaluate
 
 _FALLBACK_COLOR = "#E0E0E0"
 _log = get_logger(__name__)
@@ -40,58 +41,51 @@ _log = get_logger(__name__)
 
 def _binding_for_widget(
     participation: PluginParticipationFacts,
-    consumer_name: str,
+    participant_name: str,
     spec: WidgetSpec,
 ):
-    """Resolve the provider binding used by a widget."""
-    bindings = participation.bindings_for(consumer_name)
+    """Resolve the provider binding used by a widget state participant."""
+    bindings = participation.bindings_for(participant_name)
     return bindings.require(spec.capability)
 
 
-# ---------------------------------------------------------------------------
-
-
 @dataclass
-class WidgetState:
-    text:         str
-    color:        str
-    visible:      bool   # whole widget on/off (e.g. session inactive)
-    text_visible: bool   # value text on/off (flash effect)
-    label:        str
-    flash_target: str = "value"  # "value" | "text" | "widget"
+class WidgetDisplayState:
+    text: str
+    color: str
+    visible: bool
+    text_visible: bool
+    label: str
+    flash_target: str = "value"
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, WidgetState):
+        if not isinstance(other, WidgetDisplayState):
             return False
-        return (self.text         == other.text
-                and self.color        == other.color
-                and self.visible      == other.visible
-                and self.text_visible == other.text_visible
-                and self.flash_target == other.flash_target)
+        return (
+            self.text == other.text
+            and self.color == other.color
+            and self.visible == other.visible
+            and self.text_visible == other.text_visible
+            and self.flash_target == other.flash_target
+        )
 
 
-# ---------------------------------------------------------------------------
-
-
-class TextWidgetRunner:
-    """Reads one telemetry value per tick and emits a WidgetState when it changes.
-
-    Register with PollLoop after ProviderUpdater so widget reads happen after provider refresh.
-    """
+class WidgetStateParticipant:
+    """Derive one widget display state from refreshed runtime participation data."""
 
     def __init__(
         self,
-        spec:          WidgetSpec,
+        spec: WidgetSpec,
         participation: PluginParticipationFacts,
-        consumer_name: str,
-        on_update:     Callable[[WidgetState], None],
+        participant_name: str,
+        emit_state: Callable[[WidgetDisplayState], None],
     ) -> None:
         self._spec = spec
         self._participation = participation
-        self._consumer_name = consumer_name
-        self._on_update = on_update
+        self._participant_name = participant_name
+        self._emit_state = emit_state
         self._flash = FlashState()
-        self._last: WidgetState | None = None
+        self._last: WidgetDisplayState | None = None
         self._missing_logged = False
 
     @staticmethod
@@ -103,14 +97,14 @@ class TextWidgetRunner:
         try:
             binding = _binding_for_widget(
                 self._participation,
-                self._consumer_name,
+                self._participant_name,
                 self._spec,
             )
         except KeyError as exc:
             if not self._missing_logged:
                 _log.warning(
-                    "widget binding missing  consumer=%s  widget=%s  capability=%s  error=%s",
-                    self._consumer_name,
+                    "widget binding missing  participant=%s  widget=%s  capability=%s  error=%s",
+                    self._participant_name,
                     self._spec.id,
                     self._spec.capability,
                     str(exc),
@@ -121,7 +115,7 @@ class TextWidgetRunner:
         try:
             if self._provider_mode(binding.provider) == "inactive":
                 self._flash.reset()
-                state = WidgetState(
+                state = WidgetDisplayState(
                     text="",
                     color=_FALLBACK_COLOR,
                     visible=False,
@@ -131,7 +125,7 @@ class TextWidgetRunner:
                 )
                 if state != self._last:
                     self._last = state
-                    self._on_update(state)
+                    self._emit_state(state)
                 return
 
             raw_value = read_field(self._spec.capability, self._spec.field, binding.provider)
@@ -148,8 +142,11 @@ class TextWidgetRunner:
 
             active = (
                 next(
-                    (e for e in sorted(self._spec.thresholds, key=lambda e: e.value)
-                     if raw_number is not None and raw_number <= e.value),
+                    (
+                        entry
+                        for entry in sorted(self._spec.thresholds, key=lambda entry: entry.value)
+                        if raw_number is not None and raw_number <= entry.value
+                    ),
                     None,
                 )
                 if raw_number is not None
@@ -164,9 +161,14 @@ class TextWidgetRunner:
                 self._flash.reset()
                 text_visible = True
 
-            state = WidgetState(text=text, color=color, visible=True,
-                                text_visible=text_visible, label=self._spec.label,
-                                flash_target=flash_target)
+            state = WidgetDisplayState(
+                text=text,
+                color=color,
+                visible=True,
+                text_visible=text_visible,
+                label=self._spec.label,
+                flash_target=flash_target,
+            )
             if state != self._last:
                 self._last = state
                 _log.widget(
@@ -177,7 +179,7 @@ class TextWidgetRunner:
                     color=color,
                     text_visible=text_visible,
                 )
-                self._on_update(state)
+                self._emit_state(state)
 
         except Exception as exc:
-            _log.warning("tick error for %r: %s", self._spec.id, exc)
+            _log.warning("widget state derivation error for %r: %s", self._spec.id, exc)

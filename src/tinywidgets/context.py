@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""WidgetContext and WidgetModel — Qt bridge between runners and QML.
+"""WidgetContext and WidgetModel — Qt bridge between update participants and QML.
 
 WidgetContext   — one QObject per widget, exposes live state as QML properties.
 WidgetModel     — holds all contexts, exposes them as a QVariantList for Repeater.
@@ -40,15 +40,15 @@ from PySide6.QtCore import (
     Slot,
 )
 
-from .runner import WidgetState
 from .spec import WidgetSpec
+from .state_participant import WidgetDisplayState
 from .threshold import ThresholdEntry
 
 
 class WidgetContext(QObject):
     """Live state of one widget, exposed as QML properties.
 
-    The runner calls update() whenever state changes.
+    The state participant calls update() whenever state changes.
     QML binds to text, color, visible, label, widgetX, widgetY, thresholds, etc.
     """
 
@@ -61,13 +61,13 @@ class WidgetContext(QObject):
         self,
         spec: WidgetSpec,
         controls: Any,
-        consumer_name: str,
+        participant_name: str,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._spec         = spec
         self._controls     = controls
-        self._consumer_name = consumer_name
+        self._participant_name = participant_name
         self._text         = ""
         self._color        = "#E0E0E0"
         self._enabled      = spec.enable
@@ -75,12 +75,12 @@ class WidgetContext(QObject):
         self._text_visible = True
         self._flash_target = "value"
         self._demo_requested = False
-        self._demo_owner = f"widget-settings:{consumer_name}:{spec.id}"
+        self._demo_owner = f"widget-settings:{participant_name}:{spec.id}"
 
     def _provider_name(self) -> str:
-        return self._controls.provider_name_for(self._consumer_name, self._spec.capability)
+        return self._controls.provider_name_for(self._participant_name, self._spec.capability)
 
-    def update(self, state: WidgetState) -> None:
+    def update(self, state: WidgetDisplayState) -> None:
         self._text         = state.text
         self._color        = state.color
         self._runtime_visible = state.visible
@@ -169,7 +169,9 @@ class WidgetContext(QObject):
     def requestDemo(self) -> None:
         if not self._provider_name() or not self.supportsDemoMode or self._demo_requested:
             return
-        if not self._controls.request_demo_mode(self._consumer_name, self._spec.capability, self._demo_owner):
+        if not self._controls.request_demo_mode(
+            self._participant_name, self._spec.capability, self._demo_owner
+        ):
             return
         self._demo_requested = True
         self.demoChanged.emit()
@@ -178,26 +180,30 @@ class WidgetContext(QObject):
     def releaseDemo(self) -> None:
         if not self._provider_name() or not self._demo_requested:
             return
-        if not self._controls.release_demo_mode(self._consumer_name, self._spec.capability, self._demo_owner):
+        if not self._controls.release_demo_mode(
+            self._participant_name, self._spec.capability, self._demo_owner
+        ):
             return
         self._demo_requested = False
         self.demoChanged.emit()
 
     @Slot(float)
     def setDemoMin(self, value: float) -> None:
-        if not self._controls.set_demo_min(self._consumer_name, self._spec.capability, value):
+        if not self._controls.set_demo_min(self._participant_name, self._spec.capability, value):
             return
         self.demoChanged.emit()
 
     @Slot(float)
     def setDemoMax(self, value: float) -> None:
-        if not self._controls.set_demo_max(self._consumer_name, self._spec.capability, value):
+        if not self._controls.set_demo_max(self._participant_name, self._spec.capability, value):
             return
         self.demoChanged.emit()
 
     @Slot(float)
     def setDemoSpeed(self, value: float) -> None:
-        if not self._controls.set_demo_speed(self._consumer_name, self._spec.capability, value):
+        if not self._controls.set_demo_speed(
+            self._participant_name, self._spec.capability, value
+        ):
             return
         self.demoChanged.emit()
 
@@ -259,7 +265,7 @@ class WidgetContext(QObject):
 
     @Property(bool, notify=demoChanged)
     def supportsDemoMode(self) -> bool:
-        return self._controls.supports_demo_mode(self._consumer_name, self._spec.capability)
+        return self._controls.supports_demo_mode(self._participant_name, self._spec.capability)
 
     @Property(bool, notify=demoChanged)
     def demoRequested(self) -> bool:
@@ -267,11 +273,11 @@ class WidgetContext(QObject):
 
     @Property(str, notify=demoChanged)
     def providerMode(self) -> str:
-        return self._controls.provider_mode(self._consumer_name, self._spec.capability)
+        return self._controls.provider_mode(self._participant_name, self._spec.capability)
 
     @Property(str, notify=demoChanged)
     def activeGame(self) -> str:
-        return self._controls.active_game(self._consumer_name, self._spec.capability)
+        return self._controls.active_game(self._participant_name, self._spec.capability)
 
     @Property(float, notify=demoChanged)
     def demoMin(self) -> float:
@@ -286,7 +292,7 @@ class WidgetContext(QObject):
         return self._demo_config().speed
 
     def _demo_config(self):
-        return self._controls.demo_config(self._consumer_name, self._spec.capability)
+        return self._controls.demo_config(self._participant_name, self._spec.capability)
 
     # ── User-editable config properties ──────────────────────────────────────
 

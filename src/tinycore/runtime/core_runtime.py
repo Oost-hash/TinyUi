@@ -33,8 +33,8 @@ from tinycore.services import HostServices, RuntimeServices
 
 from .host_workers import HostWorkerSupervisor
 from .models import RuntimeActivationPolicy, RuntimeExecutionPolicy, RuntimeState, RuntimeUnitInfo, RuntimeUnitSpec
-from .plugins.lifecycle import PluginActivationManager
-from .provider_activity import ProviderActivity
+from .plugins.activation import PluginActivationManager
+from .plugins.provider_activity import ProviderActivity
 from .process_supervisor import ProcessSupervisor
 from .registry import RuntimeRegistry
 from .scheduler import RuntimeScheduler
@@ -50,6 +50,8 @@ from .unit_ids import (
 class _OverlayLike(Protocol):
     @property
     def update_interval_ms(self) -> int: ...
+
+    def update_participants(self) -> tuple[tuple[str, str], ...]: ...
 
     def start(self) -> None: ...
     def stop(self) -> None: ...
@@ -71,7 +73,7 @@ class CoreRuntime:
     host: HostServices
     runtime: RuntimeServices
     stop_runtime: Callable[[], None]
-    lifecycle: PluginActivationManager
+    activation: PluginActivationManager
     process_supervisor: ProcessSupervisor
     provider_activity: ProviderActivity
     scheduler: RuntimeScheduler
@@ -145,7 +147,7 @@ class CoreRuntime:
 
 def build_runtime_registry(
     runtime: RuntimeServices,
-    lifecycle: PluginActivationManager,
+    activation: PluginActivationManager,
     process_supervisor: ProcessSupervisor,
     provider_activity: ProviderActivity,
     overlay: _OverlayLike,
@@ -243,9 +245,9 @@ def build_runtime_registry(
     )
     registry.declare(
         RuntimeUnitSpec(
-            id=boot_phase_unit_id("register_consumers"),
+            id=boot_phase_unit_id("register_participants"),
             kind="adapter",
-            role="boot.register_consumers",
+            role="boot.register_participants",
             owner="tinycore.runtime",
             transport="host",
             parent_id="host.main",
@@ -259,7 +261,7 @@ def build_runtime_registry(
             schedule_clock="host",
             schedule_driver="runtime.boot",
         ),
-        state=_boot_state("register_consumers"),
+        state=_boot_state("register_participants"),
     )
     registry.declare(
         RuntimeUnitSpec(
@@ -323,9 +325,9 @@ def build_runtime_registry(
     )
     registry.declare(
         RuntimeUnitSpec(
-            id=boot_phase_unit_id("bind_consumers"),
+            id=boot_phase_unit_id("bind_participants"),
             kind="adapter",
-            role="boot.bind_consumers",
+            role="boot.bind_participants",
             owner="tinycore.runtime",
             transport="host",
             parent_id="host.main",
@@ -339,7 +341,7 @@ def build_runtime_registry(
             schedule_clock="host",
             schedule_driver="runtime.boot",
         ),
-        state=_boot_state("bind_consumers"),
+        state=_boot_state("bind_participants"),
     )
     registry.declare(
         RuntimeUnitSpec(
@@ -456,7 +458,7 @@ def build_runtime_registry(
             schedule_kind="grace",
             schedule_clock="thread",
             schedule_driver="runtime.scheduler",
-            delay_ms=lifecycle.grace_period_ms,
+            delay_ms=activation.grace_period_ms,
         )
     )
 
@@ -508,7 +510,7 @@ def build_runtime_registry(
                 depends_on=("host.main",),
                 schedule_kind="manual",
                 schedule_clock="host",
-                schedule_driver="tinycore.runtime.plugins.provider",
+                schedule_driver="tinycore.runtime.plugins.participants",
             ),
             state=provider_state,
         )
@@ -529,14 +531,14 @@ def build_runtime_registry(
                     depends_on=(runtime_unit_id,),
                     schedule_kind="manual",
                     schedule_clock="host",
-                    schedule_driver="tinycore.runtime.plugins.provider",
+                    schedule_driver="tinycore.runtime.plugins.participants",
                 ),
                 state=provider_state,
             )
 
     supervised_infos = {info.plugin_name: info for info in process_supervisor.infos()}
-    active_participants = set(lifecycle.active_participant_names())
-    for participant in runtime.plugin_runtime.participants:
+    active_participants = set(activation.active_participant_names())
+    for participant in runtime.plugin_runtime.registered_participants:
         process_info = supervised_infos.get(participant.name)
         pid = process_info.pid if process_info is not None else None
         process_state = process_info.state if process_info is not None else "declared"

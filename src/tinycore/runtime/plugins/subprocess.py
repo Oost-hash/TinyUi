@@ -19,28 +19,22 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime-owned plugin participation."""
+"""Runtime-owned subprocess execution for plugin participation."""
 
 from __future__ import annotations
 
 import sys
-from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING
 
-from tinycore.plugin.manifest import PluginManifest, ProviderRequest
 from tinycore.plugin.spec import ConsumerRuntimeSpec
-from tinycore.runtime.provider_activity import ProviderActivity
 
 if TYPE_CHECKING:
     from tinycore.plugin.context import PluginContext
     from tinycore.runtime.process_supervisor import ProcessSupervisor, SpawnedProcessHandle
-    from tinycore.services import RuntimeServices
-    from .facts import ParticipantBindingSet
 
 
 class SubprocessPlugin:
-    """Host-side runtime participant for a subprocess-isolated consumer plugin."""
+    """Host-side subprocess execution for one plugin-declared subprocess runtime."""
 
     def __init__(self, spec: ConsumerRuntimeSpec, *, process_supervisor: "ProcessSupervisor") -> None:
         self._spec = spec
@@ -53,12 +47,10 @@ class SubprocessPlugin:
 
     @property
     def pid(self) -> int | None:
-        """Return the child PID when the subprocess has been spawned."""
         return self._handle.pid if self._handle is not None else None
 
     def register(self, ctx: PluginContext) -> None:
-        """Spawn the plugin subprocess and collect its registrations."""
-        self._handle = self._process_supervisor.spawn_consumer_plugin(
+        self._handle = self._process_supervisor.spawn_plugin_subprocess(
             self._spec,
             extra_paths=list(sys.path),
         )
@@ -124,77 +116,17 @@ class SubprocessPlugin:
                 self._handle = None
 
     def _dispatch(self, msg: dict, ctx: PluginContext) -> None:
-        """Route a registration message from the subprocess to the host registries."""
         t = msg["type"]
 
         if t == "settings.register":
             ctx.settings.register(msg["spec"])
         elif t == "editors.register":
             ctx.editors.register(msg["spec"])
-        elif t == "loaders.register":
+        elif t == "config.register":
             ctx.config.register(msg["key"], msg["filename"], msg.get("defaults"))
-        elif t == "loaders.load_all":
+        elif t == "config.load_all":
             ctx.config.load_all()
-        elif t == "loaders.load":
+        elif t == "config.load":
             ctx.config.load(msg["key"])
-        elif t == "loaders.save":
+        elif t == "config.save":
             ctx.config.save(msg["key"])
-
-
-@dataclass(frozen=True)
-class PluginParticipant:
-    """Runtime-owned plugin participant plus its static declaration data."""
-
-    manifest: PluginManifest
-    plugin: SubprocessPlugin
-
-    @property
-    def name(self) -> str:
-        return self.manifest.name
-
-    @property
-    def requires(self) -> tuple[str, ...]:
-        return self.manifest.requires
-
-    @property
-    def provider_requests(self) -> tuple[ProviderRequest, ...]:
-        return self.manifest.provider_requests
-
-    def widgets_path(self) -> Path | None:
-        return self.manifest.widgets_path()
-
-    def bind(
-        self,
-        runtime: "RuntimeServices",
-        provider_activity: ProviderActivity,
-    ) -> "ParticipantBindingSet":
-        """Resolve and store runtime export bindings for this participant."""
-        bindings = runtime.plugin_facts.bind_consumer(
-            self.name,
-            self.requires,
-            self.provider_requests,
-        )
-        provider_activity.bindings_changed(self.name)
-        return bindings
-
-
-def build_plugin_participants(
-    manifests: list[PluginManifest],
-    *,
-    process_supervisor: "ProcessSupervisor",
-) -> list[PluginParticipant]:
-    """Build live plugin participants from manifests for runtime composition."""
-    participants: list[PluginParticipant] = []
-    for manifest in manifests:
-        if not manifest.is_consumer:
-            continue
-        participants.append(
-            PluginParticipant(
-                manifest=manifest,
-                plugin=SubprocessPlugin(
-                    manifest.consumer_runtime_spec(),
-                    process_supervisor=process_supervisor,
-                ),
-            )
-        )
-    return participants

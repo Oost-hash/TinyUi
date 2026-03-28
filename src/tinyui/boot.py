@@ -32,8 +32,8 @@ from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
 from tinycore.runtime.boot import HostAssembly, HostOverlayBuild, HostStateMonitorBuild
 from tinycore.runtime.core_runtime import CoreRuntime
-from tinycore.runtime.plugins.consumer import PluginParticipant
-from tinycore.runtime.provider_activity import ProviderActivity
+from tinycore.runtime.plugins.provider_activity import ProviderActivity
+from tinycore.runtime.plugins.participants import PluginParticipant
 from tinywidgets.overlay import WidgetOverlay
 from tinywidgets.spec import load_widgets_toml
 

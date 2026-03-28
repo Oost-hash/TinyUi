@@ -55,6 +55,7 @@ class _RuntimeRow:
     execution: str
     transport: str
     driver: str
+    stage: str
     schedule: str
     clock: str
     interval_ms: str
@@ -77,15 +78,16 @@ class _RuntimeRowsModel(QAbstractListModel):
     ExecutionRole = int(Qt.ItemDataRole.UserRole) + 8
     TransportRole = int(Qt.ItemDataRole.UserRole) + 9
     DriverRole = int(Qt.ItemDataRole.UserRole) + 10
-    ScheduleRole = int(Qt.ItemDataRole.UserRole) + 11
-    ClockRole = int(Qt.ItemDataRole.UserRole) + 12
-    IntervalMsRole = int(Qt.ItemDataRole.UserRole) + 13
-    DelayMsRole = int(Qt.ItemDataRole.UserRole) + 14
-    PidRole = int(Qt.ItemDataRole.UserRole) + 15
-    ParentRole = int(Qt.ItemDataRole.UserRole) + 16
-    DepthRole = int(Qt.ItemDataRole.UserRole) + 17
-    HasChildrenRole = int(Qt.ItemDataRole.UserRole) + 18
-    ExpandedRole = int(Qt.ItemDataRole.UserRole) + 19
+    StageRole = int(Qt.ItemDataRole.UserRole) + 11
+    ScheduleRole = int(Qt.ItemDataRole.UserRole) + 12
+    ClockRole = int(Qt.ItemDataRole.UserRole) + 13
+    IntervalMsRole = int(Qt.ItemDataRole.UserRole) + 14
+    DelayMsRole = int(Qt.ItemDataRole.UserRole) + 15
+    PidRole = int(Qt.ItemDataRole.UserRole) + 16
+    ParentRole = int(Qt.ItemDataRole.UserRole) + 17
+    DepthRole = int(Qt.ItemDataRole.UserRole) + 18
+    HasChildrenRole = int(Qt.ItemDataRole.UserRole) + 19
+    ExpandedRole = int(Qt.ItemDataRole.UserRole) + 20
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -124,6 +126,8 @@ class _RuntimeRowsModel(QAbstractListModel):
             return row.transport
         if role == self.DriverRole:
             return row.driver
+        if role == self.StageRole:
+            return row.stage
         if role == self.ScheduleRole:
             return row.schedule
         if role == self.ClockRole:
@@ -156,6 +160,7 @@ class _RuntimeRowsModel(QAbstractListModel):
             self.ExecutionRole: QByteArray(b"execution"),
             self.TransportRole: QByteArray(b"transport"),
             self.DriverRole: QByteArray(b"driver"),
+            self.StageRole: QByteArray(b"stage"),
             self.ScheduleRole: QByteArray(b"schedule"),
             self.ClockRole: QByteArray(b"clock"),
             self.IntervalMsRole: QByteArray(b"intervalMs"),
@@ -235,6 +240,7 @@ class RuntimeViewModel(QObject):
                 "execution": self._display_execution(unit.execution_policy, unit.role),
                 "transport": unit.transport,
                 "driver": unit.schedule_driver or "",
+                "stage": unit.schedule_stage or "",
                 "schedule": unit.schedule_kind,
                 "clock": unit.schedule_clock,
                 "intervalMs": "" if unit.interval_ms is None else str(unit.interval_ms),
@@ -365,6 +371,7 @@ class RuntimeViewModel(QObject):
                     execution=str(unit["execution"]),
                     transport=str(unit["transport"]),
                     driver=str(unit["driver"]),
+                    stage=str(unit["stage"]),
                     schedule=str(unit["schedule"]),
                     clock=str(unit["clock"]),
                     interval_ms=str(unit["intervalMs"]),
@@ -498,6 +505,8 @@ class RuntimeViewModel(QObject):
                 details.append(f"transport={unit['transport']}")
             if unit["driver"]:
                 details.append(f"driver={unit['driver']}")
+            if unit["stage"]:
+                details.append(f"stage={unit['stage']}")
             if unit["schedule"]:
                 details.append(f"schedule={unit['schedule']}")
             if unit["clock"]:

@@ -19,12 +19,15 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime-owned export registry and resolved export types."""
+"""Resolved runtime export contracts."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .facts import PluginParticipationFacts
 
 
 @dataclass(frozen=True)
@@ -33,57 +36,38 @@ class ExportBinding:
 
     export_name: str
     provider_name: str
-    provider: Any
+    provider: object
 
 
-@dataclass(frozen=True)
-class ExportProvider:
-    """Registered provider for one exported runtime surface."""
+class ParticipantExports:
+    """Resolved export view scoped to one plugin participant."""
 
-    export_name: str
-    provider_name: str
-    provider: Any
-
-
-class ExportRegistry:
-    """Register exported surfaces and resolve providers by export name."""
-
-    def __init__(self) -> None:
-        self._exports: dict[str, ExportProvider] = {}
-
-    def register(
+    def __init__(
         self,
-        export_name: str,
-        provider_name: str,
-        provider: Any,
+        participation: PluginParticipationFacts,
+        participant_name: str,
+        required: tuple[str, ...],
     ) -> None:
-        """Register one exported surface for a provider."""
-        existing = self._exports.get(export_name)
-        if existing is not None and existing.provider_name != provider_name:
-            raise ValueError(
-                f"Export '{export_name}' is already owned by provider "
-                f"'{existing.provider_name}', cannot also register '{provider_name}'"
-            )
-        self._exports[export_name] = ExportProvider(
-            export_name=export_name,
-            provider_name=provider_name,
-            provider=provider,
-        )
+        self._participation = participation
+        self._participant_name = participant_name
+        self._required = required
 
-    def register_many(
-        self,
-        provider_name: str,
-        export_names: tuple[str, ...],
-        provider: Any,
-    ) -> None:
-        """Register all exported surfaces for one provider."""
-        for export_name in export_names:
-            self.register(export_name, provider_name, provider)
+    def required(self) -> tuple[str, ...]:
+        """Declared export requirements for this participant."""
+        return self._required
 
-    def provider_for(self, export_name: str) -> ExportProvider | None:
-        """Return the registered provider for an exported surface, if any."""
-        return self._exports.get(export_name)
+    def all(self) -> dict[str, ExportBinding]:
+        """All resolved export bindings currently known for this participant."""
+        return dict(self._participation.bindings_for(self._participant_name).resolved)
 
-    def all(self) -> list[ExportProvider]:
-        """Return all registered export-provider pairs."""
-        return list(self._exports.values())
+    def get(self, export_name: str) -> ExportBinding | None:
+        """Resolve an exported surface if it was declared by this participant."""
+        if export_name not in self._required:
+            raise KeyError(f"Export '{export_name}' was not declared in requires")
+        return self._participation.bindings_for(self._participant_name).get(export_name)
+
+    def require(self, export_name: str) -> ExportBinding:
+        """Resolve a declared export or raise KeyError."""
+        if export_name not in self._required:
+            raise KeyError(f"Export '{export_name}' was not declared in requires")
+        return self._participation.bindings_for(self._participant_name).require(export_name)

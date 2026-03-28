@@ -19,15 +19,15 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime-owned provider activation and update coordination."""
+"""Plugin participation-owned provider activation and update coordination."""
 
 from __future__ import annotations
 
 from tinycore.runtime.models import RuntimeState
 from tinycore.runtime.unit_ids import provider_export_unit_id, provider_runtime_unit_id
-from tinycore.runtime.plugins.facts import PluginParticipationFacts
+from tinycore.runtime.registry import RuntimeRegistry
 
-from .registry import RuntimeRegistry
+from .facts import PluginParticipationFacts
 
 
 class ProviderActivity:

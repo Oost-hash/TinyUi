@@ -287,7 +287,7 @@ Item {
 
                 EditRow {
                     label: "Speed"
-                    description: "Sweep speed per poll tick"
+                    description: "Sweep speed per update cycle"
                     NumberStepper {
                         anchors.right: parent.right; anchors.rightMargin: 0
                         anchors.verticalCenter: parent.verticalCenter

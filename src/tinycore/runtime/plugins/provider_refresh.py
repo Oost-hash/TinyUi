@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime-owned provider update loop helpers."""
+"""Plugin participation-owned provider refresh participant."""
 
 from __future__ import annotations
 
@@ -41,15 +41,8 @@ class _StatefulProvider(Protocol):
     state: _ProviderStateLike
 
 
-class ProviderUpdater:
-    """Calls provider.update() once per tick for every active provider runtime.
-
-    Also tracks active/paused state transitions per provider and logs them
-    via the ``connector`` debug category.
-
-        Register this as the first update participant in the runtime update loop so widget
-    runners and other consumers see fresh provider state each cycle.
-    """
+class ProviderRefreshParticipant:
+    """Refresh active providers and log provider state transitions per update cycle."""
 
     def __init__(self, provider_activity: ProviderActivity) -> None:
         self._provider_activity = provider_activity

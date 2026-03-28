@@ -19,31 +19,29 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime-owned registry for live plugin participants."""
+"""Runtime-owned service for live plugin participation."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .consumer import PluginParticipant
+from .participants import PluginParticipant
 
 if TYPE_CHECKING:
-    from tinycore.services import HostServices, RuntimeServices
     from tinycore.plugin.protocol import Plugin
+    from tinycore.services import HostServices, RuntimeServices
 
 
-class PluginRuntimeRegistry:
-    """Stores live plugin participants and orchestrates two-phase init."""
+class PluginParticipationRuntime:
+    """Hold live plugin participants and drive their runtime phases."""
 
     def __init__(self):
         self._participants: list[PluginParticipant] = []
 
-    def add(self, participant: PluginParticipant) -> None:
-        """Add one live plugin participant to the runtime registry."""
+    def add_participant(self, participant: PluginParticipant) -> None:
         self._participants.append(participant)
 
-    def register_all(self, host: HostServices, runtime: RuntimeServices) -> None:
-        """Phase 1: call register() on all plugins with a scoped PluginContext."""
+    def register_participants(self, host: HostServices, runtime: RuntimeServices) -> None:
         from tinycore.plugin.context import PluginContext
 
         for participant in self._participants:
@@ -57,23 +55,12 @@ class PluginRuntimeRegistry:
                 )
             )
 
-    def start_all(self) -> None:
-        """Phase 2: call start() on all plugins in order."""
-        for participant in self._participants:
-            participant.plugin.start()
-
-    def stop_all(self) -> None:
-        """Teardown: call stop() on all plugins in reverse order."""
-        for participant in reversed(self._participants):
-            participant.plugin.stop()
-
-    def get(self, name: str) -> Plugin:
-        """Return the registered live plugin participant with the given name."""
+    def participant_plugin(self, name: str) -> Plugin:
         for participant in self._participants:
             if participant.name == name:
                 return participant.plugin
         raise KeyError(f"Plugin '{name}' not registered")
 
     @property
-    def participants(self) -> list[PluginParticipant]:
+    def registered_participants(self) -> list[PluginParticipant]:
         return list(self._participants)

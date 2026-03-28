@@ -43,6 +43,7 @@ RuntimeState = Literal[
 ]
 RuntimeExecutionPolicy = Literal["host", "subprocess", "thread"]
 RuntimeActivationPolicy = Literal["boot", "always", "warm", "on_demand"]
+RuntimeUpdateStage = Literal["refresh", "derive"]
 
 
 @dataclass(frozen=True)
@@ -64,6 +65,7 @@ class RuntimeUnitSpec:
     schedule_kind: RuntimeScheduleKind = "manual"
     schedule_clock: RuntimeClock = "host"
     schedule_driver: str | None = None
+    schedule_stage: RuntimeUpdateStage | None = None
     interval_ms: int | None = None
     delay_ms: int | None = None
 
@@ -88,5 +90,6 @@ class RuntimeUnitInfo:
     schedule_kind: RuntimeScheduleKind = "manual"
     schedule_clock: RuntimeClock = "host"
     schedule_driver: str | None = None
+    schedule_stage: RuntimeUpdateStage | None = None
     interval_ms: int | None = None
     delay_ms: int | None = None

@@ -38,13 +38,13 @@ from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
 from tinycore.persistence.widget_state import WidgetStateStore
 from tinycore.qt.engine import create_engine
-from tinycore.runtime.provider_activity import ProviderActivity
 from tinycore.runtime.plugins.facts import PluginParticipationFacts
-from tinycore.runtime.poll_loop import RuntimeUpdateLoop
-from tinycore.runtime.provider_updates import ProviderUpdater
+from tinycore.runtime.plugins.provider_activity import ProviderActivity
+from tinycore.runtime.plugins.provider_refresh import ProviderRefreshParticipant
+from tinycore.runtime.update_loop import RuntimeUpdateLoop
 from .context import WidgetContext, WidgetModel, WidgetOverlayState
-from .runner import TextWidgetRunner
 from .spec import WidgetSpec
+from .state_participant import WidgetStateParticipant
 
 _QML_DIR = Path(__file__).resolve().parent / "qml"
 _log = get_logger(__name__)
@@ -68,12 +68,15 @@ class WidgetOverlay:
         self._provider_activity = provider_activity
         self._paths = paths
         self._widget_state_for = widget_state_for
-        self._poll_loop  = RuntimeUpdateLoop(interval_ms=100)
-        self._model      = WidgetModel()
-        self._state      = WidgetOverlayState()
-        self._engine     = None
+        self._update_loop = RuntimeUpdateLoop(interval_ms=100)
+        self._model = WidgetModel()
+        self._state = WidgetOverlayState()
+        self._engine = None
 
-        self._poll_loop.register(ProviderUpdater(provider_activity))
+        self._update_loop.register_refresh_participant(
+            ProviderRefreshParticipant(provider_activity),
+            label="provider.refresh",
+        )
 
     @property
     def model(self) -> WidgetModel:
@@ -88,10 +91,17 @@ class WidgetOverlay:
     @property
     def update_interval_ms(self) -> int:
         """Return the interval of the runtime-owned widget update loop."""
-        return self._poll_loop.interval_ms
+        return self._update_loop.interval_ms
+
+    def update_participants(self) -> tuple[tuple[str, str], ...]:
+        """Expose update participants as (stage, label) pairs for diagnostics."""
+        return tuple(
+            (info.stage, info.label)
+            for info in self._update_loop.participant_infos()
+        )
 
     def load(self, specs: list[WidgetSpec], plugin_name: str) -> None:
-        """Create a runner + context for every enabled widget spec."""
+        """Create a state participant + context for every enabled widget spec."""
         store = self._widget_state_for(plugin_name) if self._widget_state_for is not None else None
 
         for spec in specs:
@@ -120,7 +130,12 @@ class WidgetOverlay:
                         ]
 
             ctx = WidgetContext(spec, self._participation.controls, plugin_name)
-            runner = TextWidgetRunner(spec, self._participation, plugin_name, ctx.update)
+            participant = WidgetStateParticipant(
+                spec,
+                self._participation,
+                plugin_name,
+                ctx.update,
+            )
 
             if store:
                 def _save(cx: WidgetContext = ctx, s: WidgetStateStore = store) -> None:
@@ -137,7 +152,10 @@ class WidgetOverlay:
                 ctx.configChanged.connect(_save)
 
             self._model.add(ctx)
-            self._poll_loop.register(runner)
+            self._update_loop.register_derived_participant(
+                participant,
+                label=f"widget.state:{spec.id}",
+            )
             _log.overlay(
                 "loaded widget",
                 id=spec.id,
@@ -162,12 +180,12 @@ class WidgetOverlay:
         qml_dir = self._paths.qml_dir("tinywidgets") if self._paths is not None else _QML_DIR
         self._engine.load(QUrl.fromLocalFile(str(qml_dir / "WidgetHost.qml")))
         _log.overlay("engine started", widgets=self._model.rowCount())
-        self._poll_loop.start()
+        self._update_loop.start()
 
     def stop(self) -> None:
         if self._engine is None:
             return
         _log.overlay("stopping")
-        self._poll_loop.stop()
+        self._update_loop.stop()
         self._engine.deleteLater()
         self._engine = None

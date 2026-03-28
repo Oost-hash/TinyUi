@@ -77,6 +77,7 @@ def _runtime_unit_snapshot(core: CoreRuntime) -> InspectionSnapshot:
                 (f"{prefix}.schedule.kind", unit.schedule_kind),
                 (f"{prefix}.schedule.clock", unit.schedule_clock),
                 (f"{prefix}.schedule.driver", unit.schedule_driver or ""),
+                (f"{prefix}.schedule.stage", unit.schedule_stage or ""),
                 (f"{prefix}.schedule.intervalMs", "" if unit.interval_ms is None else str(unit.interval_ms)),
                 (f"{prefix}.schedule.delayMs", "" if unit.delay_ms is None else str(unit.delay_ms)),
                 (f"{prefix}.state", unit.state),
@@ -89,7 +90,7 @@ def _runtime_unit_snapshot(core: CoreRuntime) -> InspectionSnapshot:
 
 def _runtime_activation_snapshot(core: CoreRuntime) -> InspectionSnapshot:
     active_providers = ", ".join(core.provider_activity.active_provider_names()) or "-"
-    active_participants = ", ".join(core.lifecycle.active_participant_names()) or "-"
+    active_participants = ", ".join(core.activation.active_participant_names()) or "-"
     return [
         ("participants.active", active_participants),
         ("providers.active", active_providers),
@@ -102,6 +103,23 @@ def _runtime_scheduler_snapshot(core: CoreRuntime) -> InspectionSnapshot:
         ("tasks.count", str(len(task_ids))),
         ("tasks.ids", ", ".join(task_ids) or "-"),
     ]
+
+
+def _runtime_update_snapshot(core: CoreRuntime) -> InspectionSnapshot:
+    entries: InspectionSnapshot = []
+    participants = core.overlay.update_participants()
+    entries.append(("participants.count", str(len(participants))))
+    if not participants:
+        entries.append(("participants", "-"))
+        return entries
+
+    by_stage: dict[str, list[str]] = {}
+    for stage, label in participants:
+        by_stage.setdefault(stage, []).append(label)
+    for stage, labels in by_stage.items():
+        entries.append((f"stage.{stage}.count", str(len(labels))))
+        entries.append((f"stage.{stage}.participants", ", ".join(labels)))
+    return entries
 
 
 def build_runtime_inspector(
@@ -128,15 +146,21 @@ def build_runtime_inspector(
         "runtime",
         lambda: _runtime_scheduler_snapshot(core),
     )
+    runtime_inspector.add_snapshot_source(
+        "runtime:update",
+        "Runtime: Update",
+        "runtime",
+        lambda: _runtime_update_snapshot(core),
+    )
 
-    by_consumer: dict[str, dict[str, list[str]]] = {}
-    for consumer_name, capability, field in widget_sources:
-        by_consumer.setdefault(consumer_name, {}).setdefault(capability, []).append(field)
+    by_participant: dict[str, dict[str, list[str]]] = {}
+    for participant_name, capability, field in widget_sources:
+        by_participant.setdefault(participant_name, {}).setdefault(capability, []).append(field)
 
-    for consumer_name, fields_by_capability in by_consumer.items():
+    for participant_name, fields_by_capability in by_participant.items():
         seen_provider_names: set[str] = set()
         for capability, fields in fields_by_capability.items():
-            binding = core.runtime.plugin_facts.bindings_for(consumer_name).get(capability)
+            binding = core.runtime.plugin_facts.bindings_for(participant_name).get(capability)
             if binding is None:
                 continue
 
@@ -152,8 +176,8 @@ def build_runtime_inspector(
                     seen_provider_names.add(binding.provider_name)
 
             runtime_inspector.add_snapshot_source(
-                f"field:{consumer_name}:{capability}",
-                f"Fields: {consumer_name} [{capability}]",
+                f"field:{participant_name}:{capability}",
+                f"Fields: {participant_name} [{capability}]",
                 "field",
                 lambda capability=capability, provider=binding.provider, fields=list(fields): (
                     _field_snapshot(capability, provider, fields)

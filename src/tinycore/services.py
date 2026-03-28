@@ -33,9 +33,8 @@ from .persistence.config.loader import LoaderRegistry
 from .persistence.config.store import ConfigStore
 from .persistence.settings import SettingsRegistry
 from .persistence.widget_state import WidgetStateRegistry
-from .runtime.plugins.exports import ExportRegistry
 from .runtime.plugins.facts import PluginParticipationFacts
-from .runtime.plugins.registry import PluginRuntimeRegistry
+from .runtime.plugins.participation_runtime import PluginParticipationRuntime
 
 
 class PersistenceServices:
@@ -152,7 +151,7 @@ class RuntimeServices:
     """Runtime-owned participation services."""
 
     plugin_facts: PluginParticipationFacts
-    plugin_runtime: PluginRuntimeRegistry
+    plugin_runtime: PluginParticipationRuntime
 
 
 def build_host_services(paths: AppPaths) -> HostServices:
@@ -165,8 +164,7 @@ def build_host_services(paths: AppPaths) -> HostServices:
 
 def build_runtime_services() -> RuntimeServices:
     """Create the runtime-owned service group for one runtime composition."""
-    exports = ExportRegistry()
     return RuntimeServices(
-        plugin_facts=PluginParticipationFacts(exports),
-        plugin_runtime=PluginRuntimeRegistry(),
+        plugin_facts=PluginParticipationFacts(),
+        plugin_runtime=PluginParticipationRuntime(),
     )

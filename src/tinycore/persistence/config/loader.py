@@ -21,7 +21,7 @@
 
 """JSON-based config loading and saving.
 
-tinycore owns all config I/O. Plugins don't need custom loaders —
+tinycore owns all config I/O. Plugins don't need custom config drivers —
 they provide default data and tinycore handles the rest.
 
 Path layout: config_dir / plugin_name / filename.json

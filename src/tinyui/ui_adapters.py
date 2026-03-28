@@ -58,7 +58,9 @@ def bind_statusbar_plugin_switching(core, statusbar_view_model: object) -> None:
     if not isinstance(statusbar_view_model, QObject):
         return
 
-    plugin_names = [participant.name for participant in core.runtime.plugin_runtime.participants]
+    plugin_names = [
+        participant.name for participant in core.runtime.plugin_runtime.registered_participants
+    ]
     if not plugin_names:
         return
 
@@ -67,7 +69,7 @@ def bind_statusbar_plugin_switching(core, statusbar_view_model: object) -> None:
         if index is None:
             return
         if 0 <= index < len(plugin_names):
-            core.lifecycle.activate(plugin_names[index])
+            core.activation.activate(plugin_names[index])
 
     active_changed = cast(Any, getattr(statusbar_view_model, "activePluginIndexChanged", None))
     if active_changed is not None:
