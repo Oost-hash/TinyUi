@@ -22,6 +22,7 @@
 import QtQuick
 import QtQuick.Layouts
 import TinyUI
+import TinyUI 1.0 as TinyUiModule
 
 Window {
     id: baseDialog
@@ -46,8 +47,8 @@ Window {
     // applyToWindow() retrieves winId() via the Python QWindow API — winId() is not
     // available as a QML method. WindowChromeHelper is idempotent.
     onVisibleChanged: {
-        if (visible && Qt.platform.os === "windows" && typeof WindowChromeHelper !== "undefined")
-            WindowChromeHelper.applyToWindow(baseDialog)
+        if (visible && Qt.platform.os === "windows" && typeof TinyUiModule.WindowChromeHelper !== "undefined")
+            TinyUiModule.WindowChromeHelper.applyToWindow(baseDialog)
     }
 
     // ── Focus-clearer ─────────────────────────────────────────────────────────

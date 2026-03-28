@@ -21,7 +21,6 @@
 
 import QtQuick
 import QtQuick.Window
-import TinyUI
 import TinyWidgets
 
 Window {

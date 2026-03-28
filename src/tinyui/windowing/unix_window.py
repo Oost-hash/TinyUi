@@ -30,16 +30,12 @@ QML initiates drag via DragHandler.onActiveChanged → startMove().
 Resize is initiated from ResizeHandles.qml via startResize(edge).
 """
 
-from PySide6.QtCore import QObject, Qt, Slot
-from PySide6.QtQml import QmlElement, QmlSingleton
+from PySide6.QtCore import Qt, Slot
 
-QML_IMPORT_NAME = "TinyUI"
-QML_IMPORT_MAJOR_VERSION = 1
+from tinyui.windowing.controller_api import WindowController as WindowControllerBase
 
 
-@QmlElement
-@QmlSingleton
-class WindowController(QObject):
+class WindowController(WindowControllerBase):
     """Window control for Linux/Wayland."""
 
     def __init__(self, window, parent=None):

@@ -23,7 +23,8 @@ import os
 import platform as _platform
 import tomllib
 
-from PySide6.QtCore import QObject, Property, Signal
+from PySide6.QtCore import QObject, Property, Signal, Slot
+from PySide6.QtGui import QColor
 from PySide6.QtQml import QmlElement, QmlSingleton
 
 QML_IMPORT_NAME = "TinyUI"
@@ -150,3 +151,9 @@ class Theme(QObject):
 
     @Property(str, notify=changed)
     def info(self): return self._c("info")
+
+    @Slot(str, float, result=str)
+    def withAlpha(self, color: str, alpha: float) -> str:
+        tint = QColor(color)
+        tint.setAlphaF(max(0.0, min(1.0, alpha)))
+        return tint.name(QColor.NameFormat.HexArgb)

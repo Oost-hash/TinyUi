@@ -188,7 +188,7 @@ Item {
                         width: 44; height: 20; radius: 3
                         readonly property bool on: LogSettingsViewModel
                                                    ? LogSettingsViewModel.allCategoriesEnabled : false
-                        color:        on ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18)
+                        color:        on ? Theme.withAlpha(Theme.accent, 0.18)
                                          : "transparent"
                         border.color: on ? Theme.accent : Theme.border
                         border.width: 1
@@ -230,7 +230,7 @@ Item {
 
                             readonly property bool catOn: catChip.modelData.enabled
 
-                            color:        catChip.catOn ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.12)
+                            color:        catChip.catOn ? Theme.withAlpha(Theme.accent, 0.12)
                                                         : "transparent"
                             border.color: catChip.catOn ? Theme.accent : Theme.border
                             border.width: 1

@@ -139,7 +139,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         width: 44; height: 20; radius: 3
                         readonly property bool on: root._vm && root._vm.stateFilters.length === root._vm.availableStateFilters.length
-                        color: on ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18) : "transparent"
+                        color: on ? Theme.withAlpha(Theme.accent, 0.18) : "transparent"
                         border.color: on ? Theme.accent : Theme.border
                         border.width: 1
 
@@ -180,7 +180,7 @@ Item {
 
                             readonly property bool active: root._vm && root._vm.stateFilters.indexOf(filterChip.modelData) >= 0
 
-                            color: filterChip.active ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.12) : "transparent"
+                            color: filterChip.active ? Theme.withAlpha(Theme.accent, 0.12) : "transparent"
                             border.color: filterChip.active ? Theme.accent : Theme.border
                             border.width: 1
 
@@ -258,7 +258,7 @@ Item {
                             anchors.bottom: parent.bottom
                             anchors.right: parent.right
                             width: 6
-                            color: unitResize.containsMouse || unitResize.drag.active ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.22) : "transparent"
+                            color: unitResize.containsMouse || unitResize.drag.active ? Theme.withAlpha(Theme.accent, 0.22) : "transparent"
 
                             MouseArea {
                                 id: unitResize
@@ -325,7 +325,7 @@ Item {
                             anchors.bottom: parent.bottom
                             anchors.right: parent.right
                             width: 6
-                            color: parentResize.containsMouse || parentResize.drag.active ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.22) : "transparent"
+                            color: parentResize.containsMouse || parentResize.drag.active ? Theme.withAlpha(Theme.accent, 0.22) : "transparent"
 
                             MouseArea {
                                 id: parentResize

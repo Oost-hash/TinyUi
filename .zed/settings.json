@@ -1,0 +1,24 @@
+{
+  "file_scan_exclusions": [],
+  "languages": {
+    "Python": {
+      "language_servers": ["basedpyright"]
+    }
+  },
+  "lsp": {
+    "basedpyright": {
+      "binary": {
+        "path": ".venv/Scripts/basedpyright-langserver.exe",
+        "//": "Use the project's venv-based basedpyright so Zed matches our repo config in pyproject.toml.",
+        "arguments": ["--stdio"]
+      }
+    },
+    "qmljs": {
+      "binary": {
+        "path": ".venv/Lib/site-packages/PySide6/qmlls.exe",
+        "//": "Point qmlls at the generated module metadata used by our QML lint flow.",
+        "arguments": ["-I", ".qml_linter"]
+      }
+    }
+  }
+}

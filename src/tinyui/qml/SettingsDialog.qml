@@ -128,7 +128,6 @@ BaseDialog {
                     id: tabList
                     anchors.fill: parent
                     model: CoreViewModel.settingsByPlugin
-                    property var dialog: settingsDialog
 
                     delegate: Rectangle {
                         id: tabItem
@@ -136,23 +135,23 @@ BaseDialog {
                         required property int index
 
                         width: ListView.view.width; height: 40
-                        color: ListView.view.dialog.activeTab === tabItem.index
+                        color: settingsDialog.activeTab === tabItem.index
                             ? Theme.surface : (tabHov.containsMouse ? Theme.surfaceRaised : "transparent")
                         Behavior on color { ColorAnimation { duration: 80 } }
 
                         Rectangle {
                             width: 2; height: parent.height
                             color: Theme.accent
-                            visible: ListView.view.dialog.activeTab === tabItem.index
+                            visible: settingsDialog.activeTab === tabItem.index
                         }
 
                         Text {
                             anchors.left: parent.left; anchors.leftMargin: 16
                             anchors.verticalCenter: parent.verticalCenter
                             text: tabItem.modelData.plugin
-                            color: ListView.view.dialog.activeTab === tabItem.index ? Theme.text : Theme.textMuted
+                            color: settingsDialog.activeTab === tabItem.index ? Theme.text : Theme.textMuted
                             font.pixelSize: Theme.fontSizeBase; font.family: Theme.fontFamily
-                            font.weight: ListView.view.dialog.activeTab === tabItem.index ? Font.DemiBold : Font.Normal
+                            font.weight: settingsDialog.activeTab === tabItem.index ? Font.DemiBold : Font.Normal
                             Behavior on color { ColorAnimation { duration: 80 } }
                         }
 
@@ -162,13 +161,13 @@ BaseDialog {
                             text: "●"; font.pixelSize: 6; font.family: Theme.fontFamily
                             color: Theme.accent
                             visible: {
-                                var pc = ListView.view.dialog.pendingChanges[tabItem.modelData.plugin]
+                                var pc = settingsDialog.pendingChanges[tabItem.modelData.plugin]
                                 return pc ? Object.keys(pc).length > 0 : false
                             }
                         }
 
                         MouseArea { id: tabHov; anchors.fill: parent; hoverEnabled: true
-                            onClicked: ListView.view.dialog.activeTab = tabItem.index }
+                            onClicked: settingsDialog.activeTab = tabItem.index }
                     }
                 }
 
@@ -181,14 +180,12 @@ BaseDialog {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
-                property var dialog: settingsDialog
                 model: CoreViewModel.settingsByPlugin.length > settingsDialog.activeTab
                     ? CoreViewModel.settingsByPlugin[settingsDialog.activeTab].sections : []
 
                 delegate: Column {
                     id: sectionBlock
                     required property var modelData   // { name, settings[] }
-                    readonly property var _dialog: ListView.view.dialog
                     width: ListView.view.width
 
                     Rectangle {
@@ -215,18 +212,14 @@ BaseDialog {
                             id: settingRow
                             required property var modelData
 
-                            // parent is sectionBlock (Column), expose dialog as own property
-                            // so nested child items can reach it via settingRow._dlg
-                            readonly property var _dlg: parent._dialog
+                            readonly property string _plugin: CoreViewModel.settingsByPlugin.length > settingsDialog.activeTab
+                                ? CoreViewModel.settingsByPlugin[settingsDialog.activeTab].plugin : ""
 
-                            readonly property string _plugin: CoreViewModel.settingsByPlugin.length > settingRow._dlg.activeTab
-                                ? CoreViewModel.settingsByPlugin[settingRow._dlg.activeTab].plugin : ""
-
-                            property var effectiveValue: settingRow._dlg._effectiveValue(
+                            property var effectiveValue: settingsDialog._effectiveValue(
                                 settingRow._plugin, settingRow.modelData.key, settingRow.modelData.value)
 
                             readonly property bool isPending: {
-                                var pc = settingRow._dlg.pendingChanges[settingRow._plugin]
+                                var pc = settingsDialog.pendingChanges[settingRow._plugin]
                                 return pc !== undefined && pc[settingRow.modelData.key] !== undefined
                             }
 
@@ -291,7 +284,7 @@ BaseDialog {
                                         anchors.right: parent.right; anchors.rightMargin: 12
                                         anchors.verticalCenter: parent.verticalCenter
                                         checked: settingRow.effectiveValue === true
-                                        onToggled: (v) => settingRow._dlg._setPending(
+                                        onToggled: (v) => settingsDialog._setPending(
                                             settingRow._plugin, settingRow.modelData.key, v)
                                     }
 
@@ -305,7 +298,7 @@ BaseDialog {
                                             var idx = settingRow.modelData.options.indexOf(settingRow.effectiveValue)
                                             return idx >= 0 ? idx : 0
                                         }
-                                        onActivated: (idx) => settingRow._dlg._setPending(
+                                        onActivated: (idx) => settingsDialog._setPending(
                                             settingRow._plugin, settingRow.modelData.key,
                                             settingRow.modelData.options[idx])
                                     }
@@ -322,7 +315,7 @@ BaseDialog {
                                             : (settingRow.modelData.type === "int" ? 1 : 0.1)
                                         min: settingRow.modelData.min != null ? settingRow.modelData.min : -1e9
                                         max: settingRow.modelData.max != null ? settingRow.modelData.max :  1e9
-                                        onCommit: (v) => settingRow._dlg._setPending(
+                                        onCommit: (v) => settingsDialog._setPending(
                                             settingRow._plugin, settingRow.modelData.key, v)
                                     }
 
@@ -345,7 +338,7 @@ BaseDialog {
                                             color: Theme.text
                                             font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
                                             selectByMouse: true
-                                            Keys.onReturnPressed: settingRow._dlg._setPending(
+                                            Keys.onReturnPressed: settingsDialog._setPending(
                                                 settingRow._plugin, settingRow.modelData.key, text)
                                             Keys.onEscapePressed: { text = settingRow.effectiveValue; focus = false }
                                             onActiveFocusChanged: if (!activeFocus) text = settingRow.effectiveValue
@@ -358,7 +351,7 @@ BaseDialog {
                                         anchors.right: parent.right; anchors.rightMargin: 12
                                         anchors.verticalCenter: parent.verticalCenter
                                         value: settingRow.effectiveValue
-                                        onColorPicked: (hex) => settingRow._dlg._setPending(
+                                        onColorPicked: (hex) => settingsDialog._setPending(
                                             settingRow._plugin, settingRow.modelData.key, hex)
                                     }
                                 }

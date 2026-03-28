@@ -61,6 +61,7 @@ from tinyui.viewmodels.menu_viewmodel import MenuViewModel
 from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
 from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
 from tinyui.viewmodels.tab_viewmodel import TabViewModel
+from tinyui.windowing.controller_api import WindowController as WindowControllerApi
 
 
 def _qt_message_handler(mode, context, message):
@@ -192,8 +193,6 @@ def launch(
     _wnd_proc = None      # Windows only: MUST be kept alive — otherwise GC → crash
     _win_ctrl = None
     _chrome_helper = None
-    WindowController = None  # set by platform branch below
-
     if sys.platform == "win32":
         from tinyui.windowing.win_window import (
             WindowChromeHelper,
@@ -229,7 +228,7 @@ def launch(
 
     if _win_ctrl is not None:
         qmlRegisterSingletonInstance(
-            WindowController, "TinyUI", 1, 0, "WindowController", _win_ctrl
+            WindowControllerApi, "TinyUI", 1, 0, "WindowController", _win_ctrl
         )
     _log_startup_phase(log, "windowing", phase_start)
     if core.units.get("ui.main") is not None:

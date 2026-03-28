@@ -1,6 +1,5 @@
 # environment
 .venv/
-.zed/
 
 
 # build output
@@ -20,6 +19,7 @@ data/
 __pycache__/
 .pytest_cache/
 *.egg-info/
+.qml_linter/
 
 # config files (runtime generated)
 *.json

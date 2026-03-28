@@ -49,8 +49,7 @@ from PySide6.QtCore import QObject, Slot
 from PySide6.QtGui import QWindow
 from PySide6.QtQml import QmlElement, QmlSingleton
 
-QML_IMPORT_NAME = "TinyUI"
-QML_IMPORT_MAJOR_VERSION = 1
+from tinyui.windowing.controller_api import WindowController as WindowControllerBase
 
 # ── Win32 constants ───────────────────────────────────────────────────────────
 
@@ -339,9 +338,7 @@ class WindowChromeHelper(QObject):
         self._apply(int(win_id))
 
 
-@QmlElement
-@QmlSingleton
-class WindowController(QObject):
+class WindowController(WindowControllerBase):
     """Programmatic window control via ShowWindow (native animations)."""
 
     def __init__(self, hwnd: int, dpr: float, set_left_button_width, parent=None):

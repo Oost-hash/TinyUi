@@ -119,7 +119,7 @@ Item {
                     radius: 3
                     anchors.verticalCenter: parent.verticalCenter
                     color: root._vm && root._vm.captureActive
-                           ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.16)
+                           ? Theme.withAlpha(Theme.accent, 0.16)
                            : (recordMouse.containsMouse ? Theme.surfaceRaised : "transparent")
                     border.color: root._vm && root._vm.captureActive ? Theme.accent : Theme.border
                     border.width: 1
