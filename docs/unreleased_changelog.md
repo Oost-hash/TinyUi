@@ -31,3 +31,4 @@ Known packages:
 - [0.4.1][plugins] LMU_RF2_Connector returns mode inactive when not opened — widgets show idle state gracefully
 - [0.4.1][plugins] Cleaned up shared memory type annotations — removed pyright suppressions, added proper types and attribution
 - [0.4.1][tinyui][tinydevtools] Fixed QML warnings — removed unused imports, fixed missing-property on Window casts, corrected layout-positioning (width/height → implicitWidth/implicitHeight)
+- [0.4.1][tinyui][tinydevtools][tinywidgets] Migrated all QML types from setContextProperty to @QmlElement + qmlRegisterSingletonInstance — eliminates unqualified qmllint warnings and enables static QML analysis
