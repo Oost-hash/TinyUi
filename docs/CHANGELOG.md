@@ -5,6 +5,68 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.4.0] — 2026-03-28
+This release rewrites the shape of TinyUi's core. The project no longer treats runtime behavior,
+plugin participation, session state, capability binding, polling, and app boot as separate half-owned
+systems. `tinycore.runtime` is now the live execution owner, and the surrounding packages are much more
+honest about whether they describe static contracts, host wiring, or UI behavior.
+
+The practical result is that TinyUi now boots through an explicit runtime composition, owns its process
+graph and scheduling model in one place, exposes a real runtime inspector, and no longer carries the old
+`app`, `session`, `capabilities`, and `poll` layers as first-class runtime architecture. This is the
+release where the runtime stops feeling provisional and starts reading like the system the project was
+actually trying to build.
+
+### Added
+
+#### tinycore
+- Introduced a dedicated `tinycore.runtime` layer that owns boot orchestration, runtime unit registration, host workers, scheduling, Qt timer integration, subprocess supervision, activation flow, staged updates, and runtime diagnostics metadata
+- Added a runtime-owned plugin participation layer under `tinycore.runtime.plugins` for plugin activation, participant registration, provider activity, provider refresh, subprocess-backed participation, export binding, and live participation facts
+- Added a staged runtime update model with explicit `refresh` and `derive` phases, driven by one `RuntimeUpdateLoop`
+- Added a runtime graph and runtime inspector that expose live units, parent/process relationships, scheduling metadata, activation state, staged update participants, and task visibility through devtools and diagnostics
+
+#### tinydevtools
+- Added a dedicated Runtime tab that shows the live runtime tree with state filters, sorting, resizable columns, copied overview output, and update-stage visibility
+
+### Changed
+
+#### tinycore
+- Rebuilt the core around explicit host/runtime composition so boot no longer depends on an `App` container or a flat bag of registries
+- Moved live plugin participation out of `tinycore.plugin` and into `tinycore.runtime.plugins`, leaving `tinycore.plugin` focused on manifests, specs, protocols, and plugin-facing context
+- Collapsed the old session/capability model into runtime participation facts, exports, bindings, and provider controls so runtime-facing code no longer depends on `SessionRuntime` or a heavyweight capability subsystem
+- Moved provider activity, provider refresh, and widget update driving under runtime-owned participation instead of treating them as widget or session behavior
+- Renamed the live runtime language around activation, participants, exports, updates, and runtime ownership so the process graph, service API, and diagnostics read as one coherent model
+- Reduced the public `tinycore` and `tinycore.runtime` surfaces so callers import through narrower owning modules instead of broad package re-exports
+- Split diagnostics into explicit log and runtime surfaces under `tinycore.logging` and `tinycore.diagnostics`
+- Tightened persistence and config ownership behind host services and plugin `ctx.config`, instead of leaking raw registries and loader internals into the runtime path
+
+#### tinyui
+- Moved TinyUi-specific host assembly and UI adapter wiring out of core and into `tinyui.boot` and `tinyui.ui_adapters`
+- Retired the old `app` entry package in favor of the direct `tinyui_boot` bootloader path
+
+#### tinywidgets
+- Reframed widget updates as runtime-driven participation, with provider refresh in `refresh` and widget state derivation in `derive`
+- Renamed widget-side update mechanics around `WidgetStateParticipant` and the runtime update loop so overlay behavior matches the new runtime language
+
+### Fixed
+
+#### tinycore
+- Fixed boot and shutdown ordering so the runtime inspector attaches before state monitoring, the main UI reaches `running` before overlay workers start, and host worker shutdown no longer trips over child runtime state transitions
+- Fixed runtime metadata and diagnostics visibility so scheduled work, activation state, provider activity, and staged updates describe the live system more honestly
+
+#### tinyui
+- Fixed settings save routing so QML enum and numeric values save through typed viewmodel paths instead of failing conversion during persistence
+
+### Removed
+
+#### tinycore
+- Removed the `tinycore.app` package and the last compatibility route through `create_app`
+- Removed the old `session`, `capabilities`, and `poll` runtime layers as architectural owners
+- Removed the remaining runtime shims for plugin lifecycle/registry/runner paths after moving all live participation into `tinycore.runtime`
+
+#### other
+- TinyUi now boots through `tinyui_boot`
+
 ## [0.3.0] — 2026-03-26
 The main goal of this release was to stop treating the runtime like a loose pile of registries
 and start shaping it into a real system. `SessionRuntime` is now the center of provider ownership,
