@@ -22,8 +22,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import TinyUI
-import TinyDevTools
 import "../../tinydevtools/qml"
 import "components"
 
