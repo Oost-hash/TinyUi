@@ -73,7 +73,7 @@ class HostOverlayBuild:
 @dataclass(frozen=True)
 class HostStateMonitorBuild:
     state_monitor: _StateMonitorLike | None
-    extra_context: dict[str, object]
+    extra_context: dict[str, tuple[type, str, object]]
 
 
 @dataclass(frozen=True)
@@ -120,6 +120,9 @@ class _OverlayLike(Protocol):
 
     @property
     def state(self) -> object: ...
+
+    @property
+    def extra_context(self) -> dict[str, tuple[type, str, object]]: ...
 
     @property
     def update_interval_ms(self) -> int: ...
@@ -257,10 +260,7 @@ def boot_runtime(
         raise RuntimeError("boot assembly is incomplete after required runtime phases")
     _attach_runtime_surfaces(activation, provider_activity)
 
-    extra_context = {
-        "widgetModel": overlay_build.overlay.model,
-        "widgetOverlayState": overlay_build.overlay.state,
-    }
+    extra_context = dict(overlay_build.overlay.extra_context)
     host_workers = HostWorkerSupervisor()
 
     registry = build_runtime_registry(

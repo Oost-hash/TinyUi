@@ -20,6 +20,7 @@
 //  licensed under GPLv3.
 
 import QtQuick
+import TinyUI
 
 Rectangle {
     property bool showRevert: false
@@ -35,9 +36,9 @@ Rectangle {
     signal closeClicked()
 
     height: 48
-    color: theme.surfaceAlt
+    color: Theme.surfaceAlt
 
-    Rectangle { width: parent.width; height: 1; color: theme.border }
+    Rectangle { width: parent.width; height: 1; color: Theme.border }
 
     Row {
         anchors.right: parent.right; anchors.rightMargin: 16
@@ -48,12 +49,12 @@ Rectangle {
         Rectangle {
             visible: showRevert
             width: 80; height: 32; radius: 5
-            color: revertHov.containsMouse ? theme.surfaceFloating : theme.surfaceRaised
+            color: revertHov.containsMouse ? Theme.surfaceFloating : Theme.surfaceRaised
             opacity: revertEnabled ? 1 : 0.4
             Behavior on color   { ColorAnimation { duration: 80 } }
             Behavior on opacity { NumberAnimation { duration: 120 } }
-            Text { anchors.centerIn: parent; text: "Revert"; color: theme.text
-                   font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily }
+            Text { anchors.centerIn: parent; text: "Revert"; color: Theme.text
+                   font.pixelSize: Theme.fontSizeBase; font.family: Theme.fontFamily }
             MouseArea { id: revertHov; anchors.fill: parent; hoverEnabled: true
                 onClicked: if (revertEnabled) revertClicked() }
         }
@@ -61,12 +62,12 @@ Rectangle {
         Rectangle {
             visible: showSave
             width: 80; height: 32; radius: 5
-            color: saveHov.containsMouse ? theme.accentHover : theme.accent
+            color: saveHov.containsMouse ? Theme.accentHover : Theme.accent
             opacity: saveEnabled ? 1 : 0.4
             Behavior on color   { ColorAnimation { duration: 80 } }
             Behavior on opacity { NumberAnimation { duration: 120 } }
-            Text { anchors.centerIn: parent; text: saveLabel; color: theme.accentText
-                   font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+            Text { anchors.centerIn: parent; text: saveLabel; color: Theme.accentText
+                   font.pixelSize: Theme.fontSizeBase; font.family: Theme.fontFamily
                    font.weight: Font.Medium }
             MouseArea { id: saveHov; anchors.fill: parent; hoverEnabled: true
                 onClicked: if (saveEnabled) saveClicked() }
@@ -75,10 +76,10 @@ Rectangle {
         Rectangle {
             visible: showClose
             width: 80; height: 32; radius: 5
-            color: closeHov.containsMouse ? theme.surfaceFloating : theme.surfaceRaised
+            color: closeHov.containsMouse ? Theme.surfaceFloating : Theme.surfaceRaised
             Behavior on color { ColorAnimation { duration: 80 } }
-            Text { anchors.centerIn: parent; text: "Close"; color: theme.text
-                   font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily }
+            Text { anchors.centerIn: parent; text: "Close"; color: Theme.text
+                   font.pixelSize: Theme.fontSizeBase; font.family: Theme.fontFamily }
             MouseArea { id: closeHov; anchors.fill: parent; hoverEnabled: true
                 onClicked: closeClicked() }
         }

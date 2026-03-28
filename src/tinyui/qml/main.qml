@@ -22,6 +22,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import TinyUI
 import "layout"
 import "tabs"
 import "."
@@ -38,12 +39,12 @@ ApplicationWindow {
     // Minimum width computed once based on the longest description
     TextMetrics {
         id: _descMetrics
-        font.family: theme.fontFamily
-        font.pixelSize: theme.fontSizeSmall
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.fontSizeSmall
     }
     function _minWidth(): int {
         var max = 0
-        var widgets = coreViewModel.widgets
+        var widgets = CoreViewModel.widgets
         for (var i = 0; i < widgets.length; i++) {
             _descMetrics.text = widgets[i].description
             if (_descMetrics.advanceWidth > max) max = _descMetrics.advanceWidth
@@ -52,13 +53,13 @@ ApplicationWindow {
     }
     Component.onCompleted: minimumWidth = _minWidth()
 
-    title: appName
+    title: AppInfo.appName
     // Windows: frameless + custom TitleBar + DWM chrome.
     // Linux/macOS: server-side decorations — compositor/AppKit handles chrome.
     //              Our TitleBar acts as a menu bar below the native chrome.
     readonly property bool nativeChrome: Qt.platform.os === "linux" || Qt.platform.os === "osx"
 
-    readonly property bool hasDevTools: devToolsAvailable && devToolsQmlPath !== ""
+    readonly property bool hasDevTools: AppInfo.devToolsAvailable && AppInfo.devToolsQmlPath !== ""
 
     function openDevTools() {
         var w = devToolsLoader.item as Window
@@ -71,13 +72,13 @@ ApplicationWindow {
         else w.show()
     }
     flags: nativeChrome ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
-    color: theme.surface
+    color: Theme.surface
 
     // Both backdrops cover only the content area (between title bar and status bar).
     // Mutual exclusion is enforced in Python — they are never open simultaneously.
     // On Linux: no custom title bar, so content starts at y:0.
 
-    readonly property int contentTop: Qt.platform.os === "linux" ? 0 : theme.titleBarHeight
+    readonly property int contentTop: Qt.platform.os === "linux" ? 0 : Theme.titleBarHeight
 
     // Catches clicks outside an open menu popup — closes popup, menu stays open.
     // Covers from tab bar downward so clicking a tab while the dropdown is open
@@ -87,10 +88,10 @@ ApplicationWindow {
         width: parent.width
         height: parent.height - root.contentTop - 32
         z: 4
-        enabled: menuViewModel.menuOpen
+        enabled: MenuViewModel.menuOpen
         propagateComposedEvents: true
         onClicked: mouse => {
-            menuViewModel.dismissActivePopup()
+            MenuViewModel.dismissActivePopup()
             mouse.accepted = false
         }
     }
@@ -101,10 +102,10 @@ ApplicationWindow {
         width: parent.width
         height: parent.height - root.contentTop - 42 - 32
         z: 3
-        enabled: statusBarViewModel.pluginDropdownOpen
+        enabled: StatusBarViewModel.pluginDropdownOpen
         propagateComposedEvents: true
         onClicked: mouse => {
-            statusBarViewModel.closePluginDropdown()
+            StatusBarViewModel.closePluginDropdown()
             mouse.accepted = false
         }
     }
@@ -129,7 +130,7 @@ ApplicationWindow {
         StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: tabViewModel.currentIndex
+            currentIndex: TabViewModel.currentIndex
 
             WidgetTab {}
         }
@@ -145,7 +146,7 @@ ApplicationWindow {
         id: devToolsLoader
         objectName: "devToolsLoader"
         active: root.hasDevTools
-        source: root.hasDevTools ? devToolsQmlPath : ""
+        source: root.hasDevTools ? AppInfo.devToolsQmlPath : ""
     }
 
     // F12 — open Dev Tools, just like browser devtools

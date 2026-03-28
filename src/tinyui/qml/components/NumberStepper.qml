@@ -20,6 +20,7 @@
 //  licensed under GPLv3.
 
 import QtQuick
+import TinyUI
 
 // − [value] +
 // Value field is read-only until clicked; commits on Enter or focus loss.
@@ -68,8 +69,8 @@ Row {
         Text {
             anchors.centerIn: parent
             text: "\u2212"
-            color: decArea.containsMouse ? theme.text : theme.textMuted
-            font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+            color: decArea.containsMouse ? Theme.text : Theme.textMuted
+            font.pixelSize: Theme.fontSizeBase; font.family: Theme.fontFamily
             Behavior on color { ColorAnimation { duration: 80 } }
         }
 
@@ -84,10 +85,10 @@ Row {
         width: 72; height: 26
         anchors.verticalCenter: parent.verticalCenter
         radius: 3
-        color: stepperRow._editing ? theme.surfaceFloating : "transparent"
+        color: stepperRow._editing ? Theme.surfaceFloating : "transparent"
         border.width: 1
-        border.color: stepperRow._editing ? theme.accent
-                    : numHov.hovered      ? theme.border
+        border.color: stepperRow._editing ? Theme.accent
+                    : numHov.hovered      ? Theme.border
                     : "transparent"
         Behavior on border.color { ColorAnimation { duration: 80 } }
         Behavior on color        { ColorAnimation { duration: 80 } }
@@ -99,8 +100,8 @@ Row {
             horizontalAlignment: TextInput.AlignHCenter
             verticalAlignment:   TextInput.AlignVCenter
             text: root._fmt(root.value)
-            color: stepperRow._editing ? theme.accent : theme.text
-            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+            color: stepperRow._editing ? Theme.accent : Theme.text
+            font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
             selectByMouse: true
             readOnly: !stepperRow._editing
             inputMethodHints: Qt.ImhFormattedNumbersOnly
@@ -144,8 +145,8 @@ Row {
         Text {
             anchors.centerIn: parent
             text: "+"
-            color: incArea.containsMouse ? theme.text : theme.textMuted
-            font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+            color: incArea.containsMouse ? Theme.text : Theme.textMuted
+            font.pixelSize: Theme.fontSizeBase; font.family: Theme.fontFamily
             Behavior on color { ColorAnimation { duration: 80 } }
         }
 

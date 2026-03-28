@@ -47,6 +47,10 @@ import ctypes.wintypes
 
 from PySide6.QtCore import QObject, Slot
 from PySide6.QtGui import QWindow
+from PySide6.QtQml import QmlElement
+
+QML_IMPORT_NAME = "TinyUI"
+QML_IMPORT_MAJOR_VERSION = 1
 
 # ── Win32 constants ───────────────────────────────────────────────────────────
 
@@ -297,6 +301,7 @@ def install_wnd_proc(
     return wnd_proc, set_left_button_width  # wnd_proc MUST be kept alive — otherwise garbage collected → crash
 
 
+@QmlElement
 class WindowChromeHelper(QObject):
     """Apply Win32 DWM chrome to secondary windows (dialogs)."""
 
@@ -333,6 +338,7 @@ class WindowChromeHelper(QObject):
         self._apply(int(win_id))
 
 
+@QmlElement
 class WindowController(QObject):
     """Programmatic window control via ShowWindow (native animations)."""
 

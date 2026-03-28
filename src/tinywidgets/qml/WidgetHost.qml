@@ -21,6 +21,7 @@
 
 import QtQuick
 import QtQuick.Window
+import TinyWidgets
 
 // Hidden anchor window — Qt.Tool windows need a parent to be visible.
 // Each TextWidget sets transientParent: null so it uses screen coordinates.
@@ -33,7 +34,7 @@ Window {
     visible: true   // must be visible so child windows can appear
 
     Instantiator {
-        model: widgetModel
+        model: WidgetModel
         delegate: TextWidget {
             widgetContext:   model.widgetContext
             transientParent: null

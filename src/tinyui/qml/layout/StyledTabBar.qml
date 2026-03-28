@@ -21,27 +21,28 @@
 
 import QtQuick
 import QtQuick.Controls
+import TinyUI
 
 TabBar {
     id: tabBar
-    currentIndex: tabViewModel.currentIndex
+    currentIndex: TabViewModel.currentIndex
     spacing: -1
     height: 42
 
     background: Rectangle {
-        color: theme.surfaceAlt
+        color: Theme.surfaceAlt
 
         // Bottom border — the line the tabs sit on
         Rectangle {
             anchors.bottom: parent.bottom
             width: parent.width
             height: 1
-            color: theme.border
+            color: Theme.border
         }
     }
 
     Repeater {
-        model: tabViewModel.tabNames
+        model: TabViewModel.tabNames
 
         TabButton {
             id: tab
@@ -53,26 +54,26 @@ TabBar {
             bottomPadding: 10
 
             background: Rectangle {
-                color: tab.checked ? theme.surface : theme.surfaceAlt
+                color: tab.checked ? Theme.surface : Theme.surfaceAlt
 
-                Rectangle { anchors.left: parent.left;  width: 1; height: parent.height; color: theme.border }
-                Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: theme.border }
+                Rectangle { anchors.left: parent.left;  width: 1; height: parent.height; color: Theme.border }
+                Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.border }
                 Rectangle {
                     visible: !tab.checked
-                    anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border
+                    anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border
                 }
             }
 
             contentItem: Text {
                 text: tab.text
-                color: tab.checked ? theme.text : theme.textSecondary
-                font.pixelSize: theme.fontSizeBase
-                font.family: theme.fontFamily
+                color: tab.checked ? Theme.text : Theme.textSecondary
+                font.pixelSize: Theme.fontSizeBase
+                font.family: Theme.fontFamily
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
             }
         }
     }
 
-    onCurrentIndexChanged: tabViewModel.setCurrentIndex(currentIndex)
+    onCurrentIndexChanged: TabViewModel.setCurrentIndex(currentIndex)
 }

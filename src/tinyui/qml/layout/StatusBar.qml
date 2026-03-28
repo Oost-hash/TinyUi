@@ -20,12 +20,13 @@
 //  licensed under GPLv3.
 
 import QtQuick
+import TinyUI
 import "../components"
 
 Rectangle {
     id: statusBar
     height: 32
-    color: theme.surfaceRaised
+    color: Theme.surfaceRaised
 
     // Border-top
     Rectangle {
@@ -33,7 +34,7 @@ Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
         height: 1
-        color: theme.border
+        color: Theme.border
     }
 
     // ── Left: editor shortcuts (one button per registered editor) ────────────
@@ -45,13 +46,13 @@ Rectangle {
         anchors.leftMargin: 4
 
         Repeater {
-            model: coreViewModel.editors
+            model: CoreViewModel.editors
 
             StatusBarIconButton {
                 // First letter as temporary icon — TODO: add icon field to editors.toml
                 iconText: modelData.title.charAt(0).toUpperCase()
-                textFont: theme.fontFamily
-                onClicked: settingsPanelViewModel.openPanel()
+                textFont: Theme.fontFamily
+                onClicked: SettingsPanelViewModel.openPanel()
             }
         }
     }
@@ -68,11 +69,11 @@ Rectangle {
 
         Rectangle {
             anchors.fill: parent
-            color: statusBarViewModel.pluginDropdownOpen ? theme.surfaceAlt
-                   : pluginNameHover.containsMouse ? theme.surfaceFloating : "transparent"
+            color: StatusBarViewModel.pluginDropdownOpen ? Theme.surfaceAlt
+                   : pluginNameHover.containsMouse ? Theme.surfaceFloating : "transparent"
         }
-        Rectangle { visible: statusBarViewModel.pluginDropdownOpen; anchors.left:  parent.left;  width: 1; height: parent.height; color: theme.border }
-        Rectangle { visible: statusBarViewModel.pluginDropdownOpen; anchors.right: parent.right; width: 1; height: parent.height; color: theme.border }
+        Rectangle { visible: StatusBarViewModel.pluginDropdownOpen; anchors.left:  parent.left;  width: 1; height: parent.height; color: Theme.border }
+        Rectangle { visible: StatusBarViewModel.pluginDropdownOpen; anchors.right: parent.right; width: 1; height: parent.height; color: Theme.border }
 
         Row {
             id: pluginNameRow
@@ -81,10 +82,10 @@ Rectangle {
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: coreViewModel.pluginNames[statusBarViewModel.activePluginIndex] ?? ""
+                text: CoreViewModel.pluginNames[StatusBarViewModel.activePluginIndex] ?? ""
                 color: "#FFFFFF"
-                font.pixelSize: theme.fontSizeSmall
-                font.family: theme.fontFamily
+                font.pixelSize: Theme.fontSizeSmall
+                font.family: Theme.fontFamily
             }
         }
 
@@ -92,7 +93,7 @@ Rectangle {
             id: pluginNameHover
             anchors.fill: parent
             hoverEnabled: true
-            onClicked: statusBarViewModel.togglePluginDropdown()
+            onClicked: StatusBarViewModel.togglePluginDropdown()
         }
 
         // Inline dropdown — opens upward, right-aligned (plain Item, no Popup)
@@ -103,12 +104,12 @@ Rectangle {
             height: pluginDropdownCol.implicitHeight
             x: pluginNameBtn.width - width
             y: -height
-            visible: statusBarViewModel.pluginDropdownOpen
+            visible: StatusBarViewModel.pluginDropdownOpen
 
-            Rectangle { anchors.fill: parent; color: theme.surfaceAlt }
-            Rectangle { anchors.left:  parent.left;  width: 1; height: parent.height; color: theme.border }
-            Rectangle { anchors.top:   parent.top;   height: 1; width: parent.width;  color: theme.border }
-            Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: theme.border }
+            Rectangle { anchors.fill: parent; color: Theme.surfaceAlt }
+            Rectangle { anchors.left:  parent.left;  width: 1; height: parent.height; color: Theme.border }
+            Rectangle { anchors.top:   parent.top;   height: 1; width: parent.width;  color: Theme.border }
+            Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.border }
 
             Column {
                 id: pluginDropdownCol
@@ -116,29 +117,29 @@ Rectangle {
                 spacing: 0
 
                 Repeater {
-                    model: coreViewModel.pluginNames
+                    model: CoreViewModel.pluginNames
 
                     Rectangle {
                         width: parent.width
                         height: 28
-                        color: dropItemHover.containsMouse ? theme.surfaceRaised : "transparent"
+                        color: dropItemHover.containsMouse ? Theme.surfaceRaised : "transparent"
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
                             anchors.leftMargin: 12
                             text: modelData
-                            color: statusBarViewModel.activePluginIndex === index ? theme.accent : theme.text
-                            font.pixelSize: theme.fontSizeSmall
-                            font.family: theme.fontFamily
-                            font.weight: statusBarViewModel.activePluginIndex === index ? Font.DemiBold : Font.Normal
+                            color: StatusBarViewModel.activePluginIndex === index ? Theme.accent : Theme.text
+                            font.pixelSize: Theme.fontSizeSmall
+                            font.family: Theme.fontFamily
+                            font.weight: StatusBarViewModel.activePluginIndex === index ? Font.DemiBold : Font.Normal
                         }
 
                         MouseArea {
                             id: dropItemHover
                             anchors.fill: parent
                             hoverEnabled: true
-                            onClicked: statusBarViewModel.selectPlugin(index)
+                            onClicked: StatusBarViewModel.selectPlugin(index)
                         }
                     }
                 }

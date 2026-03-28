@@ -20,6 +20,7 @@
 //  licensed under GPLv3.
 
 import QtQuick
+import TinyUI
 
 Rectangle {
     id: root
@@ -27,8 +28,8 @@ Rectangle {
     property string title: ""
     signal closeClicked()
 
-    height: theme.titleBarHeight
-    color: theme.surfaceAlt
+    height: Theme.titleBarHeight
+    color: Theme.surfaceAlt
 
     // startSystemMove() works on all platforms in Qt 6
     DragHandler {
@@ -40,8 +41,8 @@ Rectangle {
         anchors.left: parent.left; anchors.leftMargin: 16
         anchors.verticalCenter: parent.verticalCenter
         text: root.title
-        color: theme.text
-        font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+        color: Theme.text
+        font.pixelSize: Theme.fontSizeBase; font.family: Theme.fontFamily
         font.weight: Font.DemiBold
     }
 
@@ -76,5 +77,5 @@ Rectangle {
         onClicked: root.closeClicked()
     }
 
-    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
+    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
 }

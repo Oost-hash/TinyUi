@@ -20,6 +20,7 @@
 //  licensed under GPLv3.
 
 import QtQuick
+import TinyUI
 
 Item {
     id: root
@@ -33,9 +34,9 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: 9
-        color: root.checked ? theme.accent : theme.surfaceFloating
+        color: root.checked ? Theme.accent : Theme.surfaceFloating
         border.width: 1
-        border.color: root.checked ? "transparent" : theme.border
+        border.color: root.checked ? "transparent" : Theme.border
         Behavior on color        { ColorAnimation { duration: 140 } }
         Behavior on border.color { ColorAnimation { duration: 140 } }
 

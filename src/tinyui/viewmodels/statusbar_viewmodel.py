@@ -20,12 +20,17 @@
 #  licensed under GPLv3.
 
 from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
+from PySide6.QtQml import QmlElement
 
 from tinycore.logging import get_logger
+
+QML_IMPORT_NAME = "TinyUI"
+QML_IMPORT_MAJOR_VERSION = 1
 
 log = get_logger(__name__)
 
 
+@QmlElement
 class StatusBarViewModel(QObject):
     """Manages the state of the status bar and the plugin dropdown."""
 

@@ -21,6 +21,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import TinyUI
 
 Window {
     id: baseDialog
@@ -39,14 +40,14 @@ Window {
     readonly property bool nativeChrome: Qt.platform.os === "linux" || Qt.platform.os === "osx"
     flags: Qt.Window | Qt.FramelessWindowHint
     transientParent: null   // own taskbar entry, not bound to main window
-    color: theme.surface
+    color: Theme.surface
 
     // Win32 DWM chrome: shadow, rounded corners, Alt+Tab thumbnail.
     // applyToWindow() retrieves winId() via the Python QWindow API — winId() is not
     // available as a QML method. WindowChromeHelper is idempotent.
     onVisibleChanged: {
-        if (visible && Qt.platform.os === "windows" && typeof windowChromeHelper !== "undefined")
-            windowChromeHelper.applyToWindow(baseDialog)
+        if (visible && Qt.platform.os === "windows" && typeof WindowChromeHelper !== "undefined")
+            WindowChromeHelper.applyToWindow(baseDialog)
     }
 
     // ── Focus-clearer ─────────────────────────────────────────────────────────

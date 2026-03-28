@@ -21,6 +21,8 @@
 
 import QtQuick
 import QtQuick.Window
+import TinyUI
+import TinyWidgets
 
 Window {
     id: win
@@ -37,9 +39,9 @@ Window {
     y:       widgetContext ? widgetContext.widgetY : 0
     visible: widgetContext
         ? (
-            widgetOverlayState.previewWidgetId === widgetContext.widgetId
+            WidgetOverlayState.previewWidgetId === widgetContext.widgetId
             || (
-                widgetOverlayState.overlayVisible
+                WidgetOverlayState.overlayVisible
                 && widgetContext.enabled
             )
         )

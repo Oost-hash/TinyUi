@@ -21,6 +21,7 @@
 
 import QtQuick
 import QtQuick.Layouts
+import TinyUI
 import "components"
 
 BaseDialog {
@@ -29,8 +30,8 @@ BaseDialog {
     dialogTitle: "Settings"
     width: 720; height: 520
     minimumWidth: 540; minimumHeight: 380
-    visible: settingsPanelViewModel.open
-    onCloseRequested: settingsPanelViewModel.closePanel()
+    visible: SettingsPanelViewModel.open
+    onCloseRequested: SettingsPanelViewModel.closePanel()
 
     // ── Pending changes — managed locally in QML ──────────────────────────────
     // { pluginName: { key: newValue } }
@@ -57,8 +58,8 @@ BaseDialog {
     }
 
     function _settingType(plugin, key) {
-        for (var i = 0; i < coreViewModel.settingsByPlugin.length; ++i) {
-            var pluginGroup = coreViewModel.settingsByPlugin[i]
+        for (var i = 0; i < CoreViewModel.settingsByPlugin.length; ++i) {
+            var pluginGroup = CoreViewModel.settingsByPlugin[i]
             if (pluginGroup.plugin !== plugin)
                 continue
             for (var j = 0; j < pluginGroup.sections.length; ++j) {
@@ -76,13 +77,13 @@ BaseDialog {
     function _savePendingSetting(plugin, key, value) {
         var type = _settingType(plugin, key)
         if (type === "bool")
-            coreViewModel.setBoolSettingValue(plugin, key, value === true)
+            CoreViewModel.setBoolSettingValue(plugin, key, value === true)
         else if (type === "int")
-            coreViewModel.setIntSettingValue(plugin, key, Math.round(value))
+            CoreViewModel.setIntSettingValue(plugin, key, Math.round(value))
         else if (type === "float")
-            coreViewModel.setFloatSettingValue(plugin, key, Number(value))
+            CoreViewModel.setFloatSettingValue(plugin, key, Number(value))
         else
-            coreViewModel.setStringSettingValue(plugin, key, String(value))
+            CoreViewModel.setStringSettingValue(plugin, key, String(value))
     }
 
     function _applyAndSave() {
@@ -119,12 +120,12 @@ BaseDialog {
             Rectangle {
                 Layout.preferredWidth: 160
                 Layout.fillHeight: true
-                color: theme.surfaceAlt
+                color: Theme.surfaceAlt
 
                 ListView {
                     id: tabList
                     anchors.fill: parent
-                    model: coreViewModel.settingsByPlugin
+                    model: CoreViewModel.settingsByPlugin
 
                     delegate: Rectangle {
                         id: tabItem
@@ -133,12 +134,12 @@ BaseDialog {
 
                         width: tabList.width; height: 40
                         color: settingsDialog.activeTab === tabItem.index
-                            ? theme.surface : (tabHov.containsMouse ? theme.surfaceRaised : "transparent")
+                            ? Theme.surface : (tabHov.containsMouse ? Theme.surfaceRaised : "transparent")
                         Behavior on color { ColorAnimation { duration: 80 } }
 
                         Rectangle {
                             width: 2; height: parent.height
-                            color: theme.accent
+                            color: Theme.accent
                             visible: settingsDialog.activeTab === tabItem.index
                         }
 
@@ -146,8 +147,8 @@ BaseDialog {
                             anchors.left: parent.left; anchors.leftMargin: 16
                             anchors.verticalCenter: parent.verticalCenter
                             text: tabItem.modelData.plugin
-                            color: settingsDialog.activeTab === tabItem.index ? theme.text : theme.textMuted
-                            font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+                            color: settingsDialog.activeTab === tabItem.index ? Theme.text : Theme.textMuted
+                            font.pixelSize: Theme.fontSizeBase; font.family: Theme.fontFamily
                             font.weight: settingsDialog.activeTab === tabItem.index ? Font.DemiBold : Font.Normal
                             Behavior on color { ColorAnimation { duration: 80 } }
                         }
@@ -155,8 +156,8 @@ BaseDialog {
                         Text {
                             anchors.right: parent.right; anchors.rightMargin: 12
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "●"; font.pixelSize: 6; font.family: theme.fontFamily
-                            color: theme.accent
+                            text: "●"; font.pixelSize: 6; font.family: Theme.fontFamily
+                            color: Theme.accent
                             visible: {
                                 var pc = settingsDialog.pendingChanges[tabItem.modelData.plugin]
                                 return pc ? Object.keys(pc).length > 0 : false
@@ -168,7 +169,7 @@ BaseDialog {
                     }
                 }
 
-                Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: theme.border }
+                Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: Theme.border }
             }
 
             // ── Content: sections + setting rows ─────────────────────────────
@@ -177,8 +178,8 @@ BaseDialog {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
-                model: coreViewModel.settingsByPlugin.length > settingsDialog.activeTab
-                    ? coreViewModel.settingsByPlugin[settingsDialog.activeTab].sections : []
+                model: CoreViewModel.settingsByPlugin.length > settingsDialog.activeTab
+                    ? CoreViewModel.settingsByPlugin[settingsDialog.activeTab].sections : []
 
                 delegate: Column {
                     id: sectionBlock
@@ -189,17 +190,17 @@ BaseDialog {
                         width: parent.width
                         height: sectionBlock.modelData.name !== "" ? 28 : 0
                         visible: height > 0
-                        color: theme.surfaceAlt
+                        color: Theme.surfaceAlt
 
                         Text {
                             anchors.left: parent.left; anchors.leftMargin: 16
                             anchors.verticalCenter: parent.verticalCenter
                             text: sectionBlock.modelData.name
-                            color: theme.textSecondary
-                            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                            color: Theme.textSecondary
+                            font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
                             font.weight: Font.Medium
                         }
-                        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
+                        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
                     }
 
                     Repeater {
@@ -209,8 +210,8 @@ BaseDialog {
                             id: settingRow
                             required property var modelData
 
-                            readonly property string _plugin: coreViewModel.settingsByPlugin.length > settingsDialog.activeTab
-                                ? coreViewModel.settingsByPlugin[settingsDialog.activeTab].plugin : ""
+                            readonly property string _plugin: CoreViewModel.settingsByPlugin.length > settingsDialog.activeTab
+                                ? CoreViewModel.settingsByPlugin[settingsDialog.activeTab].plugin : ""
 
                             property var effectiveValue: settingsDialog._effectiveValue(
                                 _plugin, modelData.key, modelData.value)
@@ -236,7 +237,7 @@ BaseDialog {
                                 }
                             }
 
-                            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border; opacity: 0.4 }
+                            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border; opacity: 0.4 }
 
                             Row {
                                 anchors.fill: parent; leftPadding: 16
@@ -251,22 +252,22 @@ BaseDialog {
                                         spacing: 6
                                         Text {
                                             text: settingRow.modelData.label
-                                            color: settingRow.isPending ? theme.accent : theme.text
-                                            font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+                                            color: settingRow.isPending ? Theme.accent : Theme.text
+                                            font.pixelSize: Theme.fontSizeBase; font.family: Theme.fontFamily
                                             Behavior on color { ColorAnimation { duration: 120 } }
                                         }
                                         Text {
                                             visible: settingRow.isPending
-                                            text: "●"; font.pixelSize: 6; font.family: theme.fontFamily
-                                            color: theme.accent
+                                            text: "●"; font.pixelSize: 6; font.family: Theme.fontFamily
+                                            color: Theme.accent
                                             anchors.bottom: parent.bottom; anchors.bottomMargin: 3
                                         }
                                     }
                                     Text {
                                         visible: settingRow.modelData.description !== ""
                                         text: settingRow.modelData.description
-                                        color: rowHov.hovered ? "#dec184" : theme.textMuted
-                                        font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                                        color: rowHov.hovered ? "#dec184" : Theme.textMuted
+                                        font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
                                         Behavior on color { ColorAnimation { duration: 120 } }
                                     }
                                 }
@@ -322,9 +323,9 @@ BaseDialog {
                                         anchors.right: parent.right; anchors.rightMargin: 12
                                         anchors.verticalCenter: parent.verticalCenter
                                         width: 120; height: 28; radius: 4
-                                        color: theme.surfaceFloating
+                                        color: Theme.surfaceFloating
                                         border.width: 1
-                                        border.color: strInput.activeFocus ? theme.accent : theme.border
+                                        border.color: strInput.activeFocus ? Theme.accent : Theme.border
                                         Behavior on border.color { ColorAnimation { duration: 80 } }
 
                                         TextInput {
@@ -332,8 +333,8 @@ BaseDialog {
                                             anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8
                                             verticalAlignment: TextInput.AlignVCenter
                                             text: settingRow.effectiveValue
-                                            color: theme.text
-                                            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                                            color: Theme.text
+                                            font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
                                             selectByMouse: true
                                             Keys.onReturnPressed: settingsDialog._setPending(
                                                 settingRow._plugin, settingRow.modelData.key, text)
@@ -370,7 +371,7 @@ BaseDialog {
             saveEnabled:   settingsDialog.hasPendingChanges
             onRevertClicked: settingsDialog.pendingChanges = ({})
             onSaveClicked:   settingsDialog._applyAndSave()
-            onCloseClicked:  settingsPanelViewModel.closePanel()
+            onCloseClicked:  SettingsPanelViewModel.closePanel()
         }
     }
 }

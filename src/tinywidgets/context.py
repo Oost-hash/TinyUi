@@ -39,10 +39,14 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
+from PySide6.QtQml import QmlElement
 
 from .spec import WidgetSpec
 from .state_participant import WidgetDisplayState
 from .threshold import ThresholdEntry
+
+QML_IMPORT_NAME = "TinyWidgets"
+QML_IMPORT_MAJOR_VERSION = 1
 
 
 class WidgetContext(QObject):
@@ -329,6 +333,7 @@ class WidgetContext(QObject):
 # ---------------------------------------------------------------------------
 
 
+@QmlElement
 class WidgetOverlayState(QObject):
     """Shared overlay visibility state exposed to both QML engines."""
 
@@ -370,6 +375,7 @@ class WidgetOverlayState(QObject):
 # ---------------------------------------------------------------------------
 
 
+@QmlElement
 class WidgetModel(QAbstractListModel):
     """Holds all WidgetContexts as a proper ListModel for QML Repeater.
 

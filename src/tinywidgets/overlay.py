@@ -57,7 +57,7 @@ class WidgetOverlay:
         overlay = WidgetOverlay(session, paths=core.paths)
         overlay.load(specs, plugin_name="demo")
         exit_code = tinyui.launch(core, lifecycle, pre_run=overlay.start,
-                                  extra_context={"widgetModel": overlay.model})
+                                  extra_context=overlay.extra_context)
     """
 
     def __init__(self, participation: PluginParticipationFacts,
@@ -87,6 +87,14 @@ class WidgetOverlay:
     def state(self) -> WidgetOverlayState:
         """Shared overlay state used by both the main UI and widget engine."""
         return self._state
+
+    @property
+    def extra_context(self) -> dict[str, tuple[type, str, object]]:
+        """Singleton registrations for the main QML engine."""
+        return {
+            "WidgetModel": (WidgetModel, "TinyWidgets", self._model),
+            "WidgetOverlayState": (WidgetOverlayState, "TinyWidgets", self._state),
+        }
 
     @property
     def update_interval_ms(self) -> int:
@@ -174,8 +182,8 @@ class WidgetOverlay:
             app.aboutToQuit.connect(self.stop)
 
         self._engine = create_engine()
-        self._engine.rootContext().setContextProperty("widgetModel", self._model)
-        self._engine.rootContext().setContextProperty("widgetOverlayState", self._state)
+        # WidgetModel and WidgetOverlayState are registered as QML singletons
+        # via qmlRegisterSingletonInstance (global, visible to all engines).
 
         qml_dir = self._paths.qml_dir("tinywidgets") if self._paths is not None else _QML_DIR
         self._engine.load(QUrl.fromLocalFile(str(qml_dir / "WidgetHost.qml")))

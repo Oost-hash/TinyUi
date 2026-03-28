@@ -22,6 +22,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import TinyUI
+import TinyDevTools
 import "components"
 
 BaseDialog {
@@ -46,10 +48,10 @@ BaseDialog {
     }
 
     function _levelColor(level) {
-        if (level === "DEBUG")    return theme.textMuted
-        if (level === "INFO")     return theme.text
-        if (level === "WARNING")  return theme.warning
-        return theme.danger  // ERROR / CRITICAL
+        if (level === "DEBUG")    return Theme.textMuted
+        if (level === "INFO")     return Theme.text
+        if (level === "WARNING")  return Theme.warning
+        return Theme.danger  // ERROR / CRITICAL
     }
 
     // ── Log model ─────────────────────────────────────────────────────────────
@@ -63,12 +65,12 @@ BaseDialog {
         Rectangle {
             Layout.fillWidth: true
             implicitHeight: 36
-            color: theme.surfaceAlt
+            color: Theme.surfaceAlt
 
             Rectangle {
                 anchors.bottom: parent.bottom
                 width: parent.width; height: 1
-                color: theme.border
+                color: Theme.border
             }
 
             RowLayout {
@@ -93,23 +95,23 @@ BaseDialog {
                                 return consoleWin.showError
                             }
                             property color  levelCol: {
-                                if (modelData === "DEBUG") return theme.textMuted
-                                if (modelData === "INFO")  return theme.text
-                                if (modelData === "WARN")  return theme.warning
-                                return theme.danger
+                                if (modelData === "DEBUG") return Theme.textMuted
+                                if (modelData === "INFO")  return Theme.text
+                                if (modelData === "WARN")  return Theme.warning
+                                return Theme.danger
                             }
 
                             width: 52; height: 22
                             radius: 3
                             color:        active ? Qt.rgba(levelCol.r, levelCol.g, levelCol.b, 0.15) : "transparent"
-                            border.color: active ? levelCol : theme.border
+                            border.color: active ? levelCol : Theme.border
                             border.width: 1
 
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData
-                                color: active ? levelCol : theme.textMuted
-                                font.pixelSize: theme.fontSizeSmall
+                                color: active ? levelCol : Theme.textMuted
+                                font.pixelSize: Theme.fontSizeSmall
                                 font.family: "Consolas, Courier New, monospace"
                                 font.weight: Font.DemiBold
                             }
@@ -133,13 +135,13 @@ BaseDialog {
                 Rectangle {
                     implicitWidth: 100; implicitHeight: 22
                     radius: 3
-                    color: autoScrollMouse.containsMouse ? theme.surfaceRaised : "transparent"
+                    color: autoScrollMouse.containsMouse ? Theme.surfaceRaised : "transparent"
 
                     Text {
                         anchors.centerIn: parent
                         text: scrollToggle.checked ? "Auto-scroll ON" : "Auto-scroll OFF"
-                        color: scrollToggle.checked ? theme.accent : theme.textMuted
-                        font.pixelSize: theme.fontSizeSmall
+                        color: scrollToggle.checked ? Theme.accent : Theme.textMuted
+                        font.pixelSize: Theme.fontSizeSmall
                         font.family: "Consolas, Courier New, monospace"
                     }
                     MouseArea {
@@ -155,20 +157,20 @@ BaseDialog {
                 Rectangle {
                     implicitWidth: 48; implicitHeight: 22
                     radius: 3
-                    color: clearMouse.containsMouse ? theme.surfaceRaised : "transparent"
+                    color: clearMouse.containsMouse ? Theme.surfaceRaised : "transparent"
 
                     Text {
                         anchors.centerIn: parent
                         text: "Clear"
-                        color: theme.textMuted
-                        font.pixelSize: theme.fontSizeSmall
+                        color: Theme.textMuted
+                        font.pixelSize: Theme.fontSizeSmall
                         font.family: "Consolas, Courier New, monospace"
                     }
                     MouseArea {
                         id: clearMouse
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: { logModel.clear(); logViewModel.clear() }
+                        onClicked: { logModel.clear(); LogViewModel.clear() }
                     }
                 }
             }
@@ -198,7 +200,7 @@ BaseDialog {
                     // Timestamp
                     Text {
                         text: model.time
-                        color: theme.textMuted
+                        color: Theme.textMuted
                         font.pixelSize: 11
                         font.family: "Consolas, Courier New, monospace"
                         rightPadding: 8
@@ -227,7 +229,7 @@ BaseDialog {
                     // Logger name
                     Text {
                         text: model.name
-                        color: theme.textSecondary
+                        color: Theme.textSecondary
                         font.pixelSize: 11
                         font.family: "Consolas, Courier New, monospace"
                         leftPadding: 6
@@ -258,7 +260,7 @@ BaseDialog {
 
     // ── Receive new log records ───────────────────────────────────────────────
     Connections {
-        target: logViewModel
+        target: LogViewModel
 
         function onRecordAdded(time, level, name, message) {
             logModel.append({ time, level, name, message })

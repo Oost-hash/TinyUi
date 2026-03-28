@@ -50,6 +50,9 @@ from tinyui.ui_adapters import (
     wire_app_shutdown,
     wire_devtools_monitor,
 )
+from PySide6.QtQml import qmlRegisterSingletonInstance
+
+from tinyui.app_info import AppInfo
 from tinyui.const import APP_NAME, VERSION
 from tinyui.theme import Theme
 from tinyui.viewmodels.core_viewmodel import CoreViewModel
@@ -75,7 +78,7 @@ def _log_startup_phase(log, phase: str, start: float) -> None:
 
 def launch(core: CoreRuntime,
            *, pre_run: Callable[[], None] | None = None,
-           extra_context: dict[str, object] | None = None) -> int:
+           extra_context: dict[str, tuple[type, str, object]] | None = None) -> int:
     """Initialize and run the tinyui main window.
 
     Called by tinyui_boot after boot_runtime completes.
@@ -137,22 +140,24 @@ def launch(core: CoreRuntime,
     # ── QML engine ────────────────────────────────────────────────────────────
     phase_start = perf_counter()
     engine = create_engine()
-    ctx = engine.rootContext()
-    ctx.setContextProperty("appName",                APP_NAME)
-    ctx.setContextProperty("theme",                  theme)
-    ctx.setContextProperty("coreViewModel",          core_vm)
-    ctx.setContextProperty("menuViewModel",          menu_vm)
-    ctx.setContextProperty("statusBarViewModel",     statusbar_vm)
-    ctx.setContextProperty("settingsPanelViewModel", settings_vm)
-    ctx.setContextProperty("tabViewModel",           tab_vm)
+    qmlRegisterSingletonInstance(Theme, "TinyUI", 1, 0, "Theme", theme)
+    qmlRegisterSingletonInstance(CoreViewModel, "TinyUI", 1, 0, "CoreViewModel", core_vm)
+    qmlRegisterSingletonInstance(MenuViewModel, "TinyUI", 1, 0, "MenuViewModel", menu_vm)
+    qmlRegisterSingletonInstance(StatusBarViewModel, "TinyUI", 1, 0, "StatusBarViewModel", statusbar_vm)
+    qmlRegisterSingletonInstance(SettingsPanelViewModel, "TinyUI", 1, 0, "SettingsPanelViewModel", settings_vm)
+    qmlRegisterSingletonInstance(TabViewModel, "TinyUI", 1, 0, "TabViewModel", tab_vm)
 
     devtools_ui = attach_optional_devtools_ui(core, engine, log_inspector)
-    ctx.setContextProperty("devToolsAvailable", devtools_ui is not None)
-    ctx.setContextProperty("devToolsQmlPath", "" if devtools_ui is None else devtools_ui.qml_url)
+    app_info = AppInfo(
+        app_name=APP_NAME,
+        devtools_available=devtools_ui is not None,
+        devtools_path="" if devtools_ui is None else devtools_ui.qml_url,
+    )
+    qmlRegisterSingletonInstance(AppInfo, "TinyUI", 1, 0, "AppInfo", app_info)
 
     if extra_context:
-        for key, value in extra_context.items():
-            ctx.setContextProperty(key, value)
+        for name, (cls, module, instance) in extra_context.items():
+            qmlRegisterSingletonInstance(cls, module, 1, 0, name, instance)
 
     qml_dir = core.paths.qml_dir("tinyui")
     engine.load(QUrl.fromLocalFile(str(qml_dir / "main.qml")))
@@ -195,14 +200,14 @@ def launch(core: CoreRuntime,
         apply_dwm_frame(hwnd)
         _win_ctrl      = WindowController(hwnd, dpr=dpr, set_left_button_width=_set_left)
         _chrome_helper = WindowChromeHelper(dpr=dpr)
-        engine.rootContext().setContextProperty("windowChromeHelper", _chrome_helper)
+        qmlRegisterSingletonInstance(WindowChromeHelper, "TinyUI", 1, 0, "WindowChromeHelper", _chrome_helper)
 
     elif sys.platform.startswith("linux") or sys.platform == "darwin":
         from tinyui.windowing.unix_window import WindowController
         _win_ctrl = WindowController(window)
 
     if _win_ctrl is not None:
-        engine.rootContext().setContextProperty("windowController", _win_ctrl)
+        qmlRegisterSingletonInstance(WindowController, "TinyUI", 1, 0, "WindowController", _win_ctrl)
     _log_startup_phase(log, "windowing", phase_start)
     if core.units.get("ui.main") is not None:
         core.units.set_state("ui.main", "running")

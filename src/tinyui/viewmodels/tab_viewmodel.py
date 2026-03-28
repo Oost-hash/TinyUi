@@ -20,8 +20,13 @@
 #  licensed under GPLv3.
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
+from PySide6.QtQml import QmlElement
+
+QML_IMPORT_NAME = "TinyUI"
+QML_IMPORT_MAJOR_VERSION = 1
 
 
+@QmlElement
 class TabViewModel(QObject):
     currentIndexChanged = Signal()
     tabNamesChanged = Signal()

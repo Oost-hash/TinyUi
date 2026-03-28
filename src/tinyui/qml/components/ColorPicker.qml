@@ -20,6 +20,7 @@
 //  licensed under GPLv3.
 
 import QtQuick
+import TinyUI
 
 Item {
     id: root
@@ -65,7 +66,7 @@ Item {
             width: 20; height: 20; radius: 4
             anchors.verticalCenter: parent.verticalCenter
             color: root.value
-            border.width: 1; border.color: theme.border
+            border.width: 1; border.color: Theme.border
 
             MouseArea {
                 anchors.fill: parent
@@ -77,9 +78,9 @@ Item {
         Rectangle {
             width: 92; height: 28; radius: 4
             anchors.verticalCenter: parent.verticalCenter
-            color: theme.surfaceFloating
+            color: Theme.surfaceFloating
             border.width: 1
-            border.color: hexInput.activeFocus ? theme.accent : theme.border
+            border.color: hexInput.activeFocus ? Theme.accent : Theme.border
             Behavior on border.color { ColorAnimation { duration: 80 } }
 
             TextInput {
@@ -87,8 +88,8 @@ Item {
                 anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8
                 verticalAlignment: TextInput.AlignVCenter
                 text: root._toHex(root.value)
-                color: theme.text
-                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                color: Theme.text
+                font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
                 maximumLength: 7; selectByMouse: true
                 Keys.onReturnPressed: _commitHex(text)
                 Keys.onEscapePressed: { text = root._toHex(root.value); focus = false }
@@ -157,14 +158,14 @@ Item {
             onPaint: {
                 var ctx = getContext("2d")
                 ctx.clearRect(0, 0, width, height)
-                ctx.fillStyle   = theme.border
-                ctx.strokeStyle = theme.border
+                ctx.fillStyle   = Theme.border
+                ctx.strokeStyle = Theme.border
                 ctx.beginPath()
                 ctx.moveTo(0, 0)
                 ctx.lineTo(width / 2, height)
                 ctx.lineTo(width, 0)
                 ctx.fill()
-                ctx.fillStyle = theme.surfaceFloating
+                ctx.fillStyle = Theme.surfaceFloating
                 ctx.beginPath()
                 ctx.moveTo(1, 0)
                 ctx.lineTo(width / 2, height - 1)
@@ -182,8 +183,8 @@ Item {
             width: pickerWin.width
             height: 268
             radius: pickerWin._radius
-            color: theme.surfaceFloating
-            border.width: 1; border.color: theme.border
+            color: Theme.surfaceFloating
+            border.width: 1; border.color: Theme.border
 
             Column {
                 anchors.fill: parent
@@ -276,14 +277,14 @@ Item {
                     Rectangle {
                         width: 32; height: 28; radius: 4
                         color: root._currentColor()
-                        border.width: 1; border.color: theme.border
+                        border.width: 1; border.color: Theme.border
                     }
 
                     Rectangle {
                         width: parent.width - 32 - 8; height: 28; radius: 4
-                        color: theme.surface
+                        color: Theme.surface
                         border.width: 1
-                        border.color: pickerHex.activeFocus ? theme.accent : theme.border
+                        border.color: pickerHex.activeFocus ? Theme.accent : Theme.border
                         Behavior on border.color { ColorAnimation { duration: 80 } }
 
                         TextInput {
@@ -291,8 +292,8 @@ Item {
                             anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8
                             verticalAlignment: TextInput.AlignVCenter
                             text: root._toHex(root._currentColor())
-                            color: theme.text
-                            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                            color: Theme.text
+                            font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
                             maximumLength: 7; selectByMouse: true
 
                             Connections {
@@ -318,14 +319,14 @@ Item {
                 // ── OK button ────────────────────────────────────────────────
                 Rectangle {
                     width: parent.width; height: 28; radius: 4
-                    color: okArea.containsMouse ? theme.accent : theme.surfaceRaised
+                    color: okArea.containsMouse ? Theme.accent : Theme.surfaceRaised
                     Behavior on color { ColorAnimation { duration: 80 } }
 
                     Text {
                         anchors.centerIn: parent
                         text: "OK"
-                        color: okArea.containsMouse ? theme.accentText : theme.text
-                        font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                        color: okArea.containsMouse ? Theme.accentText : Theme.text
+                        font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
                         font.weight: Font.Medium
                         Behavior on color { ColorAnimation { duration: 80 } }
                     }

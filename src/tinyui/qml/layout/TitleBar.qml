@@ -21,6 +21,8 @@
 
 import QtQuick
 import QtQuick.Controls
+import TinyUI
+import TinyWidgets
 import "../components"
 
 Rectangle {
@@ -32,18 +34,18 @@ Rectangle {
                 label: "Show Overlay",
                 sep: false,
                 checkable: true,
-                checked: widgetOverlayState ? widgetOverlayState.overlayVisible : false,
+                checked: WidgetOverlayState ? WidgetOverlayState.overlayVisible : false,
                 action: function() {
-                    if (widgetOverlayState)
-                        widgetOverlayState.toggleOverlayVisible()
+                    if (WidgetOverlayState)
+                        WidgetOverlayState.toggleOverlayVisible()
                 }
             },
             { label: "",           sep: true,  action: null },
-            { label: "Settings",   sep: false, action: function() { settingsPanelViewModel.openPanel(); menuViewModel.closeMenu() } }
+            { label: "Settings",   sep: false, action: function() { SettingsPanelViewModel.openPanel(); MenuViewModel.closeMenu() } }
         ]
         if (root.hasDevTools) {
             items.push({ label: "", sep: true, action: null })
-            items.push({ label: "Dev Tools", sep: false, action: function() { root.openDevTools(); menuViewModel.closeMenu() } })
+            items.push({ label: "Dev Tools", sep: false, action: function() { root.openDevTools(); MenuViewModel.closeMenu() } })
         }
         items.push(
             { label: "",           sep: true,  action: null },
@@ -52,28 +54,28 @@ Rectangle {
         return items
     }
 
-    height: theme.titleBarHeight
-    color: theme.surfaceRaised
+    height: Theme.titleBarHeight
+    color: Theme.surfaceRaised
 
     Rectangle {
         anchors.bottom: parent.bottom
         width: parent.width
         height: 1
-        color: theme.border
+        color: Theme.border
     }
 
     // Keep WndProc left zone in sync — expand to cover open dropdown so
     // the drag zone doesn't overlap the visible menu items.
     function _updateLeftZone() {
-        if (typeof windowController === "undefined") return
-        var zone = menuViewModel.dropdownOpen
+        if (typeof WindowController === "undefined") return
+        var zone = MenuViewModel.dropdownOpen
                    ? Math.max(leftRow.width, menuDropdown.width)
                    : leftRow.width
-        windowController.setLeftButtonWidth(zone)
+        WindowController.setLeftButtonWidth(zone)
     }
 
     Connections {
-        target: menuViewModel
+        target: MenuViewModel
         function onDropdownOpenChanged() { titleBar._updateLeftZone() }
     }
 
@@ -82,11 +84,11 @@ Rectangle {
     DragHandler {
         enabled: Qt.platform.os === "linux"
         target: null
-        onActiveChanged: if (active) windowController.startMove()
+        onActiveChanged: if (active) WindowController.startMove()
     }
     TapHandler {
         enabled: Qt.platform.os === "linux"
-        onTapped: if (tapCount === 2) windowController.toggleMaximize()
+        onTapped: if (tapCount === 2) WindowController.toggleMaximize()
     }
 
     // ── Inline dropdown component: plain Item, no Popup overlay ──────────────
@@ -98,10 +100,10 @@ Rectangle {
         y: titleBar.height
 
         // Background + 3-sided border (no top)
-        Rectangle { anchors.fill: parent; color: theme.surfaceAlt }
-        Rectangle { anchors.left: parent.left;   width: 1;  height: parent.height; color: theme.border }
-        Rectangle { anchors.bottom: parent.bottom; height: 1; width: parent.width;  color: theme.border }
-        Rectangle { anchors.right: parent.right;  width: 1;  height: parent.height; color: theme.border }
+        Rectangle { anchors.fill: parent; color: Theme.surfaceAlt }
+        Rectangle { anchors.left: parent.left;   width: 1;  height: parent.height; color: Theme.border }
+        Rectangle { anchors.bottom: parent.bottom; height: 1; width: parent.width;  color: Theme.border }
+        Rectangle { anchors.right: parent.right;  width: 1;  height: parent.height; color: Theme.border }
 
         Behavior on opacity {
             NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
@@ -116,14 +118,14 @@ Rectangle {
 
         width: ListView.view ? ListView.view.width : parent.width
         height: modelData.sep ? 9 : 28
-        color: (!modelData.sep && rowMouse.containsMouse) ? theme.surfaceRaised : "transparent"
+        color: (!modelData.sep && rowMouse.containsMouse) ? Theme.surfaceRaised : "transparent"
 
         Rectangle {
             visible: modelData.sep
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: parent.left; anchors.right: parent.right
             anchors.leftMargin: 8;     anchors.rightMargin: 8
-            height: 1; color: theme.border
+            height: 1; color: Theme.border
         }
 
         Text {
@@ -132,8 +134,8 @@ Rectangle {
             anchors.left: checkboxIndicator.visible ? checkboxIndicator.right : parent.left
             anchors.leftMargin: checkboxIndicator.visible ? 10 : 12
             text: modelData.label
-            color: theme.text
-            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+            color: Theme.text
+            font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
         }
 
         Rectangle {
@@ -145,17 +147,17 @@ Rectangle {
             width: 14
             height: 14
             radius: 3
-            color: !!modelData.checked ? theme.accent : "transparent"
+            color: !!modelData.checked ? Theme.accent : "transparent"
             border.width: 1
-            border.color: !!modelData.checked ? theme.accent : theme.border
+            border.color: !!modelData.checked ? Theme.accent : Theme.border
 
             Text {
                 anchors.centerIn: parent
                 visible: !!modelData.checked
                 text: "✓"
-                color: theme.accentText
+                color: Theme.accentText
                 font.pixelSize: 9
-                font.family: theme.fontFamily
+                font.family: Theme.fontFamily
                 font.weight: Font.DemiBold
             }
         }
@@ -175,7 +177,7 @@ Rectangle {
         id: menuDropdown
         x: 0
         width: 160
-        opacity: menuViewModel.dropdownOpen ? 1.0 : 0.0
+        opacity: MenuViewModel.dropdownOpen ? 1.0 : 0.0
         visible: opacity > 0
 
         Column {
@@ -204,8 +206,8 @@ Rectangle {
 
         HoverHandler {
             onHoveredChanged: {
-                if (hovered) menuViewModel.mouseEnteredMenu()
-                else menuViewModel.mouseLeftMenu()
+                if (hovered) MenuViewModel.mouseEnteredMenu()
+                else MenuViewModel.mouseLeftMenu()
             }
         }
 
@@ -215,21 +217,21 @@ Rectangle {
             implicitWidth: menuIcon.implicitWidth + menuLabel.implicitWidth + 28
             hoverEnabled: true
             onHoveredChanged: {
-                if (hovered && menuViewModel.menuOpen)
-                    menuViewModel.closeActivePopup()
+                if (hovered && MenuViewModel.menuOpen)
+                    MenuViewModel.closeActivePopup()
             }
-            onClicked: menuViewModel.toggleMenu()
+            onClicked: MenuViewModel.toggleMenu()
 
             background: Item {
-                readonly property bool active: menuViewModel.dropdownOpen
+                readonly property bool active: MenuViewModel.dropdownOpen
 
                 Rectangle {
                     anchors.fill: parent
-                    color: parent.active ? theme.surfaceAlt
-                                        : menuBtn.hovered ? theme.surfaceFloating : "transparent"
+                    color: parent.active ? Theme.surfaceAlt
+                                        : menuBtn.hovered ? Theme.surfaceFloating : "transparent"
                 }
-                Rectangle { visible: parent.active; anchors.left:  parent.left;  width: 1; height: parent.height; color: theme.border }
-                Rectangle { visible: parent.active; anchors.right: parent.right; width: 1; height: parent.height; color: theme.border }
+                Rectangle { visible: parent.active; anchors.left:  parent.left;  width: 1; height: parent.height; color: Theme.border }
+                Rectangle { visible: parent.active; anchors.right: parent.right; width: 1; height: parent.height; color: Theme.border }
             }
 
             contentItem: Item {
@@ -240,7 +242,7 @@ Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 16
                     height: 16
-                    source: menuViewModel.menuOpen
+                    source: MenuViewModel.menuOpen
                         ? "../../assets/icons/menu-open.svg"
                         : "../../assets/icons/menu.svg"
                     sourceSize.width: width
@@ -252,9 +254,9 @@ Rectangle {
                     id: menuLabel
                     anchors.left: menuIcon.right; anchors.leftMargin: 8
                     anchors.verticalCenter: parent.verticalCenter
-                    text: appName
-                    color: (menuViewModel.menuOpen || menuBtn.hovered) ? "#FFFFFF" : theme.textMuted
-                    font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                    text: AppInfo.appName
+                    color: (MenuViewModel.menuOpen || menuBtn.hovered) ? "#FFFFFF" : Theme.textMuted
+                    font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
                     font.weight: Font.Medium
                 }
             }
@@ -274,7 +276,7 @@ Rectangle {
         TitleBarButton {
             height: parent.height
             iconSource: "../../assets/icons/window-minimize.svg"
-            onClicked: windowController.minimize()
+            onClicked: WindowController.minimize()
         }
 
         TitleBarButton {
@@ -282,7 +284,7 @@ Rectangle {
             iconSource: root.visibility === Window.Maximized
                 ? "../../assets/icons/window-restore.svg"
                 : "../../assets/icons/window-maximize.svg"
-            onClicked: windowController.toggleMaximize()
+            onClicked: WindowController.toggleMaximize()
         }
 
         TitleBarButton {

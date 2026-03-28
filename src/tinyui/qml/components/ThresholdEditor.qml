@@ -20,6 +20,7 @@
 //  licensed under GPLv3.
 
 import QtQuick
+import TinyUI
 
 // ── ThresholdEditor ────────────────────────────────────────────────────────────
 // Renders the full threshold list for a WidgetContext.
@@ -48,11 +49,11 @@ Column {
             anchors.verticalCenter: parent.verticalCenter
             wrapMode:      Text.WordWrap
             text: "Each entry is an upper bound — the color is used while the value is at or below that number. Above all thresholds the widget uses its default color."
-            color: theme.textMuted
-            font.pixelSize: theme.fontSizeSmall
-            font.family:    theme.fontFamily
+            color: Theme.textMuted
+            font.pixelSize: Theme.fontSizeSmall
+            font.family:    Theme.fontFamily
         }
-        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border; opacity: 0.4 }
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border; opacity: 0.4 }
     }
 
     // ── Threshold entries ─────────────────────────────────────────────────────
@@ -103,7 +104,7 @@ Column {
                             anchors.centerIn: parent
                             text: entry.index + 1
                             font.pixelSize: 9; font.weight: Font.Bold
-                            font.family: theme.fontFamily
+                            font.family: Theme.fontFamily
                             color: Qt.hsla(0, 0, Qt.colorEqual(entry.modelData.color, "black") ? 1 : 0, 1)
                         }
                     }
@@ -111,9 +112,9 @@ Column {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "≤"
-                        color: theme.textSecondary
-                        font.pixelSize: theme.fontSizeBase
-                        font.family:    theme.fontFamily
+                        color: Theme.textSecondary
+                        font.pixelSize: Theme.fontSizeBase
+                        font.family:    Theme.fontFamily
                     }
 
                     NumberStepper {
@@ -143,9 +144,9 @@ Column {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Flash"
-                        color: theme.textMuted
-                        font.pixelSize: theme.fontSizeSmall
-                        font.family:    theme.fontFamily
+                        color: Theme.textMuted
+                        font.pixelSize: Theme.fontSizeSmall
+                        font.family:    Theme.fontFamily
                     }
 
                     ToggleSwitch {
@@ -162,15 +163,15 @@ Column {
                         width: 22; height: 22; radius: 11
                         color:        rmArea.containsMouse ? "#40FF4444" : "transparent"
                         border.width: 1
-                        border.color: rmArea.containsMouse ? "#FF4444"   : theme.border
+                        border.color: rmArea.containsMouse ? "#FF4444"   : Theme.border
                         Behavior on color        { ColorAnimation { duration: 80 } }
                         Behavior on border.color { ColorAnimation { duration: 80 } }
 
                         Text {
                             anchors.centerIn: parent
                             text:  "×"
-                            font.pixelSize: 14; font.family: theme.fontFamily
-                            color: rmArea.containsMouse ? "#FF4444" : theme.textMuted
+                            font.pixelSize: 14; font.family: Theme.fontFamily
+                            color: rmArea.containsMouse ? "#FF4444" : Theme.textMuted
                             Behavior on color { ColorAnimation { duration: 80 } }
                         }
 
@@ -193,7 +194,7 @@ Column {
                 readonly property bool expanded: entry.modelData.flash
                 height: expanded ? 36 : 0
                 clip:   true
-                color:  theme.surfaceAlt
+                color:  Theme.surfaceAlt
                 opacity: expanded ? 1 : 0
 
                 Behavior on height  { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
@@ -209,9 +210,9 @@ Column {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Target"
-                        color: theme.textMuted
-                        font.pixelSize: theme.fontSizeSmall
-                        font.family:    theme.fontFamily
+                        color: Theme.textMuted
+                        font.pixelSize: Theme.fontSizeSmall
+                        font.family:    Theme.fontFamily
                     }
 
                     ThemedComboBox {
@@ -231,9 +232,9 @@ Column {
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Speed"
-                        color: theme.textMuted
-                        font.pixelSize: theme.fontSizeSmall
-                        font.family:    theme.fontFamily
+                        color: Theme.textMuted
+                        font.pixelSize: Theme.fontSizeSmall
+                        font.family:    Theme.fontFamily
                     }
 
                     NumberStepper {
@@ -250,7 +251,7 @@ Column {
             // Separator
             Rectangle {
                 anchors.left: parent.left; anchors.right: parent.right
-                height: 1; color: theme.border; opacity: 0.4
+                height: 1; color: Theme.border; opacity: 0.4
             }
         }
     }
@@ -265,8 +266,8 @@ Column {
             anchors.left: parent.left; anchors.leftMargin: 16
             anchors.verticalCenter: parent.verticalCenter
             width: 130; height: 26; radius: 4
-            color:        addArea.containsMouse ? theme.surfaceRaised : "transparent"
-            border.width: 1; border.color: theme.border
+            color:        addArea.containsMouse ? Theme.surfaceRaised : "transparent"
+            border.width: 1; border.color: Theme.border
             Behavior on color { ColorAnimation { duration: 80 } }
 
             Row {
@@ -275,15 +276,15 @@ Column {
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text:  "+"
-                    font.pixelSize: 14; font.family: theme.fontFamily
-                    color: addArea.containsMouse ? theme.accent : theme.textMuted
+                    font.pixelSize: 14; font.family: Theme.fontFamily
+                    color: addArea.containsMouse ? Theme.accent : Theme.textMuted
                     Behavior on color { ColorAnimation { duration: 80 } }
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text:  "Add threshold"
-                    font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
-                    color: addArea.containsMouse ? theme.accent : theme.textMuted
+                    font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
+                    color: addArea.containsMouse ? Theme.accent : Theme.textMuted
                     Behavior on color { ColorAnimation { duration: 80 } }
                 }
             }

@@ -20,6 +20,8 @@
 //  licensed under GPLv3.
 
 import QtQuick
+import TinyUI
+import TinyWidgets
 import "../components"
 
 Item {
@@ -38,8 +40,8 @@ Item {
         if (nextContext && nextContext.supportsDemoMode && !nextContext.demoRequested)
             nextContext.requestDemo()
         demoLeaseContext = nextContext && nextContext.demoRequested ? nextContext : null
-        if (typeof widgetOverlayState !== "undefined")
-            widgetOverlayState.setPreviewWidget(nextContext ? nextContext.widgetId : "")
+        if (typeof WidgetOverlayState !== "undefined")
+            WidgetOverlayState.setPreviewWidget(nextContext ? nextContext.widgetId : "")
     }
 
     onSelectedContextChanged: {
@@ -51,15 +53,15 @@ Item {
             demoLeaseContext.releaseDemo()
             demoLeaseContext = null
         }
-        if (!visible && typeof widgetOverlayState !== "undefined")
-            widgetOverlayState.setPreviewWidget("")
+        if (!visible && typeof WidgetOverlayState !== "undefined")
+            WidgetOverlayState.setPreviewWidget("")
     }
 
     Component.onDestruction: {
         if (demoLeaseContext && demoLeaseContext.demoRequested)
             demoLeaseContext.releaseDemo()
-        if (typeof widgetOverlayState !== "undefined")
-            widgetOverlayState.setPreviewWidget("")
+        if (typeof WidgetOverlayState !== "undefined")
+            WidgetOverlayState.setPreviewWidget("")
     }
 
     // ── Left: widget list ──────────────────────────────────────────────────────
@@ -87,24 +89,24 @@ Item {
                 Text {
                     width: widgetTab.colName; height: parent.height
                     verticalAlignment: Text.AlignVCenter
-                    text: "Widget"; color: theme.text
-                    font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                    text: "Widget"; color: Theme.text
+                    font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
                 }
                 Text {
                     width: parent.width - widgetTab.colPad - widgetTab.colName - widgetTab.colToggle
                     height: parent.height
                     verticalAlignment: Text.AlignVCenter
-                    text: "Description"; color: theme.text
-                    font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                    text: "Description"; color: Theme.text
+                    font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
                 }
             }
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
         }
 
         ListView {
             anchors.top: tableHeader.bottom
             anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
-            clip: true; model: widgetModel; spacing: 0
+            clip: true; model: WidgetModel; spacing: 0
 
             delegate: Rectangle {
                 id: row
@@ -117,11 +119,11 @@ Item {
                     && widgetTab.selectedContext.widgetId === widgetContext.widgetId
 
                 width: ListView.view.width; height: 40
-                color: isSelected ? theme.surfaceRaised
-                     : (index % 2 === 0 ? theme.surfaceAlt : "transparent")
+                color: isSelected ? Theme.surfaceRaised
+                     : (index % 2 === 0 ? Theme.surfaceAlt : "transparent")
                 Behavior on color { ColorAnimation { duration: 80 } }
 
-                Rectangle { width: 2; height: parent.height; color: theme.accent; visible: row.isSelected }
+                Rectangle { width: 2; height: parent.height; color: Theme.accent; visible: row.isSelected }
 
                 Rectangle {
                     anchors.fill: parent
@@ -135,7 +137,7 @@ Item {
                     }
                 }
 
-                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border; opacity: 0.4 }
+                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border; opacity: 0.4 }
 
                 Row {
                     anchors.fill: parent
@@ -146,8 +148,8 @@ Item {
                         width: widgetTab.colName; height: parent.height
                         verticalAlignment: Text.AlignVCenter
                         text: row.widgetContext ? row.widgetContext.title : ""
-                        color: row.isSelected ? theme.accent : theme.text
-                        font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+                        color: row.isSelected ? Theme.accent : Theme.text
+                        font.pixelSize: Theme.fontSizeBase; font.family: Theme.fontFamily
                         font.weight: row.isSelected ? Font.DemiBold : Font.Normal
                         Behavior on color { ColorAnimation { duration: 80 } }
                     }
@@ -156,8 +158,8 @@ Item {
                         height: parent.height
                         verticalAlignment: Text.AlignVCenter
                         text: row.widgetContext ? row.widgetContext.description : ""
-                        color: rowHover.hovered ? "#dec184" : theme.textMuted
-                        font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                        color: rowHover.hovered ? "#dec184" : Theme.textMuted
+                        font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
                         elide: Text.ElideRight
                         Behavior on color { ColorAnimation { duration: 120 } }
                     }
@@ -190,7 +192,7 @@ Item {
         visible: widgetTab.selectedContext !== null
         anchors.top: parent.top; anchors.bottom: parent.bottom
         x: listPane.width; width: 1
-        color: theme.border
+        color: Theme.border
     }
 
     // ── Right: edit panel ─────────────────────────────────────────────────────
@@ -217,19 +219,19 @@ Item {
 
                 Text {
                     text: widgetTab.selectedContext ? widgetTab.selectedContext.title : ""
-                    color: theme.text
-                    font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+                    color: Theme.text
+                    font.pixelSize: Theme.fontSizeBase; font.family: Theme.fontFamily
                     font.weight: Font.DemiBold
                 }
                 Text {
                     text: widgetTab.selectedContext ? widgetTab.selectedContext.description : ""
-                    color: theme.textMuted
-                    font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                    color: Theme.textMuted
+                    font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
                     elide: Text.ElideRight
                 }
             }
 
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
         }
 
         Rectangle {
@@ -243,10 +245,10 @@ Item {
             height: active ? demoSectionInner.implicitHeight : 0
             Behavior on height { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
             clip: true
-            color: theme.surfaceAlt
+            color: Theme.surfaceAlt
             visible: height > 0
 
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
+            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
 
             Column {
                 id: demoSectionInner
@@ -323,9 +325,9 @@ Item {
                         anchors.right: parent.right; anchors.rightMargin: 0
                         anchors.verticalCenter: parent.verticalCenter
                         width: 120; height: 28; radius: 4
-                        color: theme.surfaceFloating
+                        color: Theme.surfaceFloating
                         border.width: 1
-                        border.color: labelInput.activeFocus ? theme.accent : theme.border
+                        border.color: labelInput.activeFocus ? Theme.accent : Theme.border
                         Behavior on border.color { ColorAnimation { duration: 80 } }
 
                         TextInput {
@@ -333,8 +335,8 @@ Item {
                             anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8
                             verticalAlignment: TextInput.AlignVCenter
                             text: widgetTab.selectedContext ? widgetTab.selectedContext.label : ""
-                            color: theme.text
-                            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                            color: Theme.text
+                            font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
                             selectByMouse: true
                             onActiveFocusChanged: {
                                 if (!activeFocus && widgetTab.selectedContext)
@@ -442,7 +444,7 @@ Item {
             }
         }
 
-        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border; opacity: 0.4 }
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border; opacity: 0.4 }
 
         // Label (+ optional description) — same layout as SettingsDialog
         Column {
@@ -453,14 +455,14 @@ Item {
 
             Text {
                 text: editRowRoot.label
-                color: theme.text
-                font.pixelSize: theme.fontSizeBase; font.family: theme.fontFamily
+                color: Theme.text
+                font.pixelSize: Theme.fontSizeBase; font.family: Theme.fontFamily
             }
             Text {
                 visible: editRowRoot.description !== ""
                 text: editRowRoot.description
-                color: editRowHover.hovered ? "#dec184" : theme.textMuted
-                font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+                color: editRowHover.hovered ? "#dec184" : Theme.textMuted
+                font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
                 Behavior on color { ColorAnimation { duration: 120 } }
             }
         }
@@ -482,16 +484,16 @@ Item {
         anchors.left: parent ? parent.left : undefined
         anchors.right: parent ? parent.right : undefined
         height: 28
-        color: theme.surfaceAlt
+        color: Theme.surfaceAlt
 
         Text {
             anchors.left: parent.left; anchors.leftMargin: 16
             anchors.verticalCenter: parent.verticalCenter
             text: parent.text
-            color: theme.textSecondary
-            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+            color: Theme.textSecondary
+            font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
             font.weight: Font.Medium
         }
-        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: theme.border }
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
     }
 }

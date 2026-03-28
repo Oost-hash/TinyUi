@@ -25,7 +25,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterSingletonInstance
 
 from tinycore.logging import LogInspector
 from tinycore.runtime.core_runtime import CoreRuntime
@@ -49,7 +49,7 @@ class _MonitorLike(Protocol):
 class DevToolsRuntimeAttachment:
     state_monitor: _MonitorLike
     runtime_view_model: RuntimeViewModel
-    extra_context: dict[str, object]
+    extra_context: dict[str, tuple[type, str, object]]
 
 
 @dataclass(frozen=True)
@@ -99,8 +99,8 @@ def attach_runtime(
         state_monitor=_DevToolsMonitor(state_monitor, runtime_view_model),
         runtime_view_model=runtime_view_model,
         extra_context={
-            "stateMonitorViewModel": state_monitor,
-            "runtimeViewModel": runtime_view_model,
+            "StateMonitorViewModel": (StateMonitorViewModel, "TinyDevTools", state_monitor),
+            "RuntimeViewModel": (RuntimeViewModel, "TinyDevTools", runtime_view_model),
         },
     )
 
@@ -114,9 +114,8 @@ def attach_ui(
     """Attach devtools UI viewmodels and return the QML component path."""
     log_vm = LogViewModel(log_inspector)
     log_settings_vm = LogSettingsViewModel()
-    ctx = engine.rootContext()
-    ctx.setContextProperty("logViewModel", log_vm)
-    ctx.setContextProperty("logSettingsViewModel", log_settings_vm)
+    qmlRegisterSingletonInstance(LogViewModel, "TinyDevTools", 1, 0, "LogViewModel", log_vm)
+    qmlRegisterSingletonInstance(LogSettingsViewModel, "TinyDevTools", 1, 0, "LogSettingsViewModel", log_settings_vm)
 
     return DevToolsUiAttachment(
         log_view_model=log_vm,

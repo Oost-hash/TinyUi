@@ -21,12 +21,13 @@
 
 import QtQuick
 import QtQuick.Controls
+import TinyUI
 
 AbstractButton {
     id: btn
     property string iconText: ""
     property bool selected: false
-    property string textFont: theme.fontFamily
+    property string textFont: Theme.fontFamily
 
     width: 28
     height: parent.height
@@ -38,7 +39,7 @@ AbstractButton {
         text: btn.iconText
         font.family: btn.textFont
         font.pixelSize: 14
-        color: btn.selected ? theme.accent : "#FFFFFF"
+        color: btn.selected ? Theme.accent : "#FFFFFF"
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
     }

@@ -81,7 +81,7 @@ class CoreRuntime:
     runtime_inspector: RuntimeInspector | None
     overlay: _OverlayLike
     state_monitor: _StateMonitorLike | None
-    extra_context: dict[str, object]
+    extra_context: dict[str, tuple[type, str, object]]
     units: RuntimeRegistry
 
     def start_host_workers(self) -> None:

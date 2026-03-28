@@ -21,6 +21,7 @@
 
 import QtQuick
 import QtQuick.Controls
+import TinyUI
 
 AbstractButton {
     id: btn
@@ -28,12 +29,12 @@ AbstractButton {
     property bool isCloseButton: false
 
     width: 46
-    height: theme.titleBarHeight
+    height: Theme.titleBarHeight
     hoverEnabled: true
 
     background: Rectangle {
         color: btn.hovered
-               ? (btn.isCloseButton ? theme.danger : theme.surfaceFloating)
+               ? (btn.isCloseButton ? Theme.danger : Theme.surfaceFloating)
                : "transparent"
     }
 

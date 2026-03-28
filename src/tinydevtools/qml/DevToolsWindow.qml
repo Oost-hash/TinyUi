@@ -22,6 +22,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import TinyUI
+import TinyDevTools
 import "../../tinyui/qml/components"
 
 BaseDialog {
@@ -48,12 +50,12 @@ BaseDialog {
         Rectangle {
             Layout.fillWidth: true
             implicitHeight: 32
-            color: theme.surfaceAlt
+            color: Theme.surfaceAlt
 
             Rectangle {
                 anchors.bottom: parent.bottom
                 width: parent.width; height: 1
-                color: theme.border
+                color: Theme.border
             }
 
             Row {
@@ -79,16 +81,16 @@ BaseDialog {
                         Rectangle {
                             anchors.bottom: parent.bottom
                             width: parent.width; height: 2
-                            color: parent.active ? theme.accent : "transparent"
+                            color: parent.active ? Theme.accent : "transparent"
                         }
 
                         Text {
                             id: tabLabel
                             anchors.centerIn: parent
                             text: modelData
-                            color: parent.active ? theme.accent : theme.textMuted
-                            font.pixelSize: theme.fontSizeSmall
-                            font.family: theme.fontFamily
+                            color: parent.active ? Theme.accent : Theme.textMuted
+                            font.pixelSize: Theme.fontSizeSmall
+                            font.family: Theme.fontFamily
                             font.weight: parent.active ? Font.DemiBold : Font.Normal
                         }
 
@@ -113,7 +115,7 @@ BaseDialog {
             property real currentTime: Date.now()
             Timer { interval: 500; running: true; repeat: true; onTriggered: parent.currentTime = Date.now() }
 
-            readonly property var _vm: stateMonitorViewModel ?? null
+            readonly property var _vm: StateMonitorViewModel ?? null
 
             ColumnLayout {
                 anchors.fill: parent
@@ -123,12 +125,12 @@ BaseDialog {
                 Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 34
-                    color: theme.surfaceAlt
+                    color: Theme.surfaceAlt
 
                     Rectangle {
                         anchors.bottom: parent.bottom
                         width: parent.width; height: 1
-                        color: theme.border
+                        color: Theme.border
                     }
 
                     Row {
@@ -142,9 +144,9 @@ BaseDialog {
                             height: parent.height
                             verticalAlignment: Text.AlignVCenter
                             text: "Source"
-                            color: theme.textMuted
-                            font.pixelSize: theme.fontSizeSmall
-                            font.family: theme.fontFamily
+                            color: Theme.textMuted
+                            font.pixelSize: Theme.fontSizeSmall
+                            font.family: Theme.fontFamily
                         }
 
                         ThemedComboBox {
@@ -166,16 +168,16 @@ BaseDialog {
                             height: 22
                             radius: 3
                             anchors.verticalCenter: parent.verticalCenter
-                            color: copyAllMouse.containsMouse ? theme.surfaceRaised : "transparent"
-                            border.color: theme.border
+                            color: copyAllMouse.containsMouse ? Theme.surfaceRaised : "transparent"
+                            border.color: Theme.border
                             border.width: 1
                             opacity: stateTab._vm && stateTab._vm.hasSelectedSource && stateTab._vm.entries.length > 0 ? 1 : 0.45
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "Copy all"
-                                color: theme.textMuted
-                                font.pixelSize: theme.fontSizeSmall
+                                color: Theme.textMuted
+                                font.pixelSize: Theme.fontSizeSmall
                                 font.family: "Consolas, Courier New, monospace"
                             }
 
@@ -197,17 +199,17 @@ BaseDialog {
                             radius: 3
                             anchors.verticalCenter: parent.verticalCenter
                             color: stateTab._vm && stateTab._vm.captureActive
-                                   ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.16)
-                                   : (recordMouse.containsMouse ? theme.surfaceRaised : "transparent")
-                            border.color: stateTab._vm && stateTab._vm.captureActive ? theme.accent : theme.border
+                                   ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.16)
+                                   : (recordMouse.containsMouse ? Theme.surfaceRaised : "transparent")
+                            border.color: stateTab._vm && stateTab._vm.captureActive ? Theme.accent : Theme.border
                             border.width: 1
                             opacity: stateTab._vm && stateTab._vm.hasSelectedSource && stateTab._vm.entries.length > 0 ? 1 : 0.45
 
                             Text {
                                 anchors.centerIn: parent
                                 text: stateTab._vm && stateTab._vm.captureActive ? "Recording" : "Record"
-                                color: stateTab._vm && stateTab._vm.captureActive ? theme.accent : theme.textMuted
-                                font.pixelSize: theme.fontSizeSmall
+                                color: stateTab._vm && stateTab._vm.captureActive ? Theme.accent : Theme.textMuted
+                                font.pixelSize: Theme.fontSizeSmall
                                 font.family: "Consolas, Courier New, monospace"
                             }
 
@@ -228,16 +230,16 @@ BaseDialog {
                             height: 22
                             radius: 3
                             anchors.verticalCenter: parent.verticalCenter
-                            color: copyCaptureMouse.containsMouse ? theme.surfaceRaised : "transparent"
-                            border.color: theme.border
+                            color: copyCaptureMouse.containsMouse ? Theme.surfaceRaised : "transparent"
+                            border.color: Theme.border
                             border.width: 1
                             opacity: stateTab._vm && stateTab._vm.captureActive ? 1 : 0.45
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "Copy path"
-                                color: theme.textMuted
-                                font.pixelSize: theme.fontSizeSmall
+                                color: Theme.textMuted
+                                font.pixelSize: Theme.fontSizeSmall
                                 font.family: "Consolas, Courier New, monospace"
                             }
 
@@ -259,12 +261,12 @@ BaseDialog {
                 Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 24
-                    color: theme.surfaceAlt
+                    color: Theme.surfaceAlt
 
                     Rectangle {
                         anchors.bottom: parent.bottom
                         width: parent.width; height: 1
-                        color: theme.border
+                        color: Theme.border
                     }
 
                     Row {
@@ -277,7 +279,7 @@ BaseDialog {
                             height: parent.height
                             verticalAlignment: Text.AlignVCenter
                             text: "Property"
-                            color: theme.textMuted
+                            color: Theme.textMuted
                             font.pixelSize: 10
                             font.family: "Consolas, Courier New, monospace"
                             font.weight: Font.DemiBold
@@ -287,7 +289,7 @@ BaseDialog {
                             height: parent.height
                             verticalAlignment: Text.AlignVCenter
                             text: "Value"
-                            color: theme.textMuted
+                            color: Theme.textMuted
                             font.pixelSize: 10
                             font.family: "Consolas, Courier New, monospace"
                             font.weight: Font.DemiBold
@@ -319,7 +321,7 @@ BaseDialog {
                         Rectangle {
                             anchors.fill: parent
                             color: parent.isSection
-                                   ? theme.surfaceAlt
+                                   ? Theme.surfaceAlt
                                    : (parent.recentlyChanged
                                       ? "#24FFD700"
                                       : (index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.02)))
@@ -332,7 +334,7 @@ BaseDialog {
                             anchors.bottom: parent.bottom
                             width: parent.width
                             height: 1
-                            color: theme.border
+                            color: Theme.border
                             opacity: 0.4
                         }
 
@@ -348,7 +350,7 @@ BaseDialog {
                                 height: parent.height
                                 verticalAlignment: Text.AlignVCenter
                                 text: model.collapsed ? "▸" : "▾"
-                                color: theme.textMuted
+                                color: Theme.textMuted
                                 font.pixelSize: 10
                                 font.family: "Consolas, Courier New, monospace"
                             }
@@ -358,9 +360,9 @@ BaseDialog {
                                 height: parent.height
                                 verticalAlignment: Text.AlignVCenter
                                 text: model.sectionTitle
-                                color: theme.textSecondary
-                                font.pixelSize: theme.fontSizeSmall
-                                font.family: theme.fontFamily
+                                color: Theme.textSecondary
+                                font.pixelSize: Theme.fontSizeSmall
+                                font.family: Theme.fontFamily
                                 font.weight: Font.DemiBold
                             }
 
@@ -370,7 +372,7 @@ BaseDialog {
                                 horizontalAlignment: Text.AlignRight
                                 verticalAlignment: Text.AlignVCenter
                                 text: model.sectionCount
-                                color: theme.textMuted
+                                color: Theme.textMuted
                                 font.pixelSize: 10
                                 font.family: "Consolas, Courier New, monospace"
                             }
@@ -396,7 +398,7 @@ BaseDialog {
                                 width: 6; height: 6; radius: 3
                                 anchors.verticalCenter: parent.verticalCenter
                                 color: (stateTab.currentTime - changedAt) < 2000
-                                       ? "#44FF88" : theme.border
+                                       ? "#44FF88" : Theme.border
                                 Behavior on color { ColorAnimation { duration: 300 } }
                             }
 
@@ -405,7 +407,7 @@ BaseDialog {
                                 height: parent.height
                                 verticalAlignment: Text.AlignVCenter
                                 text: model.keyText
-                                color: theme.textMuted
+                                color: Theme.textMuted
                                 font.pixelSize: 11
                                 font.family: "Consolas, Courier New, monospace"
                                 elide: Text.ElideLeft
@@ -418,7 +420,7 @@ BaseDialog {
                                     anchors.fill: parent
                                     verticalAlignment: Text.AlignVCenter
                                     text: stateRow.showCopied ? "Copied" : model.valueText
-                                    color: stateRow.showCopied ? theme.accent : theme.text
+                                    color: stateRow.showCopied ? Theme.accent : Theme.text
                                     font.pixelSize: 11
                                     font.family: "Consolas, Courier New, monospace"
                                     elide: Text.ElideRight
@@ -451,9 +453,9 @@ BaseDialog {
                               : (!stateTab._vm.hasSelectedSource
                                  ? "Select a source above."
                                  : "No state available for this source yet.")
-                        color: theme.textMuted
-                        font.pixelSize: theme.fontSizeSmall
-                        font.family: theme.fontFamily
+                        color: Theme.textMuted
+                        font.pixelSize: Theme.fontSizeSmall
+                        font.family: Theme.fontFamily
                     }
                 }
             }
@@ -467,7 +469,7 @@ BaseDialog {
             Layout.fillHeight: true
             visible: devTools.currentTab === 1
 
-            readonly property var _vm: runtimeViewModel ?? null
+            readonly property var _vm: RuntimeViewModel ?? null
             property real unitColumnWidth: 280
             property real stateColumnWidth: 82
             property real kindColumnWidth: 78
@@ -488,12 +490,12 @@ BaseDialog {
                 Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 34
-                    color: theme.surfaceAlt
+                    color: Theme.surfaceAlt
 
                     Rectangle {
                         anchors.bottom: parent.bottom
                         width: parent.width; height: 1
-                        color: theme.border
+                        color: Theme.border
                     }
 
                     Row {
@@ -507,8 +509,8 @@ BaseDialog {
                             height: parent.height
                             verticalAlignment: Text.AlignVCenter
                             text: runtimeTab._vm ? runtimeTab._vm.summary : "No runtime data"
-                            color: theme.textMuted
-                            font.pixelSize: theme.fontSizeSmall
+                            color: Theme.textMuted
+                            font.pixelSize: Theme.fontSizeSmall
                             font.family: "Consolas, Courier New, monospace"
                             elide: Text.ElideRight
                         }
@@ -518,16 +520,16 @@ BaseDialog {
                             height: 22
                             radius: 3
                             anchors.verticalCenter: parent.verticalCenter
-                            color: runtimeCopyMouse.containsMouse ? theme.surfaceRaised : "transparent"
-                            border.color: theme.border
+                            color: runtimeCopyMouse.containsMouse ? Theme.surfaceRaised : "transparent"
+                            border.color: Theme.border
                             border.width: 1
                             opacity: runtimeTab._vm && runtimeTab._vm.units.length > 0 ? 1 : 0.45
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "Copy all"
-                                color: theme.textMuted
-                                font.pixelSize: theme.fontSizeSmall
+                                color: Theme.textMuted
+                                font.pixelSize: Theme.fontSizeSmall
                                 font.family: "Consolas, Courier New, monospace"
                             }
 
@@ -548,12 +550,12 @@ BaseDialog {
                 Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 30
-                    color: theme.surface
+                    color: Theme.surface
 
                     Rectangle {
                         anchors.bottom: parent.bottom
                         width: parent.width; height: 1
-                        color: theme.border
+                        color: Theme.border
                     }
 
                     Flickable {
@@ -574,14 +576,14 @@ BaseDialog {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 44; height: 20; radius: 3
                                 readonly property bool on: runtimeTab._vm && runtimeTab._vm.stateFilters.length === runtimeTab._vm.availableStateFilters.length
-                                color: on ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.18) : "transparent"
-                                border.color: on ? theme.accent : theme.border
+                                color: on ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18) : "transparent"
+                                border.color: on ? Theme.accent : Theme.border
                                 border.width: 1
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "ALL"
-                                    color: parent.on ? theme.accent : theme.textMuted
+                                    color: parent.on ? Theme.accent : Theme.textMuted
                                     font.pixelSize: 10
                                     font.family: "Consolas, Courier New, monospace"
                                     font.weight: Font.Bold
@@ -600,7 +602,7 @@ BaseDialog {
                             Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 1; height: 14
-                                color: theme.border
+                                color: Theme.border
                             }
 
                             Repeater {
@@ -614,15 +616,15 @@ BaseDialog {
 
                                     readonly property bool active: runtimeTab._vm && runtimeTab._vm.stateFilters.indexOf(modelData) >= 0
 
-                                    color: active ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.12) : "transparent"
-                                    border.color: active ? theme.accent : theme.border
+                                    color: active ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.12) : "transparent"
+                                    border.color: active ? Theme.accent : Theme.border
                                     border.width: 1
 
                                     Text {
                                         id: filterLabel
                                         anchors.centerIn: parent
                                         text: modelData
-                                        color: parent.active ? theme.accent : theme.textMuted
+                                        color: parent.active ? Theme.accent : Theme.textMuted
                                         font.pixelSize: 10
                                         font.family: "Consolas, Courier New, monospace"
                                     }
@@ -644,12 +646,12 @@ BaseDialog {
                 Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 24
-                    color: theme.surfaceAlt
+                    color: Theme.surfaceAlt
 
                     Rectangle {
                         anchors.bottom: parent.bottom
                         width: parent.width; height: 1
-                        color: theme.border
+                        color: Theme.border
                     }
 
                     Flickable {
@@ -672,7 +674,7 @@ BaseDialog {
                                     anchors.fill: parent
                                     verticalAlignment: Text.AlignVCenter
                                     text: "Unit" + (runtimeTab._vm && runtimeTab._vm.sortKey === "id" ? (runtimeTab._vm.sortDescending ? " ▼" : " ▲") : "")
-                                    color: theme.textMuted
+                                    color: Theme.textMuted
                                     font.pixelSize: 10
                                     font.family: "Consolas, Courier New, monospace"
                                     font.weight: Font.DemiBold
@@ -691,7 +693,7 @@ BaseDialog {
                                     anchors.bottom: parent.bottom
                                     anchors.right: parent.right
                                     width: 6
-                                    color: unitResize.containsMouse || unitResize.drag.active ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.22) : "transparent"
+                                    color: unitResize.containsMouse || unitResize.drag.active ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.22) : "transparent"
 
                                     MouseArea {
                                         id: unitResize
@@ -720,7 +722,7 @@ BaseDialog {
                                     anchors.fill: parent
                                     verticalAlignment: Text.AlignVCenter
                                     text: "State" + (runtimeTab._vm && runtimeTab._vm.sortKey === "state" ? (runtimeTab._vm.sortDescending ? " ▼" : " ▲") : "")
-                                    color: theme.textMuted
+                                    color: Theme.textMuted
                                     font.pixelSize: 10
                                     font.family: "Consolas, Courier New, monospace"
                                     font.weight: Font.DemiBold
@@ -735,11 +737,11 @@ BaseDialog {
                                 }
                             }
 
-                            Text { width: runtimeTab.kindColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Kind"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
-                            Text { width: runtimeTab.policyColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Policy"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
-                            Text { width: runtimeTab.activationColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Activation"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
-                            Text { width: runtimeTab.stageColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Stage"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
-                            Text { width: runtimeTab.pidColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "PID"; color: theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                            Text { width: runtimeTab.kindColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Kind"; color: Theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                            Text { width: runtimeTab.policyColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Policy"; color: Theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                            Text { width: runtimeTab.activationColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Activation"; color: Theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                            Text { width: runtimeTab.stageColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "Stage"; color: Theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
+                            Text { width: runtimeTab.pidColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: "PID"; color: Theme.textMuted; font.pixelSize: 10; font.family: "Consolas, Courier New, monospace"; font.weight: Font.DemiBold }
 
                             Rectangle {
                                 width: runtimeTab.parentColumnWidth; height: parent.height; color: "transparent"
@@ -747,7 +749,7 @@ BaseDialog {
                                     anchors.fill: parent
                                     verticalAlignment: Text.AlignVCenter
                                     text: "Parent"
-                                    color: theme.textMuted
+                                    color: Theme.textMuted
                                     font.pixelSize: 10
                                     font.family: "Consolas, Courier New, monospace"
                                     font.weight: Font.DemiBold
@@ -758,7 +760,7 @@ BaseDialog {
                                     anchors.bottom: parent.bottom
                                     anchors.right: parent.right
                                     width: 6
-                                    color: parentResize.containsMouse || parentResize.drag.active ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.22) : "transparent"
+                                    color: parentResize.containsMouse || parentResize.drag.active ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.22) : "transparent"
 
                                     MouseArea {
                                         id: parentResize
@@ -833,7 +835,7 @@ BaseDialog {
                                             height: parent.height
                                             verticalAlignment: Text.AlignVCenter
                                             text: modelData.hasChildren ? (modelData.expanded ? "▾" : "▸") : ""
-                                            color: theme.textMuted
+                                            color: Theme.textMuted
                                             font.pixelSize: 10
                                             font.family: "Consolas, Courier New, monospace"
                                         }
@@ -843,7 +845,7 @@ BaseDialog {
                                             height: parent.height
                                             verticalAlignment: Text.AlignVCenter
                                             text: modelData.displayId
-                                            color: theme.text
+                                            color: Theme.text
                                             font.pixelSize: 11
                                             font.family: "Consolas, Courier New, monospace"
                                             elide: Text.ElideRight
@@ -859,13 +861,13 @@ BaseDialog {
                                         }
                                     }
                                 }
-                                Text { width: runtimeTab.stateColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.state; color: modelData.state === "failed" ? theme.danger : (modelData.state === "running" ? theme.accent : theme.textMuted); font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
-                                Text { width: runtimeTab.kindColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.kind; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
-                                Text { width: runtimeTab.policyColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.execution; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
-                                Text { width: runtimeTab.activationColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.activation; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
-                                Text { width: runtimeTab.stageColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.stage; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
-                                Text { width: runtimeTab.pidColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.pid; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
-                                Text { width: runtimeTab.parentColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.parent; color: theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
+                                Text { width: runtimeTab.stateColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.state; color: modelData.state === "failed" ? Theme.danger : (modelData.state === "running" ? Theme.accent : Theme.textMuted); font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
+                                Text { width: runtimeTab.kindColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.kind; color: Theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
+                                Text { width: runtimeTab.policyColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.execution; color: Theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
+                                Text { width: runtimeTab.activationColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.activation; color: Theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace" }
+                                Text { width: runtimeTab.stageColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.stage; color: Theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
+                                Text { width: runtimeTab.pidColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.pid; color: Theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
+                                Text { width: runtimeTab.parentColumnWidth; height: parent.height; verticalAlignment: Text.AlignVCenter; text: modelData.parent; color: Theme.textMuted; font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"; elide: Text.ElideRight }
                             }
                         }
 
@@ -873,9 +875,9 @@ BaseDialog {
                             anchors.centerIn: parent
                             visible: !runtimeTab._vm || runtimeTab._vm.units.length === 0
                             text: "No runtime units available."
-                            color: theme.textMuted
-                            font.pixelSize: theme.fontSizeSmall
-                            font.family: theme.fontFamily
+                            color: Theme.textMuted
+                            font.pixelSize: Theme.fontSizeSmall
+                            font.family: Theme.fontFamily
                         }
                     }
                 }
@@ -883,13 +885,13 @@ BaseDialog {
                 Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 28
-                    color: theme.surfaceAlt
+                    color: Theme.surfaceAlt
                     visible: runtimeTab._vm && runtimeTab._vm.taskIds.length > 0
 
                     Rectangle {
                         anchors.top: parent.top
                         width: parent.width; height: 1
-                        color: theme.border
+                        color: Theme.border
                     }
 
                     Text {
@@ -898,7 +900,7 @@ BaseDialog {
                         anchors.rightMargin: 10
                         verticalAlignment: Text.AlignVCenter
                         text: runtimeTab._vm ? ("Tasks: " + runtimeTab._vm.taskIds.join(", ")) : ""
-                        color: theme.textMuted
+                        color: Theme.textMuted
                         font.pixelSize: 10
                         font.family: "Consolas, Courier New, monospace"
                         elide: Text.ElideRight
@@ -928,10 +930,10 @@ BaseDialog {
             }
 
             function levelColor(level) {
-                if (level === "DEBUG")   return theme.textMuted
-                if (level === "INFO")    return theme.text
-                if (level === "WARNING") return theme.warning
-                return theme.danger
+                if (level === "DEBUG")   return Theme.textMuted
+                if (level === "INFO")    return Theme.text
+                if (level === "WARNING") return Theme.warning
+                return Theme.danger
             }
 
             id: consolePane
@@ -946,12 +948,12 @@ BaseDialog {
                 Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 36
-                    color: theme.surfaceAlt
+                    color: Theme.surfaceAlt
 
                     Rectangle {
                         anchors.bottom: parent.bottom
                         width: parent.width; height: 1
-                        color: theme.border
+                        color: Theme.border
                     }
 
                     RowLayout {
@@ -973,21 +975,21 @@ BaseDialog {
                                         return consolePane.showError
                                     }
                                     property color levelCol: {
-                                        if (modelData === "DEBUG") return theme.textMuted
-                                        if (modelData === "INFO")  return theme.text
-                                        if (modelData === "WARN")  return theme.warning
-                                        return theme.danger
+                                        if (modelData === "DEBUG") return Theme.textMuted
+                                        if (modelData === "INFO")  return Theme.text
+                                        if (modelData === "WARN")  return Theme.warning
+                                        return Theme.danger
                                     }
                                     width: 52; height: 22; radius: 3
                                     color:        active ? Qt.rgba(levelCol.r, levelCol.g, levelCol.b, 0.15) : "transparent"
-                                    border.color: active ? levelCol : theme.border
+                                    border.color: active ? levelCol : Theme.border
                                     border.width: 1
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData
-                                        color: parent.active ? parent.levelCol : theme.textMuted
-                                        font.pixelSize: theme.fontSizeSmall
+                                        color: parent.active ? parent.levelCol : Theme.textMuted
+                                        font.pixelSize: Theme.fontSizeSmall
                                         font.family: "Consolas, Courier New, monospace"
                                         font.weight: Font.DemiBold
                                     }
@@ -1008,12 +1010,12 @@ BaseDialog {
 
                         Rectangle {
                             implicitWidth: 100; implicitHeight: 22; radius: 3
-                            color: autoScrollMouse.containsMouse ? theme.surfaceRaised : "transparent"
+                            color: autoScrollMouse.containsMouse ? Theme.surfaceRaised : "transparent"
                             Text {
                                 anchors.centerIn: parent
                                 text: scrollToggle.checked ? "Auto-scroll ON" : "Auto-scroll OFF"
-                                color: scrollToggle.checked ? theme.accent : theme.textMuted
-                                font.pixelSize: theme.fontSizeSmall
+                                color: scrollToggle.checked ? Theme.accent : Theme.textMuted
+                                font.pixelSize: Theme.fontSizeSmall
                                 font.family: "Consolas, Courier New, monospace"
                             }
                             MouseArea {
@@ -1025,16 +1027,16 @@ BaseDialog {
 
                         Rectangle {
                             implicitWidth: 48; implicitHeight: 22; radius: 3
-                            color: clearMouse.containsMouse ? theme.surfaceRaised : "transparent"
+                            color: clearMouse.containsMouse ? Theme.surfaceRaised : "transparent"
                             Text {
                                 anchors.centerIn: parent; text: "Clear"
-                                color: theme.textMuted
-                                font.pixelSize: theme.fontSizeSmall
+                                color: Theme.textMuted
+                                font.pixelSize: Theme.fontSizeSmall
                                 font.family: "Consolas, Courier New, monospace"
                             }
                             MouseArea {
                                 id: clearMouse; anchors.fill: parent; hoverEnabled: true
-                                onClicked: { logModel.clear(); logViewModel.clear() }
+                                onClicked: { logModel.clear(); LogViewModel.clear() }
                             }
                         }
                     }
@@ -1044,12 +1046,12 @@ BaseDialog {
                 Rectangle {
                     Layout.fillWidth: true
                     implicitHeight: 30
-                    color: theme.surface
+                    color: Theme.surface
 
                     Rectangle {
                         anchors.bottom: parent.bottom
                         width: parent.width; height: 1
-                        color: theme.border
+                        color: Theme.border
                     }
 
                     Flickable {
@@ -1070,17 +1072,17 @@ BaseDialog {
                             Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 44; height: 20; radius: 3
-                                readonly property bool on: logSettingsViewModel
-                                                           ? logSettingsViewModel.allCategoriesEnabled : false
-                                color:        on ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.18)
+                                readonly property bool on: LogSettingsViewModel
+                                                           ? LogSettingsViewModel.allCategoriesEnabled : false
+                                color:        on ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.18)
                                                  : "transparent"
-                                border.color: on ? theme.accent : theme.border
+                                border.color: on ? Theme.accent : Theme.border
                                 border.width: 1
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "ALL"
-                                    color: parent.on ? theme.accent : theme.textMuted
+                                    color: parent.on ? Theme.accent : Theme.textMuted
                                     font.pixelSize: 10
                                     font.family: "Consolas, Courier New, monospace"
                                     font.weight: Font.Bold
@@ -1088,8 +1090,8 @@ BaseDialog {
                                     MouseArea {
                                         anchors.fill: parent
                                         onClicked: {
-                                            if (logSettingsViewModel)
-                                                logSettingsViewModel.setDevMode(!logSettingsViewModel.allCategoriesEnabled)
+                                            if (LogSettingsViewModel)
+                                                LogSettingsViewModel.setDevMode(!LogSettingsViewModel.allCategoriesEnabled)
                                         }
                                     }
                             }
@@ -1098,12 +1100,12 @@ BaseDialog {
                             Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 1; height: 14
-                                color: theme.border
+                                color: Theme.border
                             }
 
                             // ── Per-category chips ─────────────────────────────
                             Repeater {
-                                model: logSettingsViewModel ? logSettingsViewModel.categories : []
+                                model: LogSettingsViewModel ? LogSettingsViewModel.categories : []
 
                                 delegate: Rectangle {
                                     required property var modelData
@@ -1113,24 +1115,24 @@ BaseDialog {
 
                                     readonly property bool catOn: modelData.enabled
 
-                                    color:        catOn ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.12)
+                                    color:        catOn ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.12)
                                                         : "transparent"
-                                    border.color: catOn ? theme.accent : theme.border
+                                    border.color: catOn ? Theme.accent : Theme.border
                                     border.width: 1
 
                                     Text {
                                         id: catLabel
                                         anchors.centerIn: parent
                                         text: modelData.name
-                                        color: parent.catOn ? theme.accent : theme.textMuted
+                                        color: parent.catOn ? Theme.accent : Theme.textMuted
                                         font.pixelSize: 10
                                         font.family: "Consolas, Courier New, monospace"
                                     }
                                     MouseArea {
                                         anchors.fill: parent
                                         onClicked: {
-                                            if (logSettingsViewModel)
-                                                logSettingsViewModel.setCategoryEnabled(
+                                            if (LogSettingsViewModel)
+                                                LogSettingsViewModel.setCategoryEnabled(
                                                     modelData.name, !modelData.enabled)
                                         }
                                     }
@@ -1159,7 +1161,7 @@ BaseDialog {
                             spacing: 0
 
                             Text {
-                                text: model.time; color: theme.textMuted
+                                text: model.time; color: Theme.textMuted
                                 font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"
                                 rightPadding: 8
                             }
@@ -1178,7 +1180,7 @@ BaseDialog {
                                 }
                             }
                             Text {
-                                text: model.name; color: theme.textSecondary
+                                text: model.name; color: Theme.textSecondary
                                 font.pixelSize: 11; font.family: "Consolas, Courier New, monospace"
                                 leftPadding: 6; rightPadding: 8; elide: Text.ElideRight
                                 Layout.preferredWidth: 200
@@ -1196,7 +1198,7 @@ BaseDialog {
             }
 
             Connections {
-                target: logViewModel
+                target: LogViewModel
                 function onRecordAdded(time, level, name, message) { logModel.append({ time, level, name, message }) }
                 function onCleared() { logModel.clear() }
             }

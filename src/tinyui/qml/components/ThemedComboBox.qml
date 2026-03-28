@@ -21,6 +21,7 @@
 
 import QtQuick
 import QtQuick.Controls
+import TinyUI
 
 // Theme-styled ComboBox for string enum settings.
 ComboBox {
@@ -33,8 +34,8 @@ ComboBox {
         leftPadding: 8
         rightPadding: root.indicator.width + 4
         text: root.displayText
-        color: theme.text
-        font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+        color: Theme.text
+        font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
     }
@@ -43,14 +44,14 @@ ComboBox {
         x: root.width - width - 8
         anchors.verticalCenter: root.verticalCenter
         text: "▾"
-        color: theme.textMuted
+        color: Theme.textMuted
         font.pixelSize: 10
     }
 
     background: Rectangle {
-        color: theme.surfaceFloating
+        color: Theme.surfaceFloating
         border.width: 1
-        border.color: root.popup.opened ? theme.accent : theme.border
+        border.color: root.popup.opened ? Theme.accent : Theme.border
         radius: 4
         Behavior on border.color { ColorAnimation { duration: 80 } }
     }
@@ -68,8 +69,8 @@ ComboBox {
         }
 
         background: Rectangle {
-            color: theme.surfaceFloating
-            border.width: 1; border.color: theme.border
+            color: Theme.surfaceFloating
+            border.width: 1; border.color: Theme.border
             radius: 4
         }
     }
@@ -81,15 +82,15 @@ ComboBox {
 
         contentItem: Text {
             text: modelData
-            color: highlighted ? "#dec184" : theme.text
-            font.pixelSize: theme.fontSizeSmall; font.family: theme.fontFamily
+            color: highlighted ? "#dec184" : Theme.text
+            font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
             verticalAlignment: Text.AlignVCenter
             leftPadding: 8
             Behavior on color { ColorAnimation { duration: 80 } }
         }
 
         background: Rectangle {
-            color: highlighted ? theme.surfaceRaised : "transparent"
+            color: highlighted ? Theme.surfaceRaised : "transparent"
         }
     }
 }
