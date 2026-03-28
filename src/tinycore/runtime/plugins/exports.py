@@ -18,7 +18,8 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""Capability registry for provider exports."""
+
+"""Runtime-owned export registry and resolved export types."""
 
 from __future__ import annotations
 
@@ -27,44 +28,44 @@ from typing import Any
 
 
 @dataclass(frozen=True)
-class CapabilityBinding:
-    """Resolved provider for a capability."""
+class ExportBinding:
+    """Resolved provider for one exported runtime surface."""
 
-    capability: str
+    export_name: str
     provider_name: str
     provider: Any
 
 
 @dataclass(frozen=True)
-class CapabilityProvider:
-    """Registered provider for a capability."""
+class ExportProvider:
+    """Registered provider for one exported runtime surface."""
 
-    capability: str
+    export_name: str
     provider_name: str
     provider: Any
 
 
-class CapabilityRegistry:
-    """Registers exported capabilities and exposes providers by capability."""
+class ExportRegistry:
+    """Register exported surfaces and resolve providers by export name."""
 
     def __init__(self) -> None:
-        self._capabilities: dict[str, CapabilityProvider] = {}
+        self._exports: dict[str, ExportProvider] = {}
 
     def register(
         self,
-        capability: str,
+        export_name: str,
         provider_name: str,
         provider: Any,
     ) -> None:
-        """Register one exported capability for a provider."""
-        existing = self._capabilities.get(capability)
+        """Register one exported surface for a provider."""
+        existing = self._exports.get(export_name)
         if existing is not None and existing.provider_name != provider_name:
             raise ValueError(
-                f"Capability '{capability}' is already owned by provider "
+                f"Export '{export_name}' is already owned by provider "
                 f"'{existing.provider_name}', cannot also register '{provider_name}'"
             )
-        self._capabilities[capability] = CapabilityProvider(
-            capability=capability,
+        self._exports[export_name] = ExportProvider(
+            export_name=export_name,
             provider_name=provider_name,
             provider=provider,
         )
@@ -72,17 +73,17 @@ class CapabilityRegistry:
     def register_many(
         self,
         provider_name: str,
-        capabilities: tuple[str, ...],
+        export_names: tuple[str, ...],
         provider: Any,
     ) -> None:
-        """Register all exported capabilities for one provider."""
-        for capability in capabilities:
-            self.register(capability, provider_name, provider)
+        """Register all exported surfaces for one provider."""
+        for export_name in export_names:
+            self.register(export_name, provider_name, provider)
 
-    def provider_for(self, capability: str) -> CapabilityProvider | None:
-        """Return the registered provider for a capability, if any."""
-        return self._capabilities.get(capability)
+    def provider_for(self, export_name: str) -> ExportProvider | None:
+        """Return the registered provider for an exported surface, if any."""
+        return self._exports.get(export_name)
 
-    def all(self) -> list[CapabilityProvider]:
-        """Return all registered providers."""
-        return list(self._capabilities.values())
+    def all(self) -> list[ExportProvider]:
+        """Return all registered export-provider pairs."""
+        return list(self._exports.values())

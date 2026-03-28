@@ -26,7 +26,7 @@ WidgetModel     — holds all contexts, exposes them as a QVariantList for Repea
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Any
 
 from PySide6.QtCore import (
     QByteArray,
@@ -44,9 +44,6 @@ from .runner import WidgetState
 from .spec import WidgetSpec
 from .threshold import ThresholdEntry
 
-if TYPE_CHECKING:
-    from tinycore.runtime.plugins.controls import PluginParticipationControls
-
 
 class WidgetContext(QObject):
     """Live state of one widget, exposed as QML properties.
@@ -63,7 +60,7 @@ class WidgetContext(QObject):
     def __init__(
         self,
         spec: WidgetSpec,
-        controls: "PluginParticipationControls",
+        controls: Any,
         consumer_name: str,
         parent: QObject | None = None,
     ) -> None:

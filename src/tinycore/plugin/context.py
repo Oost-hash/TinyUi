@@ -30,15 +30,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from tinycore.capabilities.registry import CapabilityBinding
+    from tinycore.runtime.plugins.exports import ExportBinding
     from tinycore.runtime.plugins.facts import PluginParticipationFacts
     from tinycore.services import PersistenceServices
     from tinyui_schema import EditorRegistry
     from tinyui_schema import SettingsSpec
 
 
-class ScopedCapabilities:
-    """Capability bindings scoped to one consumer plugin."""
+class ScopedExports:
+    """Export bindings scoped to one plugin participant."""
 
     def __init__(
         self,
@@ -54,21 +54,21 @@ class ScopedCapabilities:
         """Declared capability requirements for this plugin."""
         return self._required
 
-    def all(self) -> dict[str, CapabilityBinding]:
+    def all(self) -> dict[str, ExportBinding]:
         """All resolved bindings currently known for this plugin."""
         return dict(self._participation.bindings_for(self._plugin_name).resolved)
 
-    def get(self, capability: str) -> CapabilityBinding | None:
-        """Resolve a capability if it was declared by this plugin."""
-        if capability not in self._required:
-            raise KeyError(f"Capability '{capability}' was not declared in requires")
-        return self._participation.bindings_for(self._plugin_name).get(capability)
+    def get(self, export_name: str) -> ExportBinding | None:
+        """Resolve an exported surface if it was declared by this plugin."""
+        if export_name not in self._required:
+            raise KeyError(f"Export '{export_name}' was not declared in requires")
+        return self._participation.bindings_for(self._plugin_name).get(export_name)
 
-    def require(self, capability: str) -> CapabilityBinding:
-        """Resolve a declared capability or raise KeyError."""
-        if capability not in self._required:
-            raise KeyError(f"Capability '{capability}' was not declared in requires")
-        return self._participation.bindings_for(self._plugin_name).require(capability)
+    def require(self, export_name: str) -> ExportBinding:
+        """Resolve a declared export or raise KeyError."""
+        if export_name not in self._required:
+            raise KeyError(f"Export '{export_name}' was not declared in requires")
+        return self._participation.bindings_for(self._plugin_name).require(export_name)
 
 
 class ScopedSettings:
@@ -128,7 +128,7 @@ class PluginContext:
     """Scoped application context for a single plugin.
 
     Plugins receive this instead of the full host composition. Scoped services such as
-    settings, config loading, and capabilities are exposed directly, while
+    settings, config loading, and exports are exposed directly, while
     the host keeps ownership of its runtime internals.
     """
 
@@ -144,5 +144,5 @@ class PluginContext:
         self.settings = ScopedSettings(persistence, plugin_name)
         self.config = ScopedConfig(persistence, plugin_name)
         self.loaders = self.config
-        self.capabilities = ScopedCapabilities(participation, plugin_name, requires)
+        self.exports = ScopedExports(participation, plugin_name, requires)
         self.editors = ScopedEditors(editors)

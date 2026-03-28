@@ -23,11 +23,12 @@
 
 from .bindings import bind_plugin_participants
 from .consumer import PluginParticipant, SubprocessPlugin, build_plugin_participants
-from .controls import PluginParticipationControls
+from .exports import ExportBinding, ExportProvider, ExportRegistry
 from .facts import (
-    ConsumerParticipationBindings,
+    ParticipantBindingSet,
     PluginParticipationFacts,
-    ProviderParticipationHandle,
+    ProviderDemoConfig,
+    ProviderRuntimeHandle,
 )
 from .lifecycle import PluginActivationManager
 from .provider import (
@@ -39,14 +40,17 @@ from .registry import PluginRuntimeRegistry
 
 __all__ = [
     "bind_plugin_participants",
-    "ConsumerParticipationBindings",
+    "ExportBinding",
+    "ExportProvider",
+    "ExportRegistry",
     "PluginActivationManager",
+    "ParticipantBindingSet",
     "PluginParticipant",
-    "PluginParticipationControls",
     "PluginParticipationFacts",
     "PluginRuntimeRegistry",
-    "ProviderParticipationHandle",
+    "ProviderDemoConfig",
     "ProviderPluginParticipant",
+    "ProviderRuntimeHandle",
     "SubprocessPlugin",
     "build_plugin_participants",
     "build_provider_participants",

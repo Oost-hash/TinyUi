@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from tinycore.plugin.context import PluginContext
     from tinycore.runtime.process_supervisor import ProcessSupervisor, SpawnedProcessHandle
     from tinycore.services import RuntimeServices
-    from .facts import ConsumerParticipationBindings
+    from .facts import ParticipantBindingSet
 
 
 class SubprocessPlugin:
@@ -167,8 +167,8 @@ class PluginParticipant:
         self,
         runtime: "RuntimeServices",
         provider_activity: ProviderActivity,
-    ) -> "ConsumerParticipationBindings":
-        """Resolve and store runtime capability bindings for this consumer."""
+    ) -> "ParticipantBindingSet":
+        """Resolve and store runtime export bindings for this participant."""
         bindings = runtime.plugin_facts.bind_consumer(
             self.name,
             self.requires,

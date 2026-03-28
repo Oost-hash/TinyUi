@@ -28,15 +28,14 @@ from typing import Any, Callable
 
 from tinyui_schema import EditorRegistry, SettingsSpec
 
-from .capabilities.registry import CapabilityRegistry
 from .paths import AppPaths
 from .persistence.config.loader import LoaderRegistry
 from .persistence.config.store import ConfigStore
 from .persistence.settings import SettingsRegistry
 from .persistence.widget_state import WidgetStateRegistry
+from .runtime.plugins.exports import ExportRegistry
 from .runtime.plugins.facts import PluginParticipationFacts
 from .runtime.plugins.registry import PluginRuntimeRegistry
-from .session.runtime import SessionRuntime
 
 
 class PersistenceServices:
@@ -150,9 +149,8 @@ class HostServices:
 
 @dataclass(frozen=True)
 class RuntimeServices:
-    """Runtime-owned participation services with session as backing compatibility state."""
+    """Runtime-owned participation services."""
 
-    session: SessionRuntime
     plugin_facts: PluginParticipationFacts
     plugin_runtime: PluginRuntimeRegistry
 
@@ -167,10 +165,8 @@ def build_host_services(paths: AppPaths) -> HostServices:
 
 def build_runtime_services() -> RuntimeServices:
     """Create the runtime-owned service group for one runtime composition."""
-    capabilities = CapabilityRegistry()
-    session = SessionRuntime(capabilities)
+    exports = ExportRegistry()
     return RuntimeServices(
-        session=session,
-        plugin_facts=PluginParticipationFacts(session),
+        plugin_facts=PluginParticipationFacts(exports),
         plugin_runtime=PluginRuntimeRegistry(),
     )

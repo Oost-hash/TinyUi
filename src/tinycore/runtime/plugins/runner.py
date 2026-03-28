@@ -82,8 +82,8 @@ class _ProxyEditors:
         self._conn.send({"type": "editors.register", "spec": spec})
 
 
-class _ProxyCapabilities:
-    """Read-only view of declared requirements inside the subprocess."""
+class _ProxyExports:
+    """Read-only view of declared export requirements inside the subprocess."""
 
     def __init__(self, required: tuple[str, ...]) -> None:
         self._required = required
@@ -91,11 +91,11 @@ class _ProxyCapabilities:
     def required(self) -> tuple[str, ...]:
         return self._required
 
-    def get(self, capability: str):
-        raise NotImplementedError("capability resolution is not available during register phase")
+    def get(self, export_name: str):
+        raise NotImplementedError("export resolution is not available during register phase")
 
-    def require(self, capability: str):
-        raise NotImplementedError("capability resolution is not available during register phase")
+    def require(self, export_name: str):
+        raise NotImplementedError("export resolution is not available during register phase")
 
 
 class _ProxyContext:
@@ -107,7 +107,7 @@ class _ProxyContext:
         self.config = _ProxyConfig(conn)
         self.loaders = self.config
         self.editors = _ProxyEditors(conn)
-        self.capabilities = _ProxyCapabilities(requires)
+        self.exports = _ProxyExports(requires)
 
 
 def run(
