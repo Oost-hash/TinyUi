@@ -47,7 +47,7 @@ import ctypes.wintypes
 
 from PySide6.QtCore import QObject, Slot
 from PySide6.QtGui import QWindow
-from PySide6.QtQml import QmlElement
+from PySide6.QtQml import QmlElement, QmlSingleton
 
 QML_IMPORT_NAME = "TinyUI"
 QML_IMPORT_MAJOR_VERSION = 1
@@ -302,6 +302,7 @@ def install_wnd_proc(
 
 
 @QmlElement
+@QmlSingleton
 class WindowChromeHelper(QObject):
     """Apply Win32 DWM chrome to secondary windows (dialogs)."""
 
@@ -339,6 +340,7 @@ class WindowChromeHelper(QObject):
 
 
 @QmlElement
+@QmlSingleton
 class WindowController(QObject):
     """Programmatic window control via ShowWindow (native animations)."""
 

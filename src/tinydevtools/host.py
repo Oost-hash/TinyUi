@@ -20,6 +20,8 @@
 #  licensed under GPLv3.
 """Optional host seam for attaching devtools to runtime and UI."""
 
+# pyright: reportCallIssue=false, reportGeneralTypeIssues=false, reportReturnType=false, reportArgumentType=false
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -99,7 +101,11 @@ def attach_runtime(
         state_monitor=_DevToolsMonitor(state_monitor, runtime_view_model),
         runtime_view_model=runtime_view_model,
         extra_context={
-            "StateMonitorViewModel": (StateMonitorViewModel, "TinyDevTools", state_monitor),
+            "StateMonitorViewModel": (
+                StateMonitorViewModel,
+                "TinyDevTools",
+                state_monitor,
+            ),
             "RuntimeViewModel": (RuntimeViewModel, "TinyDevTools", runtime_view_model),
         },
     )
@@ -114,8 +120,17 @@ def attach_ui(
     """Attach devtools UI viewmodels and return the QML component path."""
     log_vm = LogViewModel(log_inspector)
     log_settings_vm = LogSettingsViewModel()
-    qmlRegisterSingletonInstance(LogViewModel, "TinyDevTools", 1, 0, "LogViewModel", log_vm)
-    qmlRegisterSingletonInstance(LogSettingsViewModel, "TinyDevTools", 1, 0, "LogSettingsViewModel", log_settings_vm)
+    qmlRegisterSingletonInstance(
+        LogViewModel, "TinyDevTools", 1, 0, "LogViewModel", log_vm
+    )
+    qmlRegisterSingletonInstance(
+        LogSettingsViewModel,
+        "TinyDevTools",
+        1,
+        0,
+        "LogSettingsViewModel",
+        log_settings_vm,
+    )
 
     return DevToolsUiAttachment(
         log_view_model=log_vm,

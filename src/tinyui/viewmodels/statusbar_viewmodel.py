@@ -20,7 +20,7 @@
 #  licensed under GPLv3.
 
 from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
-from PySide6.QtQml import QmlElement
+from PySide6.QtQml import QmlElement, QmlSingleton
 
 from tinycore.logging import get_logger
 
@@ -31,6 +31,7 @@ log = get_logger(__name__)
 
 
 @QmlElement
+@QmlSingleton
 class StatusBarViewModel(QObject):
     """Manages the state of the status bar and the plugin dropdown."""
 

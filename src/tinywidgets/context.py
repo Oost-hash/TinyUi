@@ -39,7 +39,7 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
-from PySide6.QtQml import QmlElement
+from PySide6.QtQml import QmlElement, QmlSingleton
 
 from .spec import WidgetSpec
 from .state_participant import WidgetDisplayState
@@ -334,6 +334,7 @@ class WidgetContext(QObject):
 
 
 @QmlElement
+@QmlSingleton
 class WidgetOverlayState(QObject):
     """Shared overlay visibility state exposed to both QML engines."""
 
@@ -376,6 +377,7 @@ class WidgetOverlayState(QObject):
 
 
 @QmlElement
+@QmlSingleton
 class WidgetModel(QAbstractListModel):
     """Holds all WidgetContexts as a proper ListModel for QML Repeater.
 

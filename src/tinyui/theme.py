@@ -24,7 +24,7 @@ import platform as _platform
 import tomllib
 
 from PySide6.QtCore import QObject, Property, Signal
-from PySide6.QtQml import QmlElement
+from PySide6.QtQml import QmlElement, QmlSingleton
 
 QML_IMPORT_NAME = "TinyUI"
 QML_IMPORT_MAJOR_VERSION = 1
@@ -45,6 +45,7 @@ def _load_toml(name: str) -> dict:
 
 
 @QmlElement
+@QmlSingleton
 class Theme(QObject):
     """Laadt kleuren uit TOML en exposeert ze als QML-bindbare properties."""
 

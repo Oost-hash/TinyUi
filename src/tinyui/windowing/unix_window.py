@@ -31,13 +31,14 @@ Resize is initiated from ResizeHandles.qml via startResize(edge).
 """
 
 from PySide6.QtCore import QObject, Qt, Slot
-from PySide6.QtQml import QmlElement
+from PySide6.QtQml import QmlElement, QmlSingleton
 
 QML_IMPORT_NAME = "TinyUI"
 QML_IMPORT_MAJOR_VERSION = 1
 
 
 @QmlElement
+@QmlSingleton
 class WindowController(QObject):
     """Window control for Linux/Wayland."""
 

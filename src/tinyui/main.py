@@ -24,6 +24,8 @@ Receives a booted CoreRuntime from tinyui_boot.
 Responsible only for Qt setup, viewmodels, signal wiring, engine, and windowing.
 """
 
+# pyright: reportCallIssue=false, reportGeneralTypeIssues=false, reportAttributeAccessIssue=false, reportArgumentType=false
+
 from __future__ import annotations
 
 import logging
@@ -34,13 +36,17 @@ from time import perf_counter
 from typing import Callable, cast
 
 import PySide6
-from PySide6.QtCore import QUrl, QtMsgType, qInstallMessageHandler, qVersion
+from PySide6.QtCore import QtMsgType, QUrl, qInstallMessageHandler, qVersion
+from PySide6.QtQml import qmlRegisterSingletonInstance
 from PySide6.QtQuick import QQuickWindow
 
 from tinycore.logging import LogInspector, get_logger
 from tinycore.qt.app import create_application
 from tinycore.qt.engine import create_engine
 from tinycore.runtime.core_runtime import CoreRuntime
+from tinyui.app_info import AppInfo
+from tinyui.const import APP_NAME, VERSION
+from tinyui.theme import Theme
 from tinyui.ui_adapters import (
     attach_optional_devtools_ui,
     bind_statusbar_plugin_switching,
@@ -50,11 +56,6 @@ from tinyui.ui_adapters import (
     wire_app_shutdown,
     wire_devtools_monitor,
 )
-from PySide6.QtQml import qmlRegisterSingletonInstance
-
-from tinyui.app_info import AppInfo
-from tinyui.const import APP_NAME, VERSION
-from tinyui.theme import Theme
 from tinyui.viewmodels.core_viewmodel import CoreViewModel
 from tinyui.viewmodels.menu_viewmodel import MenuViewModel
 from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
@@ -76,9 +77,12 @@ def _log_startup_phase(log, phase: str, start: float) -> None:
     log.startup_phase(phase, (perf_counter() - start) * 1000)
 
 
-def launch(core: CoreRuntime,
-           *, pre_run: Callable[[], None] | None = None,
-           extra_context: dict[str, tuple[type, str, object]] | None = None) -> int:
+def launch(
+    core: CoreRuntime,
+    *,
+    pre_run: Callable[[], None] | None = None,
+    extra_context: dict[str, tuple[type, str, object]] | None = None,
+) -> int:
     """Initialize and run the tinyui main window.
 
     Called by tinyui_boot after boot_runtime completes.
@@ -105,13 +109,13 @@ def launch(core: CoreRuntime,
 
     # ── ViewModels ────────────────────────────────────────────────────────────
     phase_start = perf_counter()
-    log_inspector   = LogInspector()
-    theme        = Theme()
-    menu_vm      = MenuViewModel()
+    log_inspector = LogInspector()
+    theme = Theme()
+    menu_vm = MenuViewModel()
     statusbar_vm = StatusBarViewModel()
-    settings_vm  = SettingsPanelViewModel()
-    core_vm      = CoreViewModel(core)
-    tab_vm       = TabViewModel()
+    settings_vm = SettingsPanelViewModel()
+    core_vm = CoreViewModel(core)
+    tab_vm = TabViewModel()
 
     for participant in core.runtime.plugin_runtime.registered_participants:
         label = participant.manifest.display_name or participant.name
@@ -141,10 +145,18 @@ def launch(core: CoreRuntime,
     phase_start = perf_counter()
     engine = create_engine()
     qmlRegisterSingletonInstance(Theme, "TinyUI", 1, 0, "Theme", theme)
-    qmlRegisterSingletonInstance(CoreViewModel, "TinyUI", 1, 0, "CoreViewModel", core_vm)
-    qmlRegisterSingletonInstance(MenuViewModel, "TinyUI", 1, 0, "MenuViewModel", menu_vm)
-    qmlRegisterSingletonInstance(StatusBarViewModel, "TinyUI", 1, 0, "StatusBarViewModel", statusbar_vm)
-    qmlRegisterSingletonInstance(SettingsPanelViewModel, "TinyUI", 1, 0, "SettingsPanelViewModel", settings_vm)
+    qmlRegisterSingletonInstance(
+        CoreViewModel, "TinyUI", 1, 0, "CoreViewModel", core_vm
+    )
+    qmlRegisterSingletonInstance(
+        MenuViewModel, "TinyUI", 1, 0, "MenuViewModel", menu_vm
+    )
+    qmlRegisterSingletonInstance(
+        StatusBarViewModel, "TinyUI", 1, 0, "StatusBarViewModel", statusbar_vm
+    )
+    qmlRegisterSingletonInstance(
+        SettingsPanelViewModel, "TinyUI", 1, 0, "SettingsPanelViewModel", settings_vm
+    )
     qmlRegisterSingletonInstance(TabViewModel, "TinyUI", 1, 0, "TabViewModel", tab_vm)
 
     devtools_ui = attach_optional_devtools_ui(core, engine, log_inspector)
@@ -177,37 +189,48 @@ def launch(core: CoreRuntime,
     wire_devtools_monitor(core, window)
     dpr = app.devicePixelRatio()
 
-    _wnd_proc = None   # Windows only: MUST be kept alive — otherwise GC → crash
+    _wnd_proc = None      # Windows only: MUST be kept alive — otherwise GC → crash
     _win_ctrl = None
     _chrome_helper = None
+    WindowController = None  # set by platform branch below
 
     if sys.platform == "win32":
         from tinyui.windowing.win_window import (
-            WindowController,
             WindowChromeHelper,
+            WindowController,
             apply_dwm_frame,
             install_wnd_proc,
         )
+
         hwnd = int(window.winId())
         _wnd_proc, _set_left = install_wnd_proc(
             hwnd,
-            title_bar_height   = round(cast(float, theme.property("titleBarHeight")) * dpr),
-            resize_border      = round(cast(float, theme.property("resizeBorder")) * dpr),
-            resize_corner      = round(cast(float, theme.property("resizeCorner")) * dpr),
-            left_button_width  = round(cast(float, theme.property("leftButtonWidth")) * dpr),
-            right_button_width = round(cast(float, theme.property("rightButtonWidth")) * dpr),
+            title_bar_height=round(cast(float, theme.property("titleBarHeight")) * dpr),
+            resize_border=round(cast(float, theme.property("resizeBorder")) * dpr),
+            resize_corner=round(cast(float, theme.property("resizeCorner")) * dpr),
+            left_button_width=round(
+                cast(float, theme.property("leftButtonWidth")) * dpr
+            ),
+            right_button_width=round(
+                cast(float, theme.property("rightButtonWidth")) * dpr
+            ),
         )
         apply_dwm_frame(hwnd)
-        _win_ctrl      = WindowController(hwnd, dpr=dpr, set_left_button_width=_set_left)
+        _win_ctrl = WindowController(hwnd, dpr=dpr, set_left_button_width=_set_left)
         _chrome_helper = WindowChromeHelper(dpr=dpr)
-        qmlRegisterSingletonInstance(WindowChromeHelper, "TinyUI", 1, 0, "WindowChromeHelper", _chrome_helper)
+        qmlRegisterSingletonInstance(
+            WindowChromeHelper, "TinyUI", 1, 0, "WindowChromeHelper", _chrome_helper
+        )
 
     elif sys.platform.startswith("linux") or sys.platform == "darwin":
         from tinyui.windowing.unix_window import WindowController
+
         _win_ctrl = WindowController(window)
 
     if _win_ctrl is not None:
-        qmlRegisterSingletonInstance(WindowController, "TinyUI", 1, 0, "WindowController", _win_ctrl)
+        qmlRegisterSingletonInstance(
+            WindowController, "TinyUI", 1, 0, "WindowController", _win_ctrl
+        )
     _log_startup_phase(log, "windowing", phase_start)
     if core.units.get("ui.main") is not None:
         core.units.set_state("ui.main", "running")

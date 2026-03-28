@@ -26,6 +26,8 @@ the background is free — no overlay window or setMask() needed.
 Called from the composition root; tinyui knows nothing about it.
 """
 
+# pyright: reportCallIssue=false, reportGeneralTypeIssues=false, reportReturnType=false
+
 from __future__ import annotations
 
 import sys

@@ -43,7 +43,7 @@ from PySide6.QtCore import (
     Slot,
 )
 from PySide6.QtGui import QGuiApplication
-from PySide6.QtQml import QmlElement
+from PySide6.QtQml import QmlElement, QmlSingleton
 
 from tinycore.diagnostics.runtime_state import RuntimeInspector
 from tinycore.runtime.qt_timer import RuntimeQtTimer
@@ -166,6 +166,7 @@ class _StateRowsModel(QAbstractListModel):
 
 
 @QmlElement
+@QmlSingleton
 class StateMonitorViewModel(QObject):
     """Expose runtime inspector state to QML."""
 

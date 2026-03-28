@@ -23,13 +23,14 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QObject, Property
-from PySide6.QtQml import QmlElement
+from PySide6.QtQml import QmlElement, QmlSingleton
 
 QML_IMPORT_NAME = "TinyUI"
 QML_IMPORT_MAJOR_VERSION = 1
 
 
 @QmlElement
+@QmlSingleton
 class AppInfo(QObject):
 
     def __init__(self, app_name: str, devtools_available: bool, devtools_path: str,

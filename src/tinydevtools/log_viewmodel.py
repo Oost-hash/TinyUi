@@ -24,7 +24,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QObject, Signal, Slot
-from PySide6.QtQml import QmlElement
+from PySide6.QtQml import QmlElement, QmlSingleton
 
 from tinycore.logging import LogInspector, LogRecordEntry
 
@@ -33,6 +33,7 @@ QML_IMPORT_MAJOR_VERSION = 1
 
 
 @QmlElement
+@QmlSingleton
 class LogViewModel(QObject):
     """Exposes Python log output to QML.
 

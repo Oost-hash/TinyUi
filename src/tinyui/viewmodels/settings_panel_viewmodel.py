@@ -21,7 +21,7 @@
 """SettingsPanelViewModel — manages the open/close state of the settings panel."""
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
-from PySide6.QtQml import QmlElement
+from PySide6.QtQml import QmlElement, QmlSingleton
 
 from tinycore.logging import get_logger
 
@@ -32,6 +32,7 @@ log = get_logger(__name__)
 
 
 @QmlElement
+@QmlSingleton
 class SettingsPanelViewModel(QObject):
     openChanged            = Signal()
     settingChangeRequested = Signal(str, str, object)  # plugin, key, value

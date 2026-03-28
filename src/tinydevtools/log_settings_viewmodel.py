@@ -28,13 +28,14 @@ from __future__ import annotations
 
 import tinycore.logging as _core_log
 from PySide6.QtCore import Property, QObject, Signal, Slot
-from PySide6.QtQml import QmlElement
+from PySide6.QtQml import QmlElement, QmlSingleton
 
 QML_IMPORT_NAME = "TinyDevTools"
 QML_IMPORT_MAJOR_VERSION = 1
 
 
 @QmlElement
+@QmlSingleton
 class LogSettingsViewModel(QObject):
     """Bridges tinycore debug-category control to QML.
 

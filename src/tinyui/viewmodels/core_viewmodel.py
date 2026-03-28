@@ -22,7 +22,7 @@
 """CoreViewModel — exposes the core-owned runtime to QML."""
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
-from PySide6.QtQml import QmlElement
+from PySide6.QtQml import QmlElement, QmlSingleton
 
 from tinycore.logging import get_logger
 from tinycore.runtime.core_runtime import CoreRuntime
@@ -34,6 +34,7 @@ log = get_logger(__name__)
 
 
 @QmlElement
+@QmlSingleton
 class CoreViewModel(QObject):
     """Bridge between tinycore and QML — exposes plugin widgets, editors and settings."""
 

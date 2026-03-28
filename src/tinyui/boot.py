@@ -18,22 +18,22 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-
-#  TinyUI
 """TinyUI-owned host assembly for the core runtime boot seam."""
+
+# pyright: reportAttributeAccessIssue=false
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import cast
 
-from tinycore.services import HostServices, RuntimeServices
 from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
 from tinycore.runtime.boot import HostAssembly, HostOverlayBuild, HostStateMonitorBuild
 from tinycore.runtime.core_runtime import CoreRuntime
-from tinycore.runtime.plugins.provider_activity import ProviderActivity
 from tinycore.runtime.plugins.participants import PluginParticipant
+from tinycore.runtime.plugins.provider_activity import ProviderActivity
+from tinycore.services import HostServices, RuntimeServices
 from tinywidgets.overlay import WidgetOverlay
 from tinywidgets.spec import load_widgets_toml
 
