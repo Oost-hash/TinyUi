@@ -2,24 +2,42 @@
 
 TinyUi tracks roadmap items latest-first.
 
-## 0.3.4 — Threading and runtime weight
+## Next
 
-This step is about making the runtime less heavy and less fragile where work is
-split across subprocesses, threads, polling loops, and Qt handoff points.
+These are on the radar, not tied to a release yet:
 
-Current focus:
+- Widget globals (font, background, opacity, layout)
+- Processing / derived data layer
+- Game detection and automatic source handoff inside provider families
+- Provider selection UI
+- Editor surface for compounds, vehicle-specific data, and other user-managed plugin data
+- Spotter?
+- Custom widgets
+- Grouping widgets
 
-- [ ] Re-map where work is running now across app boot, providers, plugins, and UI handoff
-- [ ] Reduce unnecessary thread/process churn in the active runtime path
-- [ ] Make ownership of polling, buffering, and cross-thread updates easier to reason about
-- [ ] Tighten the boundaries between background work and UI-facing state updates
+---
+
+# Released
+
+## 0.4.0 — Runtime consolidation
+
+This release rewrote the shape of TinyUi's core. `tinycore.runtime` is now the
+live execution owner. The old `app`, `session`, `capabilities`, and `poll` layers
+are gone. Plugin participation, process supervision, scheduling, staged updates,
+and runtime diagnostics all live under one coherent runtime model.
+
+- [x] Replace the `App` container and flat registry boot path with explicit host/runtime composition
+- [x] Move live plugin participation into `tinycore.runtime.plugins` (activation, providers, exports, subprocess lifecycle)
+- [x] Introduce staged update model with explicit `refresh` and `derive` phases driven by one `RuntimeUpdateLoop`
+- [x] Build a runtime graph with declared units, process relationships, scheduling metadata, and live state
+- [x] Add a runtime inspector with devtools Runtime tab: tree view, state filters, sorting, update-stage visibility
+- [x] Remove `session`, `capabilities`, and `poll` as architectural owners
+- [x] Clean up runtime vocabulary around activation, participants, exports, update, and runtime
 
 ## 0.3.3 — tinyDevTools and release logging
 
-This step is about separating development tooling from the main app runtime so
-release builds stay smaller, quieter.
-
-Completed:
+This step separated development tooling from the main app runtime so release
+builds stay smaller and quieter.
 
 - [x] Move devtools into their own `tinydevtools` package
 - [x] Keep `tinyui` focused on the app UI instead of dev-only tooling
@@ -27,54 +45,26 @@ Completed:
 - [x] Keep release logging to `info`, `warning`, and `error`
 - [x] Make release builds work without the devtools package present
 
-## Later
-
-These are on the radar, but not tied to a release yet:
-
-- Processing / derived data layer
-- Editor surface for compounds, vehicle-specific data, and other user-managed plugin data.
-- Spotter?
-- Custom widgets
-- Grouping widgets
-- Provider selection UI
-- Game detection and source handoff inside provider families
-- Widget globals (fonts, bkg_color, size, layout)
-
 ## 0.3.2 — Connector consolidation
 
-This step pulled the connector-related submodule work into one coherent
-TinyUi-owned program shape so the integration surface is easier to maintain and
-easier to inspect.
-
-Completed:
+This step pulled connector-related submodule work into one coherent
+TinyUi-owned program shape so the integration surface is easier to maintain
+and easier to inspect.
 
 - [x] Consolidate LMU, rF2, and mock into one connector family
 - [x] Replace the old connector/submodule layout with a TinyUi-owned runtime, contracts, sources, and shared-memory layer
 - [x] Keep full capability coverage inside the new connector family
 - [x] Remove legacy and vendor runtime dependencies from the active connector path
-
-Bonus goals completed:
-
 - [x] Add copy-all and snapshot recording tools so live sessions can be captured for later analysis
 
 ## 0.3.1 — Foundation extension and release cleanup
 
-This update was about making the platform itself cleaner and more stable before
-adding a larger wave of user-facing features.
-
-Focus areas:
-
-- build and distribution cleanup
-- startup cleanup
-- plugin packaging
-
-Completed:
+This update made the platform cleaner and more stable before adding a larger
+wave of user-facing features.
 
 - [x] Improve startup behavior and reduce eager loading
 - [x] Clean up the build output and distribution structure
 - [x] Define the plugin packaging direction
-
-# Released
 
 ## 0.3.0 — Runtime contracts and plugin split
 
@@ -91,8 +81,7 @@ requirements, and binding through contracts instead of plugin-specific wiring.
 
 ## 0.2.0 — Widget renderer
 
-This release got live data onto the screen with the first usable widget
-workflow.
+This release got live data onto the screen with the first usable widget workflow.
 
 - [x] Widget system — define and render overlay widgets from plugin data
 - [x] Layout engine — position, resize, and stack widgets on screen
