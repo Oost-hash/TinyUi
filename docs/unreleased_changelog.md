@@ -34,3 +34,4 @@ Known packages:
 - [0.4.1][tinyui][tinydevtools][tinywidgets] Migrated all QML types from setContextProperty to @QmlElement + qmlRegisterSingletonInstance — eliminates unqualified qmllint warnings and enables static QML analysis
 - [0.4.1][tinyui][tinydevtools] Added pragma ComponentBehavior: Bound to all QML files — delegates now use required properties and qualified id access
 - [0.4.1][tinydevtools] Split DevToolsWindow into DevToolsStateTab, DevToolsRuntimeTab, and ConsolePane components — ConsoleWindow reuses ConsolePane
+- [0.4.1][tinyui] Fixed all remaining pragma ComponentBehavior: Bound warnings in SettingsDialog — delegates use ListView.view.dialog and settingRow._dlg to propagate context

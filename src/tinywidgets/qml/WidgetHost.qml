@@ -35,8 +35,11 @@ Window {
     height:  0
     visible: true   // must be visible so child windows can appear
 
+    // Expose singleton as property so pragma ComponentBehavior: Bound can resolve it
+    readonly property var _model: WidgetModel
+
     Instantiator {
-        model: WidgetModel
+        model: anchor._model
         delegate: TextWidget {
             required property var widgetContext
             transientParent: null
