@@ -1,39 +1,31 @@
-//  TinyUI
-//  Copyright (C) 2026 Oost-hash
-//
-//  This file is part of TinyUI.
-//
-//  TinyUI is free software: you can redistribute it and/or modify
-//  it under the terms of the GNU General Public License as published by
-//  the Free Software Foundation, either version 3 of the License, or
-//  (at your option) any later version.
-//
-//  TinyUI is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//  GNU General Public License for more details.
-//
-//  You should have received a copy of the GNU General Public License
-//  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//
-//  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
-//  licensed under GPLv3.
-
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import TinyUI
+import QtQuick.Controls
+import QtQuick.Window
 
 Item {
     id: root
 
+    readonly property var hostWindow: Window.window
+    readonly property var hostTheme: hostWindow && hostWindow.theme ? hostWindow.theme : null
+
     property color value: "#ffffff"
     signal colorPicked(string hex)
 
-    implicitWidth:  swatchRow.implicitWidth
+    readonly property color surfaceColor: hostTheme ? hostTheme.surface : "#282C33"
+    readonly property color surfaceFloating: hostTheme ? hostTheme.surfaceFloating : "#20242b"
+    readonly property color surfaceRaised: hostTheme ? hostTheme.surfaceRaised : "#3B414D"
+    readonly property color borderColor: hostTheme ? hostTheme.border : "#464B57"
+    readonly property color accentColor: hostTheme ? hostTheme.accent : "#74ADE8"
+    readonly property color accentTextColor: hostTheme ? hostTheme.accentText : "#111418"
+    readonly property color textColor: hostTheme ? hostTheme.text : "#DCE0E5"
+    readonly property int fontSmall: hostTheme ? hostTheme.fontSizeSmall : 11
+    readonly property string fontFamily: hostTheme ? hostTheme.fontFamily : "Segoe UI"
+
+    implicitWidth: swatchRow.implicitWidth
     implicitHeight: swatchRow.implicitHeight
 
-    // ── Internal HSV state ────────────────────────────────────────────────────
     property real _h: 0
     property real _s: 1
     property real _v: 1
@@ -57,7 +49,6 @@ Item {
         return "#" + r + g + b
     }
 
-    // ── Collapsed: swatch + hex label ─────────────────────────────────────────
     Row {
         id: swatchRow
         spacing: 6
@@ -65,10 +56,13 @@ Item {
 
         Rectangle {
             id: swatch
-            width: 20; height: 20; radius: 4
+            width: 20
+            height: 20
+            radius: 4
             anchors.verticalCenter: parent.verticalCenter
             color: root.value
-            border.width: 1; border.color: Theme.border
+            border.width: 1
+            border.color: borderColor
 
             MouseArea {
                 anchors.fill: parent
@@ -78,21 +72,27 @@ Item {
         }
 
         Rectangle {
-            width: 92; height: 28; radius: 4
+            width: 92
+            height: 28
+            radius: 4
             anchors.verticalCenter: parent.verticalCenter
-            color: Theme.surfaceFloating
+            color: surfaceFloating
             border.width: 1
-            border.color: hexInput.activeFocus ? Theme.accent : Theme.border
+            border.color: hexInput.activeFocus ? accentColor : borderColor
             Behavior on border.color { ColorAnimation { duration: 80 } }
 
             TextInput {
                 id: hexInput
-                anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8
+                anchors.fill: parent
+                anchors.leftMargin: 8
+                anchors.rightMargin: 8
                 verticalAlignment: TextInput.AlignVCenter
                 text: root._toHex(root.value)
-                color: Theme.text
-                font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
-                maximumLength: 7; selectByMouse: true
+                color: textColor
+                font.pixelSize: fontSmall
+                font.family: fontFamily
+                maximumLength: 7
+                selectByMouse: true
                 Keys.onReturnPressed: root._commitHex(text)
                 Keys.onEscapePressed: { text = root._toHex(root.value); focus = false }
                 onActiveFocusChanged: if (!activeFocus) text = root._toHex(root.value)
@@ -112,36 +112,27 @@ Item {
 
     function _openPicker() {
         root._syncFromValue()
-        // Position: above the swatch, arrow points down toward the swatch
-        var arrowH  = 10
-        var winW    = pickerWin.width
-        var winH    = pickerWin.height
-        var global  = swatch.mapToGlobal(swatch.width / 2, 0)
-        pickerWin.x = Math.round(global.x - winW / 2)
-        pickerWin.y = Math.round(global.y - winH)
+        var global = swatch.mapToGlobal(swatch.width / 2, 0)
+        pickerWin.x = Math.round(global.x - pickerWin.width / 2)
+        pickerWin.y = Math.round(global.y - pickerWin.height)
         pickerWin.show()
         pickerWin.requestActivate()
     }
 
-    // ── Picker window ─────────────────────────────────────────────────────────
-    // Qt.Tool = no taskbar entry, always on top of the parent window
-    // Transparent so the arrow tip can draw outside the rectangular bounds
     Window {
         id: pickerWin
-        flags:  Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
-        color:  "transparent"
-        width:  244
+        flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
+        color: "transparent"
+        width: 244
         height: pickerContent.height + arrow.height
 
-        // Close when focus is lost (click outside the window)
         onActiveChanged: if (!active) pickerWin.hide()
 
-        // Close when the parent window moves or resizes
         Connections {
             target: root.Window.window
             function onXChanged() { pickerWin.hide() }
             function onYChanged() { pickerWin.hide() }
-            function onWidthChanged()  { pickerWin.hide() }
+            function onWidthChanged() { pickerWin.hide() }
             function onHeightChanged() { pickerWin.hide() }
         }
 
@@ -149,7 +140,6 @@ Item {
         readonly property int _arrowW: 18
         readonly property int _radius: 8
 
-        // ── Arrow ────────────────────────────────────────────────────
         Canvas {
             id: arrow
             anchors.bottom: parent.bottom
@@ -160,24 +150,22 @@ Item {
             onPaint: {
                 var ctx = getContext("2d")
                 ctx.clearRect(0, 0, width, height)
-                ctx.fillStyle   = Theme.border
-                ctx.strokeStyle = Theme.border
+                ctx.fillStyle = borderColor
+                ctx.strokeStyle = borderColor
                 ctx.beginPath()
                 ctx.moveTo(0, 0)
                 ctx.lineTo(width / 2, height)
                 ctx.lineTo(width, 0)
                 ctx.fill()
-                ctx.fillStyle = Theme.surfaceFloating
+                ctx.fillStyle = surfaceFloating
                 ctx.beginPath()
                 ctx.moveTo(1, 0)
                 ctx.lineTo(width / 2, height - 1)
                 ctx.lineTo(width - 1, 0)
                 ctx.fill()
             }
-
         }
 
-        // ── Picker content ────────────────────────────────────────────────────
         Rectangle {
             id: pickerContent
             anchors.top: parent.top
@@ -185,18 +173,19 @@ Item {
             width: pickerWin.width
             height: 268
             radius: pickerWin._radius
-            color: Theme.surfaceFloating
-            border.width: 1; border.color: Theme.border
+            color: surfaceFloating
+            border.width: 1
+            border.color: borderColor
 
             Column {
                 anchors.fill: parent
                 anchors.margins: 12
                 spacing: 8
 
-                // ── SV square ─────────────────────────────────────────────────
                 Item {
                     id: svSquare
-                    width: parent.width; height: 150
+                    width: parent.width
+                    height: 150
 
                     Rectangle { anchors.fill: parent; radius: 4; color: Qt.hsva(root._h, 1, 1, 1) }
                     Rectangle {
@@ -215,11 +204,12 @@ Item {
                         }
                     }
 
-                    // Cursor
                     Rectangle {
-                        x: root._s * svSquare.width  - width  / 2
+                        x: root._s * svSquare.width - width / 2
                         y: (1 - root._v) * svSquare.height - height / 2
-                        width: 10; height: 10; radius: 5
+                        width: 10
+                        height: 10
+                        radius: 5
                         color: "transparent"
                         border.width: 2
                         border.color: root._v > 0.4 ? "black" : "white"
@@ -228,7 +218,7 @@ Item {
                     MouseArea {
                         anchors.fill: parent
                         onPositionChanged: (m) => svSquare._updateSV(m.x, m.y)
-                        onPressed:         (m) => svSquare._updateSV(m.x, m.y)
+                        onPressed: (m) => svSquare._updateSV(m.x, m.y)
                     }
 
                     function _updateSV(mx, my) {
@@ -237,10 +227,10 @@ Item {
                     }
                 }
 
-                // ── Hue slider ────────────────────────────────────────────────
                 Item {
                     id: hueSlider
-                    width: parent.width; height: 14
+                    width: parent.width
+                    height: 14
 
                     Rectangle {
                         anchors.fill: parent; radius: 7
@@ -259,44 +249,55 @@ Item {
                     Rectangle {
                         x: root._h * hueSlider.width - width / 2
                         y: hueSlider.height / 2 - height / 2
-                        width: 10; height: 14; radius: 3
+                        width: 10
+                        height: 14
+                        radius: 3
                         color: "transparent"
-                        border.width: 2; border.color: "white"
+                        border.width: 2
+                        border.color: "white"
                     }
 
                     MouseArea {
                         anchors.fill: parent
                         onPositionChanged: (m) => root._h = Math.max(0, Math.min(1, m.x / hueSlider.width))
-                        onPressed:         (m) => root._h = Math.max(0, Math.min(1, m.x / hueSlider.width))
+                        onPressed: (m) => root._h = Math.max(0, Math.min(1, m.x / hueSlider.width))
                     }
                 }
 
-                // ── Preview + hex ─────────────────────────────────────────────
                 Row {
                     width: parent.width
                     spacing: 8
 
                     Rectangle {
-                        width: 32; height: 28; radius: 4
+                        width: 32
+                        height: 28
+                        radius: 4
                         color: root._currentColor()
-                        border.width: 1; border.color: Theme.border
+                        border.width: 1
+                        border.color: borderColor
                     }
 
                     Rectangle {
-                        width: parent.width - 32 - 8; height: 28; radius: 4
-                        color: Theme.surface
+                        width: parent.width - 32 - 8
+                        height: 28
+                        radius: 4
+                        color: surfaceColor
                         border.width: 1
-                        border.color: pickerHex.activeFocus ? Theme.accent : Theme.border
+                        border.color: pickerHex.activeFocus ? accentColor : borderColor
                         Behavior on border.color { ColorAnimation { duration: 80 } }
 
                         TextInput {
                             id: pickerHex
-                            anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
                             verticalAlignment: TextInput.AlignVCenter
                             text: root._toHex(root._currentColor())
-                            color: Theme.text
-                            font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
-                            maximumLength: 7; selectByMouse: true
+                            color: textColor
+                            font.pixelSize: fontSmall
+                            font.family: fontFamily
+                            maximumLength: 7
+                            selectByMouse: true
 
                             Connections {
                                 target: root
@@ -318,17 +319,19 @@ Item {
                     }
                 }
 
-                // ── OK button ────────────────────────────────────────────────
                 Rectangle {
-                    width: parent.width; height: 28; radius: 4
-                    color: okArea.containsMouse ? Theme.accent : Theme.surfaceRaised
+                    width: parent.width
+                    height: 28
+                    radius: 4
+                    color: okArea.containsMouse ? accentColor : surfaceRaised
                     Behavior on color { ColorAnimation { duration: 80 } }
 
                     Text {
                         anchors.centerIn: parent
                         text: "OK"
-                        color: okArea.containsMouse ? Theme.accentText : Theme.text
-                        font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
+                        color: okArea.containsMouse ? accentTextColor : textColor
+                        font.pixelSize: fontSmall
+                        font.family: fontFamily
                         font.weight: Font.Medium
                         Behavior on color { ColorAnimation { duration: 80 } }
                     }

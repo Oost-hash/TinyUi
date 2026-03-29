@@ -1,12 +1,17 @@
+
 import QtQuick
+import QtQuick.Window
 import TinyUI 1.0
 
 Rectangle {
     id: root
 
+    readonly property var hostWindow: Window.window
+    readonly property var hostTheme: hostWindow && hostWindow.theme ? hostWindow.theme : null
+
     property var widgetItems: []
     property string sectionTitle: "Widgets"
-    property int selectedIndex: 0
+    property int selectedIndex: -1
     property var thresholdPalette: [
         "#ff5252",
         "#f4b400",
@@ -17,8 +22,28 @@ Rectangle {
     ]
     property var thresholdTargets: ["value", "text", "widget"]
 
+    readonly property color surface: hostTheme ? hostTheme.surface : "#282C33"
+    readonly property color surfaceAlt: hostTheme ? hostTheme.surfaceAlt : "#2F343E"
+    readonly property color surfaceRaised: hostTheme ? hostTheme.surfaceRaised : "#3B414D"
+    readonly property color surfaceFloating: hostTheme ? hostTheme.surfaceFloating : "#20242b"
+    readonly property color borderColor: hostTheme ? hostTheme.border : "#464B57"
+    readonly property color textColor: hostTheme ? hostTheme.text : "#DCE0E5"
+    readonly property color textSecondary: hostTheme ? hostTheme.textSecondary : "#A9AFBC"
+    readonly property color textMuted: hostTheme ? hostTheme.textMuted : "#878A98"
+    readonly property color accentColor: hostTheme ? hostTheme.accent : "#74ADE8"
+    readonly property color warningColor: hostTheme ? hostTheme.warning : "#dec184"
+    readonly property int fontBase: hostTheme ? hostTheme.fontSizeBase : 13
+    readonly property int fontSmall: hostTheme ? hostTheme.fontSizeSmall : 11
+    readonly property string fontFamily: hostTheme ? hostTheme.fontFamily : "Segoe UI"
+
+    function itemCount(items) {
+        if (!items || items.length === undefined || items.length === null)
+            return 0
+        return Number(items.length)
+    }
+
     function widgetAt(index) {
-        if (!Array.isArray(widgetItems) || index < 0 || index >= widgetItems.length)
+        if (index < 0 || index >= itemCount(widgetItems))
             return null
         return widgetItems[index]
     }
@@ -46,22 +71,20 @@ Rectangle {
         }
         if (typeof current.setValue === "function" && patch && patch.value !== undefined)
             current.setValue(patch.value)
-        if (typeof current.setFlashBelow === "function" && patch && patch.flashBelow !== undefined)
-            current.setFlashBelow(patch.flashBelow)
         if (typeof current.setThresholds === "function" && patch && patch.thresholds !== undefined)
             current.setThresholds(patch.thresholds)
         if (typeof current.setLabel === "function" || typeof current.setEnabled === "function" || typeof current.move === "function")
             return
-        var next = widgetItems.slice(0)
+        var next = Array.prototype.slice.call(widgetItems, 0)
         next[index] = Object.assign({}, next[index], patch || {})
         widgetItems = next
     }
 
     function updateThresholdItem(widgetIndex, thresholdIndex, patch) {
-        if (!Array.isArray(widgetItems) || widgetIndex < 0 || widgetIndex >= widgetItems.length)
+        if (widgetIndex < 0 || widgetIndex >= itemCount(widgetItems))
             return
         var widget = widgetAt(widgetIndex)
-        if (!widget || !Array.isArray(widget.thresholds) || thresholdIndex < 0 || thresholdIndex >= widget.thresholds.length)
+        if (!widget || !widget.thresholds || thresholdIndex < 0 || thresholdIndex >= itemCount(widget.thresholds))
             return
         if (patch && patch.color !== undefined && typeof widget.setThresholdColor === "function")
             widget.setThresholdColor(thresholdIndex, patch.color)
@@ -85,10 +108,10 @@ Rectangle {
     }
 
     function cycleThresholdColor(widgetIndex, thresholdIndex) {
-        if (!Array.isArray(widgetItems) || widgetIndex < 0 || widgetIndex >= widgetItems.length)
+        if (widgetIndex < 0 || widgetIndex >= itemCount(widgetItems))
             return
         var widget = widgetItems[widgetIndex]
-        if (!widget || !Array.isArray(widget.thresholds) || thresholdIndex < 0 || thresholdIndex >= widget.thresholds.length)
+        if (!widget || !widget.thresholds || thresholdIndex < 0 || thresholdIndex >= itemCount(widget.thresholds))
             return
         var current = widget.thresholds[thresholdIndex].color
         var paletteIndex = thresholdPalette.indexOf(current)
@@ -100,7 +123,7 @@ Rectangle {
         var widget = widgetAt(widgetIndex)
         if (!widget)
             return
-        var thresholds = Array.isArray(widget.thresholds) ? widget.thresholds.slice(0) : []
+        var thresholds = widget.thresholds ? Array.prototype.slice.call(widget.thresholds, 0) : []
         var lastValue = thresholds.length > 0 && typeof thresholds[thresholds.length - 1].value === "number"
             ? thresholds[thresholds.length - 1].value
             : 0
@@ -123,10 +146,10 @@ Rectangle {
     }
 
     function removeThreshold(widgetIndex, thresholdIndex) {
-        if (!Array.isArray(widgetItems) || widgetIndex < 0 || widgetIndex >= widgetItems.length)
+        if (widgetIndex < 0 || widgetIndex >= itemCount(widgetItems))
             return
         var widget = widgetAt(widgetIndex)
-        if (!widget || !Array.isArray(widget.thresholds) || thresholdIndex < 0 || thresholdIndex >= widget.thresholds.length)
+        if (!widget || !widget.thresholds || thresholdIndex < 0 || thresholdIndex >= itemCount(widget.thresholds))
             return
         if (typeof widget.removeThreshold === "function") {
             widget.removeThreshold(thresholdIndex)
@@ -138,22 +161,23 @@ Rectangle {
     }
 
     function cycleThresholdTarget(widgetIndex, thresholdIndex) {
-        if (!Array.isArray(widgetItems) || widgetIndex < 0 || widgetIndex >= widgetItems.length)
+        if (widgetIndex < 0 || widgetIndex >= itemCount(widgetItems))
             return
         var widget = widgetItems[widgetIndex]
-        if (!widget || !Array.isArray(widget.thresholds) || thresholdIndex < 0 || thresholdIndex >= widget.thresholds.length)
+        if (!widget || !widget.thresholds || thresholdIndex < 0 || thresholdIndex >= itemCount(widget.thresholds))
             return
         var current = widget.thresholds[thresholdIndex].flashTarget
         var targetIndex = thresholdTargets.indexOf(current)
         var nextTarget = thresholdTargets[(targetIndex + 1 + thresholdTargets.length) % thresholdTargets.length]
         updateThresholdItem(widgetIndex, thresholdIndex, { "flashTarget": nextTarget })
     }
-
     readonly property var selectedWidget: {
-        if (!Array.isArray(widgetItems) || widgetItems.length === 0)
+        var count = itemCount(widgetItems)
+        if (count === 0)
             return null
-        var clamped = Math.max(0, Math.min(selectedIndex, widgetItems.length - 1))
-        return widgetItems[clamped]
+        if (selectedIndex < 0 || selectedIndex >= count)
+            return null
+        return widgetItems[selectedIndex]
     }
 
     readonly property string selectedTitle: {
@@ -166,6 +190,21 @@ Rectangle {
         if (!selectedWidget || typeof selectedWidget.description !== "string")
             return ""
         return selectedWidget.description
+    }
+    readonly property bool selectedSupportsDemoMode: {
+        return !!(selectedWidget && root.itemValue(selectedWidget, "supportsDemoMode", false))
+    }
+    readonly property bool selectedDemoRequested: {
+        return !!(selectedWidget && root.itemValue(selectedWidget, "demoRequested", false))
+    }
+    readonly property real selectedDemoMin: {
+        return selectedWidget ? root.itemValue(selectedWidget, "demoMin", 0) : 0
+    }
+    readonly property real selectedDemoMax: {
+        return selectedWidget ? root.itemValue(selectedWidget, "demoMax", 100) : 100
+    }
+    readonly property real selectedDemoSpeed: {
+        return selectedWidget ? root.itemValue(selectedWidget, "demoSpeed", 0.5) : 0.5
     }
 
     readonly property bool selectedEnabled: {
@@ -205,26 +244,23 @@ Rectangle {
     }
 
     readonly property var selectedThresholds: {
-        if (!selectedWidget || !Array.isArray(selectedWidget.thresholds))
+        if (!selectedWidget || !selectedWidget.thresholds)
             return []
         return selectedWidget.thresholds
     }
 
-    radius: 18
-    color: "#111418"
+    color: surface
     border.width: 1
-    border.color: "#252b34"
+    border.color: borderColor
 
     Row {
         anchors.fill: parent
-        anchors.margins: 0
         spacing: 0
 
-        Rectangle {
+        Item {
             id: listPane
             width: selectedWidget ? parent.width * 0.4 : parent.width
             height: parent.height
-            color: "transparent"
             Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
             Rectangle {
@@ -244,8 +280,9 @@ Rectangle {
                         height: parent.height
                         verticalAlignment: Text.AlignVCenter
                         text: "Widget"
-                        color: "#dce0e5"
-                        font.pixelSize: 11
+                        color: textColor
+                        font.pixelSize: fontSmall
+                        font.family: fontFamily
                     }
 
                     Text {
@@ -253,8 +290,9 @@ Rectangle {
                         height: parent.height
                         verticalAlignment: Text.AlignVCenter
                         text: "Description"
-                        color: "#dce0e5"
-                        font.pixelSize: 11
+                        color: textColor
+                        font.pixelSize: fontSmall
+                        font.family: fontFamily
                     }
                 }
 
@@ -262,615 +300,409 @@ Rectangle {
                     anchors.bottom: parent.bottom
                     width: parent.width
                     height: 1
-                    color: "#464b57"
+                    color: borderColor
                 }
             }
 
-            Column {
-                x: 12
-                y: tableHeader.height
-                width: parent.width - 24
+            ListView {
+                id: widgetList
+                anchors.top: tableHeader.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                clip: true
+                model: root.widgetItems
                 spacing: 0
 
-                Repeater {
-                    model: root.widgetItems
+                delegate: Rectangle {
+                    id: row
+                    required property var modelData
+                    required property int index
 
-                    delegate: Rectangle {
-                        id: row
-                        required property var modelData
-                        required property int index
+                    readonly property bool isSelected: root.selectedIndex === index
 
-                        width: parent ? parent.width : 240
-                        readonly property bool isSelected: root.selectedIndex === index
+                    width: ListView.view.width
+                    height: 40
+                    color: isSelected ? surfaceRaised : (index % 2 === 0 ? surfaceAlt : "transparent")
+                    Behavior on color { ColorAnimation { duration: 80 } }
 
-                        height: 40
-                        color: isSelected ? "#3b414d" : (index % 2 === 0 ? "#2f343e" : "transparent")
+                    Rectangle {
+                        width: 2
+                        height: parent.height
+                        color: accentColor
+                        visible: row.isSelected
+                    }
 
-                        Rectangle {
-                            width: 2
+                    Rectangle {
+                        anchors.fill: parent
+                        opacity: rowHover.hovered && !row.isSelected ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: 120 } }
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: "transparent" }
+                            GradientStop { position: 0.5; color: "transparent" }
+                            GradientStop { position: 1.0; color: "#20dec184" }
+                        }
+                    }
+
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        width: parent.width
+                        height: 1
+                        color: borderColor
+                        opacity: 0.4
+                    }
+                    Row {
+                        anchors.fill: parent
+                        anchors.leftMargin: 16 + (row.isSelected ? 8 : 0)
+                        spacing: 0
+
+                        Text {
+                            width: 200
                             height: parent.height
-                            color: "#74ade8"
-                            visible: row.isSelected
-                        }
-
-                        Rectangle {
-                            anchors.fill: parent
-                            opacity: rowHover.hovered && !row.isSelected ? 1 : 0
-                            gradient: Gradient {
-                                orientation: Gradient.Horizontal
-                                GradientStop { position: 0.0; color: "transparent" }
-                                GradientStop { position: 0.5; color: "transparent" }
-                                GradientStop { position: 1.0; color: "#20dec184" }
-                            }
-                        }
-
-                        Rectangle {
-                            anchors.bottom: parent.bottom
-                            width: parent.width
-                            height: 1
-                            color: "#464b57"
-                            opacity: 0.4
+                            verticalAlignment: Text.AlignVCenter
+                            text: modelData && typeof modelData.title === "string" ? modelData.title : ""
+                            color: row.isSelected ? accentColor : textColor
+                            font.pixelSize: fontBase
+                            font.family: fontFamily
+                            font.weight: row.isSelected ? Font.DemiBold : Font.Normal
+                            Behavior on color { ColorAnimation { duration: 80 } }
                         }
 
                         Text {
-                            anchors.left: parent.left
-                            anchors.leftMargin: row.isSelected ? 24 : 16
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: modelData && typeof modelData.title === "string" ? modelData.title : ""
-                            color: row.isSelected ? "#74ade8" : "#dce0e5"
-                            font.pixelSize: 14
-                            font.weight: row.isSelected ? Font.DemiBold : Font.Normal
+                            width: parent.width - 16 - 200 - 56
+                            height: parent.height
+                            verticalAlignment: Text.AlignVCenter
+                            text: modelData && typeof modelData.description === "string" ? modelData.description : ""
+                            color: rowHover.hovered ? warningColor : textMuted
+                            font.pixelSize: fontSmall
+                            font.family: fontFamily
+                            elide: Text.ElideRight
+                            Behavior on color { ColorAnimation { duration: 120 } }
                         }
 
-                        Rectangle {
-                            anchors.right: parent.right
-                            anchors.rightMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 48
-                            height: 22
-                            radius: 7
-                            color: "transparent"
+                        Item {
+                            width: 56
+                            height: parent.height
 
-                            Text {
+                            ToggleSwitch {
                                 anchors.centerIn: parent
-                                text: modelData && typeof modelData.enabled === "boolean" && modelData.enabled ? "on" : "off"
-                                color: row.isSelected ? "#dce0e5" : "#878a98"
-                                font.pixelSize: 11
+                                checked: modelData && typeof modelData.enabled === "boolean" ? modelData.enabled : false
+                                onToggled: (value) => root.updateWidgetItem(index, { "enabled": value })
                             }
                         }
-
-                        ToggleSwitch {
-                            anchors.right: parent.right
-                            anchors.rightMargin: 82
-                            anchors.verticalCenter: parent.verticalCenter
-                            checked: modelData && typeof modelData.enabled === "boolean" ? modelData.enabled : false
-                            onToggled: (value) => root.updateWidgetItem(index, { "enabled": value })
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            anchors.rightMargin: 152
-                            onClicked: root.selectedIndex = index
-                        }
-
-                        HoverHandler { id: rowHover }
                     }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.rightMargin: 56
+                        onClicked: root.selectedIndex = index
+                    }
+
+                    HoverHandler { id: rowHover }
                 }
             }
         }
 
         Rectangle {
             visible: selectedWidget !== null
+            width: 1
+            height: parent.height
+            color: borderColor
+        }
+
+        Item {
+            id: detailPane
+            visible: root.selectedWidget !== null
             width: parent.width - listPane.width - 1
             height: parent.height
-            color: "#15191e"
-            border.width: 0
+            clip: true
 
-            Column {
-                anchors.fill: parent
-                anchors.margins: 20
-                spacing: 14
+            Rectangle {
+                id: detailHeader
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 56
+                color: "transparent"
 
-                Text {
-                    text: root.selectedTitle !== "" ? root.selectedTitle : "No widget selected"
-                    color: "#f4f7fb"
-                    font.pixelSize: 18
-                    font.weight: Font.DemiBold
-                }
+                Column {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.leftMargin: 16
+                    anchors.rightMargin: 16
+                    spacing: 3
 
-                Text {
-                    width: parent.width
-                    wrapMode: Text.WordWrap
-                    text: root.selectedTitle !== ""
-                        ? root.selectedDescription
-                        : ""
-                    color: "#8e97a5"
-                    font.pixelSize: 13
+                    Text {
+                        text: root.selectedTitle
+                        color: textColor
+                        font.pixelSize: fontBase
+                        font.family: fontFamily
+                        font.weight: Font.DemiBold
+                    }
+
+                    Text {
+                        text: root.selectedDescription
+                        color: textMuted
+                        font.pixelSize: fontSmall
+                        font.family: fontFamily
+                        elide: Text.ElideRight
+                    }
                 }
 
                 Rectangle {
+                    anchors.bottom: parent.bottom
                     width: parent.width
                     height: 1
-                    color: "#252b34"
+                    color: borderColor
                 }
+            }
+
+            Rectangle {
+                id: demoSection
+                readonly property bool active: root.selectedSupportsDemoMode && root.selectedDemoRequested
+                anchors.top: detailHeader.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: active ? demoSectionInner.implicitHeight : 0
+                Behavior on height { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                clip: true
+                color: surfaceAlt
+                visible: height > 0
 
                 Rectangle {
+                    anchors.bottom: parent.bottom
                     width: parent.width
-                    height: 28
-                    color: "#171a1f"
-
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 16
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Identity"
-                        color: "#aab4c3"
-                        font.pixelSize: 11
-                        font.weight: Font.Medium
-                    }
-
-                    Rectangle {
-                        anchors.bottom: parent.bottom
-                        width: parent.width
-                        height: 1
-                        color: "#2c3440"
-                    }
+                    height: 1
+                    color: borderColor
                 }
 
-                Rectangle {
-                    visible: root.selectedHasEditableValue
-                    width: parent.width
-                    height: 56
-                    color: "transparent"
+                Column {
+                    id: demoSectionInner
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    spacing: 0
 
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Label"
-                        color: "#9aa1ad"
-                        font.pixelSize: 12
+                    EditRow {
+                        label: "Min"
+                        description: "Lowest value in the mock sweep"
+                        NumberStepper {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 0
+                            anchors.verticalCenter: parent.verticalCenter
+                            value: root.selectedDemoMin
+                            step: 1
+                            onCommit: (value) => {
+                                if (root.selectedWidget && typeof root.selectedWidget.setDemoMin === "function")
+                                    root.selectedWidget.setDemoMin(value)
+                            }
+                        }
                     }
 
-                    Rectangle {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 220
-                        height: 30
-                        radius: 8
-                        color: "#15191e"
-                        border.width: 1
-                        border.color: labelInput.activeFocus ? "#d7dee8" : "#2b313a"
+                    EditRow {
+                        label: "Max"
+                        description: "Highest value before the sweep resets"
+                        NumberStepper {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 0
+                            anchors.verticalCenter: parent.verticalCenter
+                            value: root.selectedDemoMax
+                            step: 1
+                            onCommit: (value) => {
+                                if (root.selectedWidget && typeof root.selectedWidget.setDemoMax === "function")
+                                    root.selectedWidget.setDemoMax(value)
+                            }
+                        }
+                    }
 
-                        TextInput {
-                            id: labelInput
-                            anchors.fill: parent
-                            anchors.leftMargin: 10
-                            anchors.rightMargin: 10
-                            verticalAlignment: TextInput.AlignVCenter
-                            color: "#f4f7fb"
-                            font.pixelSize: 12
-                            selectByMouse: true
-                            text: root.selectedLabel
-
-                            onEditingFinished: root.updateWidgetItem(root.selectedIndex, { "label": text })
-                            onActiveFocusChanged: {
-                                if (!activeFocus)
-                                    text = root.selectedLabel
+                    EditRow {
+                        label: "Speed"
+                        description: "Sweep speed per update cycle"
+                        NumberStepper {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 0
+                            anchors.verticalCenter: parent.verticalCenter
+                            value: root.selectedDemoSpeed
+                            step: 0.1
+                            min: 0.1
+                            onCommit: (value) => {
+                                if (root.selectedWidget && typeof root.selectedWidget.setDemoSpeed === "function")
+                                    root.selectedWidget.setDemoSpeed(value)
                             }
                         }
                     }
                 }
+            }
 
-                Rectangle {
-                    width: parent.width
-                    height: 56
-                    color: "transparent"
+            Flickable {
+                anchors.top: demoSection.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                clip: true
+                contentHeight: editColumn.implicitHeight
 
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Enabled"
-                        color: "#9aa1ad"
-                        font.pixelSize: 12
+                Column {
+                    id: editColumn
+                    width: detailPane.width
+                    spacing: 0
+
+                    SectionHeader { text: "Identity" }
+
+                    EditRow {
+                        label: "Label"
+                        description: "Short text shown on the widget"
+
+                        Rectangle {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 0
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 128
+                            height: 28
+                            radius: 4
+                            color: surfaceFloating
+                            border.width: 1
+                            border.color: labelInput.activeFocus ? accentColor : borderColor
+
+                            TextInput {
+                                id: labelInput
+                                anchors.fill: parent
+                                anchors.leftMargin: 8
+                                anchors.rightMargin: 8
+                                verticalAlignment: TextInput.AlignVCenter
+                                text: root.selectedLabel
+                                color: textColor
+                                font.pixelSize: fontSmall
+                                font.family: fontFamily
+                                selectByMouse: true
+                                onActiveFocusChanged: {
+                                    if (!activeFocus)
+                                        root.updateWidgetItem(root.selectedIndex, { "label": text })
+                                }
+                                Keys.onReturnPressed: {
+                                    root.updateWidgetItem(root.selectedIndex, { "label": text })
+                                    focus = false
+                                }
+                                Keys.onEscapePressed: {
+                                    text = root.selectedLabel
+                                    focus = false
+                                }
+                            }
+                        }
                     }
 
-                    ToggleSwitch {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        checked: root.selectedEnabled
-                        onToggled: (value) => root.updateWidgetItem(root.selectedIndex, { "enabled": value })
-                    }
-                }
+                    EditRow {
+                        label: "Position X"
 
-                Rectangle {
-                    width: parent.width
-                    height: 56
-                    color: "transparent"
-
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Position X"
-                        color: "#9aa1ad"
-                        font.pixelSize: 12
+                        NumberStepper {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 0
+                            anchors.verticalCenter: parent.verticalCenter
+                            value: root.selectedPositionX
+                            step: 1
+                            min: 0
+                            max: 9999
+                            onCommit: (value) => root.updateWidgetItem(root.selectedIndex, { "positionX": value })
+                        }
                     }
 
-                    NumberStepper {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        value: root.selectedPositionX
-                        step: 1
-                        min: 0
-                        max: 9999
-                        onCommit: (value) => root.updateWidgetItem(root.selectedIndex, { "positionX": value })
-                    }
-                }
+                    EditRow {
+                        label: "Position Y"
 
-                Rectangle {
-                    width: parent.width
-                    height: 56
-                    color: "transparent"
-
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Position Y"
-                        color: "#9aa1ad"
-                        font.pixelSize: 12
+                        NumberStepper {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 0
+                            anchors.verticalCenter: parent.verticalCenter
+                            value: root.selectedPositionY
+                            step: 1
+                            min: 0
+                            max: 9999
+                            onCommit: (value) => root.updateWidgetItem(root.selectedIndex, { "positionY": value })
+                        }
                     }
 
-                    NumberStepper {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        value: root.selectedPositionY
-                        step: 1
-                        min: 0
-                        max: 9999
-                        onCommit: (value) => root.updateWidgetItem(root.selectedIndex, { "positionY": value })
+                    EditRow {
+                        label: "Enabled"
+
+                        ToggleSwitch {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 24
+                            anchors.verticalCenter: parent.verticalCenter
+                            checked: root.selectedEnabled
+                            onToggled: (value) => root.updateWidgetItem(root.selectedIndex, { "enabled": value })
+                        }
                     }
-                }
+                    SectionHeader { text: "Provider" }
 
-                Rectangle {
-                    width: parent.width
-                    height: 28
-                    color: "#171a1f"
-
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 16
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Provider"
-                        color: "#aab4c3"
-                        font.pixelSize: 11
-                        font.weight: Font.Medium
-                    }
-
-                    Rectangle {
-                        anchors.bottom: parent.bottom
-                        width: parent.width
-                        height: 1
-                        color: "#2c3440"
-                    }
-                }
-
-                Rectangle {
-                    width: parent.width
-                    height: 44
-                    color: "transparent"
-
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 16
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Binding"
-                        color: "#e5edf7"
-                        font.pixelSize: 13
-                    }
-
-                    Text {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.selectedWidget
+                    EditRow {
+                        label: "Binding"
+                        description: root.selectedWidget
                             ? (
                                 root.itemValue(root.selectedWidget, "activeGame", "none") !== "none"
                                 ? root.itemValue(root.selectedWidget, "providerName", "") + " / " + root.itemValue(root.selectedWidget, "activeGame", "")
                                 : root.itemValue(root.selectedWidget, "providerName", "")
                               )
                             : ""
-                        color: "#7f8a99"
-                        font.pixelSize: 11
-                    }
-                }
-
-                Rectangle {
-                    width: parent.width
-                    height: 44
-                    color: "transparent"
-
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 16
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Mode"
-                        color: "#e5edf7"
-                        font.pixelSize: 13
                     }
 
-                    Text {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.selectedWidget ? root.itemValue(root.selectedWidget, "providerMode", "") : ""
-                        color: "#7f8a99"
-                        font.pixelSize: 11
-                    }
-                }
-
-                Rectangle {
-                    width: parent.width
-                    height: 28
-                    color: "#171a1f"
-
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 16
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Thresholds"
-                        color: "#aab4c3"
-                        font.pixelSize: 11
-                        font.weight: Font.Medium
+                    EditRow {
+                        label: "Mode"
+                        description: root.selectedWidget ? root.itemValue(root.selectedWidget, "providerMode", "") : ""
                     }
 
-                    Rectangle {
-                        anchors.bottom: parent.bottom
+                    EditRow {
+                        visible: root.selectedSupportsDemoMode
+                        label: "Preview"
+                        description: root.selectedDemoRequested
+                            ? "Preview sweep is active for this widget"
+                            : "Enable a temporary demo sweep for this widget"
+
+                        ToggleSwitch {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 24
+                            anchors.verticalCenter: parent.verticalCenter
+                            checked: root.selectedDemoRequested
+                            onToggled: (value) => {
+                                if (!root.selectedWidget)
+                                    return
+                                if (value && typeof root.selectedWidget.requestDemo === "function")
+                                    root.selectedWidget.requestDemo()
+                                else if (!value && typeof root.selectedWidget.releaseDemo === "function")
+                                    root.selectedWidget.releaseDemo()
+                            }
+                        }
+                    }
+
+                    EditRow {
+                        visible: root.selectedHasEditableValue
+                        label: "Value"
+
+                        NumberStepper {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 0
+                            anchors.verticalCenter: parent.verticalCenter
+                            value: root.selectedValue
+                            step: 1
+                            min: 0
+                            max: 999
+                            onCommit: (value) => root.updateWidgetItem(root.selectedIndex, { "value": value })
+                        }
+                    }
+
+                    SectionHeader { text: "Thresholds" }
+
+                    ThresholdEditor {
                         width: parent.width
-                        height: 1
-                        color: "#2c3440"
-                    }
-                }
-
-                Rectangle {
-                    width: parent.width
-                    height: thresholdColumn.implicitHeight + 20
-                    color: "transparent"
-
-                    Column {
-                        id: thresholdColumn
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: 14
-                        spacing: 10
-
-                        Text {
-                            width: parent.width
-                            wrapMode: Text.WordWrap
-                            text: "Each threshold is an upper bound. The widget uses the threshold color while the value is at or below that number."
-                            color: "#8e97a5"
-                            font.pixelSize: 12
-                            visible: root.selectedThresholds.length > 0
-                        }
-
-                        Text {
-                            text: "No thresholds configured."
-                            color: "#8e97a5"
-                            font.pixelSize: 12
-                            visible: root.selectedThresholds.length === 0
-                        }
-
-                        Repeater {
-                            model: root.selectedThresholds
-
-                            delegate: Column {
-                                required property var modelData
-                                required property int index
-
-                                width: thresholdColumn.width
-                                spacing: 6
-
-                                Rectangle {
-                                    width: parent.width
-                                    height: 42
-                                    radius: 10
-                                    color: "#15191e"
-                                    border.width: 1
-                                    border.color: "#2b313a"
-
-                                    Rectangle {
-                                        anchors.left: parent.left
-                                        anchors.leftMargin: 10
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        width: 14
-                                        height: 14
-                                        radius: 7
-                                        color: modelData && typeof modelData.color === "string" ? modelData.color : "#c5ccd8"
-                                        border.width: 1
-                                        border.color: "#39414d"
-
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            onClicked: root.cycleThresholdColor(root.selectedIndex, index)
-                                        }
-                                    }
-
-                                    Text {
-                                        anchors.left: parent.left
-                                        anchors.leftMargin: 34
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: "≤"
-                                        color: "#f4f7fb"
-                                        font.pixelSize: 12
-                                    }
-
-                                    NumberStepper {
-                                        anchors.left: parent.left
-                                        anchors.leftMargin: 56
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        value: modelData && typeof modelData.value === "number" ? modelData.value : 0
-                                        step: 1
-                                        min: -9999
-                                        max: 9999
-                                        onCommit: (value) => root.updateThresholdItem(root.selectedIndex, index, { "value": value })
-                                    }
-
-                                    ToggleSwitch {
-                                        anchors.right: parent.right
-                                        anchors.rightMargin: 46
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        checked: modelData && typeof modelData.flash === "boolean" ? modelData.flash : false
-                                        onToggled: (value) => root.updateThresholdItem(root.selectedIndex, index, { "flash": value })
-                                    }
-
-                                    Rectangle {
-                                        anchors.right: parent.right
-                                        anchors.rightMargin: 10
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        width: 22
-                                        height: 22
-                                        radius: 11
-                                        color: "#1b1f25"
-                                        border.width: 1
-                                        border.color: "#39414d"
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: "x"
-                                            color: "#c5ccd8"
-                                            font.pixelSize: 11
-                                        }
-
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            onClicked: root.removeThreshold(root.selectedIndex, index)
-                                        }
-                                    }
-                                }
-
-                                Rectangle {
-                                    width: parent.width
-                                    height: modelData && typeof modelData.flash === "boolean" && modelData.flash ? 42 : 0
-                                    radius: 10
-                                    color: "#111418"
-                                    border.width: height > 0 ? 1 : 0
-                                    border.color: "#2b313a"
-                                    visible: height > 0
-                                    clip: true
-
-                                    Text {
-                                        anchors.left: parent.left
-                                        anchors.leftMargin: 12
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: "Target"
-                                        color: "#9aa1ad"
-                                        font.pixelSize: 12
-                                    }
-
-                                    Rectangle {
-                                        anchors.left: parent.left
-                                        anchors.leftMargin: 56
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        width: 92
-                                        height: 26
-                                        radius: 8
-                                        color: "#15191e"
-                                        border.width: 1
-                                        border.color: "#39414d"
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: modelData && typeof modelData.flashTarget === "string" ? modelData.flashTarget : "value"
-                                            color: "#f4f7fb"
-                                            font.pixelSize: 12
-                                        }
-
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            onClicked: root.cycleThresholdTarget(root.selectedIndex, index)
-                                        }
-                                    }
-
-                                    Text {
-                                        anchors.left: parent.left
-                                        anchors.leftMargin: 164
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: "Speed"
-                                        color: "#9aa1ad"
-                                        font.pixelSize: 12
-                                    }
-
-                                    NumberStepper {
-                                        anchors.right: parent.right
-                                        anchors.rightMargin: 12
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        value: modelData && typeof modelData.flashSpeed === "number" ? modelData.flashSpeed : 4
-                                        step: 1
-                                        min: 1
-                                        max: 20
-                                        onCommit: (value) => root.updateThresholdItem(root.selectedIndex, index, { "flashSpeed": value })
-                                    }
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            width: 132
-                            height: 30
-                            radius: 8
-                            color: "#15191e"
-                            border.width: 1
-                            border.color: "#2b313a"
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "Add threshold"
-                                color: "#f4f7fb"
-                                font.pixelSize: 12
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: root.addThreshold(root.selectedIndex)
-                            }
-                        }
-                    }
-                }
-
-                Rectangle {
-                    width: parent.width
-                    height: 56
-                    radius: 12
-                    color: "#1b1f25"
-
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Value"
-                        color: "#9aa1ad"
-                        font.pixelSize: 12
-                    }
-
-                    NumberStepper {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        value: root.selectedValue
-                        step: 1
-                        min: 0
-                        max: 999
-                        onCommit: (value) => root.updateWidgetItem(root.selectedIndex, { "value": value })
+                        context: root.selectedWidget
+                        bridge: root
+                        widgetIndex: root.selectedIndex
+                        thresholdPalette: root.thresholdPalette
+                        thresholdTargets: root.thresholdTargets
                     }
                 }
             }
         }
     }
+
 }

@@ -1,80 +1,161 @@
-//  TinyUI
-//  Copyright (C) 2026 Oost-hash
-//
-//  This file is part of TinyUI.
-//
-//  TinyUI is free software: you can redistribute it and/or modify
-//  it under the terms of the GNU General Public License as published by
-//  the Free Software Foundation, either version 3 of the License, or
-//  (at your option) any later version.
-//
-//  TinyUI is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//  GNU General Public License for more details.
-//
-//  You should have received a copy of the GNU General Public License
-//  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//
-//  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
-//  licensed under GPLv3.
-
-pragma ComponentBehavior: Bound
-
 import QtQuick
-import TinyUI
-
-// ── ThresholdEditor ────────────────────────────────────────────────────────────
-// Renders the full threshold list for a WidgetContext.
-// Each entry shows two rows:
-//   Row 1 (always):  ≤ [value]  [color]  [flash toggle]  [×]
-//   Row 2 (flash on, animated): Target [dropdown]  Speed [stepper]
+import QtQuick.Window
+import TinyUI 1.0
 
 Column {
     id: root
 
-    property var context: null  // WidgetContext
+    readonly property var hostWindow: Window.window
+    readonly property var hostTheme: hostWindow && hostWindow.theme ? hostWindow.theme : null
 
-    anchors.left:  parent ? parent.left  : undefined
-    anchors.right: parent ? parent.right : undefined
+    property var context: null
+    property var bridge: null
+    property int widgetIndex: -1
+    property var thresholdPalette: []
+    property var thresholdTargets: ["value", "text", "widget"]
 
-    // ── Description ───────────────────────────────────────────────────────────
+    readonly property color surfaceAlt: hostTheme ? hostTheme.surfaceAlt : "#2F343E"
+    readonly property color surfaceRaised: hostTheme ? hostTheme.surfaceRaised : "#3B414D"
+    readonly property color surfaceFloating: hostTheme ? hostTheme.surfaceFloating : "#20242b"
+    readonly property color borderColor: hostTheme ? hostTheme.border : "#464B57"
+    readonly property color textColor: hostTheme ? hostTheme.text : "#DCE0E5"
+    readonly property color textSecondary: hostTheme ? hostTheme.textSecondary : "#A9AFBC"
+    readonly property color textMuted: hostTheme ? hostTheme.textMuted : "#878A98"
+    readonly property color accentColor: hostTheme ? hostTheme.accent : "#74ADE8"
+    readonly property color warningColor: hostTheme ? hostTheme.warning : "#dec184"
+    readonly property int fontBase: hostTheme ? hostTheme.fontSizeBase : 13
+    readonly property int fontSmall: hostTheme ? hostTheme.fontSizeSmall : 11
+    readonly property string fontFamily: hostTheme ? hostTheme.fontFamily : "Segoe UI"
+    readonly property var thresholds: context && context.thresholds ? context.thresholds : []
+
+    width: parent ? parent.width : 0
+    spacing: 0
+
+    function _thresholdAt(index) {
+        return index >= 0 && index < thresholds.length ? thresholds[index] : null
+    }
+
+    function _update(index, patch) {
+        if (!context)
+            return
+        var threshold = _thresholdAt(index)
+        if (!threshold)
+            return
+        if (patch && patch.color !== undefined && typeof context.setThresholdColor === "function") {
+            context.setThresholdColor(index, patch.color)
+            return
+        }
+        if (patch && patch.value !== undefined && typeof context.setThresholdValue === "function") {
+            context.setThresholdValue(index, patch.value)
+            return
+        }
+        if (patch && patch.flash !== undefined && typeof context.setThresholdFlash === "function") {
+            context.setThresholdFlash(index, patch.flash)
+            return
+        }
+        if (patch && patch.flashSpeed !== undefined && typeof context.setThresholdFlashSpeed === "function") {
+            context.setThresholdFlashSpeed(index, patch.flashSpeed)
+            return
+        }
+        if (patch && patch.flashTarget !== undefined && typeof context.setThresholdFlashTarget === "function") {
+            context.setThresholdFlashTarget(index, patch.flashTarget)
+            return
+        }
+        if (bridge && typeof bridge.updateThresholdItem === "function" && widgetIndex >= 0)
+            bridge.updateThresholdItem(widgetIndex, index, patch)
+    }
+
+    function _remove(index) {
+        if (context && typeof context.removeThreshold === "function") {
+            context.removeThreshold(index)
+            return
+        }
+        if (bridge && typeof bridge.removeThreshold === "function" && widgetIndex >= 0)
+            bridge.removeThreshold(widgetIndex, index)
+    }
+
+    function _add() {
+        if (context && typeof context.addDefaultThreshold === "function") {
+            context.addDefaultThreshold()
+            return
+        }
+        if (bridge && typeof bridge.addThreshold === "function" && widgetIndex >= 0)
+            bridge.addThreshold(widgetIndex)
+    }
+
+    function _cycleColor(index) {
+        var threshold = _thresholdAt(index)
+        if (!threshold)
+            return
+        if (bridge && typeof bridge.cycleThresholdColor === "function" && widgetIndex >= 0) {
+            bridge.cycleThresholdColor(widgetIndex, index)
+            return
+        }
+        if (!Array.isArray(thresholdPalette) || thresholdPalette.length === 0)
+            return
+        var paletteIndex = thresholdPalette.indexOf(threshold.color)
+        var nextColor = thresholdPalette[(paletteIndex + 1 + thresholdPalette.length) % thresholdPalette.length]
+        _update(index, { "color": nextColor })
+    }
+
+    function _cycleTarget(index) {
+        var threshold = _thresholdAt(index)
+        if (!threshold)
+            return
+        if (bridge && typeof bridge.cycleThresholdTarget === "function" && widgetIndex >= 0) {
+            bridge.cycleThresholdTarget(widgetIndex, index)
+            return
+        }
+        if (!Array.isArray(thresholdTargets) || thresholdTargets.length === 0)
+            return
+        var targetIndex = thresholdTargets.indexOf(threshold.flashTarget)
+        var nextTarget = thresholdTargets[(targetIndex + 1 + thresholdTargets.length) % thresholdTargets.length]
+        _update(index, { "flashTarget": nextTarget })
+    }
+
     Rectangle {
-        anchors.left: parent.left; anchors.right: parent.right
+        width: parent.width
         height: descLabel.implicitHeight + 16
         color: "transparent"
 
         Text {
             id: descLabel
-            anchors.left:  parent.left;  anchors.leftMargin:  16
-            anchors.right: parent.right; anchors.rightMargin: 16
+            anchors.left: parent.left
+            anchors.leftMargin: 16
+            anchors.right: parent.right
+            anchors.rightMargin: 16
             anchors.verticalCenter: parent.verticalCenter
-            wrapMode:      Text.WordWrap
-            text: "Each entry is an upper bound — the color is used while the value is at or below that number. Above all thresholds the widget uses its default color."
-            color: Theme.textMuted
-            font.pixelSize: Theme.fontSizeSmall
-            font.family:    Theme.fontFamily
+            wrapMode: Text.WordWrap
+            text: "Each entry is an upper bound. Above all thresholds the widget uses its default color."
+            color: textMuted
+            font.pixelSize: fontSmall
+            font.family: fontFamily
         }
-        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border; opacity: 0.4 }
+
+        Rectangle {
+            anchors.bottom: parent.bottom
+            width: parent.width
+            height: 1
+            color: borderColor
+            opacity: 0.4
+        }
     }
 
-    // ── Threshold entries ─────────────────────────────────────────────────────
     Repeater {
-        model: root.context ? root.context.thresholds : []
+        model: root.thresholds
 
         delegate: Column {
             id: entry
             required property var modelData
             required property int index
 
-            anchors.left:  parent ? parent.left  : undefined
-            anchors.right: parent ? parent.right : undefined
+            width: root.width
+            spacing: 0
 
-            // ── Row 1: value · color · flash toggle · remove ──────────────────
             Rectangle {
                 id: row1
-                anchors.left: parent.left; anchors.right: parent.right
-                height: 44
+                width: parent.width
+                height: 40
                 color: "transparent"
 
                 Rectangle {
@@ -89,98 +170,104 @@ Column {
                     }
                 }
 
-                // ── Left: index badge + ≤ + value ─────────────────────────────
                 Row {
-                    anchors.left: parent.left; anchors.leftMargin: 16
+                    anchors.left: parent.left
+                    anchors.leftMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 8
 
-                    // Index badge
                     Rectangle {
-                        width: 18; height: 18; radius: 9
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: entry.modelData.color
-                        border.width: 1; border.color: Qt.darker(entry.modelData.color, 1.4)
+                        width: 18
+                        height: 18
+                        radius: 9
+                        color: entry.modelData && typeof entry.modelData.color === "string" ? entry.modelData.color : textMuted
+                        border.width: 1
+                        border.color: Qt.darker(color, 1.4)
 
                         Text {
                             anchors.centerIn: parent
                             text: entry.index + 1
-                            font.pixelSize: 9; font.weight: Font.Bold
-                            font.family: Theme.fontFamily
-                            color: Qt.hsla(0, 0, Qt.colorEqual(entry.modelData.color, "black") ? 1 : 0, 1)
+                            font.pixelSize: 9
+                            font.weight: Font.Bold
+                            font.family: fontFamily
+                            color: Qt.hsla(0, 0, Qt.colorEqual(parent.color, "black") ? 1 : 0, 1)
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: root._cycleColor(entry.index)
                         }
                     }
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "≤"
-                        color: Theme.textSecondary
-                        font.pixelSize: Theme.fontSizeBase
-                        font.family:    Theme.fontFamily
+                        text: "\u2264"
+                        color: textSecondary
+                        font.pixelSize: fontBase
+                        font.family: fontFamily
                     }
 
                     NumberStepper {
                         anchors.verticalCenter: parent.verticalCenter
-                        value: entry.modelData.value
-                        step:  0.5
-                        onCommit: (v) => {
-                            if (root.context) root.context.setThresholdValue(entry.index, v)
-                        }
+                        value: entry.modelData && typeof entry.modelData.value === "number" ? entry.modelData.value : 0
+                        step: 1
+                        min: -9999
+                        max: 9999
+                        onCommit: (v) => root._update(entry.index, { "value": v })
                     }
                 }
 
-                // ── Right: color · flash label · toggle · remove ───────────────
                 Row {
-                    anchors.right: parent.right; anchors.rightMargin: 12
+                    anchors.right: parent.right
+                    anchors.rightMargin: 12
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 10
 
                     ColorPicker {
                         anchors.verticalCenter: parent.verticalCenter
-                        value: entry.modelData.color
-                        onColorPicked: (hex) => {
-                            if (root.context) root.context.setThresholdColor(entry.index, hex)
-                        }
+                        value: entry.modelData && typeof entry.modelData.color === "string" ? entry.modelData.color : "#E0E0E0"
+                        onColorPicked: (hex) => root._update(entry.index, { "color": hex })
                     }
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Flash"
-                        color: Theme.textMuted
-                        font.pixelSize: Theme.fontSizeSmall
-                        font.family:    Theme.fontFamily
+                        color: textMuted
+                        font.pixelSize: fontSmall
+                        font.family: fontFamily
                     }
 
                     ToggleSwitch {
                         anchors.verticalCenter: parent.verticalCenter
-                        checked: entry.modelData.flash
-                        onToggled: (v) => {
-                            if (root.context) root.context.setThresholdFlash(entry.index, v)
-                        }
+                        checked: entry.modelData && typeof entry.modelData.flash === "boolean" ? entry.modelData.flash : false
+                        onToggled: (v) => root._update(entry.index, { "flash": v })
                     }
 
-                    // Remove button
                     Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 22; height: 22; radius: 11
-                        color:        rmArea.containsMouse ? "#40FF4444" : "transparent"
+                        width: 22
+                        height: 22
+                        radius: 11
+                        color: rmArea.containsMouse ? "#40FF4444" : "transparent"
                         border.width: 1
-                        border.color: rmArea.containsMouse ? "#FF4444"   : Theme.border
-                        Behavior on color        { ColorAnimation { duration: 80 } }
+                        border.color: rmArea.containsMouse ? "#FF4444" : borderColor
+                        Behavior on color { ColorAnimation { duration: 80 } }
                         Behavior on border.color { ColorAnimation { duration: 80 } }
 
                         Text {
                             anchors.centerIn: parent
-                            text:  "×"
-                            font.pixelSize: 14; font.family: Theme.fontFamily
-                            color: rmArea.containsMouse ? "#FF4444" : Theme.textMuted
+                            text: "\u00d7"
+                            font.pixelSize: 14
+                            font.family: fontFamily
+                            color: rmArea.containsMouse ? "#FF4444" : textMuted
                             Behavior on color { ColorAnimation { duration: 80 } }
                         }
 
                         MouseArea {
                             id: rmArea
-                            anchors.fill: parent; hoverEnabled: true
-                            onClicked: { if (root.context) root.context.removeThreshold(entry.index) }
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: root._remove(entry.index)
                         }
                     }
                 }
@@ -188,113 +275,119 @@ Column {
                 HoverHandler { id: rowHover }
             }
 
-            // ── Row 2: flash options (target + speed) — animated height ────────
             Rectangle {
                 id: row2
-                anchors.left: parent.left; anchors.right: parent.right
-
-                readonly property bool expanded: entry.modelData.flash
+                width: parent.width
+                readonly property bool expanded: entry.modelData && entry.modelData.flash
                 height: expanded ? 36 : 0
-                clip:   true
-                color:  Theme.surfaceAlt
+                clip: true
+                color: surfaceAlt
                 opacity: expanded ? 1 : 0
 
-                Behavior on height  { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                Behavior on height { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
                 Behavior on opacity { NumberAnimation { duration: 120 } }
 
-                readonly property var _targets: ["value", "text", "widget"]
-
                 Row {
-                    anchors.left: parent.left; anchors.leftMargin: 44
+                    anchors.left: parent.left
+                    anchors.leftMargin: 44
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 12
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Target"
-                        color: Theme.textMuted
-                        font.pixelSize: Theme.fontSizeSmall
-                        font.family:    Theme.fontFamily
+                        color: textMuted
+                        font.pixelSize: fontSmall
+                        font.family: fontFamily
                     }
 
                     ThemedComboBox {
                         anchors.verticalCenter: parent.verticalCenter
-                        model:         row2._targets
+                        model: root.thresholdTargets
                         implicitWidth: 76
                         currentIndex: {
-                            var i = row2._targets.indexOf(entry.modelData.flashTarget)
-                            return i >= 0 ? i : 0
+                            var currentTarget = entry.modelData && typeof entry.modelData.flashTarget === "string"
+                                ? entry.modelData.flashTarget
+                                : "value"
+                            var found = root.thresholdTargets.indexOf(currentTarget)
+                            return found >= 0 ? found : 0
                         }
-                        onActivated: (i) => {
-                            if (root.context)
-                                root.context.setThresholdFlashTarget(entry.index, row2._targets[i])
-                        }
+                        onActivated: (i) => root._update(entry.index, { "flashTarget": root.thresholdTargets[i] })
                     }
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Speed"
-                        color: Theme.textMuted
-                        font.pixelSize: Theme.fontSizeSmall
-                        font.family:    Theme.fontFamily
+                        color: textMuted
+                        font.pixelSize: fontSmall
+                        font.family: fontFamily
                     }
 
                     NumberStepper {
                         anchors.verticalCenter: parent.verticalCenter
-                        value: entry.modelData.flashSpeed
-                        step: 1; min: 1; max: 20
-                        onCommit: (v) => {
-                            if (root.context) root.context.setThresholdFlashSpeed(entry.index, v)
-                        }
+                        value: entry.modelData && typeof entry.modelData.flashSpeed === "number" ? entry.modelData.flashSpeed : 4
+                        step: 1
+                        min: 1
+                        max: 20
+                        onCommit: (v) => root._update(entry.index, { "flashSpeed": v })
                     }
                 }
             }
 
-            // Separator
             Rectangle {
-                anchors.left: parent.left; anchors.right: parent.right
-                height: 1; color: Theme.border; opacity: 0.4
+                width: parent.width
+                height: 1
+                color: borderColor
+                opacity: 0.4
             }
         }
     }
 
-    // ── Add threshold button ──────────────────────────────────────────────────
     Rectangle {
-        anchors.left: parent.left; anchors.right: parent.right
+        width: parent.width
         height: 40
         color: "transparent"
 
         Rectangle {
-            anchors.left: parent.left; anchors.leftMargin: 16
+            anchors.left: parent.left
+            anchors.leftMargin: 16
             anchors.verticalCenter: parent.verticalCenter
-            width: 130; height: 26; radius: 4
-            color:        addArea.containsMouse ? Theme.surfaceRaised : "transparent"
-            border.width: 1; border.color: Theme.border
+            width: 130
+            height: 26
+            radius: 4
+            color: addArea.containsMouse ? surfaceRaised : "transparent"
+            border.width: 1
+            border.color: borderColor
             Behavior on color { ColorAnimation { duration: 80 } }
 
             Row {
                 anchors.centerIn: parent
                 spacing: 6
+
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text:  "+"
-                    font.pixelSize: 14; font.family: Theme.fontFamily
-                    color: addArea.containsMouse ? Theme.accent : Theme.textMuted
+                    text: "+"
+                    font.pixelSize: 14
+                    font.family: fontFamily
+                    color: addArea.containsMouse ? accentColor : textMuted
                     Behavior on color { ColorAnimation { duration: 80 } }
                 }
+
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text:  "Add threshold"
-                    font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
-                    color: addArea.containsMouse ? Theme.accent : Theme.textMuted
+                    text: "Add threshold"
+                    font.pixelSize: fontSmall
+                    font.family: fontFamily
+                    color: addArea.containsMouse ? accentColor : textMuted
                     Behavior on color { ColorAnimation { duration: 80 } }
                 }
             }
 
             MouseArea {
                 id: addArea
-                anchors.fill: parent; hoverEnabled: true
-                onClicked: { if (root.context) root.context.addDefaultThreshold() }
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: root._add()
             }
         }
     }

@@ -94,12 +94,21 @@ def _active_plugin_label(core, index: int) -> str:
     return ""
 
 
+def _plugin_names(core) -> list[str]:
+    return [
+        participant.name
+        for participant in core.runtime.plugin_runtime.registered_participants
+    ]
+
+
 def _apply_status_shell_state(core, statusbar_vm: StatusBarViewModel, window: QObject) -> None:
     def _update_active_label() -> None:
         index = int(statusbar_vm.property("activePluginIndex"))
         window.setProperty("statusActiveLabel", _active_plugin_label(core, index))
 
     window.setProperty("statusItems", _status_items(core))
+    window.setProperty("pluginNames", _plugin_names(core))
+    window.setProperty("statusBarController", statusbar_vm)
     _update_active_label()
 
     active_changed = cast(Any, getattr(statusbar_vm, "activePluginIndexChanged", None))
@@ -110,11 +119,23 @@ def _apply_status_shell_state(core, statusbar_vm: StatusBarViewModel, window: QO
 def _apply_widget_editor_state(core, window: QObject) -> None:
     model = getattr(core.overlay, "model", None)
     contexts = getattr(model, "contexts", None)
+    contexts_changed = getattr(model, "contextsChanged", None)
+
+    def _update_items() -> None:
+        current_contexts = getattr(model, "contexts", None)
+        if callable(current_contexts):
+            window.setProperty("widgetEditorItems", current_contexts())
+            return
+        if current_contexts is not None:
+            window.setProperty("widgetEditorItems", current_contexts)
+
     if callable(contexts):
-        window.setProperty("widgetEditorItems", contexts())
-        return
-    if contexts is not None:
-        window.setProperty("widgetEditorItems", contexts)
+        _update_items()
+    elif contexts is not None:
+        _update_items()
+
+    if contexts_changed is not None:
+        contexts_changed.connect(_update_items)
 
 
 def _apply_tinyui_host_state(core, statusbar_vm: StatusBarViewModel, window: QObject) -> None:

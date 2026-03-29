@@ -1,32 +1,39 @@
 import QtQuick
 import QtQuick.Controls
-import TinyUI
+import QtQuick.Window
 
 AbstractButton {
     id: btn
+
+    readonly property var hostWindow: Window.window
+    readonly property var hostTheme: hostWindow && hostWindow.theme ? hostWindow.theme : null
+
+    readonly property color surfaceFloating: hostTheme ? hostTheme.surfaceFloating : "#20242b"
+    readonly property color dangerColor: hostTheme ? hostTheme.danger : "#d15b5b"
+    readonly property int titleBarHeight: hostTheme ? hostTheme.titleBarHeight : 32
 
     property string iconSource: ""
     property bool isCloseButton: false
 
     width: 46
-    height: Theme.titleBarHeight
+    height: titleBarHeight
     hoverEnabled: true
 
     background: Rectangle {
         color: btn.hovered
-               ? (btn.isCloseButton ? Theme.danger : Theme.surfaceFloating)
+               ? (btn.isCloseButton ? dangerColor : surfaceFloating)
                : "transparent"
     }
 
     contentItem: Image {
         source: btn.iconSource
-        sourceSize.width: 16
-        sourceSize.height: 16
+        sourceSize.width: 18
+        sourceSize.height: 18
         fillMode: Image.PreserveAspectFit
         smooth: true
 
         anchors.centerIn: parent
-        width: 16
-        height: 16
+        width: 18
+        height: 18
     }
 }
