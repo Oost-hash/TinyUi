@@ -143,6 +143,7 @@ def load_tinyqt_app_manifests(path: Path, *, paths: AppPaths) -> tuple[TinyQtApp
                 label=_as_str(panel, "label", "") or "",
                 qml_type=_as_str(panel, "qml_type", "") or "",
                 package=_as_str(panel, "package", "") or "",
+                subtitle=_as_str(panel, "subtitle", "") or "",
                 load_policy=_as_str(panel, "load_policy", "lazy") or "lazy",
                 required_singletons=_as_str_tuple(panel, "required_singletons"),
             )

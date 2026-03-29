@@ -61,6 +61,7 @@ class TinyQtPanelManifest:
     label: str
     qml_type: str
     package: str
+    subtitle: str = ""
     load_policy: str = "lazy"
     required_singletons: tuple[str, ...] = ()
 
@@ -295,6 +296,7 @@ def validate_manifest(manifest: TinyQtAppManifest) -> TinyQtAppManifest:
             TinyQtPanelManifest(
                 panel_id=panel_id,
                 label=label,
+                subtitle=panel.subtitle.strip(),
                 qml_type=qml_type,
                 package=package,
                 load_policy=load_policy,

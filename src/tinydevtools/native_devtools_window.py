@@ -107,6 +107,11 @@ class NativeDevToolsWindow(NativeToolWindowBase):
                 return toolbar
         return None
 
+    def _panel_manifest(self, index: int):
+        if 0 <= index < len(self._manifest.panels):
+            return self._manifest.panels[index]
+        return None
+
     def _build_state_tab(self) -> None:
         page = QWidget()
         layout = QVBoxLayout(page)
@@ -498,12 +503,10 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._update_header_copy(self._tabs.currentIndex())
 
     def _update_header_copy(self, index: int) -> None:
-        if index == 0:
-            subtitle = "Inspect live source snapshots, collapse sections, and copy exact state values from the active source."
-        elif index == 1:
-            subtitle = "Follow the runtime graph, unit ownership, and execution state in the current host."
-        else:
-            subtitle = "Filter Python logs by severity and review recent host activity in one shared console."
+        panel = self._panel_manifest(index)
+        subtitle = self._manifest.window.subtitle
+        if panel is not None and panel.subtitle:
+            subtitle = panel.subtitle
         self._subtitle_label.setText(subtitle)
 
     def _refresh_state_toolbar(self) -> None:

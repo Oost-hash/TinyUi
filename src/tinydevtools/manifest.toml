@@ -57,17 +57,20 @@ buttons = [
 [[app.panels]]
 panel_id = "state"
 label = "State"
+subtitle = "Inspect live source snapshots, collapse sections, and copy exact state values from the active source."
 qml_type = "DevToolsStateTab"
 package = "TinyDevTools"
 
 [[app.panels]]
 panel_id = "runtime"
 label = "Runtime"
+subtitle = "Follow the runtime graph, unit ownership, and execution state in the current host."
 qml_type = "DevToolsRuntimeTab"
 package = "TinyDevTools"
 
 [[app.panels]]
 panel_id = "console"
 label = "Console"
+subtitle = "Filter Python logs by severity and review recent host activity in one shared console."
 qml_type = "ConsolePane"
 package = "TinyDevTools"
