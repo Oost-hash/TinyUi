@@ -4,23 +4,20 @@ from __future__ import annotations
 
 import argparse
 import time
-from pathlib import Path
 
-from PySide6.QtCore import QtMsgType, qInstallMessageHandler
 from PySide6.QtGui import QGuiApplication
-from PySide6.QtQuick import QQuickWindow
+from PySide6.QtWidgets import QWidget
 
 from tinycore.logging import LogInspector, configure
 from tinycore.paths import AppPaths
 from tinycore.plugin.user_files import sync_user_files
 from tinycore.runtime.boot import boot_runtime, discover_manifests
 from tinyqt.app import create_configured_application
-from tinyqt.apps import TINYUI_HOST_ASSEMBLY
+from tinyqt.apps import TINYUI_HOST_ASSEMBLY, get_first_party_manifest
 from tinyqt.apps.tinyui import _build_registrations
 from tinyqt.app_identity import APP_NAME, VERSION
-from tinyqt.host import attach_window_content, create_window_host
+from tinyqt.host import create_window_host
 from tinyqt.launch import _qt_message_handler
-from tinyqt.manifests import TinyQtAppManifest, TinyQtShellManifest, validate_manifest
 from tinyqt.theme import Theme
 from tinyui.ui_bindings import (
     bind_statusbar_plugin_switching,
@@ -31,6 +28,7 @@ from tinyui.viewmodels.core_viewmodel import CoreViewModel
 from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
 from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
 from tinyui.viewmodels.tab_viewmodel import TabViewModel
+from PySide6.QtCore import qInstallMessageHandler
 
 
 configure()
@@ -47,30 +45,24 @@ def _pump_events(timeout_seconds: float, predicate) -> bool:
     return predicate()
 
 
+def _find_settings_widget() -> QWidget | None:
+    app = QGuiApplication.instance()
+    if app is None:
+        return None
+    widget_app = app  # QApplication subclass at runtime
+    top_level_widgets = getattr(widget_app, "topLevelWidgets", None)
+    if not callable(top_level_widgets):
+        return None
+    for widget in top_level_widgets():
+        if isinstance(widget, QWidget) and widget.windowTitle() == "Settings":
+            return widget
+    return None
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Load SettingsDialog with the real TinyUI runtime and verify it opens."
-    )
-    parser.add_argument(
-        "--open-timeout",
-        type=float,
-        default=5.0,
-        help="Seconds to wait for the settings dialog to become visible.",
-    )
-    parser.add_argument(
-        "--close-timeout",
-        type=float,
-        default=5.0,
-        help="Seconds to wait for the settings dialog to close again.",
-    )
-    parser.add_argument(
-        "--qml-file",
-        help="Optional QML file to load instead of the default settings dialog window.",
-    )
-    parser.add_argument(
-        "--content-qml-file",
-        help="Optional Item-based content QML file to attach into the host window.",
-    )
+    parser = argparse.ArgumentParser(description="Open TinyUI and verify the native settings window appears.")
+    parser.add_argument("--open-timeout", type=float, default=5.0)
+    parser.add_argument("--close-timeout", type=float, default=5.0)
     args = parser.parse_args()
 
     paths = AppPaths.detect()
@@ -100,38 +92,17 @@ def main() -> int:
     bind_statusbar_plugin_switching(runtime, statusbar_vm)
     bind_theme_settings(runtime, core_vm, settings_vm, theme)
 
-    if paths.source_root is None:
-        print("Settings smoke failed: source_root is unavailable in this runtime mode")
+    manifest = get_first_party_manifest(paths, "tinyui.main")
+    if manifest.root_qml is None:
+        print("Settings native smoke failed: tinyui.main manifest has no root_qml")
         runtime.shutdown()
         return 1
 
-    dialog_qml = Path(args.qml_file).resolve() if args.qml_file else paths.source_root / "qml_app" / "TinyUiSettingsWindow.qml"
-    dialog_content_qml = (
-        Path(args.content_qml_file).resolve()
-        if args.content_qml_file
-        else paths.source_root / "tinyui" / "qml" / "SettingsDialogContent.qml"
-    )
-    print(f"Loading: {dialog_qml}")
-
-    app_manifest = validate_manifest(
-        TinyQtAppManifest(
-            app_id="tinyui.settings_dialog",
-            title="Settings",
-            root_qml=dialog_qml,
-            shell=TinyQtShellManifest(
-                use_window_menu_bar=False,
-                use_tab_bar=False,
-                use_status_bar=False,
-                lazy_panel_loading=False,
-            ),
-            panels=(),
-        )
-    )
     host = create_window_host(
         runtime,
         app=app,
-        qml_path=dialog_qml,
-        app_manifest=app_manifest,
+        qml_path=manifest.root_qml,
+        app_manifest=manifest,
         theme=theme,
         log_inspector=log_inspector,
         build_registrations=lambda _devtools_ui: _build_registrations(
@@ -146,38 +117,43 @@ def main() -> int:
         module="TinyUI",
     )
     if host is None:
-        print("Settings smoke failed: dialog did not load through tinyqt host")
+        print("Settings native smoke failed: main window did not load")
         runtime.shutdown()
         return 1
 
-    if args.content_qml_file and not attach_window_content(host.engine, host.window, dialog_content_qml):
-        print("Settings smoke failed: settings content did not attach through tinyqt host")
+    host.window.show()
+    ready = _pump_events(args.open_timeout, lambda: host.window.isVisible())
+    if not ready:
+        print("Settings native smoke failed: main window did not become visible")
         runtime.shutdown()
         return 1
 
-    root = host.window
-    if not isinstance(root, QQuickWindow):
-        print(f"Settings smoke failed: root object is {type(root).__name__}, expected QQuickWindow")
+    controller = host.window.property("settingsController")
+    toggle = getattr(controller, "toggle", None)
+    if not callable(toggle):
+        print("Settings native smoke failed: settings controller is unavailable")
         runtime.shutdown()
         return 1
 
-    root.show()
-    opened = _pump_events(args.open_timeout, lambda: root.isVisible())
+    toggle()
+    opened = _pump_events(args.open_timeout, lambda: _find_settings_widget() is not None)
     if not opened:
-        print("Settings smoke failed: dialog did not become visible")
+        print("Settings native smoke failed: native settings window did not appear")
         runtime.shutdown()
         return 1
-    print("Settings dialog opened successfully")
+    print("Native settings window opened successfully")
 
-    root.hide()
-    closed = _pump_events(args.close_timeout, lambda: not root.isVisible())
+    toggle()
+    closed = _pump_events(args.close_timeout, lambda: _find_settings_widget() is None)
     if not closed:
-        print("Settings smoke failed: dialog did not close cleanly")
+        print("Settings native smoke failed: native settings window did not close cleanly")
         runtime.shutdown()
         return 1
-    print("Settings dialog closed successfully")
+    print("Native settings window closed successfully")
 
     runtime.shutdown()
     return 0
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

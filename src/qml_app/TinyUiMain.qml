@@ -14,6 +14,8 @@ Window {
     property var widgetEditorItems: []
     property bool devToolsAvailable: false
     property var devToolsController: null
+    property bool settingsAvailable: false
+    property var settingsController: null
 
     width: 900
     height: 600
@@ -30,6 +32,12 @@ Window {
         if (!root.devToolsAvailable || !root.devToolsController)
             return
         root.devToolsController.toggle()
+    }
+
+    function toggleSettings() {
+        if (!root.settingsAvailable || !root.settingsController)
+            return
+        root.settingsController.toggle()
     }
 
     readonly property var demoWidgetItems: [
@@ -80,6 +88,11 @@ Window {
     Shortcut {
         sequence: "F12"
         onActivated: root.toggleDevTools()
+    }
+
+    Shortcut {
+        sequence: "Ctrl+,"
+        onActivated: root.toggleSettings()
     }
 
     AppWindowMenuBar {

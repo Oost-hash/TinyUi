@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Protocol, cast
 
 from PySide6.QtCore import QObject, QUrl, Slot
+from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine, QQmlComponent
 from PySide6.QtQuick import QQuickItem, QQuickWindow
 
@@ -116,34 +117,9 @@ class LazyDevToolsController(QObject):
         )
         if host is None:
             return None
-        if not self._attach_content(host.engine, host.window, content_qml_path):
+        if not attach_window_content(host.engine, host.window, content_qml_path):
             return None
         return host
-
-    def _attach_content(
-        self,
-        engine: QQmlApplicationEngine,
-        window: QQuickWindow,
-        qml_path: Path,
-    ) -> bool:
-        component = QQmlComponent(engine)
-        component.loadUrl(QUrl.fromLocalFile(str(qml_path)))
-        if component.isError():
-            return False
-        content_item = component.create()
-        if not isinstance(content_item, QQuickItem):
-            return False
-        content_item.setParent(window)
-        content_item.setParentItem(window.contentItem())
-        content_item.setWidth(window.width())
-        content_item.setHeight(window.height())
-        width_changed = cast(Any, getattr(window, "widthChanged", None))
-        height_changed = cast(Any, getattr(window, "heightChanged", None))
-        if width_changed is not None:
-            width_changed.connect(lambda: content_item.setWidth(window.width()))
-        if height_changed is not None:
-            height_changed.connect(lambda: content_item.setHeight(window.height()))
-        return True
 
     @Slot()
     def toggle(self) -> None:
@@ -166,6 +142,45 @@ class LazyDevToolsController(QObject):
         self._host.window.show()
         self._host.window.raise_()
         self._host.window.requestActivate()
+
+
+class LazySettingsController(QObject):
+    """Open a separate TinyUI settings window on demand."""
+
+    def __init__(
+        self,
+        *,
+        core,
+        theme: object,
+        log_inspector: object,
+        build_registrations: Callable[[object | None], list[SingletonRegistration]],
+        extra_context: RegistrationMap | None = None,
+    ) -> None:
+        app = cast(QObject | None, QGuiApplication.instance())
+        super().__init__(app)
+        self._core = core
+        self._theme = theme
+        self._build_registrations = build_registrations
+        self._window = None
+
+    @Slot()
+    def toggle(self) -> None:
+        if self._window is None:
+            from tinyqt.native_settings_window import NativeSettingsWindow
+
+            registrations = self._build_registrations(None)
+            settings_vm = next(
+                registration.instance
+                for registration in registrations
+                if registration.name == "SettingsPanelViewModel"
+            )
+            self._window = NativeSettingsWindow(
+                core=self._core,
+                theme=self._theme,
+                settings_view_model=settings_vm,
+            )
+
+        self._window.toggle()
 
 
 def apply_manifest_shell_state(window: QObject, manifest: TinyQtAppManifest) -> None:
@@ -322,6 +337,38 @@ def load_root_window(
     if not isinstance(window_obj, QQuickWindow):
         return None
     return window_obj
+
+
+def attach_window_content(
+    engine: QQmlApplicationEngine,
+    window: QQuickWindow,
+    qml_path: Path,
+) -> bool:
+    """Attach an Item-based content root into an already loaded host window."""
+    component = QQmlComponent(engine)
+    component.loadUrl(QUrl.fromLocalFile(str(qml_path)))
+    if component.isError():
+        for error in component.errors():
+            print(error.toString())
+        return False
+    content_item = component.create()
+    if component.isError():
+        for error in component.errors():
+            print(error.toString())
+        return False
+    if not isinstance(content_item, QQuickItem):
+        return False
+    content_item.setParent(window)
+    content_item.setParentItem(window.contentItem())
+    content_item.setWidth(window.width())
+    content_item.setHeight(window.height())
+    width_changed = cast(Any, getattr(window, "widthChanged", None))
+    height_changed = cast(Any, getattr(window, "heightChanged", None))
+    if width_changed is not None:
+        width_changed.connect(lambda: content_item.setWidth(window.width()))
+    if height_changed is not None:
+        height_changed.connect(lambda: content_item.setHeight(window.height()))
+    return True
 
 
 def create_window_host(

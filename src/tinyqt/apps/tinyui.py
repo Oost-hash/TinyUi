@@ -285,6 +285,28 @@ def build_tinyui_launch_spec(core) -> QtLaunchSpec:
     bind_theme_settings(core, core_vm, settings_vm, theme)
 
     _log_startup_phase(log, "viewmodels", phase_start)
+
+    def _on_host_ready(host) -> None:
+        from tinyqt.host import LazySettingsController
+
+        _apply_tinyui_host_state(core, statusbar_vm, host.window)
+        settings_controller = LazySettingsController(
+            core=core,
+            theme=theme,
+            log_inspector=log_inspector,
+            build_registrations=lambda _devtools_ui: _build_registrations(
+                theme=theme,
+                core_vm=core_vm,
+                statusbar_vm=statusbar_vm,
+                settings_vm=settings_vm,
+                tab_vm=tab_vm,
+                devtools_ui=None,
+            ),
+            extra_context=None,
+        )
+        host.window.setProperty("settingsController", settings_controller)
+        host.window.setProperty("settingsAvailable", True)
+
     return QtLaunchSpec(
         app_name=APP_NAME,
         version=VERSION,
@@ -295,7 +317,7 @@ def build_tinyui_launch_spec(core) -> QtLaunchSpec:
         build_registrations=lambda _devtools_ui: [],
         restore_state_scope="TinyUI",
         module="TinyUI",
-        on_host_ready=lambda host: _apply_tinyui_host_state(core, statusbar_vm, host.window),
+        on_host_ready=_on_host_ready,
         on_before_exec=lambda _host: core.units.set_state("ui.main", "running")
         if core.units.get("ui.main") is not None
         else None,
