@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Window
+import TinyUI 1.0
 
 Window {
     id: settingsDialog
@@ -9,16 +10,12 @@ Window {
     height: 520
     minimumWidth: 540
     minimumHeight: 380
-    visible: settingsPanelViewModel.open
+    visible: SettingsPanelViewModel.open
     color: Theme.surface
     flags: Qt.Window
 
     onVisibleChanged: {
         if (!visible)
-            settingsPanelViewModel.closePanel()
-    }
-
-    SettingsDialogContent {
-        anchors.fill: parent
+            SettingsPanelViewModel.closePanel()
     }
 }

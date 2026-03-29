@@ -8,11 +8,15 @@ Rectangle {
 
     signal tabSelected(int index, string label)
 
-    implicitHeight: 44
-    radius: 12
-    color: "#1e2228"
-    border.width: 1
-    border.color: "#2b313a"
+    implicitHeight: 42
+    color: "#2f343e"
+
+    Rectangle {
+        anchors.bottom: parent.bottom
+        width: parent.width
+        height: 1
+        color: "#464b57"
+    }
 
     function labelAt(index) {
         return index >= 0 && index < tabs.length && typeof tabs[index] === "string" ? tabs[index] : ""
@@ -29,8 +33,9 @@ Rectangle {
     Row {
         id: tabRow
         anchors.fill: parent
-        anchors.margins: 4
-        spacing: 4
+        anchors.leftMargin: 4
+        anchors.rightMargin: 4
+        spacing: 0
 
         Repeater {
             model: Array.isArray(root.tabs) ? root.tabs : []
@@ -41,21 +46,20 @@ Rectangle {
 
                 width: Math.max(96, tabLabel.implicitWidth + 28)
                 height: tabRow.height
-                radius: 9
-                color: root.currentIndex === index ? "#e8edf5" : "transparent"
-                border.width: root.currentIndex === index ? 0 : 1
-                border.color: "#353c46"
+                color: root.currentIndex === index ? "#3b414d" : "transparent"
 
                 Text {
                     id: tabLabel
                     anchors.centerIn: parent
                     text: modelData
-                    color: root.currentIndex === index ? "#14171b" : "#c5ccd8"
-                    font.pixelSize: 14
+                    color: root.currentIndex === index ? "#74ade8" : "#dce0e5"
+                    font.pixelSize: 12
+                    font.weight: root.currentIndex === index ? Font.DemiBold : Font.Normal
                 }
 
                 MouseArea {
                     anchors.fill: parent
+                    hoverEnabled: true
                     onClicked: root.selectTab(index)
                 }
             }

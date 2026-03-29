@@ -6,11 +6,15 @@ Rectangle {
     property string activeLabel: ""
     property var leftItems: []
 
-    height: 34
-    radius: 12
-    color: "#1b1f25"
-    border.width: 1
-    border.color: "#2b313a"
+    height: 32
+    color: "#3b414d"
+
+    Rectangle {
+        anchors.top: parent.top
+        width: parent.width
+        height: 1
+        color: "#464b57"
+    }
 
     Row {
         anchors.left: parent.left
@@ -25,15 +29,14 @@ Rectangle {
                 required property var modelData
 
                 height: 22
-                radius: 7
-                color: "#252b34"
+                color: "transparent"
                 width: label.implicitWidth + 16
 
                 Text {
                     id: label
                     anchors.centerIn: parent
                     text: typeof modelData === "string" ? modelData : ""
-                    color: "#c5ccd8"
+                    color: "#dce0e5"
                     font.pixelSize: 12
                 }
             }
@@ -46,8 +49,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         width: activeText.implicitWidth + 20
         height: 22
-        radius: 7
-        color: "#252b34"
+        color: "transparent"
 
         Text {
             id: activeText

@@ -217,64 +217,109 @@ Rectangle {
 
     Row {
         anchors.fill: parent
-        anchors.margins: 20
-        spacing: 18
+        anchors.margins: 0
+        spacing: 0
 
         Rectangle {
-            width: Math.max(280, parent.width * 0.42)
+            id: listPane
+            width: selectedWidget ? parent.width * 0.4 : parent.width
             height: parent.height
-            radius: 16
-            color: "#15191e"
-            border.width: 1
-            border.color: "#252b34"
+            color: "transparent"
+            Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
-            Text {
-                id: sectionTitleText
-                x: 18
-                y: 16
-                text: root.sectionTitle
-                color: "#f4f7fb"
-                font.pixelSize: 18
-                font.weight: Font.DemiBold
-            }
+            Rectangle {
+                id: tableHeader
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 32
+                color: "transparent"
 
-            Text {
-                x: 18
-                y: sectionTitleText.y + sectionTitleText.height + 4
-                width: parent.width - 36
-                text: "Widget overzicht."
-                wrapMode: Text.WordWrap
-                color: "#8e97a5"
-                font.pixelSize: 13
+                Row {
+                    anchors.fill: parent
+                    anchors.leftMargin: 16
+
+                    Text {
+                        width: 200
+                        height: parent.height
+                        verticalAlignment: Text.AlignVCenter
+                        text: "Widget"
+                        color: "#dce0e5"
+                        font.pixelSize: 11
+                    }
+
+                    Text {
+                        width: parent.width - 16 - 200 - 56
+                        height: parent.height
+                        verticalAlignment: Text.AlignVCenter
+                        text: "Description"
+                        color: "#dce0e5"
+                        font.pixelSize: 11
+                    }
+                }
+
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    width: parent.width
+                    height: 1
+                    color: "#464b57"
+                }
             }
 
             Column {
                 x: 12
-                y: 92
+                y: tableHeader.height
                 width: parent.width - 24
-                spacing: 10
+                spacing: 0
 
                 Repeater {
                     model: root.widgetItems
 
                     delegate: Rectangle {
+                        id: row
                         required property var modelData
                         required property int index
 
                         width: parent ? parent.width : 240
-                        height: 48
-                        radius: 12
-                        color: root.selectedIndex === index ? "#e8edf5" : "#1b1f25"
-                        border.width: root.selectedIndex === index ? 0 : 1
-                        border.color: "#2b313a"
+                        readonly property bool isSelected: root.selectedIndex === index
+
+                        height: 40
+                        color: isSelected ? "#3b414d" : (index % 2 === 0 ? "#2f343e" : "transparent")
+
+                        Rectangle {
+                            width: 2
+                            height: parent.height
+                            color: "#74ade8"
+                            visible: row.isSelected
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            opacity: rowHover.hovered && !row.isSelected ? 1 : 0
+                            gradient: Gradient {
+                                orientation: Gradient.Horizontal
+                                GradientStop { position: 0.0; color: "transparent" }
+                                GradientStop { position: 0.5; color: "transparent" }
+                                GradientStop { position: 1.0; color: "#20dec184" }
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.bottom: parent.bottom
+                            width: parent.width
+                            height: 1
+                            color: "#464b57"
+                            opacity: 0.4
+                        }
 
                         Text {
                             anchors.left: parent.left
-                            anchors.leftMargin: 14
+                            anchors.leftMargin: row.isSelected ? 24 : 16
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData && typeof modelData.title === "string" ? modelData.title : ""
-                            color: root.selectedIndex === index ? "#14171b" : "#c5ccd8"
+                            color: row.isSelected ? "#74ade8" : "#dce0e5"
                             font.pixelSize: 14
+                            font.weight: row.isSelected ? Font.DemiBold : Font.Normal
                         }
 
                         Rectangle {
@@ -284,12 +329,12 @@ Rectangle {
                             width: 48
                             height: 22
                             radius: 7
-                            color: root.selectedIndex === index ? "#d7dee8" : "#252b34"
+                            color: "transparent"
 
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData && typeof modelData.enabled === "boolean" && modelData.enabled ? "on" : "off"
-                                color: root.selectedIndex === index ? "#14171b" : "#9aa1ad"
+                                color: row.isSelected ? "#dce0e5" : "#878a98"
                                 font.pixelSize: 11
                             }
                         }
@@ -307,18 +352,19 @@ Rectangle {
                             anchors.rightMargin: 152
                             onClicked: root.selectedIndex = index
                         }
+
+                        HoverHandler { id: rowHover }
                     }
                 }
             }
         }
 
         Rectangle {
-            width: parent.width - 18 - Math.max(280, parent.width * 0.42)
+            visible: selectedWidget !== null
+            width: parent.width - listPane.width - 1
             height: parent.height
-            radius: 16
             color: "#15191e"
-            border.width: 1
-            border.color: "#252b34"
+            border.width: 0
 
             Column {
                 anchors.fill: parent
@@ -350,26 +396,24 @@ Rectangle {
 
                 Rectangle {
                     width: parent.width
-                    height: 44
-                    radius: 12
-                    color: "#1b1f25"
+                    height: 28
+                    color: "#171a1f"
 
                     Text {
                         anchors.left: parent.left
-                        anchors.leftMargin: 14
+                        anchors.leftMargin: 16
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "Selected widget"
-                        color: "#9aa1ad"
-                        font.pixelSize: 12
+                        text: "Identity"
+                        color: "#aab4c3"
+                        font.pixelSize: 11
+                        font.weight: Font.Medium
                     }
 
-                    Text {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.selectedTitle
-                        color: "#f4f7fb"
-                        font.pixelSize: 13
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        width: parent.width
+                        height: 1
+                        color: "#2c3440"
                     }
                 }
 
@@ -377,8 +421,7 @@ Rectangle {
                     visible: root.selectedHasEditableValue
                     width: parent.width
                     height: 56
-                    radius: 12
-                    color: "#1b1f25"
+                    color: "transparent"
 
                     Text {
                         anchors.left: parent.left
@@ -423,8 +466,7 @@ Rectangle {
                 Rectangle {
                     width: parent.width
                     height: 56
-                    radius: 12
-                    color: "#1b1f25"
+                    color: "transparent"
 
                     Text {
                         anchors.left: parent.left
@@ -447,8 +489,7 @@ Rectangle {
                 Rectangle {
                     width: parent.width
                     height: 56
-                    radius: 12
-                    color: "#1b1f25"
+                    color: "transparent"
 
                     Text {
                         anchors.left: parent.left
@@ -474,8 +515,7 @@ Rectangle {
                 Rectangle {
                     width: parent.width
                     height: 56
-                    radius: 12
-                    color: "#1b1f25"
+                    color: "transparent"
 
                     Text {
                         anchors.left: parent.left
@@ -500,9 +540,108 @@ Rectangle {
 
                 Rectangle {
                     width: parent.width
+                    height: 28
+                    color: "#171a1f"
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 16
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Provider"
+                        color: "#aab4c3"
+                        font.pixelSize: 11
+                        font.weight: Font.Medium
+                    }
+
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        width: parent.width
+                        height: 1
+                        color: "#2c3440"
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 44
+                    color: "transparent"
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 16
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Binding"
+                        color: "#e5edf7"
+                        font.pixelSize: 13
+                    }
+
+                    Text {
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.selectedWidget
+                            ? (
+                                root.itemValue(root.selectedWidget, "activeGame", "none") !== "none"
+                                ? root.itemValue(root.selectedWidget, "providerName", "") + " / " + root.itemValue(root.selectedWidget, "activeGame", "")
+                                : root.itemValue(root.selectedWidget, "providerName", "")
+                              )
+                            : ""
+                        color: "#7f8a99"
+                        font.pixelSize: 11
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 44
+                    color: "transparent"
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 16
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Mode"
+                        color: "#e5edf7"
+                        font.pixelSize: 13
+                    }
+
+                    Text {
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.selectedWidget ? root.itemValue(root.selectedWidget, "providerMode", "") : ""
+                        color: "#7f8a99"
+                        font.pixelSize: 11
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 28
+                    color: "#171a1f"
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 16
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Thresholds"
+                        color: "#aab4c3"
+                        font.pixelSize: 11
+                        font.weight: Font.Medium
+                    }
+
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        width: parent.width
+                        height: 1
+                        color: "#2c3440"
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
                     height: thresholdColumn.implicitHeight + 20
-                    radius: 12
-                    color: "#1b1f25"
+                    color: "transparent"
 
                     Column {
                         id: thresholdColumn
@@ -511,12 +650,6 @@ Rectangle {
                         anchors.top: parent.top
                         anchors.margins: 14
                         spacing: 10
-
-                        Text {
-                            text: "Thresholds"
-                            color: "#9aa1ad"
-                            font.pixelSize: 12
-                        }
 
                         Text {
                             width: parent.width
