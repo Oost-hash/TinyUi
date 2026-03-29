@@ -25,7 +25,7 @@ Keep package-level exports intentionally small. Import concrete runtime-state or
 log-diagnostics helpers from their owning modules directly.
 """
 
-from .snapshot_protocols import InspectionSnapshot, InspectionSnapshotProvider
+from tinyruntime_schema import InspectionSnapshot, InspectionSnapshotProvider
 
 __all__ = [
     "InspectionSnapshot",

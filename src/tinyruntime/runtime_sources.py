@@ -27,8 +27,7 @@ from tinywidgets.fields import read_field
 
 from tinyruntime.core_runtime import CoreRuntime
 
-from .runtime_state import RuntimeInspector
-from .snapshot_protocols import InspectionSnapshot
+from tinyruntime_schema import InspectionSnapshot, RuntimeInspector
 
 
 def _render_value(value: object) -> str:

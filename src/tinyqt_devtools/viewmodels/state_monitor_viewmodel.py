@@ -45,7 +45,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QmlElement, QmlSingleton
 
-from tinycore.diagnostics.runtime_state import RuntimeInspector
+from tinyruntime_schema.runtime_state import RuntimeInspector
 from tinyqt.timers.qt_timer import RuntimeQtTimer
 
 QML_IMPORT_NAME = "TinyDevTools"

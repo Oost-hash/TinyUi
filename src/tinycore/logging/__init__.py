@@ -32,7 +32,7 @@ from tinycore.diagnostics.log_categories import (
     set_category_enabled,
     set_dev_mode,
 )
-from tinycore.diagnostics.log_records import LogInspector, LogRecordEntry
+from tinyruntime_schema.log_records import LogInspector, LogRecordEntry
 
 from .app_logger import AppLogger, configure_app_logger, get_app_logger, read_app_logging_config
 

@@ -28,7 +28,7 @@ from time import perf_counter
 from typing import Callable, Protocol, TypeVar, cast
 
 from tinycore.composition import create_runtime_composition
-from tinycore.diagnostics.runtime_sources import build_runtime_inspector
+from tinyruntime.runtime_sources import build_runtime_inspector
 from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
 from tinyplugins.manifest import PluginManifest, scan_plugins

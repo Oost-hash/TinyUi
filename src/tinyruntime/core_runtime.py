@@ -27,7 +27,7 @@ from dataclasses import dataclass
 import os
 from typing import Callable, Protocol
 
-from tinycore.diagnostics.runtime_state import RuntimeInspector
+from tinyruntime_schema.runtime_state import RuntimeInspector
 from tinycore.paths import AppPaths
 from tinycore.services import HostServices, RuntimeServices
 from tinyqt.registration import RegistrationMap
