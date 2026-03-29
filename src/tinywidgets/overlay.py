@@ -18,23 +18,13 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""WidgetOverlay — manages widget windows and the runtime update loop.
-
-Each widget is its own small top-level window (Qt.Tool), so click-through on
-the background is free — no overlay window or setMask() needed.
-
-Called from the composition root; tinyui knows nothing about it.
-"""
+"""WidgetOverlay — manages widget contexts and native tinyqt widget surfaces."""
 
 # pyright: reportCallIssue=false, reportGeneralTypeIssues=false, reportReturnType=false
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 from typing import Callable, cast
-
-from PySide6.QtCore import QUrl
 
 from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
@@ -43,13 +33,12 @@ from tinycore.runtime.plugins.facts import PluginParticipationFacts
 from tinycore.runtime.plugins.provider_activity import ProviderActivity
 from tinycore.runtime.plugins.provider_refresh import ProviderRefreshParticipant
 from tinycore.runtime.update_loop import RuntimeUpdateLoop
-from tinyqt.engine import create_engine
+from tinyqt.widget_host import WidgetSurfaceHost, WidgetSurfacePaths
 from tinyqt.registration import RegistrationMap
 from .context import WidgetContext, WidgetModel, WidgetOverlayState
 from .spec import WidgetSpec
 from .state_participant import WidgetStateParticipant
 
-_QML_DIR = Path(__file__).resolve().parent / "qml"
 _log = get_logger(__name__)
 
 
@@ -74,7 +63,7 @@ class WidgetOverlay:
         self._update_loop = RuntimeUpdateLoop(interval_ms=100)
         self._model = WidgetModel()
         self._state = WidgetOverlayState()
-        self._engine = None
+        self._surface_host: WidgetSurfaceHost | None = None
 
         self._update_loop.register_refresh_participant(
             ProviderRefreshParticipant(provider_activity),
@@ -184,19 +173,25 @@ class WidgetOverlay:
         if app is not None:
             app.aboutToQuit.connect(self.stop)
 
-        self._engine = create_engine()
-        # WidgetModel and WidgetOverlayState are registered as QML singletons
-        # via qmlRegisterSingletonInstance (global, visible to all engines).
-
-        qml_dir = self._paths.qml_dir("tinywidgets") if self._paths is not None else _QML_DIR
-        self._engine.load(QUrl.fromLocalFile(str(qml_dir / "WidgetHost.qml")))
-        _log.overlay("engine started", widgets=self._model.rowCount())
+        self._start_surface_host()
+        _log.overlay("widget surface host active", widgets=self._model.rowCount())
         self._update_loop.start()
 
     def stop(self) -> None:
-        if self._engine is None:
-            return
-        _log.overlay("stopping")
+        if self._surface_host is not None:
+            self._surface_host.stop()
+            self._surface_host = None
         self._update_loop.stop()
-        self._engine.deleteLater()
-        self._engine = None
+        _log.overlay("stopping")
+
+    def _start_surface_host(self) -> None:
+        if self._paths is None:
+            raise RuntimeError("WidgetOverlay requires AppPaths for tinyqt surface hosting")
+        surface_paths = WidgetSurfacePaths.from_app_paths(self._paths)
+        host = WidgetSurfaceHost(
+            paths=surface_paths,
+            model=self._model,
+            overlay_state=self._state,
+        )
+        host.start()
+        self._surface_host = host

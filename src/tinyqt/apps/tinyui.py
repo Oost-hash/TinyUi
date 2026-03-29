@@ -40,6 +40,7 @@ from tinycore.services import HostServices, RuntimeServices
 from tinyui_schema import SettingsSpec
 
 from tinyqt.optional_features import (
+    build_widget_overlay,
     build_devtools_runtime_attachment,
     get_devtools_monitor_info,
 )
@@ -104,6 +105,21 @@ def _apply_status_shell_state(core, statusbar_vm: StatusBarViewModel, window: QO
     active_changed = cast(Any, getattr(statusbar_vm, "activePluginIndexChanged", None))
     if active_changed is not None:
         active_changed.connect(_update_active_label)
+
+
+def _apply_widget_editor_state(core, window: QObject) -> None:
+    model = getattr(core.overlay, "model", None)
+    contexts = getattr(model, "contexts", None)
+    if callable(contexts):
+        window.setProperty("widgetEditorItems", contexts())
+        return
+    if contexts is not None:
+        window.setProperty("widgetEditorItems", contexts)
+
+
+def _apply_tinyui_host_state(core, statusbar_vm: StatusBarViewModel, window: QObject) -> None:
+    _apply_status_shell_state(core, statusbar_vm, window)
+    _apply_widget_editor_state(core, window)
 
 
 def build_tinyui_manifest(paths: AppPaths) -> TinyQtAppManifest:
@@ -279,7 +295,7 @@ def build_tinyui_launch_spec(core) -> QtLaunchSpec:
         build_registrations=lambda _devtools_ui: [],
         restore_state_scope="TinyUI",
         module="TinyUI",
-        on_host_ready=lambda host: _apply_status_shell_state(core, statusbar_vm, host.window),
+        on_host_ready=lambda host: _apply_tinyui_host_state(core, statusbar_vm, host.window),
         on_before_exec=lambda _host: core.units.set_state("ui.main", "running")
         if core.units.get("ui.main") is not None
         else None,
@@ -308,7 +324,13 @@ class TinyUiHostAssembly(HostAssembly):
         provider_activity: ProviderActivity,
         participants: list[PluginParticipant],
     ) -> HostOverlayBuild:
-        return HostOverlayBuild(overlay=_NullOverlay(), widget_sources=[])
+        return build_widget_overlay(
+            paths=paths,
+            host=host,
+            runtime=runtime,
+            provider_activity=provider_activity,
+            participants=participants,
+        )
 
     def build_state_monitor(
         self,

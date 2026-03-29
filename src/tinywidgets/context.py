@@ -379,23 +379,19 @@ class WidgetOverlayState(QObject):
 @QmlElement
 @QmlSingleton
 class WidgetModel(QAbstractListModel):
-    """Holds all WidgetContexts as a proper ListModel for QML Repeater.
+    """Holds all WidgetContexts as a proper list model for host/editor consumers.
 
     Exposes each item under the role "widgetContext".
-
-    QML usage:
-        Repeater {
-            model: widgetModel
-            delegate: TextWidget { widgetContext: model.widgetContext }
-        }
     """
+
+    contextsChanged = Signal()
 
     ContextRole = int(Qt.ItemDataRole.UserRole) + 1
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._widgets: list[WidgetContext] = []
 
-    @property
+    @Property(list, notify=contextsChanged)
     def contexts(self) -> list[WidgetContext]:
         """Return all registered widget contexts (Python-side access only)."""
         return list(self._widgets)
@@ -404,6 +400,7 @@ class WidgetModel(QAbstractListModel):
         self.beginInsertRows(QModelIndex(), len(self._widgets), len(self._widgets))
         self._widgets.append(ctx)
         self.endInsertRows()
+        self.contextsChanged.emit()
 
     def rowCount(
         self, parent: QModelIndex | QPersistentModelIndex = QModelIndex()

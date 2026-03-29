@@ -24,18 +24,18 @@ from __future__ import annotations
 
 import sys
 
-from PySide6.QtGui import QGuiApplication
 from PySide6.QtQuick import QQuickWindow
 from PySide6.QtQuickControls2 import QQuickStyle
+from PySide6.QtWidgets import QApplication
 
 
-def create_application(argv: list[str] | None = None) -> QGuiApplication:
-    """Create and configure the QGuiApplication."""
+def create_application(argv: list[str] | None = None) -> QApplication:
+    """Create and configure the QApplication used by Qt Quick hosts."""
     if argv is None:
         argv = sys.argv
     QQuickWindow.setDefaultAlphaBuffer(True)
     QQuickStyle.setStyle("Basic")
-    return QGuiApplication(argv)
+    return QApplication(argv)
 
 
 def create_configured_application(
@@ -44,7 +44,7 @@ def create_configured_application(
     version: str,
     argv: list[str] | None = None,
     quit_on_last_window_closed: bool = False,
-) -> QGuiApplication:
+) -> QApplication:
     """Create and apply common application metadata for a Qt-hosted app."""
     app = create_application(argv)
     app.setQuitOnLastWindowClosed(quit_on_last_window_closed)

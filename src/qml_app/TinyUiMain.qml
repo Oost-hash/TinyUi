@@ -12,6 +12,7 @@ Window {
     property bool showStatusBar: true
     property var statusItems: ["LMU", "Overlay", "F12 DevTools"]
     property string statusActiveLabel: "demo"
+    property var widgetEditorItems: []
     property bool devToolsAvailable: false
     property var devToolsController: null
 
@@ -30,6 +31,51 @@ Window {
         if (!root.devToolsAvailable || !root.devToolsController)
             return
         root.devToolsController.toggle()
+    }
+
+    readonly property var demoWidgetItems: [
+        {
+            "title": "Speed",
+            "description": "Speed widget.",
+            "enabled": true,
+            "value": 132,
+            "label": "SPD",
+            "positionX": 96,
+            "positionY": 42,
+            "thresholds": [
+                { "value": 60, "color": "#ff5252", "flash": true, "flashTarget": "value", "flashSpeed": 6 },
+                { "value": 120, "color": "#f4b400", "flash": false, "flashTarget": "text", "flashSpeed": 4 },
+                { "value": 180, "color": "#34a853", "flash": false, "flashTarget": "widget", "flashSpeed": 4 }
+            ]
+        },
+        {
+            "title": "Fuel",
+            "description": "Fuel widget.",
+            "enabled": false,
+            "value": 41,
+            "label": "FUEL",
+            "positionX": 124,
+            "positionY": 84,
+            "thresholds": [
+                { "value": 10, "color": "#ff5252", "flash": true, "flashTarget": "widget", "flashSpeed": 8 },
+                { "value": 25, "color": "#f4b400", "flash": false, "flashTarget": "value", "flashSpeed": 4 }
+            ]
+        },
+        {
+            "title": "Tyres",
+            "description": "Tyre widget.",
+            "enabled": true,
+            "value": 87,
+            "label": "TYRES",
+            "positionX": 188,
+            "positionY": 136,
+            "thresholds": []
+        }
+    ]
+    readonly property var effectiveWidgetEditorItems: {
+        if (Array.isArray(root.widgetEditorItems) && root.widgetEditorItems.length > 0)
+            return root.widgetEditorItems
+        return root.demoWidgetItems
     }
 
     Shortcut {
@@ -71,48 +117,7 @@ Window {
             WidgetTab {
                 anchors.fill: parent
                 sectionTitle: "Widgets"
-                widgetItems: [
-                    {
-                        "title": "Speed",
-                        "description": "Speed widget.",
-                        "enabled": true,
-                        "value": 132,
-                        "label": "SPD",
-                        "positionX": 96,
-                        "positionY": 42,
-                        "flashBelow": 80,
-                        "thresholds": [
-                            { "value": 60, "color": "#ff5252", "flash": true, "flashTarget": "value", "flashSpeed": 6 },
-                            { "value": 120, "color": "#f4b400", "flash": false, "flashTarget": "text", "flashSpeed": 4 },
-                            { "value": 180, "color": "#34a853", "flash": false, "flashTarget": "widget", "flashSpeed": 4 }
-                        ]
-                    },
-                    {
-                        "title": "Fuel",
-                        "description": "Fuel widget.",
-                        "enabled": false,
-                        "value": 41,
-                        "label": "FUEL",
-                        "positionX": 124,
-                        "positionY": 84,
-                        "flashBelow": 15,
-                        "thresholds": [
-                            { "value": 10, "color": "#ff5252", "flash": true, "flashTarget": "widget", "flashSpeed": 8 },
-                            { "value": 25, "color": "#f4b400", "flash": false, "flashTarget": "value", "flashSpeed": 4 }
-                        ]
-                    },
-                    {
-                        "title": "Tyres",
-                        "description": "Tyre widget.",
-                        "enabled": true,
-                        "value": 87,
-                        "label": "TYRES",
-                        "positionX": 188,
-                        "positionY": 136,
-                        "flashBelow": -1,
-                        "thresholds": []
-                    }
-                ]
+                widgetItems: root.effectiveWidgetEditorItems
             }
         }
 

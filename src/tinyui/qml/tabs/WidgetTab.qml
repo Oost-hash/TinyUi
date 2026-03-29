@@ -17,8 +17,40 @@ Rectangle {
     ]
     property var thresholdTargets: ["value", "text", "widget"]
 
-    function updateWidgetItem(index, patch) {
+    function widgetAt(index) {
         if (!Array.isArray(widgetItems) || index < 0 || index >= widgetItems.length)
+            return null
+        return widgetItems[index]
+    }
+
+    function itemValue(item, fieldName, fallback) {
+        if (!item || typeof item !== "object")
+            return fallback
+        if (item[fieldName] === undefined || item[fieldName] === null)
+            return fallback
+        return item[fieldName]
+    }
+
+    function updateWidgetItem(index, patch) {
+        var current = widgetAt(index)
+        if (!current)
+            return
+        if (typeof current.setLabel === "function" && patch && patch.label !== undefined)
+            current.setLabel(patch.label)
+        if (typeof current.setEnabled === "function" && patch && patch.enabled !== undefined)
+            current.setEnabled(patch.enabled)
+        if (typeof current.move === "function" && patch && (patch.positionX !== undefined || patch.positionY !== undefined)) {
+            var nextX = patch.positionX !== undefined ? patch.positionX : itemValue(current, "widgetX", itemValue(current, "positionX", 0))
+            var nextY = patch.positionY !== undefined ? patch.positionY : itemValue(current, "widgetY", itemValue(current, "positionY", 0))
+            current.move(nextX, nextY)
+        }
+        if (typeof current.setValue === "function" && patch && patch.value !== undefined)
+            current.setValue(patch.value)
+        if (typeof current.setFlashBelow === "function" && patch && patch.flashBelow !== undefined)
+            current.setFlashBelow(patch.flashBelow)
+        if (typeof current.setThresholds === "function" && patch && patch.thresholds !== undefined)
+            current.setThresholds(patch.thresholds)
+        if (typeof current.setLabel === "function" || typeof current.setEnabled === "function" || typeof current.move === "function")
             return
         var next = widgetItems.slice(0)
         next[index] = Object.assign({}, next[index], patch || {})
@@ -28,8 +60,24 @@ Rectangle {
     function updateThresholdItem(widgetIndex, thresholdIndex, patch) {
         if (!Array.isArray(widgetItems) || widgetIndex < 0 || widgetIndex >= widgetItems.length)
             return
-        var widget = widgetItems[widgetIndex]
+        var widget = widgetAt(widgetIndex)
         if (!widget || !Array.isArray(widget.thresholds) || thresholdIndex < 0 || thresholdIndex >= widget.thresholds.length)
+            return
+        if (patch && patch.color !== undefined && typeof widget.setThresholdColor === "function")
+            widget.setThresholdColor(thresholdIndex, patch.color)
+        if (patch && patch.value !== undefined && typeof widget.setThresholdValue === "function")
+            widget.setThresholdValue(thresholdIndex, patch.value)
+        if (patch && patch.flash !== undefined && typeof widget.setThresholdFlash === "function")
+            widget.setThresholdFlash(thresholdIndex, patch.flash)
+        if (patch && patch.flashSpeed !== undefined && typeof widget.setThresholdFlashSpeed === "function")
+            widget.setThresholdFlashSpeed(thresholdIndex, patch.flashSpeed)
+        if (patch && patch.flashTarget !== undefined && typeof widget.setThresholdFlashTarget === "function")
+            widget.setThresholdFlashTarget(thresholdIndex, patch.flashTarget)
+        if (typeof widget.setThresholdColor === "function"
+                || typeof widget.setThresholdValue === "function"
+                || typeof widget.setThresholdFlash === "function"
+                || typeof widget.setThresholdFlashSpeed === "function"
+                || typeof widget.setThresholdFlashTarget === "function")
             return
         var nextThresholds = widget.thresholds.slice(0)
         nextThresholds[thresholdIndex] = Object.assign({}, nextThresholds[thresholdIndex], patch || {})
@@ -49,13 +97,21 @@ Rectangle {
     }
 
     function addThreshold(widgetIndex) {
-        if (!Array.isArray(widgetItems) || widgetIndex < 0 || widgetIndex >= widgetItems.length)
+        var widget = widgetAt(widgetIndex)
+        if (!widget)
             return
-        var widget = widgetItems[widgetIndex]
         var thresholds = Array.isArray(widget.thresholds) ? widget.thresholds.slice(0) : []
         var lastValue = thresholds.length > 0 && typeof thresholds[thresholds.length - 1].value === "number"
             ? thresholds[thresholds.length - 1].value
             : 0
+        if (typeof widget.addDefaultThreshold === "function") {
+            widget.addDefaultThreshold()
+            return
+        }
+        if (typeof widget.addThreshold === "function") {
+            widget.addThreshold(lastValue + 10, thresholdPalette[thresholds.length % thresholdPalette.length])
+            return
+        }
         thresholds.push({
             "value": lastValue + 10,
             "color": thresholdPalette[thresholds.length % thresholdPalette.length],
@@ -69,9 +125,13 @@ Rectangle {
     function removeThreshold(widgetIndex, thresholdIndex) {
         if (!Array.isArray(widgetItems) || widgetIndex < 0 || widgetIndex >= widgetItems.length)
             return
-        var widget = widgetItems[widgetIndex]
+        var widget = widgetAt(widgetIndex)
         if (!widget || !Array.isArray(widget.thresholds) || thresholdIndex < 0 || thresholdIndex >= widget.thresholds.length)
             return
+        if (typeof widget.removeThreshold === "function") {
+            widget.removeThreshold(thresholdIndex)
+            return
+        }
         var thresholds = widget.thresholds.slice(0)
         thresholds.splice(thresholdIndex, 1)
         updateWidgetItem(widgetIndex, { "thresholds": thresholds })
@@ -120,6 +180,12 @@ Rectangle {
         return selectedWidget.value
     }
 
+    readonly property bool selectedHasEditableValue: {
+        if (!selectedWidget)
+            return false
+        return typeof selectedWidget.value === "number" || typeof selectedWidget.setValue === "function"
+    }
+
     readonly property string selectedLabel: {
         if (!selectedWidget || typeof selectedWidget.label !== "string")
             return ""
@@ -127,21 +193,15 @@ Rectangle {
     }
 
     readonly property int selectedPositionX: {
-        if (!selectedWidget || typeof selectedWidget.positionX !== "number")
+        if (!selectedWidget || typeof itemValue(selectedWidget, "widgetX", itemValue(selectedWidget, "positionX", null)) !== "number")
             return 0
-        return selectedWidget.positionX
+        return itemValue(selectedWidget, "widgetX", itemValue(selectedWidget, "positionX", 0))
     }
 
     readonly property int selectedPositionY: {
-        if (!selectedWidget || typeof selectedWidget.positionY !== "number")
+        if (!selectedWidget || typeof itemValue(selectedWidget, "widgetY", itemValue(selectedWidget, "positionY", null)) !== "number")
             return 0
-        return selectedWidget.positionY
-    }
-
-    readonly property real selectedFlashBelow: {
-        if (!selectedWidget || typeof selectedWidget.flashBelow !== "number")
-            return -1
-        return selectedWidget.flashBelow
+        return itemValue(selectedWidget, "widgetY", itemValue(selectedWidget, "positionY", 0))
     }
 
     readonly property var selectedThresholds: {
@@ -314,6 +374,7 @@ Rectangle {
                 }
 
                 Rectangle {
+                    visible: root.selectedHasEditableValue
                     width: parent.width
                     height: 56
                     radius: 12
@@ -434,33 +495,6 @@ Rectangle {
                         min: 0
                         max: 9999
                         onCommit: (value) => root.updateWidgetItem(root.selectedIndex, { "positionY": value })
-                    }
-                }
-
-                Rectangle {
-                    width: parent.width
-                    height: 56
-                    radius: 12
-                    color: "#1b1f25"
-
-                    Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Flash below"
-                        color: "#9aa1ad"
-                        font.pixelSize: 12
-                    }
-
-                    NumberStepper {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        value: root.selectedFlashBelow
-                        step: 1
-                        min: -1
-                        max: 9999
-                        onCommit: (value) => root.updateWidgetItem(root.selectedIndex, { "flashBelow": value })
                     }
                 }
 

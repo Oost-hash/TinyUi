@@ -45,3 +45,4 @@ Known packages:
 - [0.4.2][tinyui][tinydevtools][other] Rebuilt the shared shell around TinyQt chrome, restored a launch-first TinyUI widget editor baseline, and aligned devtools to reuse the same titlebar/tab shell instead of owning separate chrome
 - [0.4.2][tinyui][tinydevtools][other] Added TinyQt manifest contracts for hosted app surfaces so TinyUI and TinyDevTools declare shared shell usage, panels, and required singleton seams through one host API
 - [0.4.2][tinyui][tinydevtools][other] Moved devtools opening to a lazy TinyQt-hosted tool window and pushed shell state through host-owned window properties so the main app and tool surfaces follow the same window contract
+- [0.4.2][tinyui][tinywidgets][other] Switched widget surfaces to a TinyQt-owned native host path so TinyUI edits real widget contexts while tinywidgets no longer owns top-level QML widget windows
