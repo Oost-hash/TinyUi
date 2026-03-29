@@ -44,7 +44,7 @@ class NativeSettingsWindow(NativeToolWindowBase):
 
         self._plugin_list = QListWidget()
         self._plugin_list.setObjectName("PluginList")
-        self._plugin_list.setMinimumWidth(160)
+        self._plugin_list.setMinimumWidth(152)
         self._plugin_list.setAlternatingRowColors(False)
         self._plugin_list.setSpacing(0)
         self._plugin_list.currentRowChanged.connect(self._render_plugin)
@@ -55,6 +55,8 @@ class NativeSettingsWindow(NativeToolWindowBase):
         self._summary_text.setObjectName("SummaryText")
         self._summary_text.setWordWrap(True)
         self._summary_layout.addWidget(self._summary_text)
+        self._summary_layout.setContentsMargins(12, 10, 12, 10)
+        self._summary_layout.setSpacing(3)
 
         self._content_container = QWidget()
         self._content_layout = QVBoxLayout(self._content_container)
@@ -94,11 +96,11 @@ class NativeSettingsWindow(NativeToolWindowBase):
         splitter.addWidget(right_panel)
         splitter.setStretchFactor(0, 0)
         splitter.setStretchFactor(1, 1)
-        splitter.setSizes([176, 784])
+        splitter.setSizes([168, 792])
 
         content_frame = QWidget()
         root_layout = QHBoxLayout(content_frame)
-        root_layout.setContentsMargins(12, 12, 12, 12)
+        root_layout.setContentsMargins(10, 10, 10, 10)
         root_layout.setSpacing(0)
         root_layout.addWidget(splitter)
         self.add_body_widget(content_frame, stretch=1)
@@ -144,7 +146,7 @@ class NativeSettingsWindow(NativeToolWindowBase):
                 padding-top: 0px;
             }}
             QListWidget#PluginList::item {{
-                padding: 9px 14px;
+                padding: 8px 12px;
                 margin: 0px;
                 border-left: 2px solid transparent;
                 color: {self._theme.textMuted};
@@ -165,6 +167,16 @@ class NativeSettingsWindow(NativeToolWindowBase):
             QScrollArea#ContentScrollArea {{
                 background-color: transparent;
                 border: none;
+            }}
+            QScrollBar:vertical {{
+                width: 10px;
+                margin: 0px;
+                background: transparent;
+            }}
+            QScrollBar::handle:vertical {{
+                background-color: {self._theme.withAlpha(self._theme.border, 0.9)};
+                min-height: 28px;
+                border-radius: 4px;
             }}
             """
         )

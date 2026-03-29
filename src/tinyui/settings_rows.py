@@ -36,12 +36,12 @@ def build_setting_row(
     row = QWidget()
     row.setObjectName("SettingRow")
     layout = QHBoxLayout(row)
-    layout.setContentsMargins(0, 3, 0, 3)
-    layout.setSpacing(10)
+    layout.setContentsMargins(0, 2, 0, 2)
+    layout.setSpacing(8)
 
     text_column = QVBoxLayout()
     text_column.setContentsMargins(0, 0, 0, 0)
-    text_column.setSpacing(3)
+    text_column.setSpacing(2)
 
     label = QLabel(entry.spec.label)
     label.setObjectName("SettingRowLabel")
@@ -57,7 +57,7 @@ def build_setting_row(
         theme=theme,
         remember_value=remember_value,
     )
-    editor.setMinimumWidth(168)
+    editor.setMinimumWidth(156)
 
     layout.addLayout(text_column, 1)
     layout.addWidget(
