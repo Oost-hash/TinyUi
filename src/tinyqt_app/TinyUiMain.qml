@@ -17,6 +17,13 @@ Window {
     property var devToolsController: null
     property bool settingsAvailable: false
     property var settingsController: null
+    property var chromePolicy: ({
+        showMenuButton: true,
+        showTitleText: true,
+        showCaptionButtons: true,
+        showStatusLeftItems: true,
+        showStatusPluginPicker: true
+    })
 
     width: 900
     height: 600
@@ -57,6 +64,7 @@ Window {
         width: root.width
         settingsController: root.settingsController
         devToolsController: root.devToolsController
+        chromePolicy: root.chromePolicy
     }
 
     Item {
@@ -98,6 +106,7 @@ Window {
             width: parent.width
             leftItems: root.statusItems
             activeLabel: root.statusActiveLabel
+            chromePolicy: root.chromePolicy
         }
     }
 }

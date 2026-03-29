@@ -93,6 +93,7 @@ class LazyNativeWindowController(QObject):
 def apply_manifest_shell_state(window: QObject, manifest: TinyQtAppManifest) -> None:
     """Push manifest-defined shell state onto the loaded root object when supported."""
     shell = manifest.shell
+    chrome = manifest.chrome
     property_values: dict[str, object] = {
         "windowTitle": manifest.title,
         "menuItems": manifest_menu_items(manifest),
@@ -102,6 +103,13 @@ def apply_manifest_shell_state(window: QObject, manifest: TinyQtAppManifest) -> 
         "showStatusBar": shell.use_status_bar,
         "lazyPanelLoading": shell.lazy_panel_loading,
         "eagerPanelIndexes": manifest_eager_panel_indexes(manifest),
+        "chromePolicy": {
+            "showMenuButton": chrome.show_menu_button,
+            "showTitleText": chrome.show_title_text,
+            "showCaptionButtons": chrome.show_caption_buttons,
+            "showStatusLeftItems": chrome.show_status_left_items,
+            "showStatusPluginPicker": chrome.show_status_plugin_picker,
+        },
     }
     for name, value in property_values.items():
         window.setProperty(name, value)

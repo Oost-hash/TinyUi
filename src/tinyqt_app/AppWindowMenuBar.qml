@@ -9,6 +9,11 @@ Rectangle {
     readonly property var hostTheme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     property var settingsController: hostWindow && hostWindow.settingsController ? hostWindow.settingsController : null
     property var devToolsController: hostWindow && hostWindow.devToolsController ? hostWindow.devToolsController : null
+    property var chromePolicy: hostWindow && hostWindow.chromePolicy ? hostWindow.chromePolicy : ({
+        showMenuButton: true,
+        showTitleText: true,
+        showCaptionButtons: true
+    })
     property string titleText: hostWindow && typeof hostWindow.windowTitle === "string"
                                ? hostWindow.windowTitle
                                : ""
@@ -43,6 +48,7 @@ Rectangle {
 
     Rectangle {
         id: menuButton
+        visible: !!root.chromePolicy.showMenuButton
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.bottom: parent.bottom
@@ -67,6 +73,7 @@ Rectangle {
         spacing: 10
 
         Image {
+            visible: !!root.chromePolicy.showMenuButton
             anchors.verticalCenter: parent.verticalCenter
             source: root.menuIconSource
             sourceSize.width: 18
@@ -77,6 +84,7 @@ Rectangle {
         }
 
         Text {
+            visible: !!root.chromePolicy.showTitleText
             text: root.titleText
             color: menuArea.containsMouse || root.menuOpen
                 ? "#FFFFFF"
@@ -93,7 +101,7 @@ Rectangle {
         y: root.height
         width: 160
         height: menuColumn.implicitHeight
-        visible: root.menuOpen
+        visible: !!root.chromePolicy.showMenuButton && root.menuOpen
 
         Rectangle { anchors.fill: parent; color: hostTheme ? hostTheme.surfaceAlt : "#2f343e" }
         Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: hostTheme ? hostTheme.border : "#464b57" }
@@ -161,7 +169,7 @@ Rectangle {
     }
 
     Row {
-        visible: hostWindow && !hostWindow.nativeChrome
+        visible: !!root.chromePolicy.showCaptionButtons && hostWindow && !hostWindow.nativeChrome
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom

@@ -8,6 +8,7 @@ from tinycore.paths import AppPaths
 from .manifests import (
     TinyQtAppManifest,
     TinyQtButtonManifest,
+    TinyQtChromeManifest,
     TinyQtMenuItemManifest,
     TinyQtPanelManifest,
     TinyQtShellManifest,
@@ -71,9 +72,12 @@ def load_tinyqt_app_manifests(path: Path, *, paths: AppPaths) -> tuple[TinyQtApp
             raise ValueError(f"{path} contains an invalid [[app]] entry")
 
         shell_data = entry.get("shell", {})
+        chrome_data = entry.get("chrome", {})
         window_data = entry.get("window", {})
         if not isinstance(shell_data, dict):
             raise ValueError(f"{path} app '{entry.get('app_id', '<unknown>')}' has invalid [shell]")
+        if not isinstance(chrome_data, dict):
+            raise ValueError(f"{path} app '{entry.get('app_id', '<unknown>')}' has invalid [chrome]")
         if not isinstance(window_data, dict):
             raise ValueError(f"{path} app '{entry.get('app_id', '<unknown>')}' has invalid [window]")
 
@@ -132,6 +136,13 @@ def load_tinyqt_app_manifests(path: Path, *, paths: AppPaths) -> tuple[TinyQtApp
                         lazy_panel_loading=_as_bool(shell_data, "lazy_panel_loading", True),
                         native_chrome_platforms=_as_str_tuple(shell_data, "native_chrome_platforms")
                         or ("linux", "osx"),
+                    ),
+                    chrome=TinyQtChromeManifest(
+                        show_menu_button=_as_bool(chrome_data, "show_menu_button", True),
+                        show_title_text=_as_bool(chrome_data, "show_title_text", True),
+                        show_caption_buttons=_as_bool(chrome_data, "show_caption_buttons", True),
+                        show_status_left_items=_as_bool(chrome_data, "show_status_left_items", True),
+                        show_status_plugin_picker=_as_bool(chrome_data, "show_status_plugin_picker", True),
                     ),
                     window=TinyQtWindowManifest(
                         window_kind=_as_str(window_data, "window_kind", "main") or "main",

@@ -10,6 +10,13 @@ use_tab_bar = true
 use_status_bar = true
 lazy_panel_loading = true
 
+[app.chrome]
+show_menu_button = true
+show_title_text = true
+show_caption_buttons = true
+show_status_left_items = true
+show_status_plugin_picker = true
+
 [app.window]
 window_kind = "main"
 presentation = "qml"

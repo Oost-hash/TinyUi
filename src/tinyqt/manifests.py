@@ -67,6 +67,15 @@ class TinyQtShellManifest:
 
 
 @dataclass(frozen=True)
+class TinyQtChromeManifest:
+    show_menu_button: bool = True
+    show_title_text: bool = True
+    show_caption_buttons: bool = True
+    show_status_left_items: bool = True
+    show_status_plugin_picker: bool = True
+
+
+@dataclass(frozen=True)
 class TinyQtWindowManifest:
     window_kind: str = "main"
     presentation: str = "qml"
@@ -85,6 +94,7 @@ class TinyQtAppManifest:
     title: str
     root_qml: Path | None
     shell: TinyQtShellManifest
+    chrome: TinyQtChromeManifest = TinyQtChromeManifest()
     window: TinyQtWindowManifest = TinyQtWindowManifest()
     menu_items: tuple[TinyQtMenuItemManifest, ...] = ()
     buttons: tuple[TinyQtButtonManifest, ...] = ()
@@ -247,6 +257,7 @@ def validate_manifest(manifest: TinyQtAppManifest) -> TinyQtAppManifest:
         title=title,
         root_qml=manifest.root_qml,
         shell=manifest.shell,
+        chrome=manifest.chrome,
         window=TinyQtWindowManifest(
             window_kind=window_kind,
             presentation=presentation,

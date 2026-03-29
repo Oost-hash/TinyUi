@@ -9,6 +9,10 @@ Rectangle {
 
     property string activeLabel: ""
     property var leftItems: []
+    property var chromePolicy: hostWindow && hostWindow.chromePolicy ? hostWindow.chromePolicy : ({
+        showStatusLeftItems: true,
+        showStatusPluginPicker: true
+    })
     readonly property var statusBarController: hostWindow && hostWindow.statusBarController ? hostWindow.statusBarController : null
     readonly property var pluginNames: hostWindow && hostWindow.pluginNames ? hostWindow.pluginNames : []
     property bool pluginOpen: statusBarController ? statusBarController.pluginDropdownOpen : false
@@ -24,6 +28,7 @@ Rectangle {
     }
 
     Row {
+        visible: !!root.chromePolicy.showStatusLeftItems
         anchors.left: parent.left
         anchors.leftMargin: 4
         anchors.verticalCenter: parent.verticalCenter
@@ -64,6 +69,7 @@ Rectangle {
 
     Rectangle {
         id: pluginButton
+        visible: !!root.chromePolicy.showStatusPluginPicker
         anchors.right: parent.right
         anchors.rightMargin: 10
         anchors.verticalCenter: parent.verticalCenter
@@ -101,7 +107,7 @@ Rectangle {
         height: dropdownColumn.implicitHeight
         x: pluginButton.x + pluginButton.width - width
         y: -height
-        visible: root.pluginOpen
+        visible: !!root.chromePolicy.showStatusPluginPicker && root.pluginOpen
 
         Rectangle { anchors.fill: parent; color: hostTheme ? hostTheme.surfaceAlt : "#2f343e" }
         Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: hostTheme ? hostTheme.border : "#464b57" }
