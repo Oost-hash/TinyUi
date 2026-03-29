@@ -15,10 +15,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from tinyqt_settings.button_actions import build_settings_button_actions
+from tinyqt_settings.actions import build_settings_button_actions
 from tinyqt_settings_schema import SettingsSpec
 from tinyqt_native.native_tool_window import NativeToolWindowBase
-from tinyqt_settings.settings_rows import SettingEntry, build_setting_row
+from tinyqt_settings.rows import SettingEntry, build_setting_row
 
 
 class NativeSettingsWindow(NativeToolWindowBase):

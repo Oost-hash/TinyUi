@@ -314,7 +314,7 @@ def create_settings_controller(
     manifest = build_tinyqt_settings_manifest(core.paths)
 
     def _build_window(window_manifest: TinyQtAppManifest) -> NativeToolWindowLike:
-        from tinyqt_settings.native_settings_window import NativeSettingsWindow
+        from tinyqt_settings.window import NativeSettingsWindow
 
         registrations = build_registrations(None)
         settings_vm = next(
@@ -347,7 +347,7 @@ def create_devtools_controller(
     manifest = build_tinyqt_devtools_manifest(core.paths)
 
     def _build_window(window_manifest: TinyQtAppManifest) -> NativeToolWindowLike:
-        from tinyqt_devtools.native_devtools_window import NativeDevToolsWindow
+        from tinyqt_devtools.window import NativeDevToolsWindow
 
         return NativeDevToolsWindow(
             core=core,
