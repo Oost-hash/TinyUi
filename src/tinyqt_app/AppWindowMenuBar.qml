@@ -7,6 +7,8 @@ Rectangle {
 
     readonly property var hostWindow: Window.window
     readonly property var hostTheme: hostWindow && hostWindow.theme ? hostWindow.theme : null
+    property var settingsController: hostWindow && hostWindow.settingsController ? hostWindow.settingsController : null
+    property var devToolsController: hostWindow && hostWindow.devToolsController ? hostWindow.devToolsController : null
     property string titleText: hostWindow && typeof hostWindow.windowTitle === "string"
                                ? hostWindow.windowTitle
                                : ""
@@ -143,10 +145,10 @@ Rectangle {
                             root.menuOpen = false
                             if (!hostWindow)
                                 return
-                            if (modelData.action === "settings" && hostWindow.settingsController)
-                                hostWindow.settingsController.toggle()
-                            else if (modelData.action === "devtools" && hostWindow.devToolsController)
-                                hostWindow.devToolsController.toggle()
+                            if (modelData.action === "settings" && root.settingsController)
+                                root.settingsController.toggle()
+                            else if (modelData.action === "devtools" && root.devToolsController)
+                                root.devToolsController.toggle()
                             else if (modelData.action === "close")
                                 hostWindow.close()
                         }

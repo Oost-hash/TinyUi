@@ -29,6 +29,7 @@ _VALID_LOAD_POLICIES = frozenset({"lazy", "eager"})
 _VALID_MENU_ACTIONS = frozenset({"settings", "devtools", "close"})
 _VALID_WINDOW_KINDS = frozenset({"main", "tool", "dialog"})
 _VALID_WINDOW_PRESENTATIONS = frozenset({"qml", "native"})
+_VALID_BUTTON_ROLES = frozenset({"primary", "secondary"})
 
 
 @dataclass(frozen=True)
@@ -37,6 +38,13 @@ class TinyQtMenuItemManifest:
     action: str | None = None
     separator: bool = False
     requires_feature: str | None = None
+
+
+@dataclass(frozen=True)
+class TinyQtButtonManifest:
+    button_id: str
+    label: str
+    role: str = "secondary"
 
 
 @dataclass(frozen=True)
@@ -79,6 +87,7 @@ class TinyQtAppManifest:
     shell: TinyQtShellManifest
     window: TinyQtWindowManifest = TinyQtWindowManifest()
     menu_items: tuple[TinyQtMenuItemManifest, ...] = ()
+    buttons: tuple[TinyQtButtonManifest, ...] = ()
     panels: tuple[TinyQtPanelManifest, ...] = ()
     required_singletons: tuple[str, ...] = ()
     optional_features: tuple[str, ...] = ()
@@ -143,8 +152,10 @@ def validate_manifest(manifest: TinyQtAppManifest) -> TinyQtAppManifest:
         )
 
     panel_ids: set[str] = set()
+    button_ids: set[str] = set()
     normalized_panels: list[TinyQtPanelManifest] = []
     normalized_menu_items: list[TinyQtMenuItemManifest] = []
+    normalized_buttons: list[TinyQtButtonManifest] = []
 
     for item in manifest.menu_items:
         label = item.label.strip()
@@ -167,6 +178,31 @@ def validate_manifest(manifest: TinyQtAppManifest) -> TinyQtAppManifest:
                 action=action,
                 separator=False,
                 requires_feature=requires_feature,
+            )
+        )
+
+    for button in manifest.buttons:
+        button_id = button.button_id.strip()
+        label = button.label.strip()
+        role = button.role.strip().lower()
+        if not button_id:
+            raise ValueError(f"Invalid TinyQt manifest '{app_id}': button_id must not be empty")
+        if button_id in button_ids:
+            raise ValueError(f"Invalid TinyQt manifest '{app_id}': duplicate button_id '{button_id}'")
+        button_ids.add(button_id)
+        if not label:
+            raise ValueError(
+                f"Invalid TinyQt manifest '{app_id}': button '{button_id}' has an empty label"
+            )
+        if role not in _VALID_BUTTON_ROLES:
+            raise ValueError(
+                f"Invalid TinyQt manifest '{app_id}': button '{button_id}' has unsupported role '{button.role}'"
+            )
+        normalized_buttons.append(
+            TinyQtButtonManifest(
+                button_id=button_id,
+                label=label,
+                role=role,
             )
         )
 
@@ -223,6 +259,7 @@ def validate_manifest(manifest: TinyQtAppManifest) -> TinyQtAppManifest:
             min_height=manifest.window.min_height,
         ),
         menu_items=tuple(normalized_menu_items),
+        buttons=tuple(normalized_buttons),
         panels=tuple(normalized_panels),
         required_singletons=_normalize_names(
             manifest.required_singletons,

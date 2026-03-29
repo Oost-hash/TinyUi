@@ -26,6 +26,11 @@ default_height = 680
 min_width = 720
 min_height = 480
 
+[[app.buttons]]
+button_id = "close"
+label = "Close"
+role = "secondary"
+
 [[app.panels]]
 panel_id = "state"
 label = "State"

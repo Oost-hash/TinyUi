@@ -1,38 +1,24 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
 from typing import Any
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QAbstractSpinBox,
-    QCheckBox,
-    QComboBox,
-    QDoubleSpinBox,
     QFrame,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QListWidget,
     QListWidgetItem,
-    QPushButton,
     QScrollArea,
-    QSpinBox,
     QSplitter,
     QVBoxLayout,
     QWidget,
 )
 
+from tinyui.button_actions import build_settings_button_actions
 from tinyui_schema import SettingsSpec
 from tinyqt_native.native_tool_window import NativeToolWindowBase
-
-
-@dataclass(frozen=True)
-class _SettingEntry:
-    plugin_name: str
-    spec: SettingsSpec
-    value: Any
+from tinyui.settings_rows import SettingEntry, build_setting_row
 
 
 class NativeSettingsWindow(NativeToolWindowBase):
@@ -82,17 +68,15 @@ class NativeSettingsWindow(NativeToolWindowBase):
         self._scroll_area.setFrameShape(QFrame.Shape.NoFrame)
         self._scroll_area.setWidget(self._content_container)
 
-        self._revert_button = QPushButton("Revert")
-        self._revert_button.setObjectName("SecondaryButton")
-        self._revert_button.clicked.connect(self.revert_pending_changes)
-
-        self._save_button = QPushButton("Save")
-        self._save_button.setObjectName("PrimaryButton")
-        self._save_button.clicked.connect(self.apply_pending_changes)
-
-        self._close_button = QPushButton("Close")
-        self._close_button.setObjectName("SecondaryButton")
-        self._close_button.clicked.connect(self.close)
+        footer_frame, _footer, footer_buttons = self.create_button_bar(manifest.buttons)
+        self._revert_button = footer_buttons.get("revert")
+        self._save_button = footer_buttons.get("save")
+        self._close_button = footer_buttons.get("close")
+        if self._revert_button is None or self._save_button is None or self._close_button is None:
+            raise ValueError(
+                "Native settings window manifest must declare revert, save, and close buttons"
+            )
+        self.wire_button_actions(footer_buttons, build_settings_button_actions(self))
 
         right_panel = QWidget()
         right_panel.setObjectName("RightPanel")
@@ -102,15 +86,6 @@ class NativeSettingsWindow(NativeToolWindowBase):
         right_layout.addWidget(self._summary_card)
         right_layout.addWidget(self._scroll_area, 1)
 
-        footer_frame = QFrame()
-        footer_frame.setObjectName("FooterFrame")
-        footer = QHBoxLayout()
-        footer.setContentsMargins(0, 0, 0, 0)
-        footer.addStretch(1)
-        footer.addWidget(self._revert_button)
-        footer.addWidget(self._save_button)
-        footer.addWidget(self._close_button)
-        footer_frame.setLayout(footer)
         right_layout.addWidget(footer_frame)
 
         splitter = QSplitter()
@@ -222,8 +197,10 @@ class NativeSettingsWindow(NativeToolWindowBase):
 
     def _update_actions(self) -> None:
         dirty = bool(self._pending)
-        self._revert_button.setEnabled(dirty)
-        self._save_button.setEnabled(dirty)
+        if self._revert_button is not None:
+            self._revert_button.setEnabled(dirty)
+        if self._save_button is not None:
+            self._save_button.setEnabled(dirty)
 
     def _clear_layout(self, layout: QVBoxLayout) -> None:
         while layout.count():
@@ -252,7 +229,7 @@ class NativeSettingsWindow(NativeToolWindowBase):
             return
 
         plugin_name, specs = self._groups[row]
-        sections: dict[str, list[_SettingEntry]] = {}
+        sections: dict[str, list[SettingEntry]] = {}
         section_order: list[str] = []
         for spec in specs:
             section_name = spec.section or "General"
@@ -263,7 +240,9 @@ class NativeSettingsWindow(NativeToolWindowBase):
                 (plugin_name, spec.key),
                 self._core.host.persistence.get_setting(plugin_name, spec.key),
             )
-            sections[section_name].append(_SettingEntry(plugin_name=plugin_name, spec=spec, value=effective_value))
+            sections[section_name].append(
+                SettingEntry(plugin_name=plugin_name, spec=spec, value=effective_value)
+            )
 
         self._summary_title.setText(plugin_name)
         self._summary_text.setText(
@@ -276,7 +255,7 @@ class NativeSettingsWindow(NativeToolWindowBase):
             self._content_layout.addWidget(self._build_section(section_name, sections[section_name]))
         self._content_layout.addStretch(1)
 
-    def _build_section(self, title: str, entries: Iterable[_SettingEntry]) -> QWidget:
+    def _build_section(self, title: str, entries: Iterable[SettingEntry]) -> QWidget:
         section, layout = self.create_section_frame()
 
         title_label = QLabel(title)
@@ -284,40 +263,15 @@ class NativeSettingsWindow(NativeToolWindowBase):
         layout.addWidget(title_label)
 
         for entry in entries:
-            layout.addWidget(self._build_setting_row(entry))
+            layout.addWidget(
+                build_setting_row(
+                    entry=entry,
+                    theme=self._theme,
+                    remember_value=self._remember_value,
+                )
+            )
 
         return section
-
-    def _build_setting_row(self, entry: _SettingEntry) -> QWidget:
-        row = QWidget()
-        row.setObjectName("SettingRow")
-        layout = QHBoxLayout(row)
-        layout.setContentsMargins(0, 6, 0, 6)
-        layout.setSpacing(12)
-
-        text_column = QVBoxLayout()
-        text_column.setContentsMargins(0, 0, 0, 0)
-        text_column.setSpacing(2)
-
-        label = QLabel(entry.spec.label)
-        label.setStyleSheet("font-weight: 500;")
-        description = QLabel(entry.spec.description or "")
-        description.setWordWrap(True)
-        description.setStyleSheet(f"color: {self._theme.textMuted}; font-size: {self._theme.fontSizeSmall}px;")
-        text_column.addWidget(label)
-        if entry.spec.description:
-            text_column.addWidget(description)
-
-        editor = self._build_editor(entry)
-        editor.setMinimumWidth(180)
-
-        layout.addLayout(text_column, 1)
-        layout.addWidget(
-            editor,
-            0,
-            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
-        )
-        return row
 
     def _remember_value(self, plugin_name: str, key: str, value: Any) -> None:
         current = self._core.host.persistence.get_setting(plugin_name, key)
@@ -327,53 +281,3 @@ class NativeSettingsWindow(NativeToolWindowBase):
         else:
             self._pending[token] = value
         self._update_actions()
-
-    def _build_editor(self, entry: _SettingEntry) -> QWidget:
-        spec = entry.spec
-        plugin_name = entry.plugin_name
-        key = spec.key
-
-        if spec.type == "bool":
-            checkbox = QCheckBox("Enabled")
-            checkbox.setChecked(bool(entry.value))
-            checkbox.toggled.connect(lambda checked, pn=plugin_name, setting_key=key: self._remember_value(pn, setting_key, checked))
-            return checkbox
-
-        if spec.type == "enum":
-            combo = QComboBox()
-            for option in spec.options or []:
-                combo.addItem(str(option))
-            current_text = str(entry.value)
-            index = combo.findText(current_text)
-            if index >= 0:
-                combo.setCurrentIndex(index)
-            combo.currentTextChanged.connect(lambda text, pn=plugin_name, setting_key=key: self._remember_value(pn, setting_key, text))
-            return combo
-
-        if spec.type == "int":
-            spin = QSpinBox()
-            spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
-            spin.setRange(int(spec.min if spec.min is not None else -1_000_000), int(spec.max if spec.max is not None else 1_000_000))
-            spin.setSingleStep(int(spec.step if spec.step is not None else 1))
-            spin.setValue(int(entry.value))
-            spin.valueChanged.connect(lambda value, pn=plugin_name, setting_key=key: self._remember_value(pn, setting_key, int(value)))
-            return spin
-
-        if spec.type == "float":
-            spin = QDoubleSpinBox()
-            spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
-            spin.setDecimals(2)
-            spin.setRange(float(spec.min if spec.min is not None else -1_000_000.0), float(spec.max if spec.max is not None else 1_000_000.0))
-            spin.setSingleStep(float(spec.step if spec.step is not None else 0.1))
-            spin.setValue(float(entry.value))
-            spin.valueChanged.connect(lambda value, pn=plugin_name, setting_key=key: self._remember_value(pn, setting_key, float(value)))
-            return spin
-
-        if spec.type == "string":
-            line_edit = QLineEdit(str(entry.value))
-            line_edit.textChanged.connect(lambda text, pn=plugin_name, setting_key=key: self._remember_value(pn, setting_key, text))
-            return line_edit
-
-        fallback = QLabel(str(entry.value))
-        fallback.setStyleSheet(f"color: {self._theme.textMuted};")
-        return fallback

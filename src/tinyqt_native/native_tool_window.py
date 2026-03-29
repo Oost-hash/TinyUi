@@ -1,8 +1,19 @@
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
+
+from tinyqt.manifests import TinyQtButtonManifest
 
 
 def with_alpha(color: str, alpha: float) -> str:
@@ -84,6 +95,48 @@ class NativeToolWindowBase(QWidget):
         label.setObjectName("RuntimeTasksLabel")
         label.setVisible(False)
         return label
+
+    def create_footer_frame(self, *widgets: QWidget) -> tuple[QFrame, QHBoxLayout]:
+        frame = QFrame()
+        frame.setObjectName("FooterFrame")
+        layout = QHBoxLayout(frame)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addStretch(1)
+        for widget in widgets:
+            layout.addWidget(widget)
+        return frame, layout
+
+    def create_button_bar(
+        self,
+        button_manifests: tuple[TinyQtButtonManifest, ...],
+    ) -> tuple[QFrame, QHBoxLayout, dict[str, QPushButton]]:
+        buttons: dict[str, QPushButton] = {}
+        ordered_widgets: list[QPushButton] = []
+        for button_manifest in button_manifests:
+            button = QPushButton(button_manifest.label)
+            button.setObjectName(
+                "PrimaryButton" if button_manifest.role == "primary" else "SecondaryButton"
+            )
+            buttons[button_manifest.button_id] = button
+            ordered_widgets.append(button)
+        frame, layout = self.create_footer_frame(*ordered_widgets)
+        return frame, layout, buttons
+
+    def wire_button_actions(
+        self,
+        buttons: Mapping[str, QPushButton],
+        actions: Mapping[str, Callable[[], object]],
+    ) -> None:
+        for button_id, button in buttons.items():
+            action = actions.get(button_id)
+            if action is not None:
+                button.clicked.connect(action)
+
+    def create_filter_button(self, label: str) -> QPushButton:
+        button = QPushButton(label)
+        button.setObjectName("RuntimeFilterButton")
+        button.setCheckable(True)
+        return button
 
     def create_section_frame(self) -> tuple[QFrame, QVBoxLayout]:
         frame = QFrame()

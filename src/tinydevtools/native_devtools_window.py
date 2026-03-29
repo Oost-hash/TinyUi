@@ -22,6 +22,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from tinydevtools.button_actions import (
+    build_console_toolbar_actions,
+    build_devtools_button_actions,
+    build_runtime_toolbar_actions,
+    build_state_toolbar_actions,
+)
 from tinydevtools.log_settings_viewmodel import LogSettingsViewModel
 from tinydevtools.runtime_viewmodel import RuntimeViewModel
 from tinydevtools.state_monitor_viewmodel import StateMonitorViewModel
@@ -74,7 +80,17 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._build_runtime_tab()
         self._build_console_tab()
 
-        self.add_body_widget(self._tabs, stretch=1)
+        body = QWidget()
+        body_layout = QVBoxLayout(body)
+        body_layout.setContentsMargins(0, 0, 0, 0)
+        body_layout.setSpacing(12)
+        body_layout.addWidget(self._tabs, 1)
+
+        footer_frame, _footer_layout, footer_buttons = self.create_button_bar(manifest.buttons)
+        self.wire_button_actions(footer_buttons, build_devtools_button_actions(self))
+        body_layout.addWidget(footer_frame)
+
+        self.add_body_widget(body, stretch=1)
 
         self._refresh_timer = QTimer(self)
         self._refresh_timer.setInterval(250)
@@ -95,11 +111,20 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._state_source_combo = QComboBox()
         self._state_source_combo.currentIndexChanged.connect(self._select_state_source)
         self._state_copy_all_button = QPushButton("Copy all")
-        self._state_copy_all_button.clicked.connect(self._state_vm.copyAllEntries)
         self._state_capture_button = QPushButton("Record")
-        self._state_capture_button.clicked.connect(self._toggle_state_capture)
         self._state_copy_path_button = QPushButton("Copy path")
-        self._state_copy_path_button.clicked.connect(self._state_vm.copyCapturePath)
+        self.wire_button_actions(
+            {
+                "copy_all": self._state_copy_all_button,
+                "toggle_capture": self._state_capture_button,
+                "copy_path": self._state_copy_path_button,
+            },
+            build_state_toolbar_actions(
+                window=self,
+                copy_all=self._state_vm.copyAllEntries,
+                copy_path=self._state_vm.copyCapturePath,
+            ),
+        )
 
         toolbar_layout.addWidget(self._state_source_combo, 1)
         toolbar_layout.addWidget(self._state_copy_all_button)
@@ -133,7 +158,10 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._runtime_summary = QLabel("No runtime data")
         self._runtime_summary.setObjectName("SummaryLabel")
         self._runtime_copy_button = QPushButton("Copy all")
-        self._runtime_copy_button.clicked.connect(self._runtime_vm.copyOverview)
+        self.wire_button_actions(
+            {"copy_all": self._runtime_copy_button},
+            build_runtime_toolbar_actions(copy_all=self._runtime_vm.copyOverview),
+        )
 
         toolbar_layout.addWidget(self._runtime_summary, 1)
         toolbar_layout.addWidget(self._runtime_copy_button)
@@ -142,9 +170,7 @@ class NativeDevToolsWindow(NativeToolWindowBase):
 
         self._runtime_filter_buttons: dict[str, QPushButton] = {}
         for state in self._runtime_vm.availableStateFilters:
-            button = QPushButton(state.upper())
-            button.setObjectName("RuntimeFilterButton")
-            button.setCheckable(True)
+            button = self.create_filter_button(state.upper())
             button.clicked.connect(
                 lambda _checked=False, state_name=state: self._toggle_runtime_filter(state_name)
             )
@@ -197,7 +223,10 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._auto_scroll_check.setChecked(True)
         self._auto_scroll_check.toggled.connect(self._set_console_auto_scroll)
         self._console_clear_button = QPushButton("Clear")
-        self._console_clear_button.clicked.connect(self._clear_console)
+        self.wire_button_actions(
+            {"clear": self._console_clear_button},
+            build_console_toolbar_actions(window=self),
+        )
 
         toolbar_layout.addWidget(self._debug_check)
         toolbar_layout.addWidget(self._info_check)
@@ -209,9 +238,7 @@ class NativeDevToolsWindow(NativeToolWindowBase):
 
         category_bar, category_layout = self.create_compact_toolbar()
 
-        self._console_all_categories_button = QPushButton("ALL")
-        self._console_all_categories_button.setObjectName("RuntimeFilterButton")
-        self._console_all_categories_button.setCheckable(True)
+        self._console_all_categories_button = self.create_filter_button("ALL")
         self._console_all_categories_button.clicked.connect(self._toggle_all_console_categories)
         category_layout.addWidget(self._console_all_categories_button)
 
@@ -555,9 +582,7 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         for category in self._log_settings_vm.categories:
             name = str(category["name"])
             enabled = bool(category["enabled"])
-            button = QPushButton(name)
-            button.setObjectName("RuntimeFilterButton")
-            button.setCheckable(True)
+            button = self.create_filter_button(name)
             button.setChecked(enabled)
             button.clicked.connect(lambda _checked=False, category_name=name: self._toggle_console_category(category_name))
             self._console_category_buttons[name] = button

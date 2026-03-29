@@ -55,6 +55,8 @@ Window {
         x: 0
         y: 0
         width: root.width
+        settingsController: root.settingsController
+        devToolsController: root.devToolsController
     }
 
     Item {
