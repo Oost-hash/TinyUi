@@ -12,6 +12,7 @@ from .manifests import (
     TinyQtMenuItemManifest,
     TinyQtPanelManifest,
     TinyQtShellManifest,
+    TinyQtToolbarManifest,
     TinyQtWindowManifest,
     validate_manifest,
 )
@@ -83,13 +84,21 @@ def load_tinyqt_app_manifests(path: Path, *, paths: AppPaths) -> tuple[TinyQtApp
 
         menu_items_data = entry.get("menu_items", [])
         buttons_data = entry.get("buttons", [])
+        toolbars_data = entry.get("toolbars", [])
         panels_data = entry.get("panels", [])
         if not isinstance(menu_items_data, list):
             raise ValueError(f"{path} app '{entry.get('app_id', '<unknown>')}' has invalid [[menu_items]]")
         if not isinstance(buttons_data, list):
             raise ValueError(f"{path} app '{entry.get('app_id', '<unknown>')}' has invalid [[buttons]]")
+        if not isinstance(toolbars_data, list):
+            raise ValueError(f"{path} app '{entry.get('app_id', '<unknown>')}' has invalid [[toolbars]]")
         if not isinstance(panels_data, list):
             raise ValueError(f"{path} app '{entry.get('app_id', '<unknown>')}' has invalid [[panels]]")
+        for toolbar in toolbars_data:
+            if isinstance(toolbar, dict) and not isinstance(toolbar.get("buttons", []), list):
+                raise ValueError(
+                    f"{path} app '{entry.get('app_id', '<unknown>')}' has invalid toolbar buttons"
+                )
 
         menu_items = tuple(
             TinyQtMenuItemManifest(
@@ -109,6 +118,24 @@ def load_tinyqt_app_manifests(path: Path, *, paths: AppPaths) -> tuple[TinyQtApp
             )
             for button in buttons_data
             if isinstance(button, dict)
+        )
+        toolbars = tuple(
+            TinyQtToolbarManifest(
+                toolbar_id=_as_str(toolbar, "toolbar_id", "") or "",
+                panel_id=_as_str(toolbar, "panel_id", "") or "",
+                compact=_as_bool(toolbar, "compact", False),
+                buttons=tuple(
+                    TinyQtButtonManifest(
+                        button_id=_as_str(button, "button_id", "") or "",
+                        label=_as_str(button, "label", "") or "",
+                        role=_as_str(button, "role", "secondary") or "secondary",
+                    )
+                    for button in toolbar.get("buttons", [])
+                    if isinstance(button, dict)
+                ),
+            )
+            for toolbar in toolbars_data
+            if isinstance(toolbar, dict)
         )
         panels = tuple(
             TinyQtPanelManifest(
@@ -157,6 +184,7 @@ def load_tinyqt_app_manifests(path: Path, *, paths: AppPaths) -> tuple[TinyQtApp
                     ),
                     menu_items=menu_items,
                     buttons=buttons,
+                    toolbars=toolbars,
                     panels=panels,
                     required_singletons=_as_str_tuple(entry, "required_singletons"),
                     optional_features=_as_str_tuple(entry, "optional_features"),

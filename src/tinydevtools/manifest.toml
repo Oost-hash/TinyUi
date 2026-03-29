@@ -31,6 +31,29 @@ button_id = "close"
 label = "Close"
 role = "secondary"
 
+[[app.toolbars]]
+toolbar_id = "state.actions"
+panel_id = "state"
+buttons = [
+    { button_id = "copy_all", label = "Copy all" },
+    { button_id = "toggle_capture", label = "Record" },
+    { button_id = "copy_path", label = "Copy path" },
+]
+
+[[app.toolbars]]
+toolbar_id = "runtime.actions"
+panel_id = "runtime"
+buttons = [
+    { button_id = "copy_all", label = "Copy all" },
+]
+
+[[app.toolbars]]
+toolbar_id = "console.actions"
+panel_id = "console"
+buttons = [
+    { button_id = "clear", label = "Clear" },
+]
+
 [[app.panels]]
 panel_id = "state"
 label = "State"

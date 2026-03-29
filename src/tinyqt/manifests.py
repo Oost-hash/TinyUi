@@ -48,6 +48,14 @@ class TinyQtButtonManifest:
 
 
 @dataclass(frozen=True)
+class TinyQtToolbarManifest:
+    toolbar_id: str
+    panel_id: str
+    compact: bool = False
+    buttons: tuple[TinyQtButtonManifest, ...] = ()
+
+
+@dataclass(frozen=True)
 class TinyQtPanelManifest:
     panel_id: str
     label: str
@@ -98,6 +106,7 @@ class TinyQtAppManifest:
     window: TinyQtWindowManifest = TinyQtWindowManifest()
     menu_items: tuple[TinyQtMenuItemManifest, ...] = ()
     buttons: tuple[TinyQtButtonManifest, ...] = ()
+    toolbars: tuple[TinyQtToolbarManifest, ...] = ()
     panels: tuple[TinyQtPanelManifest, ...] = ()
     required_singletons: tuple[str, ...] = ()
     optional_features: tuple[str, ...] = ()
@@ -166,6 +175,7 @@ def validate_manifest(manifest: TinyQtAppManifest) -> TinyQtAppManifest:
     normalized_panels: list[TinyQtPanelManifest] = []
     normalized_menu_items: list[TinyQtMenuItemManifest] = []
     normalized_buttons: list[TinyQtButtonManifest] = []
+    normalized_toolbars: list[TinyQtToolbarManifest] = []
 
     for item in manifest.menu_items:
         label = item.label.strip()
@@ -216,6 +226,50 @@ def validate_manifest(manifest: TinyQtAppManifest) -> TinyQtAppManifest:
             )
         )
 
+    for toolbar in manifest.toolbars:
+        toolbar_id = toolbar.toolbar_id.strip()
+        panel_id = toolbar.panel_id.strip()
+        if not toolbar_id:
+            raise ValueError(f"Invalid TinyQt manifest '{app_id}': toolbar_id must not be empty")
+        if not panel_id:
+            raise ValueError(
+                f"Invalid TinyQt manifest '{app_id}': toolbar '{toolbar_id}' has an empty panel_id"
+            )
+        toolbar_button_ids: set[str] = set()
+        normalized_toolbar_buttons: list[TinyQtButtonManifest] = []
+        for button in toolbar.buttons:
+            button_id = button.button_id.strip()
+            label = button.label.strip()
+            role = button.role.strip().lower()
+            if not button_id:
+                raise ValueError(
+                    f"Invalid TinyQt manifest '{app_id}': toolbar '{toolbar_id}' contains an empty button_id"
+                )
+            if button_id in toolbar_button_ids:
+                raise ValueError(
+                    f"Invalid TinyQt manifest '{app_id}': toolbar '{toolbar_id}' has duplicate button_id '{button_id}'"
+                )
+            toolbar_button_ids.add(button_id)
+            if not label:
+                raise ValueError(
+                    f"Invalid TinyQt manifest '{app_id}': toolbar '{toolbar_id}' button '{button_id}' has an empty label"
+                )
+            if role not in _VALID_BUTTON_ROLES:
+                raise ValueError(
+                    f"Invalid TinyQt manifest '{app_id}': toolbar '{toolbar_id}' button '{button_id}' has unsupported role '{button.role}'"
+                )
+            normalized_toolbar_buttons.append(
+                TinyQtButtonManifest(button_id=button_id, label=label, role=role)
+            )
+        normalized_toolbars.append(
+            TinyQtToolbarManifest(
+                toolbar_id=toolbar_id,
+                panel_id=panel_id,
+                compact=toolbar.compact,
+                buttons=tuple(normalized_toolbar_buttons),
+            )
+        )
+
     for panel in manifest.panels:
         panel_id = panel.panel_id.strip()
         label = panel.label.strip()
@@ -252,6 +306,12 @@ def validate_manifest(manifest: TinyQtAppManifest) -> TinyQtAppManifest:
             )
         )
 
+    for toolbar in normalized_toolbars:
+        if toolbar.panel_id not in panel_ids:
+            raise ValueError(
+                f"Invalid TinyQt manifest '{app_id}': toolbar '{toolbar.toolbar_id}' references unknown panel '{toolbar.panel_id}'"
+            )
+
     return TinyQtAppManifest(
         app_id=app_id,
         title=title,
@@ -271,6 +331,7 @@ def validate_manifest(manifest: TinyQtAppManifest) -> TinyQtAppManifest:
         ),
         menu_items=tuple(normalized_menu_items),
         buttons=tuple(normalized_buttons),
+        toolbars=tuple(normalized_toolbars),
         panels=tuple(normalized_panels),
         required_singletons=_normalize_names(
             manifest.required_singletons,
@@ -332,3 +393,11 @@ def manifest_menu_items(manifest: TinyQtAppManifest) -> list[dict[str, object]]:
             }
         )
     return items
+
+
+def manifest_toolbars_for_panel(
+    manifest: TinyQtAppManifest,
+    panel_id: str,
+) -> tuple[TinyQtToolbarManifest, ...]:
+    """Return toolbar declarations for one panel in manifest order."""
+    return tuple(toolbar for toolbar in manifest.toolbars if toolbar.panel_id == panel_id)

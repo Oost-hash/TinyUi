@@ -55,6 +55,7 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         )
         self._core = core
         self._theme = theme
+        self._manifest = manifest
         self._log_inspector = log_inspector
         self._log_settings_vm = LogSettingsViewModelClass()
         self._runtime_vm = RuntimeViewModelClass(core)
@@ -100,6 +101,12 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         theme.changed.connect(self._apply_theme)
         self._update_header_copy(self._tabs.currentIndex())
 
+    def _toolbar_manifest(self, panel_id: str):
+        for toolbar in self._manifest.toolbars:
+            if toolbar.panel_id == panel_id:
+                return toolbar
+        return None
+
     def _build_state_tab(self) -> None:
         page = QWidget()
         layout = QVBoxLayout(page)
@@ -110,21 +117,38 @@ class NativeDevToolsWindow(NativeToolWindowBase):
 
         self._state_source_combo = QComboBox()
         self._state_source_combo.currentIndexChanged.connect(self._select_state_source)
-        self._state_copy_all_button = QPushButton("Copy all")
-        self._state_capture_button = QPushButton("Record")
-        self._state_copy_path_button = QPushButton("Copy path")
-        self.wire_button_actions(
-            {
-                "copy_all": self._state_copy_all_button,
-                "toggle_capture": self._state_capture_button,
-                "copy_path": self._state_copy_path_button,
-            },
-            build_state_toolbar_actions(
-                window=self,
-                copy_all=self._state_vm.copyAllEntries,
-                copy_path=self._state_vm.copyCapturePath,
-            ),
-        )
+        state_toolbar_manifest = self._toolbar_manifest("state")
+        if state_toolbar_manifest is not None:
+            _state_actions_frame, _state_actions_layout, state_action_buttons = self.create_manifest_toolbar(
+                state_toolbar_manifest
+            )
+            self._state_copy_all_button = state_action_buttons["copy_all"]
+            self._state_capture_button = state_action_buttons["toggle_capture"]
+            self._state_copy_path_button = state_action_buttons["copy_path"]
+            self.wire_button_actions(
+                state_action_buttons,
+                build_state_toolbar_actions(
+                    window=self,
+                    copy_all=self._state_vm.copyAllEntries,
+                    copy_path=self._state_vm.copyCapturePath,
+                ),
+            )
+        else:
+            self._state_copy_all_button = QPushButton("Copy all")
+            self._state_capture_button = QPushButton("Record")
+            self._state_copy_path_button = QPushButton("Copy path")
+            self.wire_button_actions(
+                {
+                    "copy_all": self._state_copy_all_button,
+                    "toggle_capture": self._state_capture_button,
+                    "copy_path": self._state_copy_path_button,
+                },
+                build_state_toolbar_actions(
+                    window=self,
+                    copy_all=self._state_vm.copyAllEntries,
+                    copy_path=self._state_vm.copyCapturePath,
+                ),
+            )
 
         toolbar_layout.addWidget(self._state_source_combo, 1)
         toolbar_layout.addWidget(self._state_copy_all_button)
@@ -159,11 +183,22 @@ class NativeDevToolsWindow(NativeToolWindowBase):
 
         self._runtime_summary = QLabel("No runtime data")
         self._runtime_summary.setObjectName("SummaryLabel")
-        self._runtime_copy_button = QPushButton("Copy all")
-        self.wire_button_actions(
-            {"copy_all": self._runtime_copy_button},
-            build_runtime_toolbar_actions(copy_all=self._runtime_vm.copyOverview),
-        )
+        runtime_toolbar_manifest = self._toolbar_manifest("runtime")
+        if runtime_toolbar_manifest is not None:
+            _runtime_actions_frame, _runtime_actions_layout, runtime_action_buttons = self.create_manifest_toolbar(
+                runtime_toolbar_manifest
+            )
+            self._runtime_copy_button = runtime_action_buttons["copy_all"]
+            self.wire_button_actions(
+                runtime_action_buttons,
+                build_runtime_toolbar_actions(copy_all=self._runtime_vm.copyOverview),
+            )
+        else:
+            self._runtime_copy_button = QPushButton("Copy all")
+            self.wire_button_actions(
+                {"copy_all": self._runtime_copy_button},
+                build_runtime_toolbar_actions(copy_all=self._runtime_vm.copyOverview),
+            )
 
         toolbar_layout.addWidget(self._runtime_summary, 1)
         toolbar_layout.addWidget(self._runtime_copy_button)
@@ -233,11 +268,22 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._auto_scroll_check = QCheckBox("Auto-scroll")
         self._auto_scroll_check.setChecked(True)
         self._auto_scroll_check.toggled.connect(self._set_console_auto_scroll)
-        self._console_clear_button = QPushButton("Clear")
-        self.wire_button_actions(
-            {"clear": self._console_clear_button},
-            build_console_toolbar_actions(window=self),
-        )
+        console_toolbar_manifest = self._toolbar_manifest("console")
+        if console_toolbar_manifest is not None:
+            _console_actions_frame, _console_actions_layout, console_action_buttons = self.create_manifest_toolbar(
+                console_toolbar_manifest
+            )
+            self._console_clear_button = console_action_buttons["clear"]
+            self.wire_button_actions(
+                console_action_buttons,
+                build_console_toolbar_actions(window=self),
+            )
+        else:
+            self._console_clear_button = QPushButton("Clear")
+            self.wire_button_actions(
+                {"clear": self._console_clear_button},
+                build_console_toolbar_actions(window=self),
+            )
 
         toolbar_layout.addWidget(self._debug_check)
         toolbar_layout.addWidget(self._info_check)

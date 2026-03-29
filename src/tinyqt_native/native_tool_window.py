@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from tinyqt.manifests import TinyQtButtonManifest
+from tinyqt.manifests import TinyQtButtonManifest, TinyQtToolbarManifest
 
 
 def with_alpha(color: str, alpha: float) -> str:
@@ -120,6 +120,23 @@ class NativeToolWindowBase(QWidget):
             buttons[button_manifest.button_id] = button
             ordered_widgets.append(button)
         frame, layout = self.create_footer_frame(*ordered_widgets)
+        return frame, layout, buttons
+
+    def create_manifest_toolbar(
+        self,
+        toolbar_manifest: TinyQtToolbarManifest,
+    ) -> tuple[QFrame, QHBoxLayout, dict[str, QPushButton]]:
+        frame, layout = (
+            self.create_compact_toolbar() if toolbar_manifest.compact else self.create_toolbar()
+        )
+        buttons: dict[str, QPushButton] = {}
+        for button_manifest in toolbar_manifest.buttons:
+            button = QPushButton(button_manifest.label)
+            button.setObjectName(
+                "PrimaryButton" if button_manifest.role == "primary" else "SecondaryButton"
+            )
+            buttons[button_manifest.button_id] = button
+            layout.addWidget(button)
         return frame, layout, buttons
 
     def wire_button_actions(
