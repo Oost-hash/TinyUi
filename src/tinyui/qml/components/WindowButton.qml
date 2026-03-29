@@ -25,15 +25,16 @@ AbstractButton {
                : "transparent"
     }
 
-    contentItem: Image {
-        source: btn.iconSource
-        sourceSize.width: 18
-        sourceSize.height: 18
-        fillMode: Image.PreserveAspectFit
-        smooth: true
-
-        anchors.centerIn: parent
-        width: 18
-        height: 18
+    contentItem: Item {
+        Image {
+            anchors.centerIn: parent
+            width: 16
+            height: 16
+            source: btn.iconSource
+            sourceSize.width: width
+            sourceSize.height: height
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+        }
     }
 }

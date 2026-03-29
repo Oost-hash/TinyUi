@@ -8,21 +8,21 @@ import time
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QWidget
 
-from tinycore.logging import LogInspector, configure
+from tinycore.logging import configure
 from tinycore.paths import AppPaths
 from tinycore.plugin.user_files import sync_user_files
 from tinycore.runtime.boot import boot_runtime, discover_manifests
 from tinyqt.app import create_configured_application
 from tinyqt.apps import TINYUI_HOST_ASSEMBLY
-from tinyqt.apps.tinyui import _build_registrations
-from tinyqt.app_identity import APP_NAME, VERSION
-from tinyqt.host import LazySettingsController
-from tinyqt.theme import Theme
-from tinyui.ui_bindings import (
-    bind_statusbar_plugin_switching,
-    bind_tab_plugin_switching,
-    bind_theme_settings,
+from tinyqt.apps.tinyui import (
+    _bind_statusbar_plugin_switching,
+    _bind_tab_plugin_switching,
+    _bind_theme_settings,
+    _build_registrations,
 )
+from tinyqt.app_identity import APP_NAME, VERSION
+from tinyqt.host import create_settings_controller
+from tinyqt.theme import Theme
 from tinyui.viewmodels.core_viewmodel import CoreViewModel
 from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
 from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
@@ -71,7 +71,6 @@ def main() -> int:
     )
 
     theme = Theme()
-    log_inspector = LogInspector()
     statusbar_vm = StatusBarViewModel()
     settings_vm = SettingsPanelViewModel()
     core_vm = CoreViewModel(runtime)
@@ -81,14 +80,14 @@ def main() -> int:
         label = participant.manifest.display_name or participant.name
         tab_vm.register(participant.name, label)
 
-    bind_tab_plugin_switching(runtime, tab_vm)
-    bind_statusbar_plugin_switching(runtime, statusbar_vm)
-    bind_theme_settings(runtime, core_vm, settings_vm, theme)
+    _bind_tab_plugin_switching(runtime, tab_vm)
+    _bind_statusbar_plugin_switching(runtime, statusbar_vm)
+    _bind_theme_settings(runtime, core_vm, settings_vm, theme)
 
-    controller = LazySettingsController(
+    controller = create_settings_controller(
+        app=None,
         core=runtime,
         theme=theme,
-        log_inspector=log_inspector,
         build_registrations=lambda _devtools_ui: _build_registrations(
             theme=theme,
             core_vm=core_vm,
@@ -97,7 +96,6 @@ def main() -> int:
             tab_vm=tab_vm,
             devtools_ui=None,
         ),
-        extra_context=None,
     )
 
     controller.toggle()

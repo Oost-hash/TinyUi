@@ -21,13 +21,19 @@
 
 import QtQuick
 import QtQuick.Controls
-import TinyUI
+import QtQuick.Window
 
 AbstractButton {
     id: btn
+
+    readonly property var hostWindow: Window.window
+    readonly property var hostTheme: hostWindow && hostWindow.theme ? hostWindow.theme : null
+
     property string iconText: ""
     property bool selected: false
-    property string textFont: Theme.fontFamily
+    property string textFont: hostTheme ? hostTheme.fontFamily : "Segoe UI"
+    readonly property color accentColor: hostTheme ? hostTheme.accent : "#74ADE8"
+    readonly property color textColor: hostTheme ? hostTheme.text : "#FFFFFF"
 
     width: 28
     height: parent.height
@@ -39,7 +45,7 @@ AbstractButton {
         text: btn.iconText
         font.family: btn.textFont
         font.pixelSize: 14
-        color: btn.selected ? Theme.accent : "#FFFFFF"
+        color: btn.selected ? accentColor : textColor
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
     }

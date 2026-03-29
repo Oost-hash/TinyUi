@@ -24,53 +24,19 @@ from __future__ import annotations
 
 from tinycore.paths import AppPaths
 
+from tinyqt.app_manifest_loader import load_tinyqt_app_manifests
 from tinyqt.manifests import (
     TinyQtAppManifest,
-    TinyQtPanelManifest,
-    TinyQtShellManifest,
-    validate_manifest,
 )
 
 
 def build_tinydevtools_manifest(paths: AppPaths) -> TinyQtAppManifest:
-    """Build the hosted TinyDevTools manifest from the current source layout."""
-    return validate_manifest(
-        TinyQtAppManifest(
-            app_id="tinydevtools.window",
-            title="Dev Tools",
-            root_qml=paths.qml_dir("tinydevtools") / "DevToolsRoot.qml",
-            shell=TinyQtShellManifest(
-                use_window_menu_bar=True,
-                use_tab_bar=True,
-                use_status_bar=False,
-                lazy_panel_loading=True,
-            ),
-            panels=(
-                TinyQtPanelManifest(
-                    panel_id="state",
-                    label="State",
-                    qml_type="DevToolsStateTab",
-                    package="TinyDevTools",
-                ),
-                TinyQtPanelManifest(
-                    panel_id="runtime",
-                    label="Runtime",
-                    qml_type="DevToolsRuntimeTab",
-                    package="TinyDevTools",
-                ),
-                TinyQtPanelManifest(
-                    panel_id="console",
-                    label="Console",
-                    qml_type="ConsolePane",
-                    package="TinyDevTools",
-                ),
-            ),
-            required_singletons=(
-                "Theme",
-                "LogViewModel",
-                "LogSettingsViewModel",
-                "RuntimeViewModel",
-                "StateMonitorViewModel",
-            ),
-        )
-    )
+    """Build the hosted TinyDevTools manifest from tinydevtools/manifest.toml."""
+    manifest_path = paths.source_root / "tinydevtools" / "manifest.toml" if paths.source_root else None
+    if manifest_path is None:
+        raise RuntimeError("TinyDevTools manifest requires a source_root in source runtime mode")
+    manifests = load_tinyqt_app_manifests(manifest_path, paths=paths)
+    for manifest in manifests:
+        if manifest.app_id == "tinydevtools.window":
+            return manifest
+    raise RuntimeError(f"Missing TinyDevTools app manifest 'tinydevtools.window' in {manifest_path}")

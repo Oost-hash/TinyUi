@@ -11,13 +11,20 @@ Rectangle {
                                ? hostWindow.windowTitle
                                : ""
     property bool menuOpen: false
-    readonly property url menuIconSource: Qt.resolvedUrl("../tinyui/assets/icons/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
-    readonly property url minimizeIconSource: Qt.resolvedUrl("../tinyui/assets/icons/window-minimize.svg")
-    readonly property url maximizeIconSource: Qt.resolvedUrl("../tinyui/assets/icons/window-maximize.svg")
-    readonly property url restoreIconSource: Qt.resolvedUrl("../tinyui/assets/icons/window-restore.svg")
-    readonly property url closeIconSource: Qt.resolvedUrl("../tinyui/assets/icons/window-close.svg")
+    readonly property var menuItems: hostWindow && hostWindow.menuItems ? hostWindow.menuItems : [
+        { "label": "Settings", "action": "settings", "separator": false, "visible": true },
+        { "label": "Dev Tools", "action": "devtools", "separator": false, "visible": hostWindow && hostWindow.devToolsAvailable },
+        { "label": "", "action": null, "separator": true, "visible": true },
+        { "label": "Close", "action": "close", "separator": false, "visible": true }
+    ]
+    readonly property url menuIconSource: Qt.resolvedUrl("../assets/icons/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
+    readonly property url minimizeIconSource: Qt.resolvedUrl("../assets/icons/window-minimize.svg")
+    readonly property url maximizeIconSource: Qt.resolvedUrl("../assets/icons/window-maximize.svg")
+    readonly property url restoreIconSource: Qt.resolvedUrl("../assets/icons/window-restore.svg")
+    readonly property url closeIconSource: Qt.resolvedUrl("../assets/icons/window-close.svg")
 
     height: 32
+    z: 20
     color: hostTheme ? hostTheme.surfaceRaised : "#3b414d"
 
     DragHandler {
@@ -77,19 +84,17 @@ Rectangle {
 
     Item {
         id: menuDropdown
-        z: 20
+        z: 10
         x: 0
         y: root.height
         width: 164
         height: menuColumn.implicitHeight
         visible: root.menuOpen
 
-        Rectangle {
-            anchors.fill: parent
-            color: hostTheme ? hostTheme.surfaceAlt : "#2f343e"
-            border.width: 1
-            border.color: hostTheme ? hostTheme.border : "#464b57"
-        }
+        Rectangle { anchors.fill: parent; color: hostTheme ? hostTheme.surfaceAlt : "#2f343e" }
+        Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: hostTheme ? hostTheme.border : "#464b57" }
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: hostTheme ? hostTheme.border : "#464b57" }
+        Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: hostTheme ? hostTheme.border : "#464b57" }
 
         Column {
             id: menuColumn
@@ -97,22 +102,30 @@ Rectangle {
             spacing: 0
 
             Repeater {
-                model: [
-                    { "label": "Settings", "action": "settings" },
-                    { "label": "Dev Tools", "action": "devtools", "visible": hostWindow && hostWindow.devToolsAvailable },
-                    { "label": "Close", "action": "close" }
-                ]
+                model: root.menuItems
 
                 delegate: Rectangle {
                     required property var modelData
                     visible: modelData.visible === undefined ? true : !!modelData.visible
-                    width: parent.width
-                    height: visible ? 28 : 0
+                    width: menuDropdown.width
+                    height: visible ? (modelData.separator ? 9 : 28) : 0
                     color: menuItemMouse.containsMouse
                         ? (hostTheme ? hostTheme.surfaceRaised : "#3b414d")
                         : "transparent"
 
+                    Rectangle {
+                        visible: !!modelData.separator
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        height: 1
+                        color: hostTheme ? hostTheme.border : "#464b57"
+                    }
+
                     Text {
+                        visible: !modelData.separator
                         anchors.left: parent.left
                         anchors.leftMargin: 12
                         anchors.verticalCenter: parent.verticalCenter
@@ -125,6 +138,7 @@ Rectangle {
                         id: menuItemMouse
                         anchors.fill: parent
                         hoverEnabled: true
+                        enabled: !modelData.separator
                         onClicked: {
                             root.menuOpen = false
                             if (!hostWindow)
@@ -138,20 +152,6 @@ Rectangle {
                         }
                     }
                 }
-            }
-        }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        visible: root.menuOpen
-        z: -1
-        propagateComposedEvents: true
-        acceptedButtons: Qt.AllButtons
-        onPressed: (mouse) => {
-            if (mouse.x > menuDropdown.width || mouse.y > root.height + menuDropdown.height) {
-                root.menuOpen = false
-                mouse.accepted = false
             }
         }
     }

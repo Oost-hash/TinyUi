@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from time import perf_counter
-from typing import Any, cast
+from typing import Any, Protocol, cast
 
 from PySide6.QtCore import QObject
 
@@ -45,22 +45,13 @@ from tinyqt.optional_features import (
     get_devtools_monitor_info,
 )
 from tinyqt.launch import QtLaunchSpec
-from tinyqt.manifests import (
-    TinyQtAppManifest,
-    TinyQtPanelManifest,
-    TinyQtShellManifest,
-    validate_manifest,
-)
+from tinyqt.manifests import TinyQtAppManifest
 from tinyqt.registration import RegistrationMap, SingletonRegistration
 
 from tinyqt.app_identity import APP_NAME, VERSION
 from tinyqt.app_info import AppInfo
+from tinyqt.app_manifest_loader import load_tinyqt_app_manifests
 from tinyqt.theme import Theme
-from tinyui.ui_bindings import (
-    bind_statusbar_plugin_switching,
-    bind_tab_plugin_switching,
-    bind_theme_settings,
-)
 from tinyui.viewmodels.core_viewmodel import CoreViewModel
 from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
 from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
@@ -74,6 +65,14 @@ StatusBarViewModelClass = cast(type[StatusBarViewModel], StatusBarViewModel)
 SettingsPanelViewModelClass = cast(type[SettingsPanelViewModel], SettingsPanelViewModel)
 TabViewModelClass = cast(type[TabViewModel], TabViewModel)
 AppInfoClass = cast(type[AppInfo], AppInfo)
+
+
+class _ThemeLike(Protocol):
+    def load(self, name: str, /) -> None: ...
+
+
+def _maybe_int(value: object) -> int | None:
+    return int(value) if isinstance(value, int | float | str) else None
 
 
 def _status_items(core) -> list[str]:
@@ -143,32 +142,110 @@ def _apply_tinyui_host_state(core, statusbar_vm: StatusBarViewModel, window: QOb
     _apply_widget_editor_state(core, window)
 
 
-def build_tinyui_manifest(paths: AppPaths) -> TinyQtAppManifest:
-    """Build the hosted TinyUI manifest from the rebuilt launch-first shell."""
-    if paths.source_root is None:
-        raise RuntimeError("TinyUI manifest requires a source_root in source runtime mode")
-    return validate_manifest(
-        TinyQtAppManifest(
-            app_id="tinyui.main",
-            title=APP_NAME,
-            root_qml=paths.source_root / "qml_app" / "TinyUiMain.qml",
-            shell=TinyQtShellManifest(
-                use_window_menu_bar=True,
-                use_tab_bar=True,
-                use_status_bar=True,
-                lazy_panel_loading=True,
-            ),
-            panels=(
-                TinyQtPanelManifest(
-                    panel_id="widgets",
-                    label="Widgets",
-                    qml_type="WidgetTab",
-                    package="TinyUI",
-                ),
-            ),
-            optional_features=("devtools_ui",),
-        )
+def _bind_statusbar_plugin_switching(core, statusbar_view_model: object) -> None:
+    if not isinstance(statusbar_view_model, QObject):
+        return
+
+    plugin_names = [
+        participant.name for participant in core.runtime.plugin_runtime.registered_participants
+    ]
+    if not plugin_names:
+        return
+
+    def _on_plugin_switch() -> None:
+        index = _maybe_int(statusbar_view_model.property("activePluginIndex"))
+        if index is None:
+            return
+        if 0 <= index < len(plugin_names):
+            core.activation.activate(plugin_names[index])
+
+    active_changed = cast(Any, getattr(statusbar_view_model, "activePluginIndexChanged", None))
+    if active_changed is not None:
+        active_changed.connect(_on_plugin_switch)
+
+
+def _bind_tab_plugin_switching(core, tab_view_model: object) -> None:
+    if not isinstance(tab_view_model, QObject):
+        return
+
+    plugin_names = [
+        participant.name for participant in core.runtime.plugin_runtime.registered_participants
+    ]
+    if not plugin_names:
+        return
+
+    def _on_tab_switch() -> None:
+        index = _maybe_int(tab_view_model.property("currentIndex"))
+        if index is None:
+            return
+        if 0 <= index < len(plugin_names):
+            core.activation.activate(plugin_names[index])
+
+    current_index_changed = cast(Any, getattr(tab_view_model, "currentIndexChanged", None))
+    if current_index_changed is not None:
+        current_index_changed.connect(_on_tab_switch)
+
+
+def _bind_theme_settings(
+    core,
+    core_view_model: object,
+    settings_panel_view_model: object,
+    theme: _ThemeLike,
+) -> None:
+    if not isinstance(core_view_model, QObject) or not isinstance(
+        settings_panel_view_model, QObject
+    ):
+        return
+
+    def _apply_tinyui_settings() -> None:
+        theme_name = core.host.persistence.get_setting("TinyUI", "theme")
+        if theme_name:
+            theme.load(str(theme_name))
+
+    def _save_setting(plugin_name: str) -> None:
+        core.host.persistence.save_settings(plugin_name)
+
+    settings_changed = cast(Any, getattr(core_view_model, "settingsChanged", None))
+    setting_value_changed = cast(
+        Any, getattr(core_view_model, "settingValueChanged", None)
     )
+    setting_change_requested = cast(
+        Any, getattr(settings_panel_view_model, "settingChangeRequested", None)
+    )
+    set_setting_value = cast(Any, getattr(core_view_model, "setSettingValue", None))
+
+    if settings_changed is not None:
+        settings_changed.connect(_apply_tinyui_settings)
+    if setting_value_changed is not None:
+        setting_value_changed.connect(_save_setting)
+    if setting_change_requested is not None and callable(set_setting_value):
+        setting_change_requested.connect(set_setting_value)
+
+    _apply_tinyui_settings()
+
+
+def build_tinyui_manifest(paths: AppPaths) -> TinyQtAppManifest:
+    """Build the hosted TinyUI main-window manifest from tinyui/manifest.toml."""
+    manifest_path = paths.source_root / "tinyui" / "manifest.toml" if paths.source_root else None
+    if manifest_path is None:
+        raise RuntimeError("TinyUI manifest requires a source_root in source runtime mode")
+    manifests = load_tinyqt_app_manifests(manifest_path, paths=paths)
+    for manifest in manifests:
+        if manifest.app_id == "tinyui.main":
+            return manifest
+    raise RuntimeError(f"Missing TinyUI app manifest 'tinyui.main' in {manifest_path}")
+
+
+def build_tinyui_settings_manifest(paths: AppPaths) -> TinyQtAppManifest:
+    """Build the native TinyUI settings manifest from tinyui/manifest.toml."""
+    manifest_path = paths.source_root / "tinyui" / "manifest.toml" if paths.source_root else None
+    if manifest_path is None:
+        raise RuntimeError("TinyUI manifest requires a source_root in source runtime mode")
+    manifests = load_tinyqt_app_manifests(manifest_path, paths=paths)
+    for manifest in manifests:
+        if manifest.app_id == "tinyui.settings":
+            return manifest
+    raise RuntimeError(f"Missing TinyUI app manifest 'tinyui.settings' in {manifest_path}")
 
 
 @dataclass
@@ -301,20 +378,20 @@ def build_tinyui_launch_spec(core) -> QtLaunchSpec:
         label = participant.manifest.display_name or participant.name
         tab_vm.register(participant.name, label)
 
-    bind_tab_plugin_switching(core, tab_vm)
-    bind_statusbar_plugin_switching(core, statusbar_vm)
-    bind_theme_settings(core, core_vm, settings_vm, theme)
+    _bind_tab_plugin_switching(core, tab_vm)
+    _bind_statusbar_plugin_switching(core, statusbar_vm)
+    _bind_theme_settings(core, core_vm, settings_vm, theme)
 
     _log_startup_phase(log, "viewmodels", phase_start)
 
     def _on_host_ready(host) -> None:
-        from tinyqt.host import LazySettingsController
+        from tinyqt.host import create_settings_controller
 
         _apply_tinyui_host_state(core, statusbar_vm, host.window)
-        settings_controller = LazySettingsController(
+        settings_controller = create_settings_controller(
+            app=None,
             core=core,
             theme=theme,
-            log_inspector=log_inspector,
             build_registrations=lambda _devtools_ui: _build_registrations(
                 theme=theme,
                 core_vm=core_vm,
@@ -323,7 +400,6 @@ def build_tinyui_launch_spec(core) -> QtLaunchSpec:
                 tab_vm=tab_vm,
                 devtools_ui=None,
             ),
-            extra_context=None,
         )
         host.window.setProperty("settingsController", settings_controller)
         host.window.setProperty("settingsAvailable", True)
@@ -331,7 +407,7 @@ def build_tinyui_launch_spec(core) -> QtLaunchSpec:
     return QtLaunchSpec(
         app_name=APP_NAME,
         version=VERSION,
-        qml_path=app_manifest.root_qml or (core.paths.source_root / "qml_app" / "TinyUiMain.qml"),
+        qml_path=app_manifest.root_qml or (core.paths.source_root / "tinyqt_app" / "TinyUiMain.qml"),
         app_manifest=app_manifest,
         theme=theme,
         log_inspector=log_inspector,

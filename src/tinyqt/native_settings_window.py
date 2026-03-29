@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 )
 
 from tinyui_schema import SettingsSpec
+from tinyqt.native_tool_window import NativeToolWindowBase
 
 
 @dataclass(frozen=True)
@@ -34,21 +35,26 @@ class _SettingEntry:
     value: Any
 
 
-class NativeSettingsWindow(QWidget):
+class NativeSettingsWindow(NativeToolWindowBase):
     """Native Qt settings window used for the separate TinyUI settings surface."""
 
-    def __init__(self, *, core, theme, settings_view_model) -> None:
-        super().__init__(None, Qt.WindowType.Window)
+    def __init__(self, *, core, theme, settings_view_model, manifest) -> None:
+        super().__init__(
+            title=manifest.title,
+            eyebrow=manifest.window.eyebrow or "SETTINGS",
+            subtitle=manifest.window.subtitle,
+            theme=theme,
+            object_name="NativeSettingsWindow",
+            width=manifest.window.default_width,
+            height=manifest.window.default_height,
+            min_width=manifest.window.min_width,
+            min_height=manifest.window.min_height,
+        )
         self._core = core
         self._theme = theme
         self._settings_view_model = settings_view_model
         self._pending: dict[tuple[str, str], Any] = {}
         self._groups: list[tuple[str, list[SettingsSpec]]] = []
-
-        self.setWindowTitle("Settings")
-        self.resize(960, 620)
-        self.setMinimumSize(680, 420)
-        self.setObjectName("NativeSettingsWindow")
 
         self._plugin_list = QListWidget()
         self._plugin_list.setObjectName("PluginList")
@@ -57,21 +63,12 @@ class NativeSettingsWindow(QWidget):
         self._plugin_list.setSpacing(1)
         self._plugin_list.currentRowChanged.connect(self._render_plugin)
 
-        self._eyebrow_label = QLabel("SETTINGS")
-        self._eyebrow_label.setObjectName("EyebrowLabel")
-        self._summary_title = QLabel("Settings")
+        self._summary_title = self._title_label
         self._summary_title.setObjectName("SummaryTitle")
         self._summary_text = QLabel("")
         self._summary_text.setObjectName("SummaryText")
         self._summary_text.setWordWrap(True)
-        self._summary_card = QFrame()
-        self._summary_card.setObjectName("SummaryCard")
-        self._summary_card_layout = QVBoxLayout(self._summary_card)
-        self._summary_card_layout.setContentsMargins(16, 14, 16, 14)
-        self._summary_card_layout.setSpacing(6)
-        self._summary_card_layout.addWidget(self._eyebrow_label)
-        self._summary_card_layout.addWidget(self._summary_title)
-        self._summary_card_layout.addWidget(self._summary_text)
+        self._summary_layout.addWidget(self._summary_text)
 
         self._content_container = QWidget()
         self._content_layout = QVBoxLayout(self._content_container)
@@ -124,23 +121,21 @@ class NativeSettingsWindow(QWidget):
         splitter.setStretchFactor(1, 1)
         splitter.setSizes([220, 740])
 
-        root_layout = QHBoxLayout(self)
+        content_frame = QWidget()
+        root_layout = QHBoxLayout(content_frame)
         root_layout.setContentsMargins(18, 18, 18, 18)
         root_layout.setSpacing(0)
         root_layout.addWidget(splitter)
+        self.add_body_widget(content_frame, stretch=1)
 
         self._apply_theme()
         theme.changed.connect(self._apply_theme)
 
     def _apply_theme(self) -> None:
+        check_icon = "C:/Users/rroet/Documents/TinyUi/src/assets/icons/check-small.svg"
         self.setStyleSheet(
             f"""
-            QWidget#NativeSettingsWindow {{
-                background-color: {self._theme.surface};
-                color: {self._theme.text};
-                font-family: "{self._theme.fontFamily}";
-                font-size: {self._theme.fontSizeBase}px;
-            }}
+            {self.apply_shared_chrome_styles()}
             QWidget#RightPanel {{
                 background-color: transparent;
             }}
@@ -171,17 +166,6 @@ class NativeSettingsWindow(QWidget):
                 background-color: {self._theme.surface};
                 border-left: 3px solid {self._theme.accent};
                 color: {self._theme.text};
-            }}
-            QLabel#EyebrowLabel {{
-                color: {self._theme.accent};
-                font-size: {self._theme.fontSizeSmall}px;
-                font-weight: 700;
-                letter-spacing: 1px;
-            }}
-            QFrame#SummaryCard {{
-                background-color: {self._theme.surfaceAlt};
-                border: 1px solid {self._theme.border};
-                border-radius: 6px;
             }}
             QLabel#SummaryTitle {{
                 color: {self._theme.text};
@@ -247,6 +231,19 @@ class NativeSettingsWindow(QWidget):
             }}
             QCheckBox {{
                 spacing: 8px;
+            }}
+            QCheckBox::indicator {{
+                width: 14px;
+                height: 14px;
+            }}
+            QCheckBox::indicator:unchecked {{
+                background-color: {self._theme.surfaceFloating};
+                border: 1px solid {self._theme.border};
+            }}
+            QCheckBox::indicator:checked {{
+                background-color: {self._theme.accent};
+                border: 1px solid {self._theme.accent};
+                image: url({check_icon});
             }}
             """
         )

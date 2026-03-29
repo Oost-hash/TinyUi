@@ -16,17 +16,17 @@ from tinycore.plugin.user_files import sync_user_files
 from tinycore.runtime.boot import boot_runtime, discover_manifests
 from tinyqt.app import create_configured_application
 from tinyqt.apps import TINYUI_HOST_ASSEMBLY
-from tinyqt.apps.tinyui import _build_registrations
+from tinyqt.apps.tinyui import (
+    _bind_statusbar_plugin_switching,
+    _bind_tab_plugin_switching,
+    _bind_theme_settings,
+    _build_registrations,
+)
 from tinyqt.app_identity import APP_NAME, VERSION
 from tinyqt.host import attach_window_content, create_window_host
 from tinyqt.launch import _qt_message_handler
 from tinyqt.manifests import TinyQtAppManifest, TinyQtShellManifest, validate_manifest
 from tinyqt.theme import Theme
-from tinyui.ui_bindings import (
-    bind_statusbar_plugin_switching,
-    bind_tab_plugin_switching,
-    bind_theme_settings,
-)
 from tinyui.viewmodels.core_viewmodel import CoreViewModel
 from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
 from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
@@ -96,16 +96,16 @@ def main() -> int:
         label = participant.manifest.display_name or participant.name
         tab_vm.register(participant.name, label)
 
-    bind_tab_plugin_switching(runtime, tab_vm)
-    bind_statusbar_plugin_switching(runtime, statusbar_vm)
-    bind_theme_settings(runtime, core_vm, settings_vm, theme)
+    _bind_tab_plugin_switching(runtime, tab_vm)
+    _bind_statusbar_plugin_switching(runtime, statusbar_vm)
+    _bind_theme_settings(runtime, core_vm, settings_vm, theme)
 
     if paths.source_root is None:
         print("Settings smoke failed: source_root is unavailable in this runtime mode")
         runtime.shutdown()
         return 1
 
-    dialog_qml = Path(args.qml_file).resolve() if args.qml_file else paths.source_root / "qml_app" / "TinyUiSettingsWindow.qml"
+    dialog_qml = Path(args.qml_file).resolve() if args.qml_file else paths.source_root / "tinyqt_app" / "TinyUiSettingsWindow.qml"
     dialog_content_qml = (
         Path(args.content_qml_file).resolve()
         if args.content_qml_file

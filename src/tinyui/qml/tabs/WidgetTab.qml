@@ -12,6 +12,7 @@ Rectangle {
     property var widgetItems: []
     property string sectionTitle: "Widgets"
     property int selectedIndex: -1
+    property var demoLeaseWidget: null
     property var thresholdPalette: [
         "#ff5252",
         "#f4b400",
@@ -35,6 +36,24 @@ Rectangle {
     readonly property int fontBase: hostTheme ? hostTheme.fontSizeBase : 13
     readonly property int fontSmall: hostTheme ? hostTheme.fontSizeSmall : 11
     readonly property string fontFamily: hostTheme ? hostTheme.fontFamily : "Segoe UI"
+
+    onSelectedWidgetChanged: {
+        if (demoLeaseWidget
+                && demoLeaseWidget !== selectedWidget
+                && typeof demoLeaseWidget.releaseDemo === "function"
+                && root.itemValue(demoLeaseWidget, "demoRequested", false)) {
+            demoLeaseWidget.releaseDemo()
+        }
+        if (selectedWidget
+                && root.itemValue(selectedWidget, "supportsDemoMode", false)
+                && typeof selectedWidget.requestDemo === "function") {
+            if (!root.itemValue(selectedWidget, "demoRequested", false))
+                selectedWidget.requestDemo()
+            demoLeaseWidget = selectedWidget
+            return
+        }
+        demoLeaseWidget = null
+    }
 
     function itemCount(items) {
         if (!items || items.length === undefined || items.length === null)
@@ -396,7 +415,7 @@ Rectangle {
                     MouseArea {
                         anchors.fill: parent
                         anchors.rightMargin: 56
-                        onClicked: root.selectedIndex = index
+                        onClicked: root.selectedIndex = root.selectedIndex === index ? -1 : index
                     }
 
                     HoverHandler { id: rowHover }
@@ -622,17 +641,6 @@ Rectangle {
                         }
                     }
 
-                    EditRow {
-                        label: "Enabled"
-
-                        ToggleSwitch {
-                            anchors.right: parent.right
-                            anchors.rightMargin: 24
-                            anchors.verticalCenter: parent.verticalCenter
-                            checked: root.selectedEnabled
-                            onToggled: (value) => root.updateWidgetItem(root.selectedIndex, { "enabled": value })
-                        }
-                    }
                     SectionHeader { text: "Provider" }
 
                     EditRow {
@@ -649,29 +657,6 @@ Rectangle {
                     EditRow {
                         label: "Mode"
                         description: root.selectedWidget ? root.itemValue(root.selectedWidget, "providerMode", "") : ""
-                    }
-
-                    EditRow {
-                        visible: root.selectedSupportsDemoMode
-                        label: "Preview"
-                        description: root.selectedDemoRequested
-                            ? "Preview sweep is active for this widget"
-                            : "Enable a temporary demo sweep for this widget"
-
-                        ToggleSwitch {
-                            anchors.right: parent.right
-                            anchors.rightMargin: 24
-                            anchors.verticalCenter: parent.verticalCenter
-                            checked: root.selectedDemoRequested
-                            onToggled: (value) => {
-                                if (!root.selectedWidget)
-                                    return
-                                if (value && typeof root.selectedWidget.requestDemo === "function")
-                                    root.selectedWidget.requestDemo()
-                                else if (!value && typeof root.selectedWidget.releaseDemo === "function")
-                                    root.selectedWidget.releaseDemo()
-                            }
-                        }
                     }
 
                     EditRow {

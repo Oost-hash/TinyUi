@@ -25,18 +25,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, cast
 
-from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
 from tinycore.runtime.boot import HostOverlayBuild, HostStateMonitorBuild
 from tinycore.runtime.core_runtime import CoreRuntime
 from tinycore.runtime.plugins.participants import PluginParticipant
 from tinycore.runtime.plugins.provider_activity import ProviderActivity
 from tinycore.services import HostServices, RuntimeServices
+from tinyqt.devtools_support import build_devtools_state_monitor_attachment
 from tinywidgets.overlay import WidgetOverlay
 from tinywidgets.spec import load_widgets_toml
-
-_log = get_logger(__name__)
-
 
 class _StateMonitorViewModelLike(Protocol):
     REFRESH_INTERVAL_MS: int
@@ -94,14 +91,4 @@ def build_devtools_runtime_attachment(
     overlay: object,
 ) -> HostStateMonitorBuild:
     """Build optional devtools runtime attachment without making callers own the package seam."""
-    try:
-        from tinydevtools.host import attach_runtime
-    except ImportError:
-        _log.info("devtools runtime attachment unavailable")
-        return HostStateMonitorBuild(state_monitor=None, extra_context={})
-
-    attachment = attach_runtime(runtime, cast(WidgetOverlay, overlay))
-    return HostStateMonitorBuild(
-        state_monitor=attachment.state_monitor,
-        extra_context=attachment.extra_context,
-    )
+    return build_devtools_state_monitor_attachment(runtime, cast(WidgetOverlay, overlay))

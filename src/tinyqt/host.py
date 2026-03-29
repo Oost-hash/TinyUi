@@ -31,12 +31,14 @@ from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine, QQmlComponent
 from PySide6.QtQuick import QQuickItem, QQuickWindow
 
+from tinyqt.devtools_support import DevToolsUiAttachment, attach_devtools_ui
 from tinyqt.engine import create_engine
-from tinyqt.apps import build_tinydevtools_manifest
+from tinyqt.apps.devtools import build_tinydevtools_manifest
 from tinyqt.manifests import (
     TinyQtAppManifest,
     manifest_eager_panel_indexes,
     manifest_has_optional_feature,
+    manifest_menu_items,
     manifest_panel_labels,
     validate_required_singletons,
 )
@@ -47,10 +49,6 @@ from tinyqt.registration import (
     register_singletons,
 )
 from tinyqt.windowing import WindowingAttachment, attach_windowing
-
-if TYPE_CHECKING:
-    from tinydevtools.host import DevToolsUiAttachment
-
 
 class WindowGeometryLike(Protocol):
     def setX(self, value: int, /) -> None: ...
@@ -63,74 +61,32 @@ class WindowGeometryLike(Protocol):
     def height(self) -> int: ...
 
 
-class LazyDevToolsController(QObject):
-    """Open the DevTools window on demand without polluting main-window startup."""
-
-    def __init__(self, *, app, core, theme: object, log_inspector: object) -> None:
-        super().__init__(cast(QObject | None, app))
-        self._app = app
-        self._core = core
-        self._theme = theme
-        self._log_inspector = log_inspector
-        self._window = None
-        self._initialized = False
-
-    @Slot()
-    def toggle(self) -> None:
-        if not self._initialized:
-            from tinyqt.native_devtools_window import NativeDevToolsWindow
-
-            self._window = NativeDevToolsWindow(
-                core=self._core,
-                theme=self._theme,
-                log_inspector=self._log_inspector,
-            )
-            self._initialized = True
-            if self._window is None:
-                return
-
-        if self._window is None:
-            return
-
-        self._window.toggle()
+class NativeToolWindowLike(Protocol):
+    def toggle(self) -> None: ...
 
 
-class LazySettingsController(QObject):
-    """Open a separate TinyUI settings window on demand."""
+NativeWindowFactory = Callable[[TinyQtAppManifest], NativeToolWindowLike]
+
+
+class LazyNativeWindowController(QObject):
+    """Open one manifest-backed native secondary window on demand."""
 
     def __init__(
         self,
         *,
-        core,
-        theme: object,
-        log_inspector: object,
-        build_registrations: Callable[[object | None], list[SingletonRegistration]],
-        extra_context: RegistrationMap | None = None,
+        app,
+        manifest: TinyQtAppManifest,
+        build_window: NativeWindowFactory,
     ) -> None:
-        app = cast(QObject | None, QGuiApplication.instance())
-        super().__init__(app)
-        self._core = core
-        self._theme = theme
-        self._build_registrations = build_registrations
-        self._window = None
+        super().__init__(cast(QObject | None, app))
+        self._manifest = manifest
+        self._build_window = build_window
+        self._window: NativeToolWindowLike | None = None
 
     @Slot()
     def toggle(self) -> None:
         if self._window is None:
-            from tinyqt.native_settings_window import NativeSettingsWindow
-
-            registrations = self._build_registrations(None)
-            settings_vm = next(
-                registration.instance
-                for registration in registrations
-                if registration.name == "SettingsPanelViewModel"
-            )
-            self._window = NativeSettingsWindow(
-                core=self._core,
-                theme=self._theme,
-                settings_view_model=settings_vm,
-            )
-
+            self._window = self._build_window(self._manifest)
         self._window.toggle()
 
 
@@ -139,6 +95,7 @@ def apply_manifest_shell_state(window: QObject, manifest: TinyQtAppManifest) -> 
     shell = manifest.shell
     property_values: dict[str, object] = {
         "windowTitle": manifest.title,
+        "menuItems": manifest_menu_items(manifest),
         "tabLabels": manifest_panel_labels(manifest),
         "currentTab": 0,
         "showTabBar": shell.use_tab_bar,
@@ -155,8 +112,26 @@ class QtWindowHost:
     engine: QQmlApplicationEngine
     window: QQuickWindow
     devtools_ui: DevToolsUiAttachment | None
-    devtools_controller: LazyDevToolsController | None
+    devtools_controller: LazyNativeWindowController | None
     windowing: WindowingAttachment
+
+
+def build_native_window_controller(
+    *,
+    app,
+    manifest: TinyQtAppManifest,
+    build_window: NativeWindowFactory,
+) -> LazyNativeWindowController:
+    """Create a manifest-backed native secondary-window controller."""
+    if manifest.window.presentation != "native":
+        raise ValueError(
+            f"TinyQt manifest '{manifest.app_id}' does not declare a native presentation"
+        )
+    return LazyNativeWindowController(
+        app=app,
+        manifest=manifest,
+        build_window=build_window,
+    )
 
 
 def _maybe_int(value: object) -> int | None:
@@ -229,16 +204,12 @@ def attach_optional_devtools_ui(
     """Attach optional devtools UI viewmodels through the shared Qt host seam."""
     if host_manifest is not None and not manifest_has_optional_feature(host_manifest, "devtools_ui"):
         return None
-    try:
-        from tinydevtools.host import attach_ui
-    except ImportError:
-        return None
 
     devtools_manifest = build_tinydevtools_manifest(core.paths)
     qml_path = devtools_manifest.root_qml
     if qml_path is None:
         return None
-    return attach_ui(
+    return attach_devtools_ui(
         engine,
         log_inspector,
         qml_path=qml_path,
@@ -322,6 +293,68 @@ def attach_window_content(
     return True
 
 
+def create_settings_controller(
+    *,
+    app,
+    core,
+    theme: object,
+    build_registrations: Callable[[object | None], list[SingletonRegistration]],
+) -> LazyNativeWindowController:
+    """Create the shared TinyUI settings controller from its manifest."""
+    from tinyqt.apps.tinyui import build_tinyui_settings_manifest
+
+    manifest = build_tinyui_settings_manifest(core.paths)
+
+    def _build_window(window_manifest: TinyQtAppManifest) -> NativeToolWindowLike:
+        from tinyqt.native_settings_window import NativeSettingsWindow
+
+        registrations = build_registrations(None)
+        settings_vm = next(
+            registration.instance
+            for registration in registrations
+            if registration.name == "SettingsPanelViewModel"
+        )
+        return NativeSettingsWindow(
+            core=core,
+            theme=theme,
+            settings_view_model=settings_vm,
+            manifest=window_manifest,
+        )
+
+    return build_native_window_controller(
+        app=app,
+        manifest=manifest,
+        build_window=_build_window,
+    )
+
+
+def create_devtools_controller(
+    *,
+    app,
+    core,
+    theme: object,
+    log_inspector: object,
+) -> LazyNativeWindowController:
+    """Create the shared TinyUI devtools controller from its manifest."""
+    manifest = build_tinydevtools_manifest(core.paths)
+
+    def _build_window(window_manifest: TinyQtAppManifest) -> NativeToolWindowLike:
+        from tinyqt.native_devtools_window import NativeDevToolsWindow
+
+        return NativeDevToolsWindow(
+            core=core,
+            theme=theme,
+            log_inspector=log_inspector,
+            manifest=window_manifest,
+        )
+
+    return build_native_window_controller(
+        app=app,
+        manifest=manifest,
+        build_window=_build_window,
+    )
+
+
 def create_window_host(
     core,
     *,
@@ -346,10 +379,11 @@ def create_window_host(
     window = load_root_window(engine, qml_path)
     if window is None:
         return None
+    window.setProperty("theme", theme)
     apply_manifest_shell_state(window, app_manifest)
     devtools_controller = None
     if manifest_has_optional_feature(app_manifest, "devtools_ui"):
-        devtools_controller = LazyDevToolsController(
+        devtools_controller = create_devtools_controller(
             app=app,
             core=core,
             theme=theme,

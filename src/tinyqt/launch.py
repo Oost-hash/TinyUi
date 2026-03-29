@@ -27,12 +27,13 @@ import platform
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 import PySide6
 from PySide6.QtCore import QtMsgType, qInstallMessageHandler, qVersion
 
 from tinycore.logging import get_logger
+from .devtools_support import DevToolsUiAttachment
 
 from .app import create_configured_application
 from .host import create_window_host, restore_window_state, wire_app_shutdown
@@ -40,7 +41,6 @@ from .manifests import TinyQtAppManifest, validate_manifest
 from .registration import RegistrationMap, SingletonRegistration
 
 if TYPE_CHECKING:
-    from tinydevtools.host import DevToolsUiAttachment
     from tinyqt.host import QtWindowHost
 
 
@@ -143,7 +143,9 @@ def launch_qml_app(
         pre_run()
         _log_startup_phase(log, "pre_run_callback", phase_start)
     if host.devtools_ui is not None:
-        host.devtools_ui.log_view_model.replay()
+        replay = cast(Any, host.devtools_ui.log_view_model).replay
+        if callable(replay):
+            replay()
     log.startup_phase("launch_ready_for_exec", (perf_counter() - total_start) * 1000)
 
     exit_code = app.exec()

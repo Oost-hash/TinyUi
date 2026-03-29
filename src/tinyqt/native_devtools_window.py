@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
     QLabel,
     QPlainTextEdit,
     QPushButton,
+    QSizePolicy,
+    QScrollArea,
     QTabWidget,
     QTreeWidget,
     QTreeWidgetItem,
@@ -20,27 +22,35 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from tinydevtools.log_settings_viewmodel import LogSettingsViewModel
 from tinydevtools.runtime_viewmodel import RuntimeViewModel
 from tinydevtools.state_monitor_viewmodel import StateMonitorViewModel
+from tinyqt.native_tool_window import NativeToolWindowBase, with_alpha
 
+LogSettingsViewModelClass = cast(Any, LogSettingsViewModel)
 RuntimeViewModelClass = cast(Any, RuntimeViewModel)
 StateMonitorViewModelClass = cast(Any, StateMonitorViewModel)
 
 
-def _with_alpha(color: str, alpha: float) -> str:
-    tint = QColor(color)
-    tint.setAlphaF(max(0.0, min(1.0, alpha)))
-    return tint.name(QColor.NameFormat.HexArgb)
-
-
-class NativeDevToolsWindow(QWidget):
+class NativeDevToolsWindow(NativeToolWindowBase):
     """Native Qt devtools window used for the separate TinyUI diagnostics surface."""
 
-    def __init__(self, *, core, theme, log_inspector) -> None:
-        super().__init__(None, Qt.WindowType.Window)
+    def __init__(self, *, core, theme, log_inspector, manifest) -> None:
+        super().__init__(
+            title=manifest.title,
+            eyebrow=manifest.window.eyebrow or "DEVTOOLS",
+            subtitle=manifest.window.subtitle,
+            theme=theme,
+            object_name="NativeDevToolsWindow",
+            width=manifest.window.default_width,
+            height=manifest.window.default_height,
+            min_width=manifest.window.min_width,
+            min_height=manifest.window.min_height,
+        )
         self._core = core
         self._theme = theme
         self._log_inspector = log_inspector
+        self._log_settings_vm = LogSettingsViewModelClass()
         self._runtime_vm = RuntimeViewModelClass(core)
         if core.runtime_inspector is None:
             raise RuntimeError("CoreRuntime does not have a runtime_inspector attached")
@@ -52,29 +62,8 @@ class NativeDevToolsWindow(QWidget):
         self._console_info = True
         self._console_warning = True
         self._console_error = True
+        self._console_auto_scroll = True
         self._last_log_count = 0
-
-        self.setWindowTitle("Dev Tools")
-        self.resize(980, 680)
-        self.setMinimumSize(720, 480)
-        self.setObjectName("NativeDevToolsWindow")
-
-        self._eyebrow_label = QLabel("DEVTOOLS")
-        self._eyebrow_label.setObjectName("EyebrowLabel")
-        self._title_label = QLabel("Dev Tools")
-        self._title_label.setObjectName("WindowTitle")
-        self._subtitle_label = QLabel("Inspect runtime state, graph activity, and logs without leaving the TinyUI host.")
-        self._subtitle_label.setObjectName("WindowSubtitle")
-        self._subtitle_label.setWordWrap(True)
-
-        self._summary_card = QFrame()
-        self._summary_card.setObjectName("SummaryCard")
-        self._summary_layout = QVBoxLayout(self._summary_card)
-        self._summary_layout.setContentsMargins(16, 14, 16, 14)
-        self._summary_layout.setSpacing(6)
-        self._summary_layout.addWidget(self._eyebrow_label)
-        self._summary_layout.addWidget(self._title_label)
-        self._summary_layout.addWidget(self._subtitle_label)
 
         self._tabs = QTabWidget()
         self._tabs.setDocumentMode(True)
@@ -85,11 +74,7 @@ class NativeDevToolsWindow(QWidget):
         self._build_runtime_tab()
         self._build_console_tab()
 
-        root_layout = QVBoxLayout(self)
-        root_layout.setContentsMargins(16, 16, 16, 16)
-        root_layout.setSpacing(12)
-        root_layout.addWidget(self._summary_card)
-        root_layout.addWidget(self._tabs)
+        self.add_body_widget(self._tabs, stretch=1)
 
         self._refresh_timer = QTimer(self)
         self._refresh_timer.setInterval(250)
@@ -103,7 +88,7 @@ class NativeDevToolsWindow(QWidget):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(12)
+        layout.setSpacing(0)
 
         toolbar = QFrame()
         toolbar.setObjectName("DevToolsToolbar")
@@ -132,16 +117,22 @@ class NativeDevToolsWindow(QWidget):
         self._state_tree.setRootIsDecorated(False)
         self._state_tree.setAlternatingRowColors(True)
         self._state_tree.itemClicked.connect(self._handle_state_item_click)
+        self._state_tree.setColumnWidth(0, 320)
+
+        self._state_footer = QLabel("")
+        self._state_footer.setObjectName("RuntimeTasksLabel")
+        self._state_footer.setVisible(False)
 
         layout.addWidget(toolbar)
         layout.addWidget(self._state_tree, 1)
+        layout.addWidget(self._state_footer)
         self._tabs.addTab(page, "State")
 
     def _build_runtime_tab(self) -> None:
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(12)
+        layout.setSpacing(0)
 
         toolbar = QFrame()
         toolbar.setObjectName("DevToolsToolbar")
@@ -157,21 +148,52 @@ class NativeDevToolsWindow(QWidget):
         toolbar_layout.addWidget(self._runtime_summary, 1)
         toolbar_layout.addWidget(self._runtime_copy_button)
 
+        filters = QFrame()
+        filters.setObjectName("DevToolsToolbar")
+        filters_layout = QHBoxLayout(filters)
+        filters_layout.setContentsMargins(10, 6, 10, 6)
+        filters_layout.setSpacing(6)
+
+        self._runtime_filter_buttons: dict[str, QPushButton] = {}
+        for state in self._runtime_vm.availableStateFilters:
+            button = QPushButton(state.upper())
+            button.setObjectName("RuntimeFilterButton")
+            button.setCheckable(True)
+            button.clicked.connect(
+                lambda _checked=False, state_name=state: self._toggle_runtime_filter(state_name)
+            )
+            button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            self._runtime_filter_buttons[state] = button
+            filters_layout.addWidget(button)
+
+        filters_layout.addStretch(1)
+
+        self._runtime_tasks = QLabel("")
+        self._runtime_tasks.setObjectName("RuntimeTasksLabel")
+        self._runtime_tasks.setVisible(False)
+        self._runtime_tasks.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+
         self._runtime_tree = QTreeWidget()
         self._runtime_tree.setObjectName("DevToolsTree")
-        self._runtime_tree.setColumnCount(5)
-        self._runtime_tree.setHeaderLabels(["Unit", "State", "Kind", "Execution", "Parent"])
+        self._runtime_tree.setColumnCount(7)
+        self._runtime_tree.setHeaderLabels(
+            ["Unit", "State", "Kind", "Execution", "Activation", "Stage", "Parent"]
+        )
         self._runtime_tree.setAlternatingRowColors(True)
+        self._runtime_tree.setRootIsDecorated(False)
+        self._runtime_tree.itemClicked.connect(self._handle_runtime_item_click)
 
         layout.addWidget(toolbar)
+        layout.addWidget(filters)
         layout.addWidget(self._runtime_tree, 1)
+        layout.addWidget(self._runtime_tasks)
         self._tabs.addTab(page, "Runtime")
 
     def _build_console_tab(self) -> None:
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(12)
+        layout.setSpacing(0)
 
         toolbar = QFrame()
         toolbar.setObjectName("DevToolsToolbar")
@@ -191,6 +213,9 @@ class NativeDevToolsWindow(QWidget):
         self._error_check = QCheckBox("Error")
         self._error_check.setChecked(True)
         self._error_check.toggled.connect(self._set_console_error)
+        self._auto_scroll_check = QCheckBox("Auto-scroll")
+        self._auto_scroll_check.setChecked(True)
+        self._auto_scroll_check.toggled.connect(self._set_console_auto_scroll)
         self._console_clear_button = QPushButton("Clear")
         self._console_clear_button.clicked.connect(self._clear_console)
 
@@ -198,46 +223,56 @@ class NativeDevToolsWindow(QWidget):
         toolbar_layout.addWidget(self._info_check)
         toolbar_layout.addWidget(self._warning_check)
         toolbar_layout.addWidget(self._error_check)
+        toolbar_layout.addWidget(self._auto_scroll_check)
         toolbar_layout.addStretch(1)
         toolbar_layout.addWidget(self._console_clear_button)
+
+        category_bar = QFrame()
+        category_bar.setObjectName("DevToolsToolbar")
+        category_layout = QHBoxLayout(category_bar)
+        category_layout.setContentsMargins(10, 6, 10, 6)
+        category_layout.setSpacing(6)
+
+        self._console_all_categories_button = QPushButton("ALL")
+        self._console_all_categories_button.setObjectName("RuntimeFilterButton")
+        self._console_all_categories_button.setCheckable(True)
+        self._console_all_categories_button.clicked.connect(self._toggle_all_console_categories)
+        category_layout.addWidget(self._console_all_categories_button)
+
+        self._console_category_container = QWidget()
+        self._console_category_layout = QHBoxLayout(self._console_category_container)
+        self._console_category_layout.setContentsMargins(0, 0, 0, 0)
+        self._console_category_layout.setSpacing(6)
+        self._console_category_buttons: dict[str, QPushButton] = {}
+
+        category_scroll = QScrollArea()
+        category_scroll.setObjectName("CategoryScrollArea")
+        category_scroll.setWidgetResizable(True)
+        category_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        category_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        category_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        category_scroll.setWidget(self._console_category_container)
+        category_layout.addWidget(category_scroll, 1)
 
         self._console = QPlainTextEdit()
         self._console.setObjectName("ConsoleOutput")
         self._console.setReadOnly(True)
 
+        self._console_footer = QLabel("")
+        self._console_footer.setObjectName("RuntimeTasksLabel")
+        self._console_footer.setVisible(False)
+
         layout.addWidget(toolbar)
+        layout.addWidget(category_bar)
         layout.addWidget(self._console, 1)
+        layout.addWidget(self._console_footer)
         self._tabs.addTab(page, "Console")
 
     def _apply_theme(self) -> None:
+        check_icon = "C:/Users/rroet/Documents/TinyUi/src/assets/icons/check-small.svg"
         self.setStyleSheet(
             f"""
-            QWidget#NativeDevToolsWindow {{
-                background-color: {self._theme.surface};
-                color: {self._theme.text};
-                font-family: "{self._theme.fontFamily}";
-                font-size: {self._theme.fontSizeBase}px;
-            }}
-            QFrame#SummaryCard {{
-                background-color: {self._theme.surfaceAlt};
-                border: 1px solid {self._theme.border};
-                border-radius: 6px;
-            }}
-            QLabel#EyebrowLabel {{
-                color: {self._theme.accent};
-                font-size: {self._theme.fontSizeSmall}px;
-                font-weight: 700;
-                letter-spacing: 1px;
-            }}
-            QLabel#WindowTitle {{
-                color: {self._theme.text};
-                font-size: {self._theme.fontSizeTitle}px;
-                font-weight: 600;
-            }}
-            QLabel#WindowSubtitle {{
-                color: {self._theme.textMuted};
-                font-size: {self._theme.fontSizeSmall}px;
-            }}
+            {self.apply_shared_chrome_styles()}
             QTabWidget::pane {{
                 border: 1px solid {self._theme.border};
                 background-color: {self._theme.surface};
@@ -247,32 +282,41 @@ class NativeDevToolsWindow(QWidget):
                 background-color: {self._theme.surfaceAlt};
                 color: {self._theme.textSecondary};
                 border: 1px solid {self._theme.border};
-                padding: 8px 14px;
+                border-bottom: none;
+                padding: 6px 12px;
                 margin-right: 4px;
-                min-width: 96px;
+                min-width: 88px;
             }}
             QTabBar::tab:selected {{
                 background-color: {self._theme.surfaceRaised};
                 color: {self._theme.text};
-                border-color: {self._theme.accent};
+                border-color: {self._theme.border};
+                border-bottom: 2px solid {self._theme.accent};
             }}
             QTabBar::tab:hover:!selected {{
-                background-color: {_with_alpha(self._theme.accent, 0.08)};
+                background-color: {with_alpha(self._theme.accent, 0.08)};
                 color: {self._theme.text};
             }}
             QFrame#DevToolsToolbar {{
                 background-color: {self._theme.surfaceAlt};
                 border: 1px solid {self._theme.border};
-                border-radius: 4px;
+                border-radius: 3px;
             }}
             QLabel#SummaryLabel {{
                 color: {self._theme.textSecondary};
                 font-size: {self._theme.fontSizeSmall}px;
             }}
+            QLabel#RuntimeTasksLabel {{
+                color: {self._theme.textMuted};
+                font-size: 10px;
+                padding: 6px 10px;
+                border-top: 1px solid {self._theme.border};
+                background-color: {self._theme.surfaceAlt};
+            }}
             QTreeWidget#DevToolsTree, QPlainTextEdit#ConsoleOutput {{
                 background-color: {self._theme.surfaceAlt};
                 border: 1px solid {self._theme.border};
-                alternate-background-color: {_with_alpha(self._theme.surface, 0.18)};
+                alternate-background-color: {with_alpha(self._theme.surface, 0.18)};
             }}
             QHeaderView::section {{
                 background-color: {self._theme.surfaceRaised};
@@ -294,6 +338,17 @@ class NativeDevToolsWindow(QWidget):
                 background-color: {self._theme.surfaceRaised};
                 color: {self._theme.text};
             }}
+            QPushButton#RuntimeFilterButton {{
+                min-width: 0px;
+                padding: 3px 8px;
+                border-radius: 3px;
+                color: {self._theme.textMuted};
+            }}
+            QPushButton#RuntimeFilterButton:checked {{
+                color: {self._theme.accent};
+                border-color: {self._theme.accent};
+                background-color: {with_alpha(self._theme.accent, 0.12)};
+            }}
             QComboBox {{
                 background-color: {self._theme.surfaceFloating};
                 border: 1px solid {self._theme.border};
@@ -303,6 +358,9 @@ class NativeDevToolsWindow(QWidget):
             }}
             QComboBox:focus {{
                 border-color: {self._theme.accent};
+            }}
+            QScrollArea#CategoryScrollArea {{
+                background-color: transparent;
             }}
             QCheckBox {{
                 color: {self._theme.textSecondary};
@@ -319,10 +377,11 @@ class NativeDevToolsWindow(QWidget):
             QCheckBox::indicator:checked {{
                 background-color: {self._theme.accent};
                 border: 1px solid {self._theme.accent};
+                image: url({check_icon});
             }}
             QPlainTextEdit#ConsoleOutput {{
                 color: {self._theme.text};
-                selection-background-color: {_with_alpha(self._theme.accent, 0.18)};
+                selection-background-color: {with_alpha(self._theme.accent, 0.18)};
                 font-family: "Consolas";
             }}
             """
@@ -389,6 +448,9 @@ class NativeDevToolsWindow(QWidget):
         self._console_error = checked
         self._refresh_console_view()
 
+    def _set_console_auto_scroll(self, checked: bool) -> None:
+        self._console_auto_scroll = checked
+
     def _clear_console(self) -> None:
         self._log_inspector.clear()
         self._last_log_count = 0
@@ -402,7 +464,7 @@ class NativeDevToolsWindow(QWidget):
 
     def _update_header_copy(self, index: int) -> None:
         if index == 0:
-            subtitle = "Inspect live source snapshots, collapse sections, and capture runtime state over time."
+            subtitle = "Inspect live source snapshots, collapse sections, and copy exact state values from the active source."
         elif index == 1:
             subtitle = "Follow the runtime graph, unit ownership, and execution state in the current host."
         else:
@@ -414,6 +476,20 @@ class NativeDevToolsWindow(QWidget):
         self._state_capture_button.setText("Recording" if capture_active else "Record")
         self._state_copy_path_button.setEnabled(capture_active)
         self._state_copy_all_button.setEnabled(bool(self._state_vm.entries))
+        sources = self._state_vm.sources
+        selected = self._state_vm.selectedIndex
+        source_label = ""
+        if 0 <= selected < len(sources):
+            source_label = str(sources[selected].get("label", ""))
+        entry_count = len(self._state_vm.entries)
+        footer_text = []
+        if source_label:
+            footer_text.append(f"Source: {source_label}")
+        footer_text.append(f"Entries: {entry_count}")
+        if capture_active:
+            footer_text.append("Capture active")
+        self._state_footer.setVisible(bool(footer_text))
+        self._state_footer.setText("  |  ".join(footer_text))
 
     def _refresh_state_view(self) -> None:
         sources = self._state_vm.sources
@@ -460,10 +536,16 @@ class NativeDevToolsWindow(QWidget):
                 section_item.addChild(child)
 
         self._state_tree.expandAll()
+        self._state_tree.resizeColumnToContents(0)
         self._refresh_state_toolbar()
 
     def _refresh_runtime_view(self) -> None:
         self._runtime_summary.setText(self._runtime_vm.summary or "No runtime data")
+        for state, button in self._runtime_filter_buttons.items():
+            button.blockSignals(True)
+            button.setChecked(state in self._runtime_vm.stateFilters)
+            button.blockSignals(False)
+
         self._runtime_tree.clear()
         items_by_id: dict[str, QTreeWidgetItem] = {}
         for unit in self._runtime_vm.units:
@@ -474,21 +556,89 @@ class NativeDevToolsWindow(QWidget):
                 str(unit["state"]),
                 str(unit["kind"]),
                 str(unit["execution"]),
+                str(unit["activation"]),
+                str(unit["stage"]),
                 parent_id,
             ]
             item = QTreeWidgetItem(row)
+            item.setData(0, Qt.ItemDataRole.UserRole, unit_id)
+            item.setData(0, Qt.ItemDataRole.UserRole + 1, bool(unit.get("hasChildren", False)))
+            item.setData(0, Qt.ItemDataRole.UserRole + 2, bool(unit.get("expanded", False)))
             item.setForeground(0, QColor(self._theme.text))
             item.setForeground(1, QColor(self._theme.accent if str(unit["state"]) == "running" else self._theme.textSecondary))
             item.setForeground(2, QColor(self._theme.textSecondary))
             item.setForeground(3, QColor(self._theme.textSecondary))
             item.setForeground(4, QColor(self._theme.textMuted))
+            item.setForeground(5, QColor(self._theme.textMuted))
+            item.setForeground(6, QColor(self._theme.textMuted))
             if parent_id and parent_id in items_by_id:
                 items_by_id[parent_id].addChild(item)
             else:
                 self._runtime_tree.addTopLevelItem(item)
             items_by_id[unit_id] = item
-        self._runtime_tree.expandAll()
+        for item in items_by_id.values():
+            if bool(item.data(0, Qt.ItemDataRole.UserRole + 1)):
+                item.setExpanded(bool(item.data(0, Qt.ItemDataRole.UserRole + 2)))
         self._runtime_copy_button.setEnabled(bool(self._runtime_vm.units))
+        task_ids = self._runtime_vm.taskIds
+        self._runtime_tasks.setVisible(bool(task_ids))
+        self._runtime_tasks.setText("" if not task_ids else f"Tasks: {', '.join(task_ids)}")
+
+    def _toggle_runtime_filter(self, state: str) -> None:
+        self._runtime_vm.toggleStateFilter(state)
+        self._refresh_runtime_view()
+
+    def _handle_runtime_item_click(self, item: QTreeWidgetItem, column: int) -> None:
+        if column != 0:
+            return
+        if not bool(item.data(0, Qt.ItemDataRole.UserRole + 1)):
+            return
+        unit_id = item.data(0, Qt.ItemDataRole.UserRole)
+        if isinstance(unit_id, str):
+            self._runtime_vm.toggleExpanded(unit_id)
+            self._refresh_runtime_view()
+
+    def _toggle_all_console_categories(self) -> None:
+        target = not self._log_settings_vm.allCategoriesEnabled
+        self._log_settings_vm.setDevMode(target)
+        self._refresh_console_categories()
+        self._refresh_console_view()
+
+    def _toggle_console_category(self, name: str) -> None:
+        categories = {
+            str(item["name"]): bool(item["enabled"])
+            for item in self._log_settings_vm.categories
+        }
+        current = categories.get(name, False)
+        self._log_settings_vm.setCategoryEnabled(name, not current)
+        self._refresh_console_categories()
+        self._refresh_console_view()
+
+    def _refresh_console_categories(self) -> None:
+        while self._console_category_layout.count():
+            item = self._console_category_layout.takeAt(0)
+            if item is None:
+                continue
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+        self._console_category_buttons.clear()
+
+        self._console_all_categories_button.blockSignals(True)
+        self._console_all_categories_button.setChecked(self._log_settings_vm.allCategoriesEnabled)
+        self._console_all_categories_button.blockSignals(False)
+
+        for category in self._log_settings_vm.categories:
+            name = str(category["name"])
+            enabled = bool(category["enabled"])
+            button = QPushButton(name)
+            button.setObjectName("RuntimeFilterButton")
+            button.setCheckable(True)
+            button.setChecked(enabled)
+            button.clicked.connect(lambda _checked=False, category_name=name: self._toggle_console_category(category_name))
+            self._console_category_buttons[name] = button
+            self._console_category_layout.addWidget(button)
+        self._console_category_layout.addStretch(1)
 
     def _log_visible(self, level: str) -> bool:
         if level == "DEBUG":
@@ -499,15 +649,41 @@ class NativeDevToolsWindow(QWidget):
             return self._console_warning
         return self._console_error
 
+    def _console_category_visible(self, logger_name: str) -> bool:
+        categories = self._log_settings_vm.categories
+        if not categories or self._log_settings_vm.allCategoriesEnabled:
+            return True
+        enabled_names = {
+            str(item["name"])
+            for item in categories
+            if bool(item["enabled"])
+        }
+        if not enabled_names:
+            return False
+        return any(
+            logger_name == name
+            or logger_name.endswith("." + name)
+            or name in logger_name
+            for name in enabled_names
+        )
+
     def _refresh_console_view(self) -> None:
+        self._refresh_console_categories()
         records = [
             entry
             for entry in self._log_inspector.records()
-            if self._log_visible(entry.level)
+            if self._log_visible(entry.level) and self._console_category_visible(entry.name)
         ]
         self._last_log_count = len(records)
         lines = [f"{entry.time}  {entry.level:<8}  {entry.name}  {entry.message}" for entry in records]
         self._console.setPlainText("\n".join(lines))
-        cursor = self._console.textCursor()
-        cursor.movePosition(cursor.MoveOperation.End)
-        self._console.setTextCursor(cursor)
+        if self._console_auto_scroll:
+            cursor = self._console.textCursor()
+            cursor.movePosition(cursor.MoveOperation.End)
+            self._console.setTextCursor(cursor)
+        footer = [
+            f"Lines: {len(records)}",
+            "Auto-scroll" if self._console_auto_scroll else "Manual scroll",
+        ]
+        self._console_footer.setVisible(True)
+        self._console_footer.setText("  |  ".join(footer))

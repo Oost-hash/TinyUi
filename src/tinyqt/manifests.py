@@ -26,6 +26,17 @@ from dataclasses import dataclass
 from pathlib import Path
 
 _VALID_LOAD_POLICIES = frozenset({"lazy", "eager"})
+_VALID_MENU_ACTIONS = frozenset({"settings", "devtools", "close"})
+_VALID_WINDOW_KINDS = frozenset({"main", "tool", "dialog"})
+_VALID_WINDOW_PRESENTATIONS = frozenset({"qml", "native"})
+
+
+@dataclass(frozen=True)
+class TinyQtMenuItemManifest:
+    label: str
+    action: str | None = None
+    separator: bool = False
+    requires_feature: str | None = None
 
 
 @dataclass(frozen=True)
@@ -48,11 +59,26 @@ class TinyQtShellManifest:
 
 
 @dataclass(frozen=True)
+class TinyQtWindowManifest:
+    window_kind: str = "main"
+    presentation: str = "qml"
+    restore_state_scope: str | None = None
+    eyebrow: str = ""
+    subtitle: str = ""
+    default_width: int | None = None
+    default_height: int | None = None
+    min_width: int | None = None
+    min_height: int | None = None
+
+
+@dataclass(frozen=True)
 class TinyQtAppManifest:
     app_id: str
     title: str
     root_qml: Path | None
     shell: TinyQtShellManifest
+    window: TinyQtWindowManifest = TinyQtWindowManifest()
+    menu_items: tuple[TinyQtMenuItemManifest, ...] = ()
     panels: tuple[TinyQtPanelManifest, ...] = ()
     required_singletons: tuple[str, ...] = ()
     optional_features: tuple[str, ...] = ()
@@ -80,6 +106,32 @@ def validate_manifest(manifest: TinyQtAppManifest) -> TinyQtAppManifest:
         raise ValueError("Invalid TinyQt manifest: app_id must not be empty")
     if not title:
         raise ValueError(f"Invalid TinyQt manifest '{app_id}': title must not be empty")
+    window_kind = manifest.window.window_kind.strip().lower()
+    presentation = manifest.window.presentation.strip().lower()
+    eyebrow = manifest.window.eyebrow.strip()
+    subtitle = manifest.window.subtitle.strip()
+    if window_kind not in _VALID_WINDOW_KINDS:
+        raise ValueError(
+            f"Invalid TinyQt manifest '{app_id}': unsupported window_kind '{manifest.window.window_kind}'"
+        )
+    if presentation not in _VALID_WINDOW_PRESENTATIONS:
+        raise ValueError(
+            f"Invalid TinyQt manifest '{app_id}': unsupported presentation '{manifest.window.presentation}'"
+        )
+    if presentation == "native" and manifest.root_qml is not None:
+        raise ValueError(
+            f"Invalid TinyQt manifest '{app_id}': native window manifests must not declare root_qml"
+        )
+    if presentation == "qml" and manifest.root_qml is None:
+        raise ValueError(
+            f"Invalid TinyQt manifest '{app_id}': qml window manifests require root_qml"
+        )
+    for field_name in ("default_width", "default_height", "min_width", "min_height"):
+        value = getattr(manifest.window, field_name)
+        if value is not None and value <= 0:
+            raise ValueError(
+                f"Invalid TinyQt manifest '{app_id}': {field_name} must be positive when set"
+            )
 
     if manifest.shell.use_status_bar and not manifest.shell.use_window_menu_bar:
         raise ValueError(
@@ -92,6 +144,32 @@ def validate_manifest(manifest: TinyQtAppManifest) -> TinyQtAppManifest:
 
     panel_ids: set[str] = set()
     normalized_panels: list[TinyQtPanelManifest] = []
+    normalized_menu_items: list[TinyQtMenuItemManifest] = []
+
+    for item in manifest.menu_items:
+        label = item.label.strip()
+        requires_feature = item.requires_feature.strip() if item.requires_feature else None
+        action = item.action.strip().lower() if item.action else None
+        if item.separator:
+            normalized_menu_items.append(
+                TinyQtMenuItemManifest(label="", action=None, separator=True)
+            )
+            continue
+        if not label:
+            raise ValueError(f"Invalid TinyQt manifest '{app_id}': menu item label must not be empty")
+        if action not in _VALID_MENU_ACTIONS:
+            raise ValueError(
+                f"Invalid TinyQt manifest '{app_id}': unsupported menu action '{item.action}'"
+            )
+        normalized_menu_items.append(
+            TinyQtMenuItemManifest(
+                label=label,
+                action=action,
+                separator=False,
+                requires_feature=requires_feature,
+            )
+        )
+
     for panel in manifest.panels:
         panel_id = panel.panel_id.strip()
         label = panel.label.strip()
@@ -133,6 +211,18 @@ def validate_manifest(manifest: TinyQtAppManifest) -> TinyQtAppManifest:
         title=title,
         root_qml=manifest.root_qml,
         shell=manifest.shell,
+        window=TinyQtWindowManifest(
+            window_kind=window_kind,
+            presentation=presentation,
+            restore_state_scope=manifest.window.restore_state_scope,
+            eyebrow=eyebrow,
+            subtitle=subtitle,
+            default_width=manifest.window.default_width,
+            default_height=manifest.window.default_height,
+            min_width=manifest.window.min_width,
+            min_height=manifest.window.min_height,
+        ),
+        menu_items=tuple(normalized_menu_items),
         panels=tuple(normalized_panels),
         required_singletons=_normalize_names(
             manifest.required_singletons,
@@ -176,3 +266,21 @@ def manifest_eager_panel_indexes(manifest: TinyQtAppManifest) -> list[int]:
 def manifest_has_optional_feature(manifest: TinyQtAppManifest, feature_name: str) -> bool:
     """Return whether one optional feature is declared by the manifest."""
     return feature_name in manifest.optional_features
+
+
+def manifest_menu_items(manifest: TinyQtAppManifest) -> list[dict[str, object]]:
+    """Return resolved menu items for a window host to expose to QML."""
+    items: list[dict[str, object]] = []
+    for item in manifest.menu_items:
+        visible = True
+        if item.requires_feature is not None:
+            visible = manifest_has_optional_feature(manifest, item.requires_feature)
+        items.append(
+            {
+                "label": item.label,
+                "action": item.action,
+                "separator": item.separator,
+                "visible": visible,
+            }
+        )
+    return items

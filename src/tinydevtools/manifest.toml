@@ -1,0 +1,45 @@
+[[app]]
+app_id = "tinydevtools.window"
+title = "Dev Tools"
+required_singletons = [
+    "Theme",
+    "LogViewModel",
+    "LogSettingsViewModel",
+    "RuntimeViewModel",
+    "StateMonitorViewModel",
+]
+
+[app.shell]
+use_window_menu_bar = true
+use_tab_bar = true
+use_status_bar = false
+lazy_panel_loading = true
+
+[app.window]
+window_kind = "tool"
+presentation = "native"
+restore_state_scope = "TinyUI.DevTools"
+eyebrow = "DEVTOOLS"
+subtitle = "Inspect runtime state, graph activity, and logs without leaving the TinyUI host."
+default_width = 980
+default_height = 680
+min_width = 720
+min_height = 480
+
+[[app.panels]]
+panel_id = "state"
+label = "State"
+qml_type = "DevToolsStateTab"
+package = "TinyDevTools"
+
+[[app.panels]]
+panel_id = "runtime"
+label = "Runtime"
+qml_type = "DevToolsRuntimeTab"
+package = "TinyDevTools"
+
+[[app.panels]]
+panel_id = "console"
+label = "Console"
+qml_type = "ConsolePane"
+package = "TinyDevTools"

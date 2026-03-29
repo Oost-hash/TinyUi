@@ -1,10 +1,9 @@
 """Optional diagnostics UI package for TinyUi development tooling."""
 
-from .host import attach_runtime, attach_ui
 from .runtime_viewmodel import RuntimeViewModel
+from .state_monitor_viewmodel import StateMonitorViewModel
 
 __all__ = [
     "RuntimeViewModel",
-    "attach_runtime",
-    "attach_ui",
+    "StateMonitorViewModel",
 ]
