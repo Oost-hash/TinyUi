@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
 from tinydevtools.log_settings_viewmodel import LogSettingsViewModel
 from tinydevtools.runtime_viewmodel import RuntimeViewModel
 from tinydevtools.state_monitor_viewmodel import StateMonitorViewModel
-from tinyqt.native_tool_window import NativeToolWindowBase, with_alpha
+from tinyqt_native.native_tool_window import NativeToolWindowBase, with_alpha
 
 LogSettingsViewModelClass = cast(Any, LogSettingsViewModel)
 RuntimeViewModelClass = cast(Any, RuntimeViewModel)
@@ -90,11 +90,7 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        toolbar = QFrame()
-        toolbar.setObjectName("DevToolsToolbar")
-        toolbar_layout = QHBoxLayout(toolbar)
-        toolbar_layout.setContentsMargins(10, 8, 10, 8)
-        toolbar_layout.setSpacing(8)
+        toolbar, toolbar_layout = self.create_toolbar()
 
         self._state_source_combo = QComboBox()
         self._state_source_combo.currentIndexChanged.connect(self._select_state_source)
@@ -119,9 +115,7 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._state_tree.itemClicked.connect(self._handle_state_item_click)
         self._state_tree.setColumnWidth(0, 320)
 
-        self._state_footer = QLabel("")
-        self._state_footer.setObjectName("RuntimeTasksLabel")
-        self._state_footer.setVisible(False)
+        self._state_footer = self.create_footer_label()
 
         layout.addWidget(toolbar)
         layout.addWidget(self._state_tree, 1)
@@ -134,11 +128,7 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        toolbar = QFrame()
-        toolbar.setObjectName("DevToolsToolbar")
-        toolbar_layout = QHBoxLayout(toolbar)
-        toolbar_layout.setContentsMargins(10, 8, 10, 8)
-        toolbar_layout.setSpacing(8)
+        toolbar, toolbar_layout = self.create_toolbar()
 
         self._runtime_summary = QLabel("No runtime data")
         self._runtime_summary.setObjectName("SummaryLabel")
@@ -148,11 +138,7 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         toolbar_layout.addWidget(self._runtime_summary, 1)
         toolbar_layout.addWidget(self._runtime_copy_button)
 
-        filters = QFrame()
-        filters.setObjectName("DevToolsToolbar")
-        filters_layout = QHBoxLayout(filters)
-        filters_layout.setContentsMargins(10, 6, 10, 6)
-        filters_layout.setSpacing(6)
+        filters, filters_layout = self.create_compact_toolbar()
 
         self._runtime_filter_buttons: dict[str, QPushButton] = {}
         for state in self._runtime_vm.availableStateFilters:
@@ -168,9 +154,7 @@ class NativeDevToolsWindow(NativeToolWindowBase):
 
         filters_layout.addStretch(1)
 
-        self._runtime_tasks = QLabel("")
-        self._runtime_tasks.setObjectName("RuntimeTasksLabel")
-        self._runtime_tasks.setVisible(False)
+        self._runtime_tasks = self.create_footer_label()
         self._runtime_tasks.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
         self._runtime_tree = QTreeWidget()
@@ -195,11 +179,7 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        toolbar = QFrame()
-        toolbar.setObjectName("DevToolsToolbar")
-        toolbar_layout = QHBoxLayout(toolbar)
-        toolbar_layout.setContentsMargins(10, 8, 10, 8)
-        toolbar_layout.setSpacing(8)
+        toolbar, toolbar_layout = self.create_toolbar()
 
         self._debug_check = QCheckBox("Debug")
         self._debug_check.setChecked(True)
@@ -227,11 +207,7 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         toolbar_layout.addStretch(1)
         toolbar_layout.addWidget(self._console_clear_button)
 
-        category_bar = QFrame()
-        category_bar.setObjectName("DevToolsToolbar")
-        category_layout = QHBoxLayout(category_bar)
-        category_layout.setContentsMargins(10, 6, 10, 6)
-        category_layout.setSpacing(6)
+        category_bar, category_layout = self.create_compact_toolbar()
 
         self._console_all_categories_button = QPushButton("ALL")
         self._console_all_categories_button.setObjectName("RuntimeFilterButton")
@@ -258,9 +234,7 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._console.setObjectName("ConsoleOutput")
         self._console.setReadOnly(True)
 
-        self._console_footer = QLabel("")
-        self._console_footer.setObjectName("RuntimeTasksLabel")
-        self._console_footer.setVisible(False)
+        self._console_footer = self.create_footer_label()
 
         layout.addWidget(toolbar)
         layout.addWidget(category_bar)
@@ -269,10 +243,11 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._tabs.addTab(page, "Console")
 
     def _apply_theme(self) -> None:
-        check_icon = "C:/Users/rroet/Documents/TinyUi/src/assets/icons/check-small.svg"
         self.setStyleSheet(
             f"""
             {self.apply_shared_chrome_styles()}
+            {self.apply_shared_toolbar_styles()}
+            {self.apply_shared_interactive_styles(include_checkboxes=True)}
             QTabWidget::pane {{
                 border: 1px solid {self._theme.border};
                 background-color: {self._theme.surface};
@@ -297,21 +272,9 @@ class NativeDevToolsWindow(NativeToolWindowBase):
                 background-color: {with_alpha(self._theme.accent, 0.08)};
                 color: {self._theme.text};
             }}
-            QFrame#DevToolsToolbar {{
-                background-color: {self._theme.surfaceAlt};
-                border: 1px solid {self._theme.border};
-                border-radius: 3px;
-            }}
             QLabel#SummaryLabel {{
                 color: {self._theme.textSecondary};
                 font-size: {self._theme.fontSizeSmall}px;
-            }}
-            QLabel#RuntimeTasksLabel {{
-                color: {self._theme.textMuted};
-                font-size: 10px;
-                padding: 6px 10px;
-                border-top: 1px solid {self._theme.border};
-                background-color: {self._theme.surfaceAlt};
             }}
             QTreeWidget#DevToolsTree, QPlainTextEdit#ConsoleOutput {{
                 background-color: {self._theme.surfaceAlt};
@@ -326,18 +289,6 @@ class NativeDevToolsWindow(NativeToolWindowBase):
                 padding: 6px 8px;
                 font-weight: 600;
             }}
-            QPushButton {{
-                background-color: {self._theme.surfaceFloating};
-                border: 1px solid {self._theme.border};
-                color: {self._theme.textSecondary};
-                padding: 6px 12px;
-                min-width: 82px;
-                border-radius: 4px;
-            }}
-            QPushButton:hover {{
-                background-color: {self._theme.surfaceRaised};
-                color: {self._theme.text};
-            }}
             QPushButton#RuntimeFilterButton {{
                 min-width: 0px;
                 padding: 3px 8px;
@@ -349,35 +300,8 @@ class NativeDevToolsWindow(NativeToolWindowBase):
                 border-color: {self._theme.accent};
                 background-color: {with_alpha(self._theme.accent, 0.12)};
             }}
-            QComboBox {{
-                background-color: {self._theme.surfaceFloating};
-                border: 1px solid {self._theme.border};
-                padding: 6px 8px;
-                min-height: 28px;
-                border-radius: 4px;
-            }}
-            QComboBox:focus {{
-                border-color: {self._theme.accent};
-            }}
             QScrollArea#CategoryScrollArea {{
                 background-color: transparent;
-            }}
-            QCheckBox {{
-                color: {self._theme.textSecondary};
-                spacing: 6px;
-            }}
-            QCheckBox::indicator {{
-                width: 14px;
-                height: 14px;
-            }}
-            QCheckBox::indicator:unchecked {{
-                background-color: {self._theme.surfaceFloating};
-                border: 1px solid {self._theme.border};
-            }}
-            QCheckBox::indicator:checked {{
-                background-color: {self._theme.accent};
-                border: 1px solid {self._theme.accent};
-                image: url({check_icon});
             }}
             QPlainTextEdit#ConsoleOutput {{
                 color: {self._theme.text};

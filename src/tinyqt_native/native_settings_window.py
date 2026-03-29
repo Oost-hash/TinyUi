@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
 )
 
 from tinyui_schema import SettingsSpec
-from tinyqt.native_tool_window import NativeToolWindowBase
+from tinyqt_native.native_tool_window import NativeToolWindowBase
 
 
 @dataclass(frozen=True)
@@ -132,10 +132,11 @@ class NativeSettingsWindow(NativeToolWindowBase):
         theme.changed.connect(self._apply_theme)
 
     def _apply_theme(self) -> None:
-        check_icon = "C:/Users/rroet/Documents/TinyUi/src/assets/icons/check-small.svg"
         self.setStyleSheet(
             f"""
             {self.apply_shared_chrome_styles()}
+            {self.apply_shared_panel_styles()}
+            {self.apply_shared_interactive_styles(include_checkboxes=True)}
             QWidget#RightPanel {{
                 background-color: transparent;
             }}
@@ -166,84 +167,6 @@ class NativeSettingsWindow(NativeToolWindowBase):
                 background-color: {self._theme.surface};
                 border-left: 3px solid {self._theme.accent};
                 color: {self._theme.text};
-            }}
-            QLabel#SummaryTitle {{
-                color: {self._theme.text};
-                font-size: {self._theme.fontSizeTitle}px;
-                font-weight: 600;
-            }}
-            QLabel#SummaryText {{
-                color: {self._theme.textMuted};
-                font-size: {self._theme.fontSizeSmall}px;
-            }}
-            QLabel#SectionLabel {{
-                color: {self._theme.textSecondary};
-                font-size: {self._theme.fontSizeSmall}px;
-                font-weight: 600;
-            }}
-            QFrame#SectionFrame {{
-                background-color: {self._theme.surfaceAlt};
-                border: 1px solid {self._theme.border};
-                border-radius: 6px;
-            }}
-            QFrame#FooterFrame {{
-                background-color: transparent;
-                border-top: 1px solid {self._theme.border};
-                padding-top: 10px;
-            }}
-            QPushButton {{
-                background-color: {self._theme.surfaceFloating};
-                border: 1px solid {self._theme.border};
-                border-radius: 4px;
-                padding: 6px 12px;
-                min-width: 86px;
-            }}
-            QPushButton:hover {{
-                background-color: {self._theme.surfaceRaised};
-            }}
-            QPushButton:disabled {{
-                color: {self._theme.textMuted};
-            }}
-            QPushButton#PrimaryButton {{
-                background-color: {self._theme.accent};
-                border-color: {self._theme.accent};
-                color: {self._theme.accentText};
-                font-weight: 600;
-            }}
-            QPushButton#PrimaryButton:hover {{
-                background-color: {self._theme.accentHover};
-                border-color: {self._theme.accentHover};
-            }}
-            QPushButton#PrimaryButton:disabled {{
-                background-color: {self._theme.surfaceRaised};
-                border-color: {self._theme.border};
-                color: {self._theme.textMuted};
-            }}
-            QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {{
-                background-color: {self._theme.surfaceFloating};
-                border: 1px solid {self._theme.border};
-                border-radius: 4px;
-                padding: 4px 8px;
-                min-height: 28px;
-            }}
-            QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {{
-                border-color: {self._theme.accent};
-            }}
-            QCheckBox {{
-                spacing: 8px;
-            }}
-            QCheckBox::indicator {{
-                width: 14px;
-                height: 14px;
-            }}
-            QCheckBox::indicator:unchecked {{
-                background-color: {self._theme.surfaceFloating};
-                border: 1px solid {self._theme.border};
-            }}
-            QCheckBox::indicator:checked {{
-                background-color: {self._theme.accent};
-                border: 1px solid {self._theme.accent};
-                image: url({check_icon});
             }}
             """
         )
@@ -354,11 +277,7 @@ class NativeSettingsWindow(NativeToolWindowBase):
         self._content_layout.addStretch(1)
 
     def _build_section(self, title: str, entries: Iterable[_SettingEntry]) -> QWidget:
-        section = QFrame()
-        section.setObjectName("SectionFrame")
-        layout = QVBoxLayout(section)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(8)
+        section, layout = self.create_section_frame()
 
         title_label = QLabel(title)
         title_label.setObjectName("SectionLabel")
