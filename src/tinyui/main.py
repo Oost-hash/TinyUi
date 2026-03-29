@@ -30,26 +30,29 @@ from __future__ import annotations
 
 import logging
 import platform
-import sys
-from pathlib import Path
 from time import perf_counter
-from typing import Callable, cast
+from typing import Callable
 
 import PySide6
-from PySide6.QtCore import QtMsgType, QUrl, qInstallMessageHandler, qVersion
-from PySide6.QtQuick import QQuickWindow
+from PySide6.QtCore import QtMsgType, qInstallMessageHandler, qVersion
 
 from tinycore.logging import LogInspector, get_logger
-from tinyqt.app import create_application
+from tinyqt.app import create_configured_application
 from tinyqt.engine import create_engine
 from tinyqt.host import (
     attach_optional_devtools_ui,
+    load_root_window,
     restore_window_state,
     wire_app_shutdown,
     wire_devtools_monitor,
 )
-from tinyqt.registration import SingletonRegistration, register_singletons
-from tinyqt.windowing.controller_api import WindowControllerApi
+from tinyqt.registration import (
+    RegistrationMap,
+    SingletonRegistration,
+    register_context_map,
+    register_singletons,
+)
+from tinyqt.windowing import attach_windowing
 from tinycore.runtime.core_runtime import CoreRuntime
 from tinyui.app_info import AppInfo
 from tinyui.const import APP_NAME, VERSION
@@ -84,7 +87,7 @@ def launch(
     core: CoreRuntime,
     *,
     pre_run: Callable[[], None] | None = None,
-    extra_context: dict[str, tuple[type, str, object]] | None = None,
+    extra_context: RegistrationMap | None = None,
 ) -> int:
     """Initialize and run the tinyui main window.
 
@@ -96,10 +99,11 @@ def launch(
 
     # ── Qt setup ──────────────────────────────────────────────────────────────
     phase_start = perf_counter()
-    app = create_application(sys.argv)
-    app.setQuitOnLastWindowClosed(False)
-    app.setApplicationName(APP_NAME)
-    app.setApplicationVersion(VERSION)
+    app = create_configured_application(
+        app_name=APP_NAME,
+        version=VERSION,
+        quit_on_last_window_closed=False,
+    )
     log = get_logger(__name__)
     _log_startup_phase(log, "qt_app_setup", phase_start)
 
@@ -178,85 +182,22 @@ def launch(
     )
 
     if extra_context:
-        register_singletons(
-            [
-                SingletonRegistration(cls, module, name, instance)
-                for name, (cls, module, instance) in extra_context.items()
-            ]
-        )
+        register_context_map(extra_context)
 
     qml_dir = core.paths.qml_dir("tinyui")
-    engine.load(QUrl.fromLocalFile(str(qml_dir / "main.qml")))
+    window = load_root_window(engine, qml_dir / "main.qml")
     _log_startup_phase(log, "qml_load", phase_start)
 
-    if not engine.rootObjects():
+    if window is None:
         core.shutdown()
         return -1
 
     # ── Platform windowing ────────────────────────────────────────────────────
     phase_start = perf_counter()
-    window_obj = engine.rootObjects()[0]
-    if not isinstance(window_obj, QQuickWindow):
-        core.shutdown()
-        return -1
-    window = window_obj
     wire_devtools_monitor(core, window)
-    dpr = app.devicePixelRatio()
-
-    _wnd_proc = None      # Windows only: MUST be kept alive — otherwise GC → crash
-    _win_ctrl = None
-    _chrome_helper = None
-    if sys.platform == "win32":
-        from tinyqt.windowing.win_window import (
-            WindowChromeHelper,
-            WindowController,
-            apply_dwm_frame,
-            install_wnd_proc,
-        )
-
-        hwnd = int(window.winId())
-        _wnd_proc, _set_left = install_wnd_proc(
-            hwnd,
-            title_bar_height=round(cast(float, theme.property("titleBarHeight")) * dpr),
-            resize_border=round(cast(float, theme.property("resizeBorder")) * dpr),
-            resize_corner=round(cast(float, theme.property("resizeCorner")) * dpr),
-            left_button_width=round(
-                cast(float, theme.property("leftButtonWidth")) * dpr
-            ),
-            right_button_width=round(
-                cast(float, theme.property("rightButtonWidth")) * dpr
-            ),
-        )
-        apply_dwm_frame(hwnd)
-        _win_ctrl = WindowController(hwnd, dpr=dpr, set_left_button_width=_set_left)
-        _chrome_helper = WindowChromeHelper(dpr=dpr)
-        register_singletons(
-            [
-                SingletonRegistration(
-                    WindowChromeHelper,
-                    "TinyUI",
-                    "WindowChromeHelper",
-                    _chrome_helper,
-                )
-            ]
-        )
-
-    elif sys.platform.startswith("linux") or sys.platform == "darwin":
-        from tinyqt.windowing.unix_window import WindowController
-
-        _win_ctrl = WindowController(window)
-
-    if _win_ctrl is not None:
-        register_singletons(
-            [
-                SingletonRegistration(
-                    WindowControllerApi,
-                    "TinyUI",
-                    "WindowController",
-                    _win_ctrl,
-                )
-            ]
-        )
+    windowing = attach_windowing(app=app, window=window, theme=theme, module="TinyUI")
+    if windowing.registrations:
+        register_singletons(windowing.registrations)
     _log_startup_phase(log, "windowing", phase_start)
     if core.units.get("ui.main") is not None:
         core.units.set_state("ui.main", "running")
@@ -290,7 +231,7 @@ def launch(
     exit_code = app.exec()
 
     del engine
-    del _win_ctrl
+    del windowing
     del tab_vm
     del settings_vm
     del core_vm

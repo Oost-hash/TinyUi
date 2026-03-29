@@ -25,7 +25,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import cast
 
 from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
@@ -34,8 +33,11 @@ from tinycore.runtime.core_runtime import CoreRuntime
 from tinycore.runtime.plugins.participants import PluginParticipant
 from tinycore.runtime.plugins.provider_activity import ProviderActivity
 from tinycore.services import HostServices, RuntimeServices
-from tinywidgets.overlay import WidgetOverlay
-from tinywidgets.spec import load_widgets_toml
+from tinyqt.attachments import (
+    build_devtools_runtime_attachment,
+    build_widget_overlay,
+    get_devtools_monitor_info,
+)
 
 from .plugin import TinyUIPlugin
 
@@ -48,11 +50,7 @@ class TinyUiHostAssembly(HostAssembly):
 
     @property
     def devtools_monitor_interval_ms(self) -> int | None:
-        try:
-            from tinydevtools.state_monitor_viewmodel import StateMonitorViewModel
-        except ImportError:
-            return None
-        return StateMonitorViewModel.REFRESH_INTERVAL_MS
+        return get_devtools_monitor_info().refresh_interval_ms
 
     def register_host(self, host: HostServices) -> None:
         TinyUIPlugin().register(host)
@@ -68,25 +66,13 @@ class TinyUiHostAssembly(HostAssembly):
         provider_activity: ProviderActivity,
         participants: list[PluginParticipant],
     ) -> HostOverlayBuild:
-        overlay = WidgetOverlay(
-            runtime.plugin_facts,
-            provider_activity,
+        return build_widget_overlay(
             paths=paths,
-            widget_state_for=host.persistence.widget_state_for,
+            host=host,
+            runtime=runtime,
+            provider_activity=provider_activity,
+            participants=participants,
         )
-        widget_sources: list[tuple[str, str, str]] = []
-        for participant in participants:
-            widgets_path = participant.widgets_path()
-            if widgets_path is None or not widgets_path.exists():
-                continue
-            specs = load_widgets_toml(widgets_path)
-            overlay.load(specs, plugin_name=participant.name)
-            widget_sources.extend(
-                (participant.name, spec.capability, spec.field)
-                for spec in specs
-                if spec.field
-            )
-        return HostOverlayBuild(overlay=overlay, widget_sources=widget_sources)
 
     def build_state_monitor(
         self,
@@ -94,17 +80,7 @@ class TinyUiHostAssembly(HostAssembly):
         overlay: object,
         widget_sources: list[tuple[str, str, str]],
     ) -> HostStateMonitorBuild:
-        try:
-            from tinydevtools.host import attach_runtime
-        except ImportError:
-            _log.info("devtools runtime attachment unavailable")
-            return HostStateMonitorBuild(state_monitor=None, extra_context={})
-
-        attachment = attach_runtime(runtime, cast(WidgetOverlay, overlay))
-        return HostStateMonitorBuild(
-            state_monitor=attachment.state_monitor,
-            extra_context=attachment.extra_context,
-        )
+        return build_devtools_runtime_attachment(runtime, overlay)
 
 
 TINYUI_HOST_ASSEMBLY = TinyUiHostAssembly()

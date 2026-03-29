@@ -39,3 +39,4 @@ Known packages:
 - [0.4.1][tinyui][tinydevtools][other] Fixed remaining static-analysis issues in SettingsDialog and DevTools color bindings, and aligned Zed with the project's venv-based basedpyright and qmlls configs
 - [0.4.1][tinyui][other] Added compact diagnostics summary and inspect tasks for Zed, and updated qmllint module imports so QML and basedpyright output stay aligned and less verbose
 - [0.4.2][tinycore][tinyui][other] Introduced shared tinyqt ownership for Qt bootstrap, timers, and windowing so tinycore is Qt-free and UI packages consume one shared Qt host layer
+- [0.4.2][tinyui][other] Moved shared Qt host composition into tinyqt helpers for app setup, root-window loading, lifecycle wiring, and singleton registration so tinyui.main focuses more on UI assembly

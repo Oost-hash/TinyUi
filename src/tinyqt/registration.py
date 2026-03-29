@@ -24,8 +24,13 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from typing import TypeAlias
 
 from PySide6.QtQml import qmlRegisterSingletonInstance
+
+
+RegistrationEntry: TypeAlias = tuple[type, str, object]
+RegistrationMap: TypeAlias = dict[str, RegistrationEntry]
 
 
 @dataclass(frozen=True)
@@ -49,3 +54,16 @@ def register_singletons(registrations: Iterable[SingletonRegistration]) -> None:
             registration.name.encode("utf-8"),
             registration.instance,
         )
+
+
+def registrations_from_map(context: RegistrationMap) -> list[SingletonRegistration]:
+    """Convert the legacy extra-context map into shared singleton registrations."""
+    return [
+        SingletonRegistration(cls, module, name, instance)
+        for name, (cls, module, instance) in context.items()
+    ]
+
+
+def register_context_map(context: RegistrationMap) -> None:
+    """Register all singleton instances described by the legacy extra-context map."""
+    register_singletons(registrations_from_map(context))

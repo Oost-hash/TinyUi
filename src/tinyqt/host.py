@@ -25,8 +25,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
-from PySide6.QtCore import QObject
+from PySide6.QtCore import QObject, QUrl
 from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQuick import QQuickWindow
 
 if TYPE_CHECKING:
     from tinydevtools.host import DevToolsUiAttachment
@@ -148,3 +149,18 @@ def wire_devtools_monitor(core, window: object) -> None:
     if visible_changed is not None:
         visible_changed.connect(_sync_visibility)
     _sync_visibility()
+
+
+def load_root_window(
+    engine: QQmlApplicationEngine,
+    qml_path: Path,
+) -> QQuickWindow | None:
+    """Load a QML file and return the root QQuickWindow when successful."""
+    engine.load(QUrl.fromLocalFile(str(qml_path)))
+    if not engine.rootObjects():
+        return None
+
+    window_obj = engine.rootObjects()[0]
+    if not isinstance(window_obj, QQuickWindow):
+        return None
+    return window_obj

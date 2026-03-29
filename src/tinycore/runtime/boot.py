@@ -33,6 +33,7 @@ from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
 from tinycore.plugin.manifest import PluginManifest, scan_plugins
 from tinycore.services import HostServices, RuntimeServices
+from tinyqt.registration import RegistrationMap
 
 from .core_runtime import CoreRuntime, build_runtime_registry
 from .host_workers import HostWorkerHandle, HostWorkerSupervisor
@@ -73,7 +74,7 @@ class HostOverlayBuild:
 @dataclass(frozen=True)
 class HostStateMonitorBuild:
     state_monitor: _StateMonitorLike | None
-    extra_context: dict[str, tuple[type, str, object]]
+    extra_context: RegistrationMap
 
 
 @dataclass(frozen=True)
@@ -122,7 +123,7 @@ class _OverlayLike(Protocol):
     def state(self) -> object: ...
 
     @property
-    def extra_context(self) -> dict[str, tuple[type, str, object]]: ...
+    def extra_context(self) -> RegistrationMap: ...
 
     @property
     def update_interval_ms(self) -> int: ...
@@ -260,7 +261,7 @@ def boot_runtime(
         raise RuntimeError("boot assembly is incomplete after required runtime phases")
     _attach_runtime_surfaces(activation, provider_activity)
 
-    extra_context = dict(overlay_build.overlay.extra_context)
+    extra_context: RegistrationMap = dict(overlay_build.overlay.extra_context)
     host_workers = HostWorkerSupervisor()
 
     registry = build_runtime_registry(

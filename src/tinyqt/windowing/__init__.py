@@ -19,3 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 """Shared cross-platform windowing support for the Qt host layer."""
+
+from .host import WindowingAttachment, attach_windowing
+
+__all__ = ["WindowingAttachment", "attach_windowing"]

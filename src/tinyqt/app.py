@@ -36,3 +36,18 @@ def create_application(argv: list[str] | None = None) -> QGuiApplication:
     QQuickWindow.setDefaultAlphaBuffer(True)
     QQuickStyle.setStyle("Basic")
     return QGuiApplication(argv)
+
+
+def create_configured_application(
+    *,
+    app_name: str,
+    version: str,
+    argv: list[str] | None = None,
+    quit_on_last_window_closed: bool = False,
+) -> QGuiApplication:
+    """Create and apply common application metadata for a Qt-hosted app."""
+    app = create_application(argv)
+    app.setQuitOnLastWindowClosed(quit_on_last_window_closed)
+    app.setApplicationName(app_name)
+    app.setApplicationVersion(version)
+    return app

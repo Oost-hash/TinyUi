@@ -30,6 +30,7 @@ from typing import Callable, Protocol
 from tinycore.diagnostics.runtime_state import RuntimeInspector
 from tinycore.paths import AppPaths
 from tinycore.services import HostServices, RuntimeServices
+from tinyqt.registration import RegistrationMap
 
 from .host_workers import HostWorkerSupervisor
 from .models import RuntimeActivationPolicy, RuntimeExecutionPolicy, RuntimeState, RuntimeUnitInfo, RuntimeUnitSpec
@@ -81,7 +82,7 @@ class CoreRuntime:
     runtime_inspector: RuntimeInspector | None
     overlay: _OverlayLike
     state_monitor: _StateMonitorLike | None
-    extra_context: dict[str, tuple[type, str, object]]
+    extra_context: RegistrationMap
     units: RuntimeRegistry
 
     def start_host_workers(self) -> None:

@@ -44,6 +44,7 @@ from tinycore.runtime.plugins.provider_activity import ProviderActivity
 from tinycore.runtime.plugins.provider_refresh import ProviderRefreshParticipant
 from tinycore.runtime.update_loop import RuntimeUpdateLoop
 from tinyqt.engine import create_engine
+from tinyqt.registration import RegistrationMap
 from .context import WidgetContext, WidgetModel, WidgetOverlayState
 from .spec import WidgetSpec
 from .state_participant import WidgetStateParticipant
@@ -91,7 +92,7 @@ class WidgetOverlay:
         return self._state
 
     @property
-    def extra_context(self) -> dict[str, tuple[type, str, object]]:
+    def extra_context(self) -> RegistrationMap:
         """Singleton registrations for the main QML engine."""
         return {
             "WidgetModel": (WidgetModel, "TinyWidgets", self._model),

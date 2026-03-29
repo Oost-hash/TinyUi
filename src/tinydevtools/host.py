@@ -31,7 +31,11 @@ from PySide6.QtQml import QQmlApplicationEngine
 
 from tinycore.logging import LogInspector
 from tinycore.runtime.core_runtime import CoreRuntime
-from tinyqt.registration import SingletonRegistration, register_singletons
+from tinyqt.registration import (
+    RegistrationMap,
+    SingletonRegistration,
+    register_singletons,
+)
 from tinywidgets.overlay import WidgetOverlay
 
 from .log_settings_viewmodel import LogSettingsViewModel
@@ -52,7 +56,7 @@ class _MonitorLike(Protocol):
 class DevToolsRuntimeAttachment:
     state_monitor: _MonitorLike
     runtime_view_model: RuntimeViewModel
-    extra_context: dict[str, tuple[type, str, object]]
+    extra_context: RegistrationMap
 
 
 @dataclass(frozen=True)
