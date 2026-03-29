@@ -43,19 +43,21 @@ from PySide6.QtQuick import QQuickWindow
 from tinycore.logging import LogInspector, get_logger
 from tinyqt.app import create_application
 from tinyqt.engine import create_engine
+from tinyqt.host import (
+    attach_optional_devtools_ui,
+    restore_window_state,
+    wire_app_shutdown,
+    wire_devtools_monitor,
+)
 from tinyqt.windowing.controller_api import WindowControllerApi
 from tinycore.runtime.core_runtime import CoreRuntime
 from tinyui.app_info import AppInfo
 from tinyui.const import APP_NAME, VERSION
 from tinyui.theme import Theme
 from tinyui.ui_adapters import (
-    attach_optional_devtools_ui,
     bind_statusbar_plugin_switching,
     bind_tab_plugin_switching,
     bind_theme_settings,
-    restore_main_window_state,
-    wire_app_shutdown,
-    wire_devtools_monitor,
 )
 from tinyui.viewmodels.core_viewmodel import CoreViewModel
 from tinyui.viewmodels.menu_viewmodel import MenuViewModel
@@ -235,13 +237,14 @@ def launch(
         core.units.set_state("ui.main", "running")
 
     # ── Window state restore ──────────────────────────────────────────────────
-    restore_main_window_state(core, window)
+    restore_window_state(core, window, scope="TinyUI")
 
     # ── Run ───────────────────────────────────────────────────────────────────
     wire_app_shutdown(
         app,
         core,
         window=window,
+        scope="TinyUI",
         log_inspector=log_inspector,
         engine=engine,
         devtools_ui=devtools_ui,
