@@ -27,10 +27,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterSingletonInstance
+from PySide6.QtQml import QQmlApplicationEngine
 
 from tinycore.logging import LogInspector
 from tinycore.runtime.core_runtime import CoreRuntime
+from tinyqt.registration import SingletonRegistration, register_singletons
 from tinywidgets.overlay import WidgetOverlay
 
 from .log_settings_viewmodel import LogSettingsViewModel
@@ -120,16 +121,18 @@ def attach_ui(
     """Attach devtools UI viewmodels and return the QML component path."""
     log_vm = LogViewModel(log_inspector)
     log_settings_vm = LogSettingsViewModel()
-    qmlRegisterSingletonInstance(
-        LogViewModel, "TinyDevTools", 1, 0, "LogViewModel", log_vm
-    )
-    qmlRegisterSingletonInstance(
-        LogSettingsViewModel,
-        "TinyDevTools",
-        1,
-        0,
-        "LogSettingsViewModel",
-        log_settings_vm,
+    register_singletons(
+        [
+            SingletonRegistration(
+                LogViewModel, "TinyDevTools", "LogViewModel", log_vm
+            ),
+            SingletonRegistration(
+                LogSettingsViewModel,
+                "TinyDevTools",
+                "LogSettingsViewModel",
+                log_settings_vm,
+            ),
+        ]
     )
 
     return DevToolsUiAttachment(

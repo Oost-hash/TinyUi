@@ -37,7 +37,6 @@ from typing import Callable, cast
 
 import PySide6
 from PySide6.QtCore import QtMsgType, QUrl, qInstallMessageHandler, qVersion
-from PySide6.QtQml import qmlRegisterSingletonInstance
 from PySide6.QtQuick import QQuickWindow
 
 from tinycore.logging import LogInspector, get_logger
@@ -49,6 +48,7 @@ from tinyqt.host import (
     wire_app_shutdown,
     wire_devtools_monitor,
 )
+from tinyqt.registration import SingletonRegistration, register_singletons
 from tinyqt.windowing.controller_api import WindowControllerApi
 from tinycore.runtime.core_runtime import CoreRuntime
 from tinyui.app_info import AppInfo
@@ -147,20 +147,25 @@ def launch(
     # ── QML engine ────────────────────────────────────────────────────────────
     phase_start = perf_counter()
     engine = create_engine()
-    qmlRegisterSingletonInstance(Theme, "TinyUI", 1, 0, "Theme", theme)
-    qmlRegisterSingletonInstance(
-        CoreViewModel, "TinyUI", 1, 0, "CoreViewModel", core_vm
+    register_singletons(
+        [
+            SingletonRegistration(Theme, "TinyUI", "Theme", theme),
+            SingletonRegistration(
+                CoreViewModel, "TinyUI", "CoreViewModel", core_vm
+            ),
+            SingletonRegistration(MenuViewModel, "TinyUI", "MenuViewModel", menu_vm),
+            SingletonRegistration(
+                StatusBarViewModel, "TinyUI", "StatusBarViewModel", statusbar_vm
+            ),
+            SingletonRegistration(
+                SettingsPanelViewModel,
+                "TinyUI",
+                "SettingsPanelViewModel",
+                settings_vm,
+            ),
+            SingletonRegistration(TabViewModel, "TinyUI", "TabViewModel", tab_vm),
+        ]
     )
-    qmlRegisterSingletonInstance(
-        MenuViewModel, "TinyUI", 1, 0, "MenuViewModel", menu_vm
-    )
-    qmlRegisterSingletonInstance(
-        StatusBarViewModel, "TinyUI", 1, 0, "StatusBarViewModel", statusbar_vm
-    )
-    qmlRegisterSingletonInstance(
-        SettingsPanelViewModel, "TinyUI", 1, 0, "SettingsPanelViewModel", settings_vm
-    )
-    qmlRegisterSingletonInstance(TabViewModel, "TinyUI", 1, 0, "TabViewModel", tab_vm)
 
     devtools_ui = attach_optional_devtools_ui(core, engine, log_inspector)
     app_info = AppInfo(
@@ -168,11 +173,17 @@ def launch(
         devtools_available=devtools_ui is not None,
         devtools_path="" if devtools_ui is None else devtools_ui.qml_url,
     )
-    qmlRegisterSingletonInstance(AppInfo, "TinyUI", 1, 0, "AppInfo", app_info)
+    register_singletons(
+        [SingletonRegistration(AppInfo, "TinyUI", "AppInfo", app_info)]
+    )
 
     if extra_context:
-        for name, (cls, module, instance) in extra_context.items():
-            qmlRegisterSingletonInstance(cls, module, 1, 0, name, instance)
+        register_singletons(
+            [
+                SingletonRegistration(cls, module, name, instance)
+                for name, (cls, module, instance) in extra_context.items()
+            ]
+        )
 
     qml_dir = core.paths.qml_dir("tinyui")
     engine.load(QUrl.fromLocalFile(str(qml_dir / "main.qml")))
@@ -219,8 +230,15 @@ def launch(
         apply_dwm_frame(hwnd)
         _win_ctrl = WindowController(hwnd, dpr=dpr, set_left_button_width=_set_left)
         _chrome_helper = WindowChromeHelper(dpr=dpr)
-        qmlRegisterSingletonInstance(
-            WindowChromeHelper, "TinyUI", 1, 0, "WindowChromeHelper", _chrome_helper
+        register_singletons(
+            [
+                SingletonRegistration(
+                    WindowChromeHelper,
+                    "TinyUI",
+                    "WindowChromeHelper",
+                    _chrome_helper,
+                )
+            ]
         )
 
     elif sys.platform.startswith("linux") or sys.platform == "darwin":
@@ -229,8 +247,15 @@ def launch(
         _win_ctrl = WindowController(window)
 
     if _win_ctrl is not None:
-        qmlRegisterSingletonInstance(
-            WindowControllerApi, "TinyUI", 1, 0, "WindowController", _win_ctrl
+        register_singletons(
+            [
+                SingletonRegistration(
+                    WindowControllerApi,
+                    "TinyUI",
+                    "WindowController",
+                    _win_ctrl,
+                )
+            ]
         )
     _log_startup_phase(log, "windowing", phase_start)
     if core.units.get("ui.main") is not None:
