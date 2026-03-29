@@ -20,10 +20,39 @@
 #  licensed under GPLv3.
 """tinyqt — shared Qt runtime and render-host layer."""
 
-from .app import create_application
-from .engine import create_engine
+from .manifests import TinyQtAppManifest, TinyQtPanelManifest, TinyQtShellManifest
+
+
+def create_application(*args, **kwargs):
+    from .app import create_application as _create_application
+
+    return _create_application(*args, **kwargs)
+
+
+def boot_and_launch_qml_app(*args, **kwargs):
+    from .bootstrap import boot_and_launch_qml_app as _boot_and_launch_qml_app
+
+    return _boot_and_launch_qml_app(*args, **kwargs)
+
+
+def create_engine(*args, **kwargs):
+    from .engine import create_engine as _create_engine
+
+    return _create_engine(*args, **kwargs)
+
+
+def launch_qml_app(*args, **kwargs):
+    from .launch import launch_qml_app as _launch_qml_app
+
+    return _launch_qml_app(*args, **kwargs)
+
 
 __all__ = [
+    "boot_and_launch_qml_app",
     "create_application",
     "create_engine",
+    "launch_qml_app",
+    "TinyQtAppManifest",
+    "TinyQtPanelManifest",
+    "TinyQtShellManifest",
 ]

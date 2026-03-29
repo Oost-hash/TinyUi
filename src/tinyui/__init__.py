@@ -20,6 +20,4 @@
 #  licensed under GPLv3.
 """tinyui package."""
 
-from .plugin import TinyUIPlugin
-
-__all__ = ["TinyUIPlugin"]
+__all__: list[str] = []

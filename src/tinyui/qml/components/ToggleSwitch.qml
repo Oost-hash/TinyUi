@@ -1,56 +1,43 @@
-//  TinyUI
-//  Copyright (C) 2026 Oost-hash
-//
-//  This file is part of TinyUI.
-//
-//  TinyUI is free software: you can redistribute it and/or modify
-//  it under the terms of the GNU General Public License as published by
-//  the Free Software Foundation, either version 3 of the License, or
-//  (at your option) any later version.
-//
-//  TinyUI is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//  GNU General Public License for more details.
-//
-//  You should have received a copy of the GNU General Public License
-//  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//
-//  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
-//  licensed under GPLv3.
-
 import QtQuick
-import TinyUI
 
 Item {
     id: root
 
     property bool checked: false
+    property bool enabled: true
+
     signal toggled(bool newValue)
 
-    implicitWidth:  34
-    implicitHeight: 18
+    implicitWidth: 40
+    implicitHeight: 22
 
     Rectangle {
         anchors.fill: parent
-        radius: 9
-        color: root.checked ? Theme.accent : Theme.surfaceFloating
+        radius: height / 2
+        color: !root.enabled ? "#2a2f37" : (root.checked ? "#d9e3ef" : "#252b34")
         border.width: 1
-        border.color: root.checked ? "transparent" : Theme.border
-        Behavior on color        { ColorAnimation { duration: 140 } }
-        Behavior on border.color { ColorAnimation { duration: 140 } }
+        border.color: root.checked ? "#d9e3ef" : "#39414d"
 
         Rectangle {
+            width: 16
+            height: 16
+            radius: 8
+            x: root.checked ? parent.width - width - 3 : 3
             anchors.verticalCenter: parent.verticalCenter
-            x: root.checked ? parent.width - width - 2 : 2
-            width: 14; height: 14; radius: 7
-            color: "#FFFFFF"
-            Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+            color: !root.enabled ? "#636b78" : (root.checked ? "#15191e" : "#f4f7fb")
+
+            Behavior on x {
+                NumberAnimation {
+                    duration: 120
+                    easing.type: Easing.OutCubic
+                }
+            }
         }
     }
 
     MouseArea {
         anchors.fill: parent
+        enabled: root.enabled
         onClicked: root.toggled(!root.checked)
     }
 }

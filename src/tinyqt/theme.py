@@ -19,16 +19,14 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
+"""Shared Qt theme singleton used across TinyUI-hosted QML surfaces."""
+
 import os
 import platform as _platform
 import tomllib
 
 from PySide6.QtCore import QObject, Property, Signal, Slot
 from PySide6.QtGui import QColor
-from PySide6.QtQml import QmlElement, QmlSingleton
-
-QML_IMPORT_NAME = "TinyUI"
-QML_IMPORT_MAJOR_VERSION = 1
 
 _sys = _platform.system()
 _FONT_FAMILY = (
@@ -45,8 +43,6 @@ def _load_toml(name: str) -> dict:
         return tomllib.load(f)
 
 
-@QmlElement
-@QmlSingleton
 class Theme(QObject):
     """Laadt kleuren uit TOML en exposeert ze als QML-bindbare properties."""
 

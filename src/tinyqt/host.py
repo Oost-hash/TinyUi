@@ -22,12 +22,30 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import TYPE_CHECKING, Any, Callable, Protocol, cast
 
-from PySide6.QtCore import QObject, QUrl
-from PySide6.QtQml import QQmlApplicationEngine
-from PySide6.QtQuick import QQuickWindow
+from PySide6.QtCore import QObject, QUrl, Slot
+from PySide6.QtQml import QQmlApplicationEngine, QQmlComponent
+from PySide6.QtQuick import QQuickItem, QQuickWindow
+
+from tinyqt.engine import create_engine
+from tinyqt.apps import build_tinydevtools_manifest
+from tinyqt.manifests import (
+    TinyQtAppManifest,
+    manifest_eager_panel_indexes,
+    manifest_has_optional_feature,
+    manifest_panel_labels,
+    validate_required_singletons,
+)
+from tinyqt.registration import (
+    RegistrationMap,
+    SingletonRegistration,
+    register_context_map,
+    register_singletons,
+)
+from tinyqt.windowing import WindowingAttachment, attach_windowing
 
 if TYPE_CHECKING:
     from tinydevtools.host import DevToolsUiAttachment
@@ -42,6 +60,137 @@ class WindowGeometryLike(Protocol):
     def y(self) -> int: ...
     def width(self) -> int: ...
     def height(self) -> int: ...
+
+
+class LazyDevToolsController(QObject):
+    """Open the DevTools window on demand without polluting main-window startup."""
+
+    def __init__(self, *, app, core, theme: object, log_inspector: object) -> None:
+        super().__init__(cast(QObject | None, app))
+        self._app = app
+        self._core = core
+        self._theme = theme
+        self._log_inspector = log_inspector
+        self._host: QtWindowHost | None = None
+        self._initialized = False
+
+    def _build_registrations(self) -> list[SingletonRegistration]:
+        from tinydevtools.log_settings_viewmodel import LogSettingsViewModel
+        from tinydevtools.log_viewmodel import LogViewModel
+
+        log_view_model_cls = cast(type, LogViewModel)
+        log_settings_view_model_cls = cast(type, LogSettingsViewModel)
+
+        return [
+            SingletonRegistration(cast(type, type(self._theme)), "TinyUI", "Theme", self._theme),
+            SingletonRegistration(
+                log_view_model_cls,
+                "TinyDevTools",
+                "LogViewModel",
+                log_view_model_cls(self._log_inspector),
+            ),
+            SingletonRegistration(
+                log_settings_view_model_cls,
+                "TinyDevTools",
+                "LogSettingsViewModel",
+                log_settings_view_model_cls(),
+            ),
+        ]
+
+    def _create_host(self) -> QtWindowHost | None:
+        devtools_manifest = build_tinydevtools_manifest(self._core.paths)
+        content_qml_path = devtools_manifest.root_qml
+        tool_window_qml = self._core.paths.source_root / "tinyqt" / "ToolWindow.qml"
+        if content_qml_path is None:
+            return None
+        host = create_window_host(
+            self._core,
+            app=self._app,
+            qml_path=tool_window_qml,
+            app_manifest=devtools_manifest,
+            theme=self._theme,
+            log_inspector=self._log_inspector,
+            build_registrations=lambda _devtools_ui: self._build_registrations(),
+            extra_context=self._core.extra_context,
+            module="TinyDevTools",
+        )
+        if host is None:
+            return None
+        if not self._attach_content(host.engine, host.window, content_qml_path):
+            return None
+        return host
+
+    def _attach_content(
+        self,
+        engine: QQmlApplicationEngine,
+        window: QQuickWindow,
+        qml_path: Path,
+    ) -> bool:
+        component = QQmlComponent(engine)
+        component.loadUrl(QUrl.fromLocalFile(str(qml_path)))
+        if component.isError():
+            return False
+        content_item = component.create()
+        if not isinstance(content_item, QQuickItem):
+            return False
+        content_item.setParent(window)
+        content_item.setParentItem(window.contentItem())
+        content_item.setWidth(window.width())
+        content_item.setHeight(window.height())
+        width_changed = cast(Any, getattr(window, "widthChanged", None))
+        height_changed = cast(Any, getattr(window, "heightChanged", None))
+        if width_changed is not None:
+            width_changed.connect(lambda: content_item.setWidth(window.width()))
+        if height_changed is not None:
+            height_changed.connect(lambda: content_item.setHeight(window.height()))
+        return True
+
+    @Slot()
+    def toggle(self) -> None:
+        if not self._initialized:
+            self._host = self._create_host()
+            self._initialized = True
+            if self._host is None:
+                return
+            self._host.window.setProperty("loadPanels", True)
+            self._host.window.setProperty("currentTab", 1)
+            self._host.window.setProperty("eagerPanelIndexes", [1])
+
+        if self._host is None:
+            return
+
+        if self._host.window.isVisible():
+            self._host.window.hide()
+            return
+
+        self._host.window.show()
+        self._host.window.raise_()
+        self._host.window.requestActivate()
+
+
+def apply_manifest_shell_state(window: QObject, manifest: TinyQtAppManifest) -> None:
+    """Push manifest-defined shell state onto the loaded root object when supported."""
+    shell = manifest.shell
+    property_values: dict[str, object] = {
+        "windowTitle": manifest.title,
+        "tabLabels": manifest_panel_labels(manifest),
+        "currentTab": 0,
+        "showTabBar": shell.use_tab_bar,
+        "showStatusBar": shell.use_status_bar,
+        "lazyPanelLoading": shell.lazy_panel_loading,
+        "eagerPanelIndexes": manifest_eager_panel_indexes(manifest),
+    }
+    for name, value in property_values.items():
+        window.setProperty(name, value)
+
+
+@dataclass(frozen=True)
+class QtWindowHost:
+    engine: QQmlApplicationEngine
+    window: QQuickWindow
+    devtools_ui: DevToolsUiAttachment | None
+    devtools_controller: LazyDevToolsController | None
+    windowing: WindowingAttachment
 
 
 def _maybe_int(value: object) -> int | None:
@@ -105,15 +254,24 @@ def wire_app_shutdown(
 
 
 def attach_optional_devtools_ui(
-    core, engine: QQmlApplicationEngine, log_inspector
+    core,
+    engine: QQmlApplicationEngine,
+    log_inspector,
+    *,
+    host_manifest: TinyQtAppManifest | None = None,
 ) -> "DevToolsUiAttachment | None":
     """Attach optional devtools UI viewmodels through the shared Qt host seam."""
+    if host_manifest is not None and not manifest_has_optional_feature(host_manifest, "devtools_ui"):
+        return None
     try:
         from tinydevtools.host import attach_ui
     except ImportError:
         return None
 
-    qml_path = Path(core.paths.qml_dir("tinydevtools")) / "DevToolsWindow.qml"
+    devtools_manifest = build_tinydevtools_manifest(core.paths)
+    qml_path = devtools_manifest.root_qml
+    if qml_path is None:
+        return None
     return attach_ui(
         engine,
         log_inspector,
@@ -164,3 +322,67 @@ def load_root_window(
     if not isinstance(window_obj, QQuickWindow):
         return None
     return window_obj
+
+
+def create_window_host(
+    core,
+    *,
+    app,
+    qml_path: Path,
+    app_manifest: TinyQtAppManifest,
+    theme,
+    log_inspector,
+    build_registrations: Callable[[DevToolsUiAttachment | None], list[SingletonRegistration]],
+    extra_context: RegistrationMap | None = None,
+    module: str = "TinyUI",
+) -> QtWindowHost | None:
+    """Create the shared Qt window host and attach common runtime surfaces."""
+    engine = create_engine()
+
+    devtools_ui = None
+    initial_registrations = build_registrations(devtools_ui)
+    register_singletons(initial_registrations)
+    if extra_context:
+        register_context_map(extra_context)
+
+    window = load_root_window(engine, qml_path)
+    if window is None:
+        return None
+    apply_manifest_shell_state(window, app_manifest)
+    devtools_controller = None
+    if manifest_has_optional_feature(app_manifest, "devtools_ui"):
+        devtools_controller = LazyDevToolsController(
+            app=app,
+            core=core,
+            theme=theme,
+            log_inspector=log_inspector,
+        )
+        window.setProperty("devToolsController", devtools_controller)
+        window.setProperty("devToolsAvailable", True)
+    else:
+        window.setProperty("devToolsAvailable", devtools_ui is not None)
+    window.setProperty("devToolsQmlPath", "" if devtools_ui is None else devtools_ui.qml_url)
+
+    wire_devtools_monitor(core, window)
+    windowing = attach_windowing(app=app, window=window, theme=theme, module=module)
+    if windowing.registrations:
+        register_singletons(list(windowing.registrations))
+
+    available_singletons = {registration.name for registration in initial_registrations}
+    available_singletons.update(registration.name for registration in windowing.registrations)
+    if extra_context:
+        available_singletons.update(extra_context.keys())
+    missing_singletons = validate_required_singletons(app_manifest, available_singletons)
+    if missing_singletons:
+        raise RuntimeError(
+            "TinyQt manifest contract violation for "
+            f"'{app_manifest.app_id}': missing required singletons: {', '.join(missing_singletons)}"
+        )
+
+    return QtWindowHost(
+        engine=engine,
+        window=window,
+        devtools_ui=devtools_ui,
+        devtools_controller=devtools_controller,
+        windowing=windowing,
+    )

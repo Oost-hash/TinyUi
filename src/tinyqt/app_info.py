@@ -18,12 +18,30 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
+"""Qt-host application metadata exposed to QML as a singleton."""
 
-"""QML POC constants — leest naam en versie uit pyproject.toml metadata."""
+from __future__ import annotations
 
-from importlib.metadata import metadata
+from PySide6.QtCore import QObject, Property
 
-_meta = metadata("tinyui")
 
-APP_NAME: str = _meta["Name"]
-VERSION: str = _meta["Version"]
+class AppInfo(QObject):
+
+    def __init__(self, app_name: str, devtools_available: bool, devtools_path: str,
+                 parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._app_name = app_name
+        self._devtools_available = devtools_available
+        self._devtools_path = devtools_path
+
+    @Property(str, constant=True)
+    def appName(self) -> str:
+        return self._app_name
+
+    @Property(bool, constant=True)
+    def devToolsAvailable(self) -> bool:
+        return self._devtools_available
+
+    @Property(str, constant=True)
+    def devToolsQmlPath(self) -> str:
+        return self._devtools_path

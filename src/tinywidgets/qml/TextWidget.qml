@@ -56,40 +56,39 @@ Window {
         anchors.fill: parent
         color:        "#CC000000"
         radius:       6
-    }
-
-    Column {
-        anchors.centerIn: parent
-        spacing:          2
-        // "text" target: label + value together fade
-        opacity: win._flashTarget === "text" ? (win._flashVisible ? 1.0 : 0.0) : 1.0
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.topMargin: 10
             text:           win.widgetContext ? win.widgetContext.label : ""
             color:          "#888888"
+            opacity:        win._flashTarget === "text" ? (win._flashVisible ? 1.0 : 0.0) : 1.0
             font.pixelSize: 10
             font.family:    "Segoe UI"
         }
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 10
             text:           win.widgetContext ? win.widgetContext.text  : ""
             color:          win.widgetContext ? win.widgetContext.color : "#E0E0E0"
-            // "value" target: only the number fades
-            opacity:        win._flashTarget === "value" ? (win._flashVisible ? 1.0 : 0.0) : 1.0
+            opacity:        win._flashTarget === "value"
+                            ? (win._flashVisible ? 1.0 : 0.0)
+                            : (win._flashTarget === "text" ? (win._flashVisible ? 1.0 : 0.0) : 1.0)
             font.pixelSize: 22
             font.bold:      true
             font.family:    "Segoe UI"
         }
-    }
 
-    // Drag the window by clicking anywhere on it — OS handles the move natively
-    MouseArea {
-        anchors.fill: parent
-        cursorShape:  pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+        // Drag the window by clicking anywhere on it — OS handles the move natively
+        MouseArea {
+            anchors.fill: parent
+            cursorShape:  pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
 
-        onPressed:  win.startSystemMove()
-        onReleased: if (win.widgetContext) win.widgetContext.move(win.x, win.y)
+            onPressed:  win.startSystemMove()
+            onReleased: if (win.widgetContext) win.widgetContext.move(win.x, win.y)
+        }
     }
 }

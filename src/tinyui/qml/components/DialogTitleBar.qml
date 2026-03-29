@@ -20,6 +20,7 @@
 //  licensed under GPLv3.
 
 import QtQuick
+import TinyQt 1.0
 import TinyUI
 
 Rectangle {
@@ -46,14 +47,14 @@ Rectangle {
         font.weight: Font.DemiBold
     }
 
-    TitleBarButton {
+    WindowButton {
         anchors.right: maximizeBtn.left
         height: parent.height
         iconSource: "../../assets/icons/window-minimize.svg"
         onClicked: root.Window.window.showMinimized()
     }
 
-    TitleBarButton {
+    WindowButton {
         id: maximizeBtn
         anchors.right: closeBtn.left
         height: parent.height
@@ -68,7 +69,7 @@ Rectangle {
         }
     }
 
-    TitleBarButton {
+    WindowButton {
         id: closeBtn
         anchors.right: parent.right
         height: parent.height

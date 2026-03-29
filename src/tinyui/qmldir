@@ -1,0 +1,14 @@
+module TinyUI
+BaseDialog 1.0 ../tinyui/qml/components/BaseDialog.qml
+ColorPicker 1.0 ../tinyui/qml/components/ColorPicker.qml
+DialogFooter 1.0 ../tinyui/qml/components/DialogFooter.qml
+DialogTitleBar 1.0 ../tinyui/qml/components/DialogTitleBar.qml
+NumberStepper 1.0 ../tinyui/qml/components/NumberStepper.qml
+StatusBarIconButton 1.0 ../tinyui/qml/components/StatusBarIconButton.qml
+ThemedComboBox 1.0 ../tinyui/qml/components/ThemedComboBox.qml
+ThresholdEditor 1.0 ../tinyui/qml/components/ThresholdEditor.qml
+ToggleSwitch 1.0 ../tinyui/qml/components/ToggleSwitch.qml
+ResizeHandles 1.0 ../tinyui/qml/layout/ResizeHandles.qml
+WidgetTab 1.0 ../tinyui/qml/tabs/WidgetTab.qml
+ConsoleWindow 1.0 ../tinyui/qml/ConsoleWindow.qml
+SettingsDialog 1.0 ../tinyui/qml/SettingsDialog.qml

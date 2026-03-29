@@ -51,6 +51,9 @@ from PySide6.QtQml import QmlElement, QmlSingleton
 
 from tinyqt.windowing.controller_api import WindowControllerApi
 
+QML_IMPORT_NAME = "TinyUI"
+QML_IMPORT_MAJOR_VERSION = 1
+
 # -- Win32 constants ----------------------------------------------------------
 
 GWL_STYLE        = -16

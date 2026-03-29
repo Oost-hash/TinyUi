@@ -20,144 +20,26 @@
 //  licensed under GPLv3.
 
 import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
-import TinyUI
-import "layout"
-import "tabs"
-import "."
+import QtQuick.Window
+import TinyQt 1.0 as TinyQtModule
 
-ApplicationWindow {
+Window {
     id: root
 
     width: 900
     height: 600
-    minimumWidth: 400
-    minimumHeight: 300
+    minimumWidth: 480
+    minimumHeight: 320
     visible: true
 
-    // Minimum width computed once based on the longest description
-    TextMetrics {
-        id: _descMetrics
-        font.family: Theme.fontFamily
-        font.pixelSize: Theme.fontSizeSmall
-    }
-    function _minWidth(): int {
-        var max = 0
-        var widgets = CoreViewModel.widgets
-        for (var i = 0; i < widgets.length; i++) {
-            _descMetrics.text = widgets[i].description
-            if (_descMetrics.advanceWidth > max) max = _descMetrics.advanceWidth
-        }
-        return Math.ceil(16 + 200 + max + 56)  // colPad + colName + desc + colToggle
-    }
-    Component.onCompleted: minimumWidth = _minWidth()
-
-    title: AppInfo.appName
-    // Windows: frameless + custom TitleBar + DWM chrome.
-    // Linux/macOS: server-side decorations — compositor/AppKit handles chrome.
-    //              Our TitleBar acts as a menu bar below the native chrome.
+    title: "TinyUI"
     readonly property bool nativeChrome: Qt.platform.os === "linux" || Qt.platform.os === "osx"
-
-    readonly property bool hasDevTools: AppInfo.devToolsAvailable && AppInfo.devToolsQmlPath !== ""
-
-    function openDevTools() {
-        var w = devToolsLoader.item as Window
-        if (w) w.show()
-    }
-    function toggleDevTools() {
-        var w = devToolsLoader.item as Window
-        if (!w) return
-        if (w.visible) w.hide()
-        else w.show()
-    }
     flags: nativeChrome ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
-    color: Theme.surface
+    color: "#17181c"
 
-    // Both backdrops cover only the content area (between title bar and status bar).
-    // Mutual exclusion is enforced in Python — they are never open simultaneously.
-    // On Linux: no custom title bar, so content starts at y:0.
-
-    readonly property int contentTop: Qt.platform.os === "linux" ? 0 : Theme.titleBarHeight
-
-    // Catches clicks outside an open menu popup — closes popup, menu stays open.
-    // Covers from tab bar downward so clicking a tab while the dropdown is open
-    // both dismisses the popup and switches the tab (propagateComposedEvents).
-    MouseArea {
-        x: 0; y: root.contentTop
-        width: parent.width
-        height: parent.height - root.contentTop - 32
-        z: 4
-        enabled: MenuViewModel.menuOpen
-        propagateComposedEvents: true
-        onClicked: mouse => {
-            MenuViewModel.dismissActivePopup()
-            mouse.accepted = false
-        }
-    }
-
-    // Catches clicks outside the plugin dropdown — closes dropdown
-    MouseArea {
-        x: 0; y: root.contentTop + 42
-        width: parent.width
-        height: parent.height - root.contentTop - 42 - 32
-        z: 3
-        enabled: StatusBarViewModel.pluginDropdownOpen
-        propagateComposedEvents: true
-        onClicked: mouse => {
-            StatusBarViewModel.closePluginDropdown()
-            mouse.accepted = false
-        }
-    }
-
-    // Linux: compositor has no built-in resize for frameless windows — QML handles it.
-    // Windows: WndProc (win_window.py) handles resize via HTTEST. macOS: native chrome.
-    ResizeHandles { visible: Qt.platform.os === "linux" }
-
-    ColumnLayout {
-        anchors.fill: parent
-        spacing: 0
-
-        TitleBar {
-            Layout.fillWidth: true
-            z: 1  // dropdowns render above StyledTabBar and content
-            hasDevTools: root.hasDevTools
-            nativeChrome: root.nativeChrome
-            windowVisibility: root.visibility
-            onCloseWindow: root.close()
-            onOpenDevToolsRequested: root.openDevTools()
-        }
-
-        StyledTabBar {
-            Layout.fillWidth: true
-        }
-
-        StackLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            currentIndex: TabViewModel.currentIndex
-
-            WidgetTab {}
-        }
-
-        StatusBar {
-            Layout.fillWidth: true
-        }
-    }
-
-    // SettingsDialog and DevToolsWindow are Windows — outside ColumnLayout
-    SettingsDialog {}
-    Loader {
-        id: devToolsLoader
-        objectName: "devToolsLoader"
-        active: root.hasDevTools
-        source: root.hasDevTools ? AppInfo.devToolsQmlPath : ""
-    }
-
-    // F12 — open Dev Tools, just like browser devtools
-    // TODO: make keyboard shortcuts configurable in settings
-    Shortcut {
-        sequence: "F12"
-        onActivated: root.toggleDevTools()
+    TinyQtModule.WindowMenuBar {
+        x: 0
+        y: 0
+        width: root.width
     }
 }

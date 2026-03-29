@@ -22,6 +22,7 @@ class QmlModule:
 
 
 MODULES = [
+    QmlModule("TinyQt", SRC / "tinyqt", SRC / "TinyQt"),
     QmlModule("TinyUI", SRC / "tinyui", SRC / "tinyui" / "qml"),
     QmlModule("TinyDevTools", SRC / "tinydevtools", SRC / "tinydevtools" / "qml"),
     QmlModule("TinyWidgets", SRC / "tinywidgets", SRC / "tinywidgets" / "qml"),

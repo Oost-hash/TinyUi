@@ -400,7 +400,7 @@ def build_runtime_registry(
             depends_on=("host.main",),
             schedule_kind="manual",
             schedule_clock="host",
-            schedule_driver="tinyui.launch",
+            schedule_driver="tinyqt.launch",
         )
     )
     registry.declare(

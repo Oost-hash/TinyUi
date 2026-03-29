@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""Shared attachment helpers for optional Qt-facing feature packages."""
+"""Shared helpers for optional Qt-hosted features such as widgets and devtools."""
 
 from __future__ import annotations
 

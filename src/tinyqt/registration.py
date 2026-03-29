@@ -31,6 +31,7 @@ from PySide6.QtQml import qmlRegisterSingletonInstance
 
 RegistrationEntry: TypeAlias = tuple[type, str, object]
 RegistrationMap: TypeAlias = dict[str, RegistrationEntry]
+_registered_instances: list[object] = []
 
 
 @dataclass(frozen=True)
@@ -46,12 +47,15 @@ class SingletonRegistration:
 def register_singletons(registrations: Iterable[SingletonRegistration]) -> None:
     """Register multiple singleton instances into the global QML type system."""
     for registration in registrations:
+        _registered_instances.append(registration.instance)
+        # PySide 6.10 accepts the QML name as str at runtime even though the stub
+        # still advertises the older bytes-only shape.
         qmlRegisterSingletonInstance(
             registration.cls,
             registration.module,
             registration.major_version,
             registration.minor_version,
-            registration.name.encode("utf-8"),
+            registration.name,  # pyright: ignore[reportArgumentType]
             registration.instance,
         )
 

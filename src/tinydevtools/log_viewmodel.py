@@ -49,9 +49,13 @@ class LogViewModel(QObject):
         super().__init__(parent)
         self._inspector = inspector
         self._inspector.subscribe(self._on_record)
+        self.destroyed.connect(lambda *_: self.shutdown())
 
     def _on_record(self, entry: LogRecordEntry) -> None:
-        self.recordAdded.emit(entry.time, entry.level, entry.name, entry.message)
+        try:
+            self.recordAdded.emit(entry.time, entry.level, entry.name, entry.message)
+        except RuntimeError:
+            self.shutdown()
 
     @Slot()
     def replay(self) -> None:

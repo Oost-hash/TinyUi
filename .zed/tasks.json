@@ -7,6 +7,48 @@
     "tags": ["qml", "lint"]
   },
   {
+    "label": "Internal Probe WindowBar",
+    "command": ".venv/Scripts/python.exe scripts/internal/qml_probe.py probe_04_tinyqt_window_bar.qml",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "reveal": "always",
+    "tags": ["qml", "probe", "internal"]
+  },
+  {
+    "label": "Internal Probe StatusBar",
+    "command": ".venv/Scripts/python.exe scripts/internal/qml_probe.py probe_12_tinyqt_status_bar.qml",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "reveal": "always",
+    "tags": ["qml", "probe", "internal"]
+  },
+  {
+    "label": "Internal Probe DevTools Shell",
+    "command": ".venv/Scripts/python.exe scripts/internal/qml_probe.py probe_13_devtools_window.qml --app-manifest tinydevtools.window",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "reveal": "always",
+    "tags": ["qml", "probe", "internal"]
+  },
+  {
+    "label": "Internal Probe DevTools State",
+    "command": ".venv/Scripts/python.exe scripts/internal/qml_probe.py probe_14_devtools_state_tab.qml --app-manifest tinydevtools.window",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "reveal": "always",
+    "tags": ["qml", "probe", "internal"]
+  },
+  {
+    "label": "Internal Probe DevTools Runtime",
+    "command": ".venv/Scripts/python.exe scripts/internal/qml_probe.py probe_15_devtools_runtime_tab.qml --app-manifest tinydevtools.window",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "reveal": "always",
+    "tags": ["qml", "probe", "internal"]
+  },
+  {
+    "label": "Internal Probe Console Pane",
+    "command": ".venv/Scripts/python.exe scripts/internal/qml_probe.py probe_16_console_pane.qml --app-manifest tinydevtools.window",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "reveal": "always",
+    "tags": ["qml", "probe", "internal"]
+  },
+  {
     "label": "Diagnostics Summary",
     "command": ".venv/Scripts/python.exe scripts/diagnostics.py summary --oneline",
     "cwd": "$ZED_WORKTREE_ROOT",

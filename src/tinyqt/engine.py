@@ -22,9 +22,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from PySide6.QtQml import QQmlApplicationEngine
 
 
 def create_engine() -> QQmlApplicationEngine:
     """Create a QQmlApplicationEngine."""
-    return QQmlApplicationEngine()
+    engine = QQmlApplicationEngine()
+    src_root = Path(__file__).resolve().parents[1]
+    engine.addImportPath(str(src_root))
+    return engine

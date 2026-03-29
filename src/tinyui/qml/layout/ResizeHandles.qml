@@ -19,8 +19,6 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
-pragma ComponentBehavior: Bound
-
 import QtQuick
 import TinyUI
 
@@ -41,45 +39,77 @@ Item {
 
     Item {
         x: 0; y: 0; width: resizeHandles.c; height: resizeHandles.c
-        HoverHandler { cursorShape: Qt.SizeFDiagCursor }
-        DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.TopEdge    | Qt.LeftEdge)  }
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.SizeFDiagCursor
+            onPressed: WindowController.startResize(Qt.TopEdge | Qt.LeftEdge)
+        }
     }
     Item {
         x: resizeHandles.width - resizeHandles.c; y: 0; width: resizeHandles.c; height: resizeHandles.c
-        HoverHandler { cursorShape: Qt.SizeBDiagCursor }
-        DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.TopEdge    | Qt.RightEdge) }
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.SizeBDiagCursor
+            onPressed: WindowController.startResize(Qt.TopEdge | Qt.RightEdge)
+        }
     }
     Item {
         x: 0; y: resizeHandles.height - resizeHandles.c; width: resizeHandles.c; height: resizeHandles.c
-        HoverHandler { cursorShape: Qt.SizeBDiagCursor }
-        DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.BottomEdge | Qt.LeftEdge)  }
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.SizeBDiagCursor
+            onPressed: WindowController.startResize(Qt.BottomEdge | Qt.LeftEdge)
+        }
     }
     Item {
         x: resizeHandles.width - resizeHandles.c; y: resizeHandles.height - resizeHandles.c; width: resizeHandles.c; height: resizeHandles.c
-        HoverHandler { cursorShape: Qt.SizeFDiagCursor }
-        DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.BottomEdge | Qt.RightEdge) }
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.SizeFDiagCursor
+            onPressed: WindowController.startResize(Qt.BottomEdge | Qt.RightEdge)
+        }
     }
 
     // ── Randen ────────────────────────────────────────────────────────────
 
     Item {
         x: resizeHandles.c; y: 0; width: resizeHandles.width - 2 * resizeHandles.c; height: resizeHandles.b
-        HoverHandler { cursorShape: Qt.SizeVerCursor }
-        DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.TopEdge)    }
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.SizeVerCursor
+            onPressed: WindowController.startResize(Qt.TopEdge)
+        }
     }
     Item {
         x: resizeHandles.c; y: resizeHandles.height - resizeHandles.b; width: resizeHandles.width - 2 * resizeHandles.c; height: resizeHandles.b
-        HoverHandler { cursorShape: Qt.SizeVerCursor }
-        DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.BottomEdge) }
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.SizeVerCursor
+            onPressed: WindowController.startResize(Qt.BottomEdge)
+        }
     }
     Item {
         x: 0; y: resizeHandles.c; width: resizeHandles.b; height: resizeHandles.height - 2 * resizeHandles.c
-        HoverHandler { cursorShape: Qt.SizeHorCursor }
-        DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.LeftEdge)   }
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.SizeHorCursor
+            onPressed: WindowController.startResize(Qt.LeftEdge)
+        }
     }
     Item {
         x: resizeHandles.width - resizeHandles.b; y: resizeHandles.c; width: resizeHandles.b; height: resizeHandles.height - 2 * resizeHandles.c
-        HoverHandler { cursorShape: Qt.SizeHorCursor }
-        DragHandler  { target: null; onActiveChanged: if (active) WindowController.startResize(Qt.RightEdge)  }
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.SizeHorCursor
+            onPressed: WindowController.startResize(Qt.RightEdge)
+        }
     }
 }

@@ -22,8 +22,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import "../../tinydevtools/qml"
-import "components"
+import TinyDevTools
+import TinyUI
 
 BaseDialog {
     id: consoleWin

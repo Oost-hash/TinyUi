@@ -36,6 +36,9 @@ __pycache__/
 
 # dev notes (archived)
 internal_docs/
+docs/internal/
+scripts/internal/
+scripts/qml_probe.py
 
 # archives
 *.7z

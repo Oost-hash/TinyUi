@@ -20,7 +20,7 @@
 #  licensed under GPLv3.
 
 #  TinyUI
-"""TinyUI-owned UI adapter helpers."""
+"""TinyUI-specific bindings between runtime state, settings, and shell viewmodels."""
 
 from __future__ import annotations
 

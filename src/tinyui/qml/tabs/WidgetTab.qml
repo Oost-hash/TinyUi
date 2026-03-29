@@ -1,502 +1,709 @@
-//  TinyUI
-//  Copyright (C) 2026 Oost-hash
-//
-//  This file is part of TinyUI.
-//
-//  TinyUI is free software: you can redistribute it and/or modify
-//  it under the terms of the GNU General Public License as published by
-//  the Free Software Foundation, either version 3 of the License, or
-//  (at your option) any later version.
-//
-//  TinyUI is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//  GNU General Public License for more details.
-//
-//  You should have received a copy of the GNU General Public License
-//  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//
-//  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
-//  licensed under GPLv3.
-
-pragma ComponentBehavior: Bound
-
 import QtQuick
-import TinyUI
-import TinyWidgets
-import "../components"
+import TinyUI 1.0
 
-Item {
-    id: widgetTab
+Rectangle {
+    id: root
 
-    readonly property int colName:   200
-    readonly property int colToggle:  56
-    readonly property int colPad:     16
+    property var widgetItems: []
+    property string sectionTitle: "Widgets"
+    property int selectedIndex: 0
+    property var thresholdPalette: [
+        "#ff5252",
+        "#f4b400",
+        "#34a853",
+        "#42a5f5",
+        "#ab47bc",
+        "#ff8a65"
+    ]
+    property var thresholdTargets: ["value", "text", "widget"]
 
-    property var selectedContext: null
-    property var demoLeaseContext: null
-
-    function syncDemoLease(previousContext, nextContext) {
-        if (previousContext && previousContext.demoRequested)
-            previousContext.releaseDemo()
-        if (nextContext && nextContext.supportsDemoMode && !nextContext.demoRequested)
-            nextContext.requestDemo()
-        demoLeaseContext = nextContext && nextContext.demoRequested ? nextContext : null
-        if (typeof WidgetOverlayState !== "undefined")
-            WidgetOverlayState.setPreviewWidget(nextContext ? nextContext.widgetId : "")
+    function updateWidgetItem(index, patch) {
+        if (!Array.isArray(widgetItems) || index < 0 || index >= widgetItems.length)
+            return
+        var next = widgetItems.slice(0)
+        next[index] = Object.assign({}, next[index], patch || {})
+        widgetItems = next
     }
 
-    onSelectedContextChanged: {
-        syncDemoLease(demoLeaseContext, selectedContext)
+    function updateThresholdItem(widgetIndex, thresholdIndex, patch) {
+        if (!Array.isArray(widgetItems) || widgetIndex < 0 || widgetIndex >= widgetItems.length)
+            return
+        var widget = widgetItems[widgetIndex]
+        if (!widget || !Array.isArray(widget.thresholds) || thresholdIndex < 0 || thresholdIndex >= widget.thresholds.length)
+            return
+        var nextThresholds = widget.thresholds.slice(0)
+        nextThresholds[thresholdIndex] = Object.assign({}, nextThresholds[thresholdIndex], patch || {})
+        updateWidgetItem(widgetIndex, { "thresholds": nextThresholds })
     }
 
-    onVisibleChanged: {
-        if (!visible && demoLeaseContext && demoLeaseContext.demoRequested) {
-            demoLeaseContext.releaseDemo()
-            demoLeaseContext = null
-        }
-        if (!visible && typeof WidgetOverlayState !== "undefined")
-            WidgetOverlayState.setPreviewWidget("")
+    function cycleThresholdColor(widgetIndex, thresholdIndex) {
+        if (!Array.isArray(widgetItems) || widgetIndex < 0 || widgetIndex >= widgetItems.length)
+            return
+        var widget = widgetItems[widgetIndex]
+        if (!widget || !Array.isArray(widget.thresholds) || thresholdIndex < 0 || thresholdIndex >= widget.thresholds.length)
+            return
+        var current = widget.thresholds[thresholdIndex].color
+        var paletteIndex = thresholdPalette.indexOf(current)
+        var nextColor = thresholdPalette[(paletteIndex + 1 + thresholdPalette.length) % thresholdPalette.length]
+        updateThresholdItem(widgetIndex, thresholdIndex, { "color": nextColor })
     }
 
-    Component.onDestruction: {
-        if (demoLeaseContext && demoLeaseContext.demoRequested)
-            demoLeaseContext.releaseDemo()
-        if (typeof WidgetOverlayState !== "undefined")
-            WidgetOverlayState.setPreviewWidget("")
+    function addThreshold(widgetIndex) {
+        if (!Array.isArray(widgetItems) || widgetIndex < 0 || widgetIndex >= widgetItems.length)
+            return
+        var widget = widgetItems[widgetIndex]
+        var thresholds = Array.isArray(widget.thresholds) ? widget.thresholds.slice(0) : []
+        var lastValue = thresholds.length > 0 && typeof thresholds[thresholds.length - 1].value === "number"
+            ? thresholds[thresholds.length - 1].value
+            : 0
+        thresholds.push({
+            "value": lastValue + 10,
+            "color": thresholdPalette[thresholds.length % thresholdPalette.length],
+            "flash": false,
+            "flashTarget": "value",
+            "flashSpeed": 4
+        })
+        updateWidgetItem(widgetIndex, { "thresholds": thresholds })
     }
 
-    // ── Left: widget list ──────────────────────────────────────────────────────
-    Item {
-        id: listPane
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.bottom: parent.bottom
-        width: widgetTab.selectedContext ? parent.width * 0.4 : parent.width
-        Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+    function removeThreshold(widgetIndex, thresholdIndex) {
+        if (!Array.isArray(widgetItems) || widgetIndex < 0 || widgetIndex >= widgetItems.length)
+            return
+        var widget = widgetItems[widgetIndex]
+        if (!widget || !Array.isArray(widget.thresholds) || thresholdIndex < 0 || thresholdIndex >= widget.thresholds.length)
+            return
+        var thresholds = widget.thresholds.slice(0)
+        thresholds.splice(thresholdIndex, 1)
+        updateWidgetItem(widgetIndex, { "thresholds": thresholds })
+    }
 
-        // Header
+    function cycleThresholdTarget(widgetIndex, thresholdIndex) {
+        if (!Array.isArray(widgetItems) || widgetIndex < 0 || widgetIndex >= widgetItems.length)
+            return
+        var widget = widgetItems[widgetIndex]
+        if (!widget || !Array.isArray(widget.thresholds) || thresholdIndex < 0 || thresholdIndex >= widget.thresholds.length)
+            return
+        var current = widget.thresholds[thresholdIndex].flashTarget
+        var targetIndex = thresholdTargets.indexOf(current)
+        var nextTarget = thresholdTargets[(targetIndex + 1 + thresholdTargets.length) % thresholdTargets.length]
+        updateThresholdItem(widgetIndex, thresholdIndex, { "flashTarget": nextTarget })
+    }
+
+    readonly property var selectedWidget: {
+        if (!Array.isArray(widgetItems) || widgetItems.length === 0)
+            return null
+        var clamped = Math.max(0, Math.min(selectedIndex, widgetItems.length - 1))
+        return widgetItems[clamped]
+    }
+
+    readonly property string selectedTitle: {
+        if (!selectedWidget || typeof selectedWidget.title !== "string")
+            return ""
+        return selectedWidget.title
+    }
+
+    readonly property string selectedDescription: {
+        if (!selectedWidget || typeof selectedWidget.description !== "string")
+            return ""
+        return selectedWidget.description
+    }
+
+    readonly property bool selectedEnabled: {
+        if (!selectedWidget || typeof selectedWidget.enabled !== "boolean")
+            return false
+        return selectedWidget.enabled
+    }
+
+    readonly property real selectedValue: {
+        if (!selectedWidget || typeof selectedWidget.value !== "number")
+            return 0
+        return selectedWidget.value
+    }
+
+    readonly property string selectedLabel: {
+        if (!selectedWidget || typeof selectedWidget.label !== "string")
+            return ""
+        return selectedWidget.label
+    }
+
+    readonly property int selectedPositionX: {
+        if (!selectedWidget || typeof selectedWidget.positionX !== "number")
+            return 0
+        return selectedWidget.positionX
+    }
+
+    readonly property int selectedPositionY: {
+        if (!selectedWidget || typeof selectedWidget.positionY !== "number")
+            return 0
+        return selectedWidget.positionY
+    }
+
+    readonly property real selectedFlashBelow: {
+        if (!selectedWidget || typeof selectedWidget.flashBelow !== "number")
+            return -1
+        return selectedWidget.flashBelow
+    }
+
+    readonly property var selectedThresholds: {
+        if (!selectedWidget || !Array.isArray(selectedWidget.thresholds))
+            return []
+        return selectedWidget.thresholds
+    }
+
+    radius: 18
+    color: "#111418"
+    border.width: 1
+    border.color: "#252b34"
+
+    Row {
+        anchors.fill: parent
+        anchors.margins: 20
+        spacing: 18
+
         Rectangle {
-            id: tableHeader
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 32
-            color: "transparent"
+            width: Math.max(280, parent.width * 0.42)
+            height: parent.height
+            radius: 16
+            color: "#15191e"
+            border.width: 1
+            border.color: "#252b34"
 
-            Row {
-                anchors.fill: parent
-                leftPadding: widgetTab.colPad
-
-                Text {
-                    width: widgetTab.colName; height: parent.height
-                    verticalAlignment: Text.AlignVCenter
-                    text: "Widget"; color: Theme.text
-                    font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
-                }
-                Text {
-                    width: parent.width - widgetTab.colPad - widgetTab.colName - widgetTab.colToggle
-                    height: parent.height
-                    verticalAlignment: Text.AlignVCenter
-                    text: "Description"; color: Theme.text
-                    font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
-                }
+            Text {
+                id: sectionTitleText
+                x: 18
+                y: 16
+                text: root.sectionTitle
+                color: "#f4f7fb"
+                font.pixelSize: 18
+                font.weight: Font.DemiBold
             }
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
-        }
 
-        ListView {
-            anchors.top: tableHeader.bottom
-            anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
-            clip: true; model: WidgetModel; spacing: 0
+            Text {
+                x: 18
+                y: sectionTitleText.y + sectionTitleText.height + 4
+                width: parent.width - 36
+                text: "Widget overzicht."
+                wrapMode: Text.WordWrap
+                color: "#8e97a5"
+                font.pixelSize: 13
+            }
 
-            delegate: Rectangle {
-                id: row
-                required property var widgetContext
-                required property int index
+            Column {
+                x: 12
+                y: 92
+                width: parent.width - 24
+                spacing: 10
 
-                readonly property bool isSelected:
-                    widgetTab.selectedContext !== null
-                    && row.widgetContext !== null
-                    && widgetTab.selectedContext.widgetId === row.widgetContext.widgetId
+                Repeater {
+                    model: root.widgetItems
 
-                width: ListView.view.width; height: 40
-                color: row.isSelected ? Theme.surfaceRaised
-                     : (row.index % 2 === 0 ? Theme.surfaceAlt : "transparent")
-                Behavior on color { ColorAnimation { duration: 80 } }
+                    delegate: Rectangle {
+                        required property var modelData
+                        required property int index
 
-                Rectangle { width: 2; height: parent.height; color: Theme.accent; visible: row.isSelected }
+                        width: parent ? parent.width : 240
+                        height: 48
+                        radius: 12
+                        color: root.selectedIndex === index ? "#e8edf5" : "#1b1f25"
+                        border.width: root.selectedIndex === index ? 0 : 1
+                        border.color: "#2b313a"
 
-                Rectangle {
-                    anchors.fill: parent
-                    opacity: rowHover.hovered && !row.isSelected ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 120 } }
-                    gradient: Gradient {
-                        orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: "transparent" }
-                        GradientStop { position: 0.5; color: "transparent" }
-                        GradientStop { position: 1.0; color: "#20dec184" }
-                    }
-                }
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 14
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData && typeof modelData.title === "string" ? modelData.title : ""
+                            color: root.selectedIndex === index ? "#14171b" : "#c5ccd8"
+                            font.pixelSize: 14
+                        }
 
-                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border; opacity: 0.4 }
+                        Rectangle {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 12
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 48
+                            height: 22
+                            radius: 7
+                            color: root.selectedIndex === index ? "#d7dee8" : "#252b34"
 
-                Row {
-                    anchors.fill: parent
-                    leftPadding: widgetTab.colPad + (row.isSelected ? 8 : 0)
-                    Behavior on leftPadding { NumberAnimation { duration: 120 } }
-
-                    Text {
-                        width: widgetTab.colName; height: parent.height
-                        verticalAlignment: Text.AlignVCenter
-                        text: row.widgetContext ? row.widgetContext.title : ""
-                        color: row.isSelected ? Theme.accent : Theme.text
-                        font.pixelSize: Theme.fontSizeBase; font.family: Theme.fontFamily
-                        font.weight: row.isSelected ? Font.DemiBold : Font.Normal
-                        Behavior on color { ColorAnimation { duration: 80 } }
-                    }
-                    Text {
-                        width: parent.width - widgetTab.colPad - widgetTab.colName - widgetTab.colToggle
-                        height: parent.height
-                        verticalAlignment: Text.AlignVCenter
-                        text: row.widgetContext ? row.widgetContext.description : ""
-                        color: rowHover.hovered ? "#dec184" : Theme.textMuted
-                        font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
-                        elide: Text.ElideRight
-                        Behavior on color { ColorAnimation { duration: 120 } }
-                    }
-                    Item {
-                        width: widgetTab.colToggle; height: parent.height
-                        ToggleSwitch {
-                            anchors.centerIn: parent
-                            checked: row.widgetContext ? row.widgetContext.enabled : true
-                            onToggled: (v) => {
-                                if (row.widgetContext)
-                                    row.widgetContext.setEnabled(v)
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData && typeof modelData.enabled === "boolean" && modelData.enabled ? "on" : "off"
+                                color: root.selectedIndex === index ? "#14171b" : "#9aa1ad"
+                                font.pixelSize: 11
                             }
                         }
+
+                        ToggleSwitch {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 82
+                            anchors.verticalCenter: parent.verticalCenter
+                            checked: modelData && typeof modelData.enabled === "boolean" ? modelData.enabled : false
+                            onToggled: (value) => root.updateWidgetItem(index, { "enabled": value })
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            anchors.rightMargin: 152
+                            onClicked: root.selectedIndex = index
+                        }
                     }
                 }
-
-                MouseArea {
-                    anchors.fill: parent
-                    anchors.rightMargin: widgetTab.colToggle
-                    acceptedButtons: Qt.LeftButton
-                    onClicked: widgetTab.selectedContext = row.isSelected ? null : row.widgetContext
-                }
-                HoverHandler { id: rowHover }
             }
         }
-    }
 
-    // ── Divider ───────────────────────────────────────────────────────────────
-    Rectangle {
-        visible: widgetTab.selectedContext !== null
-        anchors.top: parent.top; anchors.bottom: parent.bottom
-        x: listPane.width; width: 1
-        color: Theme.border
-    }
-
-    // ── Right: edit panel ─────────────────────────────────────────────────────
-    Item {
-        id: detailPane
-        visible: widgetTab.selectedContext !== null
-        anchors.top: parent.top
-        anchors.left: listPane.right; anchors.leftMargin: 1
-        anchors.right: parent.right; anchors.bottom: parent.bottom
-        clip: true
-
-        // Widget title + description header
         Rectangle {
-            id: detailHeader
-            anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right
-            height: 56; color: "transparent"
+            width: parent.width - 18 - Math.max(280, parent.width * 0.42)
+            height: parent.height
+            radius: 16
+            color: "#15191e"
+            border.width: 1
+            border.color: "#252b34"
 
-            // Title + description
             Column {
-                anchors.left: parent.left; anchors.leftMargin: 16
-                anchors.right: parent.right; anchors.rightMargin: 16
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 3
+                anchors.fill: parent
+                anchors.margins: 20
+                spacing: 14
 
                 Text {
-                    text: widgetTab.selectedContext ? widgetTab.selectedContext.title : ""
-                    color: Theme.text
-                    font.pixelSize: Theme.fontSizeBase; font.family: Theme.fontFamily
+                    text: root.selectedTitle !== "" ? root.selectedTitle : "No widget selected"
+                    color: "#f4f7fb"
+                    font.pixelSize: 18
                     font.weight: Font.DemiBold
                 }
+
                 Text {
-                    text: widgetTab.selectedContext ? widgetTab.selectedContext.description : ""
-                    color: Theme.textMuted
-                    font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
-                    elide: Text.ElideRight
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: root.selectedTitle !== ""
+                        ? root.selectedDescription
+                        : ""
+                    color: "#8e97a5"
+                    font.pixelSize: 13
                 }
-            }
 
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
-        }
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: "#252b34"
+                }
 
-        Rectangle {
-            id: demoSection
-            readonly property bool active: widgetTab.selectedContext
-                && widgetTab.selectedContext.supportsDemoMode
-                && widgetTab.selectedContext.demoRequested
-            anchors.top: detailHeader.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: active ? demoSectionInner.implicitHeight : 0
-            Behavior on height { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-            clip: true
-            color: Theme.surfaceAlt
-            visible: height > 0
+                Rectangle {
+                    width: parent.width
+                    height: 44
+                    radius: 12
+                    color: "#1b1f25"
 
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border }
-
-            Column {
-                id: demoSectionInner
-                anchors.left: parent.left
-                anchors.right: parent.right
-                spacing: 0
-
-                EditRow {
-                    label: "Min"
-                    description: "Lowest value in the mock sweep"
-                    NumberStepper {
-                        anchors.right: parent.right; anchors.rightMargin: 0
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14
                         anchors.verticalCenter: parent.verticalCenter
-                        value: widgetTab.selectedContext ? widgetTab.selectedContext.demoMin : 0
-                        step: 1
-                        onCommit: (v) => {
-                            if (widgetTab.selectedContext)
-                                widgetTab.selectedContext.setDemoMin(v)
-                        }
+                        text: "Selected widget"
+                        color: "#9aa1ad"
+                        font.pixelSize: 12
+                    }
+
+                    Text {
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.selectedTitle
+                        color: "#f4f7fb"
+                        font.pixelSize: 13
                     }
                 }
 
-                EditRow {
-                    label: "Max"
-                    description: "Highest value before the sweep resets"
-                    NumberStepper {
-                        anchors.right: parent.right; anchors.rightMargin: 0
+                Rectangle {
+                    width: parent.width
+                    height: 56
+                    radius: 12
+                    color: "#1b1f25"
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14
                         anchors.verticalCenter: parent.verticalCenter
-                        value: widgetTab.selectedContext ? widgetTab.selectedContext.demoMax : 100
-                        step: 1
-                        onCommit: (v) => {
-                            if (widgetTab.selectedContext)
-                                widgetTab.selectedContext.setDemoMax(v)
-                        }
+                        text: "Label"
+                        color: "#9aa1ad"
+                        font.pixelSize: 12
                     }
-                }
 
-                EditRow {
-                    label: "Speed"
-                    description: "Sweep speed per update cycle"
-                    NumberStepper {
-                        anchors.right: parent.right; anchors.rightMargin: 0
-                        anchors.verticalCenter: parent.verticalCenter
-                        value: widgetTab.selectedContext ? widgetTab.selectedContext.demoSpeed : 0.5
-                        step: 0.1
-                        min: 0.1
-                        onCommit: (v) => {
-                            if (widgetTab.selectedContext)
-                                widgetTab.selectedContext.setDemoSpeed(v)
-                        }
-                    }
-                }
-            }
-        }
-
-        Flickable {
-            anchors.top: demoSection.bottom
-            anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
-            contentHeight: editColumn.implicitHeight + 16
-            clip: true
-
-            Column {
-                id: editColumn
-                anchors.left: parent.left; anchors.right: parent.right
-                spacing: 0
-
-                // ── Section: Identity ──────────────────────────────────────────
-                SectionHeader { text: "Identity" }
-
-                EditRow {
-                    label: "Label"
-                    description: "Short text shown on the widget"
                     Rectangle {
-                        anchors.right: parent.right; anchors.rightMargin: 0
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 120; height: 28; radius: 4
-                        color: Theme.surfaceFloating
+                        width: 220
+                        height: 30
+                        radius: 8
+                        color: "#15191e"
                         border.width: 1
-                        border.color: labelInput.activeFocus ? Theme.accent : Theme.border
-                        Behavior on border.color { ColorAnimation { duration: 80 } }
+                        border.color: labelInput.activeFocus ? "#d7dee8" : "#2b313a"
 
                         TextInput {
                             id: labelInput
-                            anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
                             verticalAlignment: TextInput.AlignVCenter
-                            text: widgetTab.selectedContext ? widgetTab.selectedContext.label : ""
-                            color: Theme.text
-                            font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
+                            color: "#f4f7fb"
+                            font.pixelSize: 12
                             selectByMouse: true
+                            text: root.selectedLabel
+
+                            onEditingFinished: root.updateWidgetItem(root.selectedIndex, { "label": text })
                             onActiveFocusChanged: {
-                                if (!activeFocus && widgetTab.selectedContext)
-                                    widgetTab.selectedContext.setLabel(text)
+                                if (!activeFocus)
+                                    text = root.selectedLabel
                             }
-                            Keys.onReturnPressed: {
-                                if (widgetTab.selectedContext) widgetTab.selectedContext.setLabel(text)
-                                focus = false
-                            }
-                            Keys.onEscapePressed: {
-                                if (widgetTab.selectedContext) text = widgetTab.selectedContext.label
-                                focus = false
-                            }
-                            Connections {
-                                target: widgetTab
-                                function onSelectedContextChanged() {
-                                    labelInput.text = widgetTab.selectedContext
-                                        ? widgetTab.selectedContext.label : ""
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 56
+                    radius: 12
+                    color: "#1b1f25"
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Enabled"
+                        color: "#9aa1ad"
+                        font.pixelSize: 12
+                    }
+
+                    ToggleSwitch {
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        checked: root.selectedEnabled
+                        onToggled: (value) => root.updateWidgetItem(root.selectedIndex, { "enabled": value })
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 56
+                    radius: 12
+                    color: "#1b1f25"
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Position X"
+                        color: "#9aa1ad"
+                        font.pixelSize: 12
+                    }
+
+                    NumberStepper {
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        value: root.selectedPositionX
+                        step: 1
+                        min: 0
+                        max: 9999
+                        onCommit: (value) => root.updateWidgetItem(root.selectedIndex, { "positionX": value })
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 56
+                    radius: 12
+                    color: "#1b1f25"
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Position Y"
+                        color: "#9aa1ad"
+                        font.pixelSize: 12
+                    }
+
+                    NumberStepper {
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        value: root.selectedPositionY
+                        step: 1
+                        min: 0
+                        max: 9999
+                        onCommit: (value) => root.updateWidgetItem(root.selectedIndex, { "positionY": value })
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 56
+                    radius: 12
+                    color: "#1b1f25"
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Flash below"
+                        color: "#9aa1ad"
+                        font.pixelSize: 12
+                    }
+
+                    NumberStepper {
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        value: root.selectedFlashBelow
+                        step: 1
+                        min: -1
+                        max: 9999
+                        onCommit: (value) => root.updateWidgetItem(root.selectedIndex, { "flashBelow": value })
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: thresholdColumn.implicitHeight + 20
+                    radius: 12
+                    color: "#1b1f25"
+
+                    Column {
+                        id: thresholdColumn
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 14
+                        spacing: 10
+
+                        Text {
+                            text: "Thresholds"
+                            color: "#9aa1ad"
+                            font.pixelSize: 12
+                        }
+
+                        Text {
+                            width: parent.width
+                            wrapMode: Text.WordWrap
+                            text: "Each threshold is an upper bound. The widget uses the threshold color while the value is at or below that number."
+                            color: "#8e97a5"
+                            font.pixelSize: 12
+                            visible: root.selectedThresholds.length > 0
+                        }
+
+                        Text {
+                            text: "No thresholds configured."
+                            color: "#8e97a5"
+                            font.pixelSize: 12
+                            visible: root.selectedThresholds.length === 0
+                        }
+
+                        Repeater {
+                            model: root.selectedThresholds
+
+                            delegate: Column {
+                                required property var modelData
+                                required property int index
+
+                                width: thresholdColumn.width
+                                spacing: 6
+
+                                Rectangle {
+                                    width: parent.width
+                                    height: 42
+                                    radius: 10
+                                    color: "#15191e"
+                                    border.width: 1
+                                    border.color: "#2b313a"
+
+                                    Rectangle {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 14
+                                        height: 14
+                                        radius: 7
+                                        color: modelData && typeof modelData.color === "string" ? modelData.color : "#c5ccd8"
+                                        border.width: 1
+                                        border.color: "#39414d"
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: root.cycleThresholdColor(root.selectedIndex, index)
+                                        }
+                                    }
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 34
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: "≤"
+                                        color: "#f4f7fb"
+                                        font.pixelSize: 12
+                                    }
+
+                                    NumberStepper {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 56
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        value: modelData && typeof modelData.value === "number" ? modelData.value : 0
+                                        step: 1
+                                        min: -9999
+                                        max: 9999
+                                        onCommit: (value) => root.updateThresholdItem(root.selectedIndex, index, { "value": value })
+                                    }
+
+                                    ToggleSwitch {
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 46
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        checked: modelData && typeof modelData.flash === "boolean" ? modelData.flash : false
+                                        onToggled: (value) => root.updateThresholdItem(root.selectedIndex, index, { "flash": value })
+                                    }
+
+                                    Rectangle {
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 22
+                                        height: 22
+                                        radius: 11
+                                        color: "#1b1f25"
+                                        border.width: 1
+                                        border.color: "#39414d"
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "x"
+                                            color: "#c5ccd8"
+                                            font.pixelSize: 11
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: root.removeThreshold(root.selectedIndex, index)
+                                        }
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: parent.width
+                                    height: modelData && typeof modelData.flash === "boolean" && modelData.flash ? 42 : 0
+                                    radius: 10
+                                    color: "#111418"
+                                    border.width: height > 0 ? 1 : 0
+                                    border.color: "#2b313a"
+                                    visible: height > 0
+                                    clip: true
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 12
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: "Target"
+                                        color: "#9aa1ad"
+                                        font.pixelSize: 12
+                                    }
+
+                                    Rectangle {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 56
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 92
+                                        height: 26
+                                        radius: 8
+                                        color: "#15191e"
+                                        border.width: 1
+                                        border.color: "#39414d"
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: modelData && typeof modelData.flashTarget === "string" ? modelData.flashTarget : "value"
+                                            color: "#f4f7fb"
+                                            font.pixelSize: 12
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: root.cycleThresholdTarget(root.selectedIndex, index)
+                                        }
+                                    }
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 164
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: "Speed"
+                                        color: "#9aa1ad"
+                                        font.pixelSize: 12
+                                    }
+
+                                    NumberStepper {
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 12
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        value: modelData && typeof modelData.flashSpeed === "number" ? modelData.flashSpeed : 4
+                                        step: 1
+                                        min: 1
+                                        max: 20
+                                        onCommit: (value) => root.updateThresholdItem(root.selectedIndex, index, { "flashSpeed": value })
+                                    }
                                 }
                             }
                         }
-                    }
-                }
 
-                EditRow {
-                    label: "Position X"
-                    NumberStepper {
-                        anchors.right: parent.right; anchors.rightMargin: 0
-                        anchors.verticalCenter: parent.verticalCenter
-                        value: widgetTab.selectedContext ? widgetTab.selectedContext.widgetX : 0
-                        step: 1
-                        onCommit: (v) => {
-                            if (widgetTab.selectedContext)
-                                widgetTab.selectedContext.move(v, widgetTab.selectedContext.widgetY)
+                        Rectangle {
+                            width: 132
+                            height: 30
+                            radius: 8
+                            color: "#15191e"
+                            border.width: 1
+                            border.color: "#2b313a"
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Add threshold"
+                                color: "#f4f7fb"
+                                font.pixelSize: 12
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: root.addThreshold(root.selectedIndex)
+                            }
                         }
                     }
                 }
 
-                EditRow {
-                    label: "Position Y"
-                    NumberStepper {
-                        anchors.right: parent.right; anchors.rightMargin: 0
+                Rectangle {
+                    width: parent.width
+                    height: 56
+                    radius: 12
+                    color: "#1b1f25"
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14
                         anchors.verticalCenter: parent.verticalCenter
-                        value: widgetTab.selectedContext ? widgetTab.selectedContext.widgetY : 0
+                        text: "Value"
+                        color: "#9aa1ad"
+                        font.pixelSize: 12
+                    }
+
+                    NumberStepper {
+                        anchors.right: parent.right
+                        anchors.rightMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        value: root.selectedValue
                         step: 1
-                        onCommit: (v) => {
-                            if (widgetTab.selectedContext)
-                                widgetTab.selectedContext.move(widgetTab.selectedContext.widgetX, v)
-                        }
+                        min: 0
+                        max: 999
+                        onCommit: (value) => root.updateWidgetItem(root.selectedIndex, { "value": value })
                     }
                 }
-
-                // ── Section: Provider ───────────────────────────────────────
-                SectionHeader { text: "Provider" }
-
-                EditRow {
-                    label: "Binding"
-                    description: widgetTab.selectedContext
-                        ? (
-                            widgetTab.selectedContext.activeGame !== "none"
-                            ? widgetTab.selectedContext.providerName + " / " + widgetTab.selectedContext.activeGame
-                            : widgetTab.selectedContext.providerName
-                        )
-                        : ""
-                }
-
-                EditRow {
-                    label: "Mode"
-                    description: widgetTab.selectedContext
-                        ? widgetTab.selectedContext.providerMode
-                        : ""
-                }
-
-                // ── Section: Thresholds ────────────────────────────────────────
-                SectionHeader { text: "Thresholds" }
-
-                ThresholdEditor {
-                    context: widgetTab.selectedContext
-                }
             }
         }
-    }
-
-    // ── EditRow: matches SettingsDialog row style ──────────────────────────────
-    component EditRow: Rectangle {
-        id: editRowRoot
-        property string label: ""
-        property string description: ""
-        default property alias rightContent: rightSlot.data
-
-        anchors.left: parent ? parent.left : undefined
-        anchors.right: parent ? parent.right : undefined
-        implicitHeight: description !== "" ? 52 : 44
-        color: "transparent"
-
-        Rectangle {
-            anchors.fill: parent
-            opacity: editRowHover.hovered ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 120 } }
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: "transparent" }
-                GradientStop { position: 0.5; color: "transparent" }
-                GradientStop { position: 1.0; color: "#20dec184" }
-            }
-        }
-
-        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.border; opacity: 0.4 }
-
-        // Label (+ optional description) — same layout as SettingsDialog
-        Column {
-            anchors.left: parent.left; anchors.leftMargin: 16
-            anchors.right: rightSlot.left; anchors.rightMargin: 8
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 3
-
-            Text {
-                text: editRowRoot.label
-                color: Theme.text
-                font.pixelSize: Theme.fontSizeBase; font.family: Theme.fontFamily
-            }
-            Text {
-                visible: editRowRoot.description !== ""
-                text: editRowRoot.description
-                color: editRowHover.hovered ? "#dec184" : Theme.textMuted
-                font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
-                Behavior on color { ColorAnimation { duration: 120 } }
-            }
-        }
-
-        // Control slot — 128px, right-aligned with 12px margin
-        Item {
-            id: rightSlot
-            anchors.right: parent.right; anchors.rightMargin: 12
-            anchors.verticalCenter: parent.verticalCenter
-            width: 128; height: parent.height
-        }
-
-        HoverHandler { id: editRowHover }
-    }
-
-    // ── SectionHeader: same as SettingsDialog section headers ─────────────────
-    component SectionHeader: Rectangle {
-        id: sectionHeaderRoot
-        property string text: ""
-        anchors.left: parent ? parent.left : undefined
-        anchors.right: parent ? parent.right : undefined
-        height: 28
-        color: Theme.surfaceAlt
-
-        Text {
-            anchors.left: sectionHeaderRoot.left; anchors.leftMargin: 16
-            anchors.verticalCenter: sectionHeaderRoot.verticalCenter
-            text: sectionHeaderRoot.text
-            color: Theme.textSecondary
-            font.pixelSize: Theme.fontSizeSmall; font.family: Theme.fontFamily
-            font.weight: Font.Medium
-        }
-        Rectangle { anchors.bottom: sectionHeaderRoot.bottom; width: sectionHeaderRoot.width; height: 1; color: Theme.border }
     }
 }

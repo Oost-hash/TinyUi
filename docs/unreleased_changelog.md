@@ -40,3 +40,8 @@ Known packages:
 - [0.4.1][tinyui][other] Added compact diagnostics summary and inspect tasks for Zed, and updated qmllint module imports so QML and basedpyright output stay aligned and less verbose
 - [0.4.2][tinycore][tinyui][other] Introduced shared tinyqt ownership for Qt bootstrap, timers, and windowing so tinycore is Qt-free and UI packages consume one shared Qt host layer
 - [0.4.2][tinyui][other] Moved shared Qt host composition into tinyqt helpers for app setup, root-window loading, lifecycle wiring, and singleton registration so tinyui.main focuses more on UI assembly
+- [0.4.2][tinyui][other] Moved the shared Qt launch and bootstrap flow into tinyqt so tinyui now contributes a launch spec and host assembly instead of owning the runtime host path
+- [0.4.2][tinyui][other] Removed the remaining TinyUI host modules by moving TinyUI host settings, host assembly, and launch-spec composition into tinyqt so tinyui is reduced to UI features and presentation code
+- [0.4.2][tinyui][tinydevtools][other] Rebuilt the shared shell around TinyQt chrome, restored a launch-first TinyUI widget editor baseline, and aligned devtools to reuse the same titlebar/tab shell instead of owning separate chrome
+- [0.4.2][tinyui][tinydevtools][other] Added TinyQt manifest contracts for hosted app surfaces so TinyUI and TinyDevTools declare shared shell usage, panels, and required singleton seams through one host API
+- [0.4.2][tinyui][tinydevtools][other] Moved devtools opening to a lazy TinyQt-hosted tool window and pushed shell state through host-owned window properties so the main app and tool surfaces follow the same window contract

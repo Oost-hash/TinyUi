@@ -18,10 +18,12 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-import multiprocessing as mp
 
-from tinyui_boot import main
+"""Shared application identity resolved by the Qt host layer."""
 
-if __name__ == "__main__":
-    mp.freeze_support()
-    main()
+from importlib.metadata import metadata
+
+_meta = metadata("tinyui")
+
+APP_NAME: str = _meta["Name"]
+VERSION: str = _meta["Version"]
