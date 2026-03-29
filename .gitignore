@@ -35,7 +35,7 @@ __pycache__/
 .banner_backups/
 
 # dev notes (archived)
-dev_notes/
+internal_docs/
 
 # archives
 *.7z
