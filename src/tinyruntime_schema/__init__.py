@@ -1,5 +1,7 @@
 """Runtime-owned observability schemas and listener primitives."""
 
+from tinyruntime.schema_registry import SchemaDescriptor, SchemaRegistry
+
 from .log_records import LogInspector, LogRecordEntry
 from .logging import (
     ALL_CATEGORIES,
@@ -15,9 +17,34 @@ from .logging import (
 from .runtime_state import InspectionEntry, InspectionSourceInfo, RuntimeInspector
 from .snapshot_protocols import InspectionSnapshot, InspectionSnapshotProvider
 
+SCHEMA_DESCRIPTOR = SchemaDescriptor(
+    schema_id="tinyruntime.schema",
+    package="tinyruntime_schema",
+    owner="tinyruntime",
+    summary="Runtime observability schemas, log capture, and inspection listeners.",
+    exports=(
+        "ALL_CATEGORIES",
+        "DiagnosticsLogger",
+        "InspectionEntry",
+        "InspectionSnapshot",
+        "InspectionSnapshotProvider",
+        "InspectionSourceInfo",
+        "LogInspector",
+        "LogRecordEntry",
+        "RuntimeInspector",
+    ),
+    tags=("runtime", "observability", "logging"),
+)
+
+
+def register_schema(registry: SchemaRegistry) -> None:
+    """Register the runtime schema with the runtime registry."""
+    registry.register_schema(SCHEMA_DESCRIPTOR)
+
 __all__ = [
     "ALL_CATEGORIES",
     "DiagnosticsLogger",
+    "SCHEMA_DESCRIPTOR",
     "InspectionEntry",
     "InspectionSnapshot",
     "InspectionSnapshotProvider",
@@ -30,6 +57,7 @@ __all__ = [
     "get_category_states",
     "get_dev_mode",
     "get_logger",
+    "register_schema",
     "set_category_enabled",
     "set_dev_mode",
 ]

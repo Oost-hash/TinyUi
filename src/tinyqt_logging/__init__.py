@@ -6,11 +6,12 @@ from tinyqt_logging.app_logger import (
     get_app_logger,
     read_app_logging_config,
 )
-from tinyruntime_schema.logging import configure_diagnostics
 
 
 def configure() -> None:
     """Configure app logging first, then optional diagnostics wiring."""
+    from tinyruntime_schema.logging import configure_diagnostics
+
     config = read_app_logging_config()
     console_level = str(config.get("console_level", "") or "")
     configure_app_logger(console_level)

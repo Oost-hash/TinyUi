@@ -124,6 +124,16 @@ class CoreViewModel(QObject):
     def _set_setting_value(self, plugin_name: str, key: str, value) -> None:
         self._core.host.persistence.set_setting(plugin_name, key, value)
         self._settings_cache = None          # invalidate cache — fresh values on next read
+        self._core.publish_schema_change(
+            "tinyqt_settings.schema",
+            producer="tinyqt_main.core_view_model",
+            change_key="setting.value_changed",
+            payload={
+                "plugin": plugin_name,
+                "key": key,
+                "value": value,
+            },
+        )
         self.settingsChanged.emit()
         self.settingValueChanged.emit(plugin_name)
 

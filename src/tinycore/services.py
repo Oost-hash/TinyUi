@@ -27,7 +27,11 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from tinyqt_main_schema import EditorRegistry
+from tinyqt_main_schema import register_schema as register_main_schema
 from tinyqt_settings_schema import SettingsSpec
+from tinyqt_settings_schema import register_schema as register_settings_schema
+from tinyruntime.schema_registry import SchemaRegistry
+from tinyruntime_schema import register_schema as register_runtime_schema
 
 from .paths import AppPaths
 from .persistence.config.loader import LoaderRegistry
@@ -153,6 +157,7 @@ class RuntimeServices:
 
     plugin_facts: PluginParticipationFacts
     plugin_runtime: PluginParticipationRuntime
+    schemas: SchemaRegistry
 
 
 def build_host_services(paths: AppPaths) -> HostServices:
@@ -165,8 +170,13 @@ def build_host_services(paths: AppPaths) -> HostServices:
 
 def build_runtime_services() -> RuntimeServices:
     """Create the runtime-owned service group for one runtime composition."""
+    schemas = SchemaRegistry()
+    register_main_schema(schemas)
+    register_settings_schema(schemas)
+    register_runtime_schema(schemas)
     return RuntimeServices(
         plugin_facts=PluginParticipationFacts(),
         plugin_runtime=PluginParticipationRuntime(),
+        schemas=schemas,
     )
 

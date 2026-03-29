@@ -186,6 +186,12 @@ class NativeSettingsWindow(NativeToolWindowBase):
         if self._plugin_list.count() > 0 and self._plugin_list.currentRow() < 0:
             self._plugin_list.setCurrentRow(0)
         self._settings_view_model.openPanel()
+        self._core.publish_schema_change(
+            "tinyqt_settings.schema",
+            producer="tinyqt_settings.window",
+            change_key="panel.opened",
+            payload={"groups": len(self._groups)},
+        )
         self.show()
         self.raise_()
         self.activateWindow()
@@ -194,11 +200,21 @@ class NativeSettingsWindow(NativeToolWindowBase):
         if self.isVisible():
             self.hide()
             self._settings_view_model.closePanel()
+            self._core.publish_schema_change(
+                "tinyqt_settings.schema",
+                producer="tinyqt_settings.window",
+                change_key="panel.closed",
+            )
             return
         self.open_window()
 
     def closeEvent(self, event) -> None:  # type: ignore[override]
         self._settings_view_model.closePanel()
+        self._core.publish_schema_change(
+            "tinyqt_settings.schema",
+            producer="tinyqt_settings.window",
+            change_key="panel.closed",
+        )
         super().closeEvent(event)
 
     def _reload_groups(self) -> None:
@@ -215,12 +231,23 @@ class NativeSettingsWindow(NativeToolWindowBase):
         self._update_actions()
 
     def revert_pending_changes(self) -> None:
+        reverted = len(self._pending)
         self._pending.clear()
         self._render_plugin(self._plugin_list.currentRow())
         self._update_actions()
+        self._core.publish_schema_change(
+            "tinyqt_settings.schema",
+            producer="tinyqt_settings.window",
+            change_key="changes.reverted",
+            payload={"count": reverted},
+        )
 
     def apply_pending_changes(self) -> None:
         touched_plugins: set[str] = set()
+        changes = [
+            {"plugin": plugin_name, "key": key, "value": value}
+            for (plugin_name, key), value in self._pending.items()
+        ]
         for (plugin_name, key), value in self._pending.items():
             self._core.host.persistence.set_setting(plugin_name, key, value)
             touched_plugins.add(plugin_name)
@@ -229,6 +256,12 @@ class NativeSettingsWindow(NativeToolWindowBase):
         self._pending.clear()
         self._reload_groups()
         self._update_actions()
+        self._core.publish_schema_change(
+            "tinyqt_settings.schema",
+            producer="tinyqt_settings.window",
+            change_key="settings.saved",
+            payload={"changes": changes, "plugins": sorted(touched_plugins)},
+        )
 
     def _update_actions(self) -> None:
         dirty = bool(self._pending)
@@ -316,4 +349,15 @@ class NativeSettingsWindow(NativeToolWindowBase):
         else:
             self._pending[token] = value
         self._update_actions()
+        self._core.publish_schema_change(
+            "tinyqt_settings.schema",
+            producer="tinyqt_settings.window",
+            change_key="setting.pending_changed",
+            payload={
+                "plugin": plugin_name,
+                "key": key,
+                "value": value,
+                "dirty": token in self._pending,
+            },
+        )
 

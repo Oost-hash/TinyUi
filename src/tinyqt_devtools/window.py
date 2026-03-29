@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, cast
+from typing import Any, Callable, cast
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor
@@ -57,6 +57,13 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._theme = theme
         self._manifest = manifest
         self._log_inspector = log_inspector
+        self._unsubscribe_schema: Callable[[], None] = core.subscribe_schema_changes(
+            self._on_schema_change,
+            schema_id="tinyruntime.schema",
+        )
+        self._unsubscribe_schema_registry: Callable[[], None] = core.subscribe_schema_changes(
+            self._on_schema_registry_change
+        )
         self._log_settings_vm = LogSettingsViewModelClass()
         self._runtime_vm = RuntimeViewModelClass(core)
         if core.runtime_inspector is None:
@@ -244,9 +251,34 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._runtime_tree.setColumnWidth(5, 104)
         self._runtime_tree.setColumnWidth(6, 160)
 
+        schema_section, schema_layout = self.create_section_frame()
+        schema_section.setObjectName("SchemaSection")
+        schema_label = QLabel("Schemas")
+        schema_label.setObjectName("SectionLabel")
+        schema_layout.addWidget(schema_label)
+
+        self._schema_tree = QTreeWidget()
+        self._schema_tree.setObjectName("DevToolsTree")
+        self._schema_tree.setColumnCount(4)
+        self._schema_tree.setHeaderLabels(["Schema", "Owner", "Changes", "Last Change"])
+        self._schema_tree.setRootIsDecorated(False)
+        self._schema_tree.setAlternatingRowColors(True)
+        self._schema_tree.setUniformRowHeights(True)
+        self._schema_tree.setIndentation(0)
+        self._schema_tree.setMinimumHeight(156)
+        self._schema_tree.setColumnWidth(0, 220)
+        self._schema_tree.setColumnWidth(1, 140)
+        self._schema_tree.setColumnWidth(2, 80)
+        self._schema_tree.setColumnWidth(3, 280)
+        schema_layout.addWidget(self._schema_tree)
+
+        self._schema_footer = self.create_footer_label()
+        schema_layout.addWidget(self._schema_footer)
+
         layout.addWidget(toolbar)
         layout.addWidget(filters)
         layout.addWidget(self._runtime_tree, 1)
+        layout.addWidget(schema_section)
         layout.addWidget(self._runtime_tasks)
         self._tabs.addTab(page, "Runtime")
 
@@ -449,7 +481,22 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._refresh_timer.stop()
         self._state_vm.shutdown()
         self._runtime_vm.shutdown()
+        self._unsubscribe_schema()
+        self._unsubscribe_schema_registry()
         super().closeEvent(event)
+
+    def _on_schema_change(self, event) -> None:
+        if not self.isVisible():
+            return
+        self._refresh_schema_view()
+        if not str(event.change_key).startswith("log."):
+            return
+        self._refresh_console_view()
+
+    def _on_schema_registry_change(self, _event) -> None:
+        if not self.isVisible():
+            return
+        self._refresh_schema_view()
 
     def _select_state_source(self, index: int) -> None:
         self._state_vm.selectSource(index)
@@ -493,12 +540,18 @@ class NativeDevToolsWindow(NativeToolWindowBase):
 
     def _clear_console(self) -> None:
         self._log_inspector.clear()
+        self._core.publish_schema_change(
+            "tinyruntime.schema",
+            producer="tinyqt_devtools.window",
+            change_key="log.clear",
+        )
         self._last_log_count = 0
         self._refresh_console_view()
 
     def _refresh_views(self) -> None:
         self._refresh_state_view()
         self._refresh_runtime_view()
+        self._refresh_schema_view()
         self._refresh_console_view()
         self._update_header_copy(self._tabs.currentIndex())
 
@@ -621,6 +674,35 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         task_ids = self._runtime_vm.taskIds
         self._runtime_tasks.setVisible(bool(task_ids))
         self._runtime_tasks.setText("" if not task_ids else f"Tasks: {', '.join(task_ids)}")
+
+    def _refresh_schema_view(self) -> None:
+        registrations = self._core.schema_registrations()
+        self._schema_tree.clear()
+        for registration in registrations:
+            descriptor = registration.descriptor
+            last_change = registration.last_change
+            if last_change is None:
+                last_change_text = "No changes yet"
+            else:
+                last_change_text = f"{last_change.change_key} · {last_change.producer}"
+            item = QTreeWidgetItem(
+                [
+                    descriptor.schema_id,
+                    descriptor.owner,
+                    str(registration.change_count),
+                    last_change_text,
+                ]
+            )
+            item.setForeground(0, QColor(self._theme.text))
+            item.setForeground(1, QColor(self._theme.textSecondary))
+            item.setForeground(2, QColor(self._theme.accent))
+            item.setForeground(3, QColor(self._theme.textMuted))
+            self._schema_tree.addTopLevelItem(item)
+        self._schema_footer.setVisible(True)
+        self._schema_footer.setText(
+            f"Schemas: {len(registrations)}  |  Changed: "
+            f"{sum(1 for registration in registrations if registration.change_count > 0)}"
+        )
 
     def _toggle_runtime_filter(self, state: str) -> None:
         self._runtime_vm.toggleStateFilter(state)

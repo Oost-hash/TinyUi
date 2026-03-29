@@ -35,16 +35,30 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .boot import boot_runtime, discover_manifests
     from .core_runtime import CoreRuntime
+    from .schema_registry import (
+        SchemaChangeEvent,
+        SchemaDescriptor,
+        SchemaRegistrationState,
+        SchemaRegistry,
+    )
 
 
 _EXPORTS: dict[str, tuple[str, str]] = {
     "CoreRuntime": (".core_runtime", "CoreRuntime"),
+    "SchemaChangeEvent": (".schema_registry", "SchemaChangeEvent"),
+    "SchemaDescriptor": (".schema_registry", "SchemaDescriptor"),
+    "SchemaRegistrationState": (".schema_registry", "SchemaRegistrationState"),
+    "SchemaRegistry": (".schema_registry", "SchemaRegistry"),
     "boot_runtime": (".boot", "boot_runtime"),
     "discover_manifests": (".boot", "discover_manifests"),
 }
 
 __all__ = (
     "CoreRuntime",
+    "SchemaChangeEvent",
+    "SchemaDescriptor",
+    "SchemaRegistrationState",
+    "SchemaRegistry",
     "boot_runtime",
     "discover_manifests",
 )

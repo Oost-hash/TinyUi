@@ -218,6 +218,7 @@ def attach_optional_devtools_ui(
     if qml_path is None:
         return None
     return attach_devtools_ui(
+        core,
         engine,
         log_inspector,
         qml_path=qml_path,

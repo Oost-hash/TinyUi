@@ -31,6 +31,11 @@ from tinyruntime_schema.runtime_state import RuntimeInspector
 from tinycore.paths import AppPaths
 from tinycore.services import HostServices, RuntimeServices
 from tinyqt.registration import RegistrationMap
+from .schema_registry import (
+    SchemaChangeEvent,
+    SchemaListener,
+    SchemaRegistrationState,
+)
 
 from .host_workers import HostWorkerSupervisor
 from .models import RuntimeActivationPolicy, RuntimeExecutionPolicy, RuntimeState, RuntimeUnitInfo, RuntimeUnitSpec
@@ -144,6 +149,35 @@ class CoreRuntime:
         """Return the declared activation policy for one runtime unit."""
         info = self.units.get(unit_id)
         return info.activation_policy if info is not None else None
+
+    def schema_registrations(self) -> list[SchemaRegistrationState]:
+        """Return all runtime-visible schema registrations."""
+        return self.runtime.schemas.schemas()
+
+    def publish_schema_change(
+        self,
+        schema_id: str,
+        *,
+        producer: str,
+        change_key: str,
+        payload: object = None,
+    ) -> SchemaChangeEvent:
+        """Publish one schema change through the runtime-owned schema bus."""
+        return self.runtime.schemas.publish_change(
+            schema_id,
+            producer=producer,
+            change_key=change_key,
+            payload=payload,
+        )
+
+    def subscribe_schema_changes(
+        self,
+        listener: SchemaListener,
+        *,
+        schema_id: str | None = None,
+    ) -> Callable[[], None]:
+        """Subscribe to all schema changes or one schema id."""
+        return self.runtime.schemas.subscribe(listener, schema_id=schema_id)
 
 
 def build_runtime_registry(

@@ -120,13 +120,75 @@ def _apply_widget_editor_state(core, window: QObject) -> None:
     contexts = getattr(model, "contexts", None)
     contexts_changed = getattr(model, "contextsChanged", None)
 
-    def _update_items() -> None:
+    def _publish_main_change(change_key: str, payload: object | None = None) -> None:
+        core.publish_schema_change(
+            "tinyqt_main.schema",
+            producer="tinyqt_main.widget_editor",
+            change_key=change_key,
+            payload=payload,
+        )
+
+    def _attach_context_listeners() -> None:
         current_contexts = getattr(model, "contexts", None)
         if callable(current_contexts):
-            window.setProperty("widgetEditorItems", current_contexts())
-            return
-        if current_contexts is not None:
+            context_items = current_contexts()
+        elif current_contexts is not None:
+            context_items = current_contexts
+        else:
+            context_items = []
+
+        for context in context_items:
+            if getattr(context, "_schema_bus_attached", False):
+                continue
+
+            widget_id = getattr(context, "widgetId", "")
+
+            config_changed = getattr(context, "configChanged", None)
+            if config_changed is not None:
+                config_changed.connect(
+                    lambda widget_id=widget_id: _publish_main_change(
+                        "widget.config_changed",
+                        {"widgetId": widget_id},
+                    )
+                )
+
+            position_changed = getattr(context, "positionChanged", None)
+            if position_changed is not None:
+                position_changed.connect(
+                    lambda widget_id=widget_id: _publish_main_change(
+                        "widget.position_changed",
+                        {"widgetId": widget_id},
+                    )
+                )
+
+            demo_changed = getattr(context, "demoChanged", None)
+            if demo_changed is not None:
+                demo_changed.connect(
+                    lambda widget_id=widget_id: _publish_main_change(
+                        "widget.demo_changed",
+                        {"widgetId": widget_id},
+                    )
+                )
+
+            setattr(context, "_schema_bus_attached", True)
+
+    def _update_items() -> None:
+        current_contexts = getattr(model, "contexts", None)
+        item_count = 0
+        if callable(current_contexts):
+            items = current_contexts()
+            window.setProperty("widgetEditorItems", items)
+            if isinstance(items, list | tuple):
+                item_count = len(items)
+        elif current_contexts is not None:
             window.setProperty("widgetEditorItems", current_contexts)
+            if isinstance(current_contexts, list | tuple):
+                item_count = len(current_contexts)
+        _attach_context_listeners()
+        _publish_main_change(
+            "widget_editor.items_changed",
+            {"count": item_count},
+        )
 
     if callable(contexts):
         _update_items()
@@ -356,6 +418,14 @@ def build_tinyui_launch_spec(core) -> QtLaunchSpec:
     app_manifest = build_tinyui_manifest(core.paths)
 
     log_inspector = LogInspector()
+    log_inspector.subscribe(
+        lambda entry: core.publish_schema_change(
+            "tinyruntime.schema",
+            producer="tinyruntime.log_inspector",
+            change_key="log.record",
+            payload=entry,
+        )
+    )
     theme = ThemeClass()
     statusbar_vm = StatusBarViewModelClass()
     settings_vm = SettingsPanelViewModelClass()

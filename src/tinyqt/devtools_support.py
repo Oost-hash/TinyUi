@@ -74,13 +74,14 @@ def build_devtools_state_monitor_attachment(
 
 
 def attach_devtools_ui(
+    core: CoreRuntime,
     _engine: QQmlApplicationEngine,
     log_inspector: LogInspector,
     *,
     qml_path,
 ) -> DevToolsUiAttachment:
     """Attach optional devtools UI viewmodels through the shared tinyqt host seam."""
-    log_vm = LogViewModelClass(log_inspector)
+    log_vm = LogViewModelClass(core, log_inspector)
     log_settings_vm = LogSettingsViewModelClass()
     register_singletons(
         [
