@@ -72,76 +72,27 @@ class LazyDevToolsController(QObject):
         self._core = core
         self._theme = theme
         self._log_inspector = log_inspector
-        self._host: QtWindowHost | None = None
+        self._window = None
         self._initialized = False
-
-    def _build_registrations(self) -> list[SingletonRegistration]:
-        from tinydevtools.log_settings_viewmodel import LogSettingsViewModel
-        from tinydevtools.log_viewmodel import LogViewModel
-
-        log_view_model_cls = cast(type, LogViewModel)
-        log_settings_view_model_cls = cast(type, LogSettingsViewModel)
-
-        return [
-            SingletonRegistration(cast(type, type(self._theme)), "TinyUI", "Theme", self._theme),
-            SingletonRegistration(
-                log_view_model_cls,
-                "TinyDevTools",
-                "LogViewModel",
-                log_view_model_cls(self._log_inspector),
-            ),
-            SingletonRegistration(
-                log_settings_view_model_cls,
-                "TinyDevTools",
-                "LogSettingsViewModel",
-                log_settings_view_model_cls(),
-            ),
-        ]
-
-    def _create_host(self) -> QtWindowHost | None:
-        devtools_manifest = build_tinydevtools_manifest(self._core.paths)
-        content_qml_path = devtools_manifest.root_qml
-        tool_window_qml = self._core.paths.source_root / "tinydevtools" / "qml" / "DevToolsToolWindow.qml"
-        if content_qml_path is None:
-            return None
-        host = create_window_host(
-            self._core,
-            app=self._app,
-            qml_path=tool_window_qml,
-            app_manifest=devtools_manifest,
-            theme=self._theme,
-            log_inspector=self._log_inspector,
-            build_registrations=lambda _devtools_ui: self._build_registrations(),
-            extra_context=self._core.extra_context,
-            module="TinyDevTools",
-        )
-        if host is None:
-            return None
-        if not attach_window_content(host.engine, host.window, content_qml_path):
-            return None
-        return host
 
     @Slot()
     def toggle(self) -> None:
         if not self._initialized:
-            self._host = self._create_host()
+            from tinyqt.native_devtools_window import NativeDevToolsWindow
+
+            self._window = NativeDevToolsWindow(
+                core=self._core,
+                theme=self._theme,
+                log_inspector=self._log_inspector,
+            )
             self._initialized = True
-            if self._host is None:
+            if self._window is None:
                 return
-            self._host.window.setProperty("loadPanels", True)
-            self._host.window.setProperty("currentTab", 1)
-            self._host.window.setProperty("eagerPanelIndexes", [1])
 
-        if self._host is None:
+        if self._window is None:
             return
 
-        if self._host.window.isVisible():
-            self._host.window.hide()
-            return
-
-        self._host.window.show()
-        self._host.window.raise_()
-        self._host.window.requestActivate()
+        self._window.toggle()
 
 
 class LazySettingsController(QObject):
