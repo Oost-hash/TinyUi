@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from tinyui_schema import SettingsSpec
+from tinyqt_settings_schema import SettingsSpec
 
 
 @dataclass(frozen=True)
@@ -148,3 +148,4 @@ def build_setting_editor(
     fallback = QLabel(str(entry.value))
     fallback.setStyleSheet(f"color: {theme.textMuted};")
     return fallback
+

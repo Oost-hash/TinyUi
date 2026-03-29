@@ -35,7 +35,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from tinyui_schema import load_editors_toml
+from tinyqt_main_schema import load_editors_toml
 
 if TYPE_CHECKING:
     from tinycore.plugin.context import PluginContext
@@ -92,3 +92,4 @@ class DemoPlugin:
 
     def stop(self) -> None:
         pass
+

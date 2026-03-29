@@ -48,7 +48,7 @@ class WidgetOverlay:
     Usage (from composition root):
         overlay = WidgetOverlay(session, paths=core.paths)
         overlay.load(specs, plugin_name="demo")
-        exit_code = tinyui.launch(core, lifecycle, pre_run=overlay.start,
+        exit_code = tinyqt_main.launch(core, lifecycle, pre_run=overlay.start,
                                   extra_context=overlay.extra_context)
     """
 

@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Window
-import TinyUI 1.0
+import "../tinyqt_main/qml/components" as MainComponents
 
 Rectangle {
     id: root
@@ -175,19 +175,19 @@ Rectangle {
         anchors.bottom: parent.bottom
         spacing: 0
 
-        WindowButton {
+        MainComponents.WindowButton {
             iconSource: root.minimizeIconSource
             onClicked: WindowController.minimize()
         }
 
-        WindowButton {
+        MainComponents.WindowButton {
             iconSource: hostWindow && hostWindow.visibility === Window.Maximized
                 ? root.restoreIconSource
                 : root.maximizeIconSource
             onClicked: WindowController.toggleMaximize()
         }
 
-        WindowButton {
+        MainComponents.WindowButton {
             iconSource: root.closeIconSource
             isCloseButton: true
             onClicked: hostWindow.close()

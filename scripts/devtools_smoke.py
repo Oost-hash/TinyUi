@@ -9,7 +9,7 @@ from tinycore.paths import AppPaths
 from tinycore.plugin.user_files import sync_user_files
 from tinycore.runtime.boot import boot_runtime, discover_manifests
 from tinyqt.apps import TINYUI_HOST_ASSEMBLY, build_tinyui_launch_spec
-from tinyqt.launch import launch_qml_app
+from tinyqt.launch import launch_hosted_app
 
 
 def _controller_window_visible(controller) -> bool:
@@ -71,7 +71,7 @@ def main() -> int:
     )
 
     start = perf_counter()
-    exit_code = launch_qml_app(runtime, spec, pre_run=pre_run, extra_context=None)
+    exit_code = launch_hosted_app(runtime, spec, pre_run=pre_run, extra_context=None)
     elapsed_ms = round((perf_counter() - start) * 1000, 1)
 
     if not opened["value"]:

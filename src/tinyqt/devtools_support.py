@@ -12,9 +12,9 @@ from tinycore.runtime.core_runtime import CoreRuntime
 from tinycore.runtime.boot import HostStateMonitorBuild
 from tinyqt.registration import SingletonRegistration, register_singletons
 from tinywidgets.overlay import WidgetOverlay
-from tinydevtools.log_settings_viewmodel import LogSettingsViewModel
-from tinydevtools.log_viewmodel import LogViewModel
-from tinydevtools.state_monitor_viewmodel import StateMonitorViewModel
+from tinyqt_devtools.log_settings_viewmodel import LogSettingsViewModel
+from tinyqt_devtools.log_viewmodel import LogViewModel
+from tinyqt_devtools.state_monitor_viewmodel import StateMonitorViewModel
 
 LogViewModelClass = cast(Any, LogViewModel)
 LogSettingsViewModelClass = cast(Any, LogSettingsViewModel)

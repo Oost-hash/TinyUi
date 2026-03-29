@@ -29,6 +29,12 @@ def create_application(*args, **kwargs):
     return _create_application(*args, **kwargs)
 
 
+def boot_and_launch_hosted_app(*args, **kwargs):
+    from .bootstrap import boot_and_launch_hosted_app as _boot_and_launch_hosted_app
+
+    return _boot_and_launch_hosted_app(*args, **kwargs)
+
+
 def boot_and_launch_qml_app(*args, **kwargs):
     from .bootstrap import boot_and_launch_qml_app as _boot_and_launch_qml_app
 
@@ -41,6 +47,12 @@ def create_engine(*args, **kwargs):
     return _create_engine(*args, **kwargs)
 
 
+def launch_hosted_app(*args, **kwargs):
+    from .launch import launch_hosted_app as _launch_hosted_app
+
+    return _launch_hosted_app(*args, **kwargs)
+
+
 def launch_qml_app(*args, **kwargs):
     from .launch import launch_qml_app as _launch_qml_app
 
@@ -48,9 +60,11 @@ def launch_qml_app(*args, **kwargs):
 
 
 __all__ = [
+    "boot_and_launch_hosted_app",
     "boot_and_launch_qml_app",
     "create_application",
     "create_engine",
+    "launch_hosted_app",
     "launch_qml_app",
     "TinyQtAppManifest",
     "TinyQtPanelManifest",

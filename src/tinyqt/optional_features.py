@@ -47,7 +47,7 @@ class DevToolsMonitorInfo:
 def get_devtools_monitor_info() -> DevToolsMonitorInfo:
     """Return optional devtools monitor metadata without coupling callers to the package."""
     try:
-        from tinydevtools.state_monitor_viewmodel import StateMonitorViewModel
+        from tinyqt_devtools.state_monitor_viewmodel import StateMonitorViewModel
     except ImportError:
         return DevToolsMonitorInfo(refresh_interval_ms=None)
     state_monitor_cls = cast(type[_StateMonitorViewModelLike], StateMonitorViewModel)

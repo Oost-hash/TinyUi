@@ -22,15 +22,15 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from tinydevtools.button_actions import (
+from tinyqt_devtools.button_actions import (
     build_console_toolbar_actions,
     build_devtools_button_actions,
     build_runtime_toolbar_actions,
     build_state_toolbar_actions,
 )
-from tinydevtools.log_settings_viewmodel import LogSettingsViewModel
-from tinydevtools.runtime_viewmodel import RuntimeViewModel
-from tinydevtools.state_monitor_viewmodel import StateMonitorViewModel
+from tinyqt_devtools.log_settings_viewmodel import LogSettingsViewModel
+from tinyqt_devtools.runtime_viewmodel import RuntimeViewModel
+from tinyqt_devtools.state_monitor_viewmodel import StateMonitorViewModel
 from tinyqt_native.native_tool_window import NativeToolWindowBase, with_alpha
 
 LogSettingsViewModelClass = cast(Any, LogSettingsViewModel)

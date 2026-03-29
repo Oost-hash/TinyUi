@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Window
-import TinyUI 1.0
+import "." as MainComponents
 
 Column {
     id: root
@@ -207,7 +207,7 @@ Column {
                         font.family: fontFamily
                     }
 
-                    NumberStepper {
+                    MainComponents.NumberStepper {
                         anchors.verticalCenter: parent.verticalCenter
                         value: entry.modelData && typeof entry.modelData.value === "number" ? entry.modelData.value : 0
                         step: 1
@@ -223,7 +223,7 @@ Column {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 8
 
-                    ColorPicker {
+                    MainComponents.ColorPicker {
                         anchors.verticalCenter: parent.verticalCenter
                         value: entry.modelData && typeof entry.modelData.color === "string" ? entry.modelData.color : "#E0E0E0"
                         onColorPicked: (hex) => root._update(entry.index, { "color": hex })
@@ -237,7 +237,7 @@ Column {
                         font.family: fontFamily
                     }
 
-                    ToggleSwitch {
+                    MainComponents.ToggleSwitch {
                         anchors.verticalCenter: parent.verticalCenter
                         checked: entry.modelData && typeof entry.modelData.flash === "boolean" ? entry.modelData.flash : false
                         onToggled: (v) => root._update(entry.index, { "flash": v })
@@ -301,7 +301,7 @@ Column {
                         font.family: fontFamily
                     }
 
-                    ThemedComboBox {
+                    MainComponents.ThemedComboBox {
                         anchors.verticalCenter: parent.verticalCenter
                         model: root.thresholdTargets
                         implicitWidth: 72
@@ -323,7 +323,7 @@ Column {
                         font.family: fontFamily
                     }
 
-                    NumberStepper {
+                    MainComponents.NumberStepper {
                         anchors.verticalCenter: parent.verticalCenter
                         value: entry.modelData && typeof entry.modelData.flashSpeed === "number" ? entry.modelData.flashSpeed : 4
                         step: 1

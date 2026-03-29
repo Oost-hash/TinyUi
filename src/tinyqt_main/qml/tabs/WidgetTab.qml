@@ -1,7 +1,7 @@
 
 import QtQuick
 import QtQuick.Window
-import TinyUI 1.0
+import "../components" as MainComponents
 
 Rectangle {
     id: root
@@ -402,7 +402,7 @@ Rectangle {
                             width: 56
                             height: parent.height
 
-                            ToggleSwitch {
+                            MainComponents.ToggleSwitch {
                                 anchors.centerIn: parent
                                 checked: modelData && typeof modelData.enabled === "boolean" ? modelData.enabled : false
                                 onToggled: (value) => root.updateWidgetItem(index, { "enabled": value })
@@ -501,10 +501,10 @@ Rectangle {
                     anchors.right: parent.right
                     spacing: 0
 
-                    EditRow {
+                    MainComponents.EditRow {
                         label: "Min"
                         description: "Lowest value in the mock sweep"
-                        NumberStepper {
+                        MainComponents.NumberStepper {
                             anchors.right: parent.right
                             anchors.rightMargin: 0
                             anchors.verticalCenter: parent.verticalCenter
@@ -517,10 +517,10 @@ Rectangle {
                         }
                     }
 
-                    EditRow {
+                    MainComponents.EditRow {
                         label: "Max"
                         description: "Highest value before the sweep resets"
-                        NumberStepper {
+                        MainComponents.NumberStepper {
                             anchors.right: parent.right
                             anchors.rightMargin: 0
                             anchors.verticalCenter: parent.verticalCenter
@@ -533,10 +533,10 @@ Rectangle {
                         }
                     }
 
-                    EditRow {
+                    MainComponents.EditRow {
                         label: "Speed"
                         description: "Sweep speed per update cycle"
-                        NumberStepper {
+                        MainComponents.NumberStepper {
                             anchors.right: parent.right
                             anchors.rightMargin: 0
                             anchors.verticalCenter: parent.verticalCenter
@@ -565,9 +565,9 @@ Rectangle {
                     width: detailPane.width
                     spacing: 0
 
-                    SectionHeader { text: "Identity" }
+                    MainComponents.SectionHeader { text: "Identity" }
 
-                    EditRow {
+                    MainComponents.EditRow {
                         label: "Label"
                         description: "Short text shown on the widget"
 
@@ -609,10 +609,10 @@ Rectangle {
                         }
                     }
 
-                    EditRow {
+                    MainComponents.EditRow {
                         label: "Position X"
 
-                        NumberStepper {
+                        MainComponents.NumberStepper {
                             anchors.right: parent.right
                             anchors.rightMargin: 0
                             anchors.verticalCenter: parent.verticalCenter
@@ -624,10 +624,10 @@ Rectangle {
                         }
                     }
 
-                    EditRow {
+                    MainComponents.EditRow {
                         label: "Position Y"
 
-                        NumberStepper {
+                        MainComponents.NumberStepper {
                             anchors.right: parent.right
                             anchors.rightMargin: 0
                             anchors.verticalCenter: parent.verticalCenter
@@ -639,9 +639,9 @@ Rectangle {
                         }
                     }
 
-                    SectionHeader { text: "Provider" }
+                    MainComponents.SectionHeader { text: "Provider" }
 
-                    EditRow {
+                    MainComponents.EditRow {
                         label: "Binding"
                         description: root.selectedWidget
                             ? (
@@ -652,16 +652,16 @@ Rectangle {
                             : ""
                     }
 
-                    EditRow {
+                    MainComponents.EditRow {
                         label: "Mode"
                         description: root.selectedWidget ? root.itemValue(root.selectedWidget, "providerMode", "") : ""
                     }
 
-                    EditRow {
+                    MainComponents.EditRow {
                         visible: root.selectedHasEditableValue
                         label: "Value"
 
-                        NumberStepper {
+                        MainComponents.NumberStepper {
                             anchors.right: parent.right
                             anchors.rightMargin: 0
                             anchors.verticalCenter: parent.verticalCenter
@@ -673,9 +673,9 @@ Rectangle {
                         }
                     }
 
-                    SectionHeader { text: "Thresholds" }
+                    MainComponents.SectionHeader { text: "Thresholds" }
 
-                    ThresholdEditor {
+                    MainComponents.ThresholdEditor {
                         width: parent.width
                         context: root.selectedWidget
                         bridge: root

@@ -29,14 +29,14 @@ import sys
 from tinycore.logging import configure
 from tinycore.paths import AppPaths
 from tinyqt.apps import TINYUI_HOST_ASSEMBLY, build_tinyui_launch_spec
-from tinyqt.bootstrap import boot_and_launch_qml_app
+from tinyqt.bootstrap import boot_and_launch_hosted_app
 
 configure()
 
 
 def main() -> None:
     paths = AppPaths.detect()
-    exit_code = boot_and_launch_qml_app(
+    exit_code = boot_and_launch_hosted_app(
         paths,
         host_assembly=TINYUI_HOST_ASSEMBLY,
         build_launch_spec=build_tinyui_launch_spec,

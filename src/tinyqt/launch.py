@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""Shared Qt runtime launch flow for QML-hosted applications."""
+"""Shared Qt runtime launch flow for TinyQt-hosted applications."""
 
 from __future__ import annotations
 
@@ -73,14 +73,14 @@ def _log_startup_phase(log, phase: str, start: float) -> None:
     log.startup_phase(phase, (perf_counter() - start) * 1000)
 
 
-def launch_qml_app(
+def launch_hosted_app(
     core,
     spec: QtLaunchSpec,
     *,
     pre_run: Callable[[], None] | None = None,
     extra_context: RegistrationMap | None = None,
 ) -> int:
-    """Launch a QML application through the shared tinyqt runtime host."""
+    """Launch one hosted application through the shared TinyQt runtime host."""
     total_start = perf_counter()
     app_manifest = validate_manifest(spec.app_manifest)
     qInstallMessageHandler(_qt_message_handler)
@@ -152,3 +152,19 @@ def launch_qml_app(
 
     del host
     return exit_code
+
+
+def launch_qml_app(
+    core,
+    spec: QtLaunchSpec,
+    *,
+    pre_run: Callable[[], None] | None = None,
+    extra_context: RegistrationMap | None = None,
+) -> int:
+    """Compatibility alias for the older QML-specific launch name."""
+    return launch_hosted_app(
+        core,
+        spec,
+        pre_run=pre_run,
+        extra_context=extra_context,
+    )

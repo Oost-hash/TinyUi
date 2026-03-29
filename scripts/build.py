@@ -14,7 +14,7 @@ ENTRY   = ROOT / "src" / "tinyui_boot.py"
 DIST    = ROOT / "dist"
 BUILD   = ROOT / "build"
 SPEC    = ROOT / "TinyUi.spec"
-EGG_INFO = ROOT / "src" / "tinyui.egg-info"
+EGG_INFO = ROOT / "src" / "TinyUi.egg-info"
 PLUGIN_BUILD_SCRIPT = ROOT / "scripts" / "build_plugin.py"
 
 IS_WINDOWS = platform.system() == "Windows"
@@ -24,15 +24,15 @@ EXE_NAME = "TinyUi.exe" if IS_WINDOWS else "TinyUi"
 APP_DIR  = DIST / "TinyUi"
 
 ICON = (
-    ROOT / "src" / "tinyui" / "images" / "icon.ico"
+    ROOT / "src" / "tinyqt_main" / "images" / "icon.ico"
     if IS_WINDOWS else
-    ROOT / "src" / "tinyui" / "images" / "icon.png"
+    ROOT / "src" / "tinyqt_main" / "images" / "icon.png"
 )
 
 # User-facing folders to place next to the executable
 USER_DIRS = {
     "config":  ROOT / "data" / "plugin-config",
-    "themes":  ROOT / "src" / "tinyui" / "themes",
+    "themes":  ROOT / "src" / "tinyqt_main" / "themes",
 }
 
 
@@ -58,7 +58,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--skip-clean", action="store_true", help="Keep existing dist/build folders before running")
     parser.add_argument("--app-only", action="store_true", help="Build only the main program and skip plugin packaging")
     parser.add_argument("--plugins-only", action="store_true", help="Package plugins into the app dist without running PyInstaller")
-    parser.add_argument("--with-devtools", action="store_true", help="Include the optional tinydevtools package in the built app")
+    parser.add_argument("--with-devtools", action="store_true", help="Include the optional tinyqt_devtools package in the built app")
     return parser.parse_args()
 
 
@@ -116,8 +116,9 @@ def _pyinstaller_cmd(*, with_devtools: bool) -> list[str]:
         "--windowed",
         "--contents-directory", "_runtime",
         "--collect-all", "tinycore",
-        "--collect-all", "tinyui",
-        "--collect-all", "tinyui_schema",
+        "--collect-all", "tinyqt_main",
+        "--collect-all", "tinyqt_main_schema",
+        "--collect-all", "tinyqt_settings_schema",
         "--collect-all", "tinywidgets",
         "--paths", str(ROOT / "src"),
         "--distpath", str(DIST),
@@ -130,7 +131,7 @@ def _pyinstaller_cmd(*, with_devtools: bool) -> list[str]:
         cmd.extend(["--icon", str(ICON)])
 
     if with_devtools:
-        cmd.extend(["--collect-all", "tinydevtools"])
+        cmd.extend(["--collect-all", "tinyqt_devtools"])
 
     cmd.append(str(ENTRY))
     return cmd
@@ -197,3 +198,4 @@ if __name__ == "__main__":
             with_devtools=args.with_devtools,
         )
     )
+

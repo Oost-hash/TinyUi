@@ -474,7 +474,7 @@ def build_runtime_registry(
                 id="devtools.monitor",
                 kind="timer",
                 role="devtools.monitor",
-                owner="tinydevtools",
+                owner="tinyqt_devtools",
                 transport="qt_timer",
                 parent_id="host.main",
                 pid=host_pid,

@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from tinyqt_settings.button_actions import build_settings_button_actions
-from tinyui_schema import SettingsSpec
+from tinyqt_settings_schema import SettingsSpec
 from tinyqt_native.native_tool_window import NativeToolWindowBase
 from tinyqt_settings.settings_rows import SettingEntry, build_setting_row
 
@@ -316,3 +316,4 @@ class NativeSettingsWindow(NativeToolWindowBase):
         else:
             self._pending[token] = value
         self._update_actions()
+

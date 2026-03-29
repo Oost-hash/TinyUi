@@ -28,8 +28,8 @@ if TYPE_CHECKING:
     from tinycore.runtime.plugins.exports import ParticipantExports
     from tinycore.runtime.plugins.facts import PluginParticipationFacts
     from tinycore.services import PersistenceServices
-    from tinyui_schema import EditorRegistry
-    from tinyui_schema import SettingsSpec
+    from tinyqt_main_schema import EditorRegistry
+    from tinyqt_settings_schema import SettingsSpec
 
 
 class PluginSettings:
@@ -103,3 +103,4 @@ class PluginContext:
         self.config = PluginConfig(persistence, plugin_name)
         self.exports = participation.exports_for(plugin_name, requires)
         self.editors = PluginEditors(editors)
+

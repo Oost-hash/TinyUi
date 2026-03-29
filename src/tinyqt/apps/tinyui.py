@@ -37,7 +37,7 @@ from tinycore.runtime.core_runtime import CoreRuntime
 from tinycore.runtime.plugins.participants import PluginParticipant
 from tinycore.runtime.plugins.provider_activity import ProviderActivity
 from tinycore.services import HostServices, RuntimeServices
-from tinyui_schema import SettingsSpec
+from tinyqt_settings_schema import SettingsSpec
 
 from tinyqt.optional_features import (
     build_widget_overlay,
@@ -449,3 +449,4 @@ class TinyUiHostAssembly(HostAssembly):
 
 
 TINYUI_HOST_ASSEMBLY = TinyUiHostAssembly()
+

@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""Declarative settings schema contracts shared by plugins and the host UI."""
+"""Declarative settings schema contracts shared by plugins and settings surfaces."""
 
 from __future__ import annotations
 

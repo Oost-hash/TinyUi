@@ -20,7 +20,7 @@ import subprocess
 from pathlib import Path
 
 DEFAULT_EXTENSIONS = (".py", ".qml", ".toml")
-DEFAULT_PACKAGES = ("app", "plugins", "tinycore", "tinyui", "tinywidgets", "tinyui_schema")
+DEFAULT_PACKAGES = ("app", "plugins", "tinycore", "tinyqt_main", "tinywidgets", "tinyqt_main_schema", "tinyqt_settings_schema")
 
 
 def parse_csv(value: str) -> tuple[str, ...]:
@@ -53,7 +53,7 @@ def main() -> int:
     parser.add_argument(
         "--packages",
         default=",".join(DEFAULT_PACKAGES),
-        help="Comma-separated package names under src/. Default: app,plugins,tinycore,tinyui,tinywidgets,tinyui_schema",
+        help="Comma-separated package names under src/. Default: app,plugins,tinycore,tinyqt_main,tinywidgets,tinyqt_main_schema,tinyqt_settings_schema",
     )
     args = parser.parse_args()
 
@@ -132,3 +132,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

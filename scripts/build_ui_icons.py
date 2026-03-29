@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Render UI SVG icons to DPI-aware PNGs.
 
-Leest SVGs uit src/tinyui/images/src/ en schrijft PNGs naar:
-    src/tinyui/images/16/   —  16×16  (100% DPI)
-    src/tinyui/images/20/   —  20×20  (125% DPI)
-    src/tinyui/images/24/   —  24×24  (150% DPI)
+Leest SVGs uit src/tinyqt_main/images/src/ en schrijft PNGs naar:
+    src/tinyqt_main/images/16/   —  16×16  (100% DPI)
+    src/tinyqt_main/images/20/   —  20×20  (125% DPI)
+    src/tinyqt_main/images/24/   —  24×24  (150% DPI)
 
 Usage:
     python scripts/build_ui_icons.py
@@ -19,7 +19,7 @@ from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QApplication
 
 IMAGES_DIR = os.path.join(
-    os.path.dirname(__file__), "..", "src", "tinyui", "images"
+    os.path.dirname(__file__), "..", "src", "tinyqt_main", "images"
 )
 SRC_DIR = os.path.join(IMAGES_DIR, "src")
 SIZES = [16, 20, 24]

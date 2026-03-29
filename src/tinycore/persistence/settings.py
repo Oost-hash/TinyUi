@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any
 
 from tinycore.logging import get_logger
-from tinyui_schema import SettingsSpec
+from tinyqt_settings_schema import SettingsSpec
 
 log = get_logger(__name__)
 
@@ -125,3 +125,4 @@ class SettingsRegistry:
             log.settings("saved", plugin=plugin_name, path=path)
         except Exception as exc:
             log.warning("Could not save settings for %r: %s", plugin_name, exc)
+

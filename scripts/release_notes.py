@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 CHANGELOG_CATEGORIES = ("Added", "Changed", "Fixed", "Removed")
-PACKAGE_ORDER = ("app", "plugins", "tinycore", "tinyui", "tinywidgets", "other")
+PACKAGE_ORDER = ("app", "plugins", "tinycore", "tinyqt_main", "tinywidgets", "other")
 
 
 @dataclass(frozen=True)

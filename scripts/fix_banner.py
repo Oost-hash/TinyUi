@@ -56,7 +56,7 @@ _EXT_CONFIG: dict[str, tuple[str, str]] = {
 }
 
 # Directories that contain our own source (relative to repo root)
-SRC_DIRS = ("src/tinyui", "src/tinycore", "src/plugins")
+SRC_DIRS = ("src/tinyqt_main", "src/tinycore", "src/plugins")
 
 # Fingerprints: if any of these appear in the first 30 lines, it's a banner.
 _FINGERPRINTS = [

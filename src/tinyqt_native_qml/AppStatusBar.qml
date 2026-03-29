@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Window
-import TinyUI 1.0
+import "../tinyqt_main/qml/components" as MainComponents
 
 Rectangle {
     id: root
@@ -49,7 +49,7 @@ Rectangle {
                         : "transparent"
                 }
 
-                StatusBarIconButton {
+                MainComponents.StatusBarIconButton {
                     anchors.fill: parent
                     iconText: typeof modelData === "string" && modelData.length > 0 ? modelData.charAt(0).toUpperCase() : ""
                 }

@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Window
-import TinyUI 1.0
+import "../tinyqt_main/qml/tabs" as MainTabs
 
 Window {
     id: root
@@ -91,7 +91,7 @@ Window {
             width: parent.width
             height: parent.height - y - (statusBar.visible ? statusBar.height : 0)
 
-            WidgetTab {
+            MainTabs.WidgetTab {
                 anchors.fill: parent
                 sectionTitle: "Widgets"
                 widgetItems: root.widgetEditorItems

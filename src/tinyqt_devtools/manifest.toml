@@ -1,5 +1,5 @@
 [[app]]
-app_id = "tinydevtools.window"
+app_id = "tinyqt_devtools.window"
 title = "Dev Tools"
 required_singletons = [
     "Theme",

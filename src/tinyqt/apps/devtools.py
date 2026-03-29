@@ -30,13 +30,13 @@ from tinyqt.manifests import (
 )
 
 
-def build_tinydevtools_manifest(paths: AppPaths) -> TinyQtAppManifest:
-    """Build the hosted TinyDevTools manifest from tinydevtools/manifest.toml."""
-    manifest_path = paths.source_root / "tinydevtools" / "manifest.toml" if paths.source_root else None
+def build_tinyqt_devtools_manifest(paths: AppPaths) -> TinyQtAppManifest:
+    """Build the hosted TinyDevTools manifest from tinyqt_devtools/manifest.toml."""
+    manifest_path = paths.source_root / "tinyqt_devtools" / "manifest.toml" if paths.source_root else None
     if manifest_path is None:
         raise RuntimeError("TinyDevTools manifest requires a source_root in source runtime mode")
     manifests = load_tinyqt_app_manifests(manifest_path, paths=paths)
     for manifest in manifests:
-        if manifest.app_id == "tinydevtools.window":
+        if manifest.app_id == "tinyqt_devtools.window":
             return manifest
-    raise RuntimeError(f"Missing TinyDevTools app manifest 'tinydevtools.window' in {manifest_path}")
+    raise RuntimeError(f"Missing TinyDevTools app manifest 'tinyqt_devtools.window' in {manifest_path}")

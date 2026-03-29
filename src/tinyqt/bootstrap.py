@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""Shared bootstrap flow for hosted Qt applications."""
+"""Shared bootstrap flow for hosted TinyQt applications."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ from tinycore.paths import AppPaths
 from tinycore.plugin.user_files import sync_user_files
 from tinycore.runtime.boot import HostAssembly, boot_runtime, discover_manifests
 
-from .launch import QtLaunchSpec, launch_qml_app
+from .launch import QtLaunchSpec, launch_hosted_app
 
 _log = get_logger(__name__)
 
@@ -39,13 +39,13 @@ def _log_startup_phase(phase: str, start: float, **extra: object) -> None:
     _log.startup_phase(phase, (perf_counter() - start) * 1000, **extra)
 
 
-def boot_and_launch_qml_app(
+def boot_and_launch_hosted_app(
     paths: AppPaths,
     *,
     host_assembly: HostAssembly,
     build_launch_spec: Callable[[object], QtLaunchSpec],
 ) -> int:
-    """Boot the shared runtime and launch a hosted QML app."""
+    """Boot the shared runtime and launch one hosted TinyQt app."""
     total_start = perf_counter()
     plugins_dir = paths.plugins_dir
 
@@ -81,7 +81,7 @@ def boot_and_launch_qml_app(
 
     phase_start = perf_counter()
     spec = build_launch_spec(runtime)
-    exit_code = launch_qml_app(
+    exit_code = launch_hosted_app(
         runtime,
         spec,
         pre_run=_pre_run,
@@ -90,3 +90,17 @@ def boot_and_launch_qml_app(
     _log_startup_phase("launch_returned", phase_start)
     _log_startup_phase("main_total_until_exit", total_start)
     return exit_code
+
+
+def boot_and_launch_qml_app(
+    paths: AppPaths,
+    *,
+    host_assembly: HostAssembly,
+    build_launch_spec: Callable[[object], QtLaunchSpec],
+) -> int:
+    """Compatibility alias for the older QML-specific bootstrap name."""
+    return boot_and_launch_hosted_app(
+        paths,
+        host_assembly=host_assembly,
+        build_launch_spec=build_launch_spec,
+    )

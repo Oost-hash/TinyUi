@@ -14,7 +14,7 @@ from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtGui import QImage, QPainter
 from PySide6.QtCore import Qt
 
-IMAGES_DIR = os.path.join(os.path.dirname(__file__), "..", "src", "tinyui", "images")
+IMAGES_DIR = os.path.join(os.path.dirname(__file__), "..", "src", "tinyqt_main", "images")
 SVG_PATH = os.path.join(IMAGES_DIR, "src", "icon.svg")
 PNG_PATH = os.path.join(IMAGES_DIR, "icon.png")
 ICO_PATH = os.path.join(IMAGES_DIR, "icon.ico")

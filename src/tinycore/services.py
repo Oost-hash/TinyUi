@@ -26,7 +26,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from tinyui_schema import EditorRegistry, SettingsSpec
+from tinyqt_main_schema import EditorRegistry
+from tinyqt_settings_schema import SettingsSpec
 
 from .paths import AppPaths
 from .persistence.config.loader import LoaderRegistry
@@ -168,3 +169,4 @@ def build_runtime_services() -> RuntimeServices:
         plugin_facts=PluginParticipationFacts(),
         plugin_runtime=PluginParticipationRuntime(),
     )
+
