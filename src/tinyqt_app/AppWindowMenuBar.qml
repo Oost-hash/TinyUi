@@ -46,7 +46,7 @@ Rectangle {
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        width: menuRow.width + 24
+        width: menuRow.width + 28
         color: menuArea.containsMouse || root.menuOpen
             ? (hostTheme ? hostTheme.surfaceAlt : "#2f343e")
             : "transparent"
@@ -78,7 +78,9 @@ Rectangle {
 
         Text {
             text: root.titleText
-            color: hostTheme ? hostTheme.textMuted : "#878a98"
+            color: menuArea.containsMouse || root.menuOpen
+                ? "#FFFFFF"
+                : (hostTheme ? hostTheme.textMuted : "#878a98")
             font.pixelSize: 12
             font.weight: Font.Medium
         }
@@ -89,7 +91,7 @@ Rectangle {
         z: 10
         x: 0
         y: root.height
-        width: 164
+        width: 160
         height: menuColumn.implicitHeight
         visible: root.menuOpen
 

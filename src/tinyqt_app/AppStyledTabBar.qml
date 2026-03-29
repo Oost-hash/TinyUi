@@ -13,7 +13,7 @@ Rectangle {
 
     implicitHeight: 42
     height: implicitHeight
-    color: hostTheme ? hostTheme.surfaceAlt : "#242a33"
+    color: hostTheme ? hostTheme.surfaceAlt : "#2f343e"
 
     Rectangle {
         anchors.bottom: parent.bottom
@@ -37,22 +37,22 @@ Rectangle {
     Row {
         id: tabRow
         anchors.fill: parent
-        anchors.leftMargin: 0
-        anchors.rightMargin: 0
         spacing: -1
 
         Repeater {
-            model: Array.isArray(root.tabs) ? root.tabs : []
+            model: root.tabs && root.tabs.length !== undefined ? root.tabs : []
 
             delegate: Rectangle {
                 required property string modelData
                 required property int index
 
-                width: Math.max(104, tabLabel.implicitWidth + 40)
+                width: Math.max(implicitWidth, tabLabel.implicitWidth + 40)
+                implicitWidth: tabLabel.implicitWidth + 40
                 height: tabRow.height
+                radius: 0
                 color: root.currentIndex === index
-                    ? (hostTheme ? hostTheme.surface : "#17181c")
-                    : (hostTheme ? hostTheme.surfaceAlt : "#242a33")
+                    ? (hostTheme ? hostTheme.surface : "#282c33")
+                    : (hostTheme ? hostTheme.surfaceAlt : "#2f343e")
                 Behavior on color { ColorAnimation { duration: 90 } }
 
                 Rectangle {
@@ -61,6 +61,7 @@ Rectangle {
                     anchors.bottom: parent.bottom
                     width: 1
                     color: hostTheme ? hostTheme.border : "#3a4452"
+                    opacity: 1
                 }
 
                 Rectangle {
@@ -69,6 +70,7 @@ Rectangle {
                     anchors.bottom: parent.bottom
                     width: 1
                     color: hostTheme ? hostTheme.border : "#3a4452"
+                    opacity: 1
                 }
 
                 Rectangle {
@@ -76,9 +78,8 @@ Rectangle {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     height: 1
-                    color: root.currentIndex === index
-                        ? (hostTheme ? hostTheme.surface : "#17181c")
-                        : (hostTheme ? hostTheme.border : "#3a4452")
+                    visible: root.currentIndex !== index
+                    color: hostTheme ? hostTheme.border : "#464b57"
                 }
 
                 Text {
@@ -86,11 +87,10 @@ Rectangle {
                     anchors.centerIn: parent
                     text: modelData
                     color: root.currentIndex === index
-                        ? (hostTheme ? hostTheme.text : "#e6edf5")
-                        : (hostTheme ? hostTheme.textSecondary : "#aeb8c6")
+                        ? (hostTheme ? hostTheme.text : "#dce0e5")
+                        : (hostTheme ? hostTheme.textSecondary : "#a9afbc")
                     font.pixelSize: hostTheme ? hostTheme.fontSizeBase : 13
-                    font.weight: root.currentIndex === index ? Font.DemiBold : Font.Normal
-                    Behavior on color { ColorAnimation { duration: 90 } }
+                    font.weight: Font.Normal
                 }
 
                 MouseArea {

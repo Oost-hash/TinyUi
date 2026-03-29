@@ -83,7 +83,7 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         body = QWidget()
         body_layout = QVBoxLayout(body)
         body_layout.setContentsMargins(0, 0, 0, 0)
-        body_layout.setSpacing(12)
+        body_layout.setSpacing(10)
         body_layout.addWidget(self._tabs, 1)
 
         footer_frame, _footer_layout, footer_buttons = self.create_button_bar(manifest.buttons)
@@ -137,6 +137,8 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._state_tree.setHeaderLabels(["Key", "Value"])
         self._state_tree.setRootIsDecorated(False)
         self._state_tree.setAlternatingRowColors(True)
+        self._state_tree.setUniformRowHeights(True)
+        self._state_tree.setIndentation(0)
         self._state_tree.itemClicked.connect(self._handle_state_item_click)
         self._state_tree.setColumnWidth(0, 320)
 
@@ -191,7 +193,16 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         )
         self._runtime_tree.setAlternatingRowColors(True)
         self._runtime_tree.setRootIsDecorated(False)
+        self._runtime_tree.setUniformRowHeights(True)
+        self._runtime_tree.setIndentation(14)
         self._runtime_tree.itemClicked.connect(self._handle_runtime_item_click)
+        self._runtime_tree.setColumnWidth(0, 260)
+        self._runtime_tree.setColumnWidth(1, 88)
+        self._runtime_tree.setColumnWidth(2, 78)
+        self._runtime_tree.setColumnWidth(3, 96)
+        self._runtime_tree.setColumnWidth(4, 92)
+        self._runtime_tree.setColumnWidth(5, 104)
+        self._runtime_tree.setColumnWidth(6, 160)
 
         layout.addWidget(toolbar)
         layout.addWidget(filters)
@@ -280,19 +291,23 @@ class NativeDevToolsWindow(NativeToolWindowBase):
                 background-color: {self._theme.surface};
                 top: -1px;
             }}
-            QTabBar::tab {{
+            QTabBar {{
                 background-color: {self._theme.surfaceAlt};
+            }}
+            QTabBar::tab {{
+                background-color: transparent;
                 color: {self._theme.textSecondary};
-                border: 1px solid {self._theme.border};
-                border-bottom: none;
-                padding: 6px 12px;
-                margin-right: 4px;
-                min-width: 88px;
+                border: none;
+                border-bottom: 2px solid transparent;
+                padding: 6px 14px;
+                margin-right: 0px;
+                min-width: 84px;
+                font-family: "Consolas";
+                font-size: 11px;
             }}
             QTabBar::tab:selected {{
-                background-color: {self._theme.surfaceRaised};
-                color: {self._theme.text};
-                border-color: {self._theme.border};
+                background-color: transparent;
+                color: {self._theme.accent};
                 border-bottom: 2px solid {self._theme.accent};
             }}
             QTabBar::tab:hover:!selected {{
@@ -302,30 +317,52 @@ class NativeDevToolsWindow(NativeToolWindowBase):
             QLabel#SummaryLabel {{
                 color: {self._theme.textSecondary};
                 font-size: {self._theme.fontSizeSmall}px;
+                font-family: "Consolas";
+            }}
+            QFrame#DevToolsToolbar {{
+                border-radius: 0px;
+                border-left: none;
+                border-right: none;
             }}
             QTreeWidget#DevToolsTree, QPlainTextEdit#ConsoleOutput {{
-                background-color: {self._theme.surfaceAlt};
+                background-color: {self._theme.surface};
                 border: 1px solid {self._theme.border};
-                alternate-background-color: {with_alpha(self._theme.surface, 0.18)};
+                alternate-background-color: {with_alpha(self._theme.surfaceAlt, 0.32)};
+            }}
+            QTreeView::item {{
+                min-height: 22px;
             }}
             QHeaderView::section {{
-                background-color: {self._theme.surfaceRaised};
+                background-color: {self._theme.surfaceAlt};
                 color: {self._theme.textMuted};
                 border: none;
                 border-bottom: 1px solid {self._theme.border};
-                padding: 6px 8px;
+                padding: 4px 8px;
                 font-weight: 600;
+                font-family: "Consolas";
+                font-size: 10px;
             }}
             QPushButton#RuntimeFilterButton {{
                 min-width: 0px;
-                padding: 3px 8px;
+                padding: 2px 8px;
                 border-radius: 3px;
                 color: {self._theme.textMuted};
+                font-family: "Consolas";
+                font-size: 10px;
             }}
             QPushButton#RuntimeFilterButton:checked {{
                 color: {self._theme.accent};
                 border-color: {self._theme.accent};
                 background-color: {with_alpha(self._theme.accent, 0.12)};
+            }}
+            QComboBox {{
+                font-family: "Consolas";
+                font-size: 11px;
+                min-height: 24px;
+            }}
+            QCheckBox {{
+                font-family: "Consolas";
+                font-size: 10px;
             }}
             QScrollArea#CategoryScrollArea {{
                 background-color: transparent;
@@ -334,6 +371,7 @@ class NativeDevToolsWindow(NativeToolWindowBase):
                 color: {self._theme.text};
                 selection-background-color: {with_alpha(self._theme.accent, 0.18)};
                 font-family: "Consolas";
+                font-size: 11px;
             }}
             """
         )

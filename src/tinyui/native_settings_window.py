@@ -44,9 +44,9 @@ class NativeSettingsWindow(NativeToolWindowBase):
 
         self._plugin_list = QListWidget()
         self._plugin_list.setObjectName("PluginList")
-        self._plugin_list.setMinimumWidth(190)
-        self._plugin_list.setAlternatingRowColors(True)
-        self._plugin_list.setSpacing(1)
+        self._plugin_list.setMinimumWidth(160)
+        self._plugin_list.setAlternatingRowColors(False)
+        self._plugin_list.setSpacing(0)
         self._plugin_list.currentRowChanged.connect(self._render_plugin)
 
         self._summary_title = self._title_label
@@ -59,7 +59,7 @@ class NativeSettingsWindow(NativeToolWindowBase):
         self._content_container = QWidget()
         self._content_layout = QVBoxLayout(self._content_container)
         self._content_layout.setContentsMargins(0, 0, 0, 0)
-        self._content_layout.setSpacing(16)
+        self._content_layout.setSpacing(0)
         self._content_layout.addStretch(1)
 
         self._scroll_area = QScrollArea()
@@ -82,7 +82,7 @@ class NativeSettingsWindow(NativeToolWindowBase):
         right_panel.setObjectName("RightPanel")
         right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(0, 0, 0, 0)
-        right_layout.setSpacing(14)
+        right_layout.setSpacing(0)
         right_layout.addWidget(self._summary_card)
         right_layout.addWidget(self._scroll_area, 1)
 
@@ -94,11 +94,11 @@ class NativeSettingsWindow(NativeToolWindowBase):
         splitter.addWidget(right_panel)
         splitter.setStretchFactor(0, 0)
         splitter.setStretchFactor(1, 1)
-        splitter.setSizes([220, 740])
+        splitter.setSizes([176, 784])
 
         content_frame = QWidget()
         root_layout = QHBoxLayout(content_frame)
-        root_layout.setContentsMargins(18, 18, 18, 18)
+        root_layout.setContentsMargins(12, 12, 12, 12)
         root_layout.setSpacing(0)
         root_layout.addWidget(splitter)
         self.add_body_widget(content_frame, stretch=1)
@@ -119,29 +119,52 @@ class NativeSettingsWindow(NativeToolWindowBase):
                 background-color: {self._theme.border};
                 width: 1px;
             }}
+            QLabel#SummaryTitle {{
+                color: {self._theme.text};
+                font-size: {self._theme.fontSizeBase}px;
+                font-weight: 600;
+            }}
+            QLabel#SummaryText {{
+                color: {self._theme.textMuted};
+                font-size: {self._theme.fontSizeSmall}px;
+            }}
+            QLabel#SettingRowLabel {{
+                color: {self._theme.text};
+                font-size: {self._theme.fontSizeBase}px;
+                font-weight: 500;
+            }}
+            QLabel#SettingRowDescription {{
+                color: {self._theme.textMuted};
+                font-size: {self._theme.fontSizeSmall}px;
+            }}
             QListWidget#PluginList {{
                 background-color: {self._theme.surfaceAlt};
                 border: 1px solid {self._theme.border};
                 outline: none;
-                padding-top: 10px;
+                padding-top: 0px;
             }}
             QListWidget#PluginList::item {{
-                padding: 12px 14px;
+                padding: 9px 14px;
                 margin: 0px;
-                border-left: 3px solid transparent;
+                border-left: 2px solid transparent;
                 color: {self._theme.textMuted};
             }}
-            QListWidget#PluginList::item:alternate {{
-                background-color: {self._theme.withAlpha(self._theme.surface, 0.18)};
-            }}
             QListWidget#PluginList::item:hover {{
-                background-color: {self._theme.withAlpha(self._theme.accentHover, 0.10)};
+                background-color: {self._theme.surfaceRaised};
                 color: {self._theme.text};
             }}
             QListWidget#PluginList::item:selected {{
                 background-color: {self._theme.surface};
-                border-left: 3px solid {self._theme.accent};
+                border-left: 2px solid {self._theme.accent};
                 color: {self._theme.text};
+            }}
+            QWidget#SettingRow {{
+                background-color: transparent;
+                border-bottom: 1px solid {self._theme.withAlpha(self._theme.border, 0.4)};
+            }}
+            QScrollArea#ContentScrollArea {{
+                background-color: transparent;
+                border: none;
             }}
             """
         )
@@ -247,7 +270,7 @@ class NativeSettingsWindow(NativeToolWindowBase):
         self._summary_title.setText(plugin_name)
         self._summary_text.setText(
             f"{plugin_name} exposes {len(section_order)} settings section"
-            f"{'' if len(section_order) == 1 else 's'} in the current runtime."
+            f"{'' if len(section_order) == 1 else 's'}."
             " Changes stay local until you save."
         )
 

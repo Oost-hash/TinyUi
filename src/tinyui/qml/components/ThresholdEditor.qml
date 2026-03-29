@@ -115,7 +115,7 @@ Column {
 
     Rectangle {
         width: parent.width
-        height: descLabel.implicitHeight + 16
+        height: descLabel.implicitHeight + 10
         color: "transparent"
 
         Text {
@@ -123,7 +123,7 @@ Column {
             anchors.left: parent.left
             anchors.leftMargin: 16
             anchors.right: parent.right
-            anchors.rightMargin: 16
+            anchors.rightMargin: 10
             anchors.verticalCenter: parent.verticalCenter
             wrapMode: Text.WordWrap
             text: "Each entry is an upper bound. Above all thresholds the widget uses its default color."
@@ -155,7 +155,7 @@ Column {
             Rectangle {
                 id: row1
                 width: parent.width
-                height: 40
+                height: 34
                 color: "transparent"
 
                 Rectangle {
@@ -174,11 +174,11 @@ Column {
                     anchors.left: parent.left
                     anchors.leftMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 8
+                    spacing: 6
 
                     Rectangle {
-                        width: 18
-                        height: 18
+                        width: 16
+                        height: 16
                         radius: 9
                         color: entry.modelData && typeof entry.modelData.color === "string" ? entry.modelData.color : textMuted
                         border.width: 1
@@ -187,7 +187,7 @@ Column {
                         Text {
                             anchors.centerIn: parent
                             text: entry.index + 1
-                            font.pixelSize: 9
+                            font.pixelSize: 8
                             font.weight: Font.Bold
                             font.family: fontFamily
                             color: Qt.hsla(0, 0, Qt.colorEqual(parent.color, "black") ? 1 : 0, 1)
@@ -219,9 +219,9 @@ Column {
 
                 Row {
                     anchors.right: parent.right
-                    anchors.rightMargin: 12
+                    anchors.rightMargin: 8
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 10
+                    spacing: 8
 
                     ColorPicker {
                         anchors.verticalCenter: parent.verticalCenter
@@ -245,8 +245,8 @@ Column {
 
                     Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 22
-                        height: 22
+                        width: 18
+                        height: 18
                         radius: 11
                         color: rmArea.containsMouse ? "#40FF4444" : "transparent"
                         border.width: 1
@@ -257,7 +257,7 @@ Column {
                         Text {
                             anchors.centerIn: parent
                             text: "\u00d7"
-                            font.pixelSize: 14
+                            font.pixelSize: 12
                             font.family: fontFamily
                             color: rmArea.containsMouse ? "#FF4444" : textMuted
                             Behavior on color { ColorAnimation { duration: 80 } }
@@ -279,7 +279,7 @@ Column {
                 id: row2
                 width: parent.width
                 readonly property bool expanded: entry.modelData && entry.modelData.flash
-                height: expanded ? 36 : 0
+                height: expanded ? 30 : 0
                 clip: true
                 color: surfaceAlt
                 opacity: expanded ? 1 : 0
@@ -289,9 +289,9 @@ Column {
 
                 Row {
                     anchors.left: parent.left
-                    anchors.leftMargin: 44
+                    anchors.leftMargin: 38
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 12
+                    spacing: 10
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
@@ -304,7 +304,7 @@ Column {
                     ThemedComboBox {
                         anchors.verticalCenter: parent.verticalCenter
                         model: root.thresholdTargets
-                        implicitWidth: 76
+                        implicitWidth: 72
                         currentIndex: {
                             var currentTarget = entry.modelData && typeof entry.modelData.flashTarget === "string"
                                 ? entry.modelData.flashTarget
@@ -345,15 +345,15 @@ Column {
 
     Rectangle {
         width: parent.width
-        height: 40
+        height: 34
         color: "transparent"
 
         Rectangle {
             anchors.left: parent.left
             anchors.leftMargin: 16
             anchors.verticalCenter: parent.verticalCenter
-            width: 130
-            height: 26
+            width: 122
+            height: 24
             radius: 4
             color: addArea.containsMouse ? surfaceRaised : "transparent"
             border.width: 1
@@ -362,7 +362,7 @@ Column {
 
             Row {
                 anchors.centerIn: parent
-                spacing: 6
+                spacing: 5
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter

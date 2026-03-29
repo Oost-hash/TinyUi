@@ -216,7 +216,7 @@ class NativeToolWindowBase(QWidget):
             QFrame#FooterFrame {{
                 background-color: transparent;
                 border-top: 1px solid {self._theme.border};
-                padding-top: 10px;
+                padding-top: 12px;
             }}
         """
 
@@ -245,25 +245,26 @@ class NativeToolWindowBase(QWidget):
             """
         return f"""
             QPushButton {{
-                background-color: {self._theme.surfaceFloating};
+                background-color: {self._theme.surfaceRaised};
                 border: 1px solid {self._theme.border};
-                color: {self._theme.textSecondary};
-                border-radius: 4px;
-                padding: 6px 12px;
-                min-width: 82px;
+                color: {self._theme.text};
+                border-radius: 5px;
+                padding: 7px 12px;
+                min-width: 80px;
             }}
             QPushButton:hover {{
-                background-color: {self._theme.surfaceRaised};
+                background-color: {self._theme.surfaceFloating};
                 color: {self._theme.text};
             }}
             QPushButton:disabled {{
                 color: {self._theme.textMuted};
+                background-color: {self._theme.surfaceRaised};
             }}
             QPushButton#PrimaryButton {{
                 background-color: {self._theme.accent};
                 border-color: {self._theme.accent};
                 color: {self._theme.accentText};
-                font-weight: 600;
+                font-weight: 500;
             }}
             QPushButton#PrimaryButton:hover {{
                 background-color: {self._theme.accentHover};

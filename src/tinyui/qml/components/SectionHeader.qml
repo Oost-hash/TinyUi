@@ -16,8 +16,8 @@ Rectangle {
     readonly property string fontFamily: hostTheme ? hostTheme.fontFamily : "Segoe UI"
 
     width: parent ? parent.width : 0
-    height: 28
-    color: surfaceAlt
+    height: 24
+    color: "transparent"
 
     Text {
         anchors.left: parent.left
@@ -32,8 +32,11 @@ Rectangle {
 
     Rectangle {
         anchors.bottom: parent.bottom
-        width: parent.width
+        anchors.left: parent.left
+        anchors.leftMargin: 16
+        anchors.right: parent.right
         height: 1
         color: borderColor
+        opacity: 0.55
     }
 }

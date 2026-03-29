@@ -20,7 +20,7 @@ Rectangle {
     readonly property string fontFamily: hostTheme ? hostTheme.fontFamily : "Segoe UI"
 
     width: parent ? parent.width : 0
-    implicitHeight: description !== "" ? 52 : 44
+    implicitHeight: description !== "" ? 46 : 38
     color: "transparent"
 
     Rectangle {
@@ -47,15 +47,16 @@ Rectangle {
         anchors.left: parent.left
         anchors.right: rightSlot.left
         anchors.leftMargin: 16
-        anchors.rightMargin: 8
+        anchors.rightMargin: 10
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 3
+        spacing: 1
 
         Text {
             text: root.label
             color: textColor
-            font.pixelSize: fontBase
+            font.pixelSize: fontSmall + 1
             font.family: fontFamily
+            font.weight: Font.Medium
         }
 
         Text {
@@ -71,7 +72,7 @@ Rectangle {
     Item {
         id: rightSlot
         anchors.right: parent.right
-        anchors.rightMargin: 12
+        anchors.rightMargin: 8
         anchors.verticalCenter: parent.verticalCenter
         width: 128
         height: parent.height

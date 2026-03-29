@@ -74,15 +74,13 @@ Rectangle {
             : pluginMouse.containsMouse
                 ? (hostTheme ? hostTheme.surfaceFloating : "#20242b")
                 : "transparent"
-        border.width: root.pluginOpen ? 1 : 0
-        border.color: hostTheme ? hostTheme.border : "#464b57"
 
         Text {
             id: activeText
             anchors.centerIn: parent
             text: root.activeLabel
-            color: hostTheme ? hostTheme.text : "#f4f7fb"
-            font.pixelSize: 12
+            color: "#FFFFFF"
+            font.pixelSize: hostTheme ? hostTheme.fontSizeSmall : 11
         }
 
         MouseArea {

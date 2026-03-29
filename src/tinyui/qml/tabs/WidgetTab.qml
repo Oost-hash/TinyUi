@@ -269,8 +269,6 @@ Rectangle {
     }
 
     color: surface
-    border.width: 1
-    border.color: borderColor
 
     Row {
         anchors.fill: parent
@@ -278,7 +276,7 @@ Rectangle {
 
         Item {
             id: listPane
-            width: selectedWidget ? parent.width * 0.4 : parent.width
+            width: selectedWidget ? Math.round(parent.width * 0.39) : parent.width
             height: parent.height
             Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
@@ -442,7 +440,7 @@ Rectangle {
                 anchors.top: parent.top
                 anchors.left: parent.left
                 anchors.right: parent.right
-                height: 56
+                height: 48
                 color: "transparent"
 
                 Column {
@@ -450,13 +448,13 @@ Rectangle {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.leftMargin: 16
-                    anchors.rightMargin: 16
-                    spacing: 3
+                    anchors.rightMargin: 12
+                    spacing: 2
 
                     Text {
                         text: root.selectedTitle
                         color: textColor
-                        font.pixelSize: fontBase
+                        font.pixelSize: fontBase - 1
                         font.family: fontFamily
                         font.weight: Font.DemiBold
                     }
@@ -577,8 +575,8 @@ Rectangle {
                             anchors.right: parent.right
                             anchors.rightMargin: 0
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 128
-                            height: 28
+                            width: 124
+                            height: 26
                             radius: 4
                             color: surfaceFloating
                             border.width: 1
