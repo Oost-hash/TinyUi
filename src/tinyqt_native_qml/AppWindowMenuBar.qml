@@ -6,9 +6,9 @@ Rectangle {
     id: root
 
     readonly property var hostWindow: Window.window
+    readonly property var windowController: hostWindow && hostWindow.windowController ? hostWindow.windowController : null
+    readonly property var hostActions: hostWindow && hostWindow.hostActions ? hostWindow.hostActions : null
     readonly property var hostTheme: hostWindow && hostWindow.theme ? hostWindow.theme : null
-    property var settingsController: hostWindow && hostWindow.settingsController ? hostWindow.settingsController : null
-    property var devToolsController: hostWindow && hostWindow.devToolsController ? hostWindow.devToolsController : null
     property var chromePolicy: hostWindow && hostWindow.chromePolicy ? hostWindow.chromePolicy : ({
         showMenuButton: true,
         showTitleText: true,
@@ -36,7 +36,7 @@ Rectangle {
 
     DragHandler {
         target: null
-        onActiveChanged: if (active) WindowController.startMove()
+        onActiveChanged: if (active && root.windowController) root.windowController.startMove()
     }
 
     Rectangle {
@@ -155,10 +155,8 @@ Rectangle {
                             root.menuOpen = false
                             if (!hostWindow)
                                 return
-                            if (modelData.action === "settings" && root.settingsController)
-                                root.settingsController.toggle()
-                            else if (modelData.action === "devtools" && root.devToolsController)
-                                root.devToolsController.toggle()
+                            if (root.hostActions)
+                                root.hostActions.trigger(modelData.action)
                             else if (modelData.action === "close")
                                 hostWindow.close()
                         }
@@ -177,14 +175,14 @@ Rectangle {
 
         MainComponents.WindowButton {
             iconSource: root.minimizeIconSource
-            onClicked: WindowController.minimize()
+            onClicked: if (root.windowController) root.windowController.minimize()
         }
 
         MainComponents.WindowButton {
             iconSource: hostWindow && hostWindow.visibility === Window.Maximized
                 ? root.restoreIconSource
                 : root.maximizeIconSource
-            onClicked: WindowController.toggleMaximize()
+            onClicked: if (root.windowController) root.windowController.toggleMaximize()
         }
 
         MainComponents.WindowButton {

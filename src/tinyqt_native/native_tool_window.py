@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -100,7 +101,8 @@ class NativeToolWindowBase(QWidget):
         frame = QFrame()
         frame.setObjectName("FooterFrame")
         layout = QHBoxLayout(frame)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(8)
         layout.addStretch(1)
         for widget in widgets:
             layout.addWidget(widget)
@@ -117,6 +119,9 @@ class NativeToolWindowBase(QWidget):
             button.setObjectName(
                 "PrimaryButton" if button_manifest.role == "primary" else "SecondaryButton"
             )
+            button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            button.setMinimumHeight(24)
+            button.setMinimumWidth(0)
             buttons[button_manifest.button_id] = button
             ordered_widgets.append(button)
         frame, layout = self.create_footer_frame(*ordered_widgets)
@@ -301,6 +306,24 @@ class NativeToolWindowBase(QWidget):
             }}
             QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {{
                 border-color: {self._theme.accent};
+            }}
+            QComboBox {{
+                selection-background-color: {with_alpha(self._theme.accent, 0.18)};
+                color: {self._theme.text};
+            }}
+            QComboBox::drop-down {{
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 22px;
+                border-left: 1px solid {self._theme.border};
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: {self._theme.surface};
+                color: {self._theme.text};
+                border: 1px solid {self._theme.border};
+                selection-background-color: {with_alpha(self._theme.accent, 0.18)};
+                selection-color: {self._theme.text};
+                outline: none;
             }}
             {checkbox_styles}
         """

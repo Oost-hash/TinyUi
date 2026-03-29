@@ -24,11 +24,11 @@ restore_state_scope = "TinyUI"
 
 [[app.menu_items]]
 label = "Settings"
-action = "settings"
+action = "open:tinyqt_settings.window"
 
 [[app.menu_items]]
 label = "Dev Tools"
-action = "devtools"
+action = "open:tinyqt_devtools.window"
 requires_feature = "devtools_ui"
 
 [[app.menu_items]]

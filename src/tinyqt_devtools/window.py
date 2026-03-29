@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from time import time
 from typing import Any, Callable, cast
 
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QBrush, QIcon, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -78,20 +79,33 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._console_error = True
         self._console_auto_scroll = True
         self._last_log_count = 0
+        self._last_state_source_labels: list[str] = []
+        self._last_snapshot_source_indices: list[int] = []
+        self._pulse_icon_bright = self._build_pulse_icon("#44FF88")
+        self._pulse_icon_dim = self._build_pulse_icon("#2f8f57")
+        self._pulse_icon_off = QIcon()
 
         self._tabs = QTabWidget()
         self._tabs.setDocumentMode(True)
         self._tabs.setTabPosition(QTabWidget.TabPosition.North)
         self._tabs.currentChanged.connect(self._update_header_copy)
 
+        self._eyebrow_label.hide()
+        self._title_label.hide()
+        self._root_layout.setContentsMargins(0, 0, 0, 0)
+        self._root_layout.setSpacing(0)
+        self._summary_layout.setContentsMargins(12, 10, 12, 10)
+        self._summary_layout.setSpacing(2)
+
         self._build_state_tab()
         self._build_runtime_tab()
+        self._build_schema_tab()
         self._build_console_tab()
 
         body = QWidget()
         body_layout = QVBoxLayout(body)
         body_layout.setContentsMargins(0, 0, 0, 0)
-        body_layout.setSpacing(10)
+        body_layout.setSpacing(0)
         body_layout.addWidget(self._tabs, 1)
 
         footer_frame, _footer_layout, footer_buttons = self.create_button_bar(manifest.buttons)
@@ -114,10 +128,30 @@ class NativeDevToolsWindow(NativeToolWindowBase):
                 return toolbar
         return None
 
+    def _build_pulse_icon(self, color: str) -> QIcon:
+        pixmap = QPixmap(14, 14)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.setPen(QPen(QColor(color)))
+        painter.setBrush(QBrush(QColor(color)))
+        painter.drawEllipse(2, 2, 9, 9)
+        painter.end()
+        return QIcon(pixmap)
+
     def _panel_manifest(self, index: int):
         if 0 <= index < len(self._manifest.panels):
             return self._manifest.panels[index]
         return None
+
+    def _snapshot_source_entries(self) -> list[tuple[int, dict[str, object]]]:
+        entries: list[tuple[int, dict[str, object]]] = []
+        for index, source in enumerate(self._state_vm.sources):
+            source_id = str(source.get("id", ""))
+            if source_id.startswith("runtime:"):
+                continue
+            entries.append((index, source))
+        return entries
 
     def _build_state_tab(self) -> None:
         page = QWidget()
@@ -128,8 +162,11 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         toolbar, toolbar_layout = self.create_toolbar()
 
         self._state_source_combo = QComboBox()
+        self._state_source_combo.setObjectName("SnapshotsSourceCombo")
+        self._state_source_combo.setMinimumWidth(220)
+        self._state_source_combo.setMaxVisibleItems(18)
         self._state_source_combo.currentIndexChanged.connect(self._select_state_source)
-        state_toolbar_manifest = self._toolbar_manifest("state")
+        state_toolbar_manifest = self._toolbar_manifest("snapshots")
         if state_toolbar_manifest is not None:
             _state_actions_frame, _state_actions_layout, state_action_buttons = self.create_manifest_toolbar(
                 state_toolbar_manifest
@@ -169,21 +206,22 @@ class NativeDevToolsWindow(NativeToolWindowBase):
 
         self._state_tree = QTreeWidget()
         self._state_tree.setObjectName("DevToolsTree")
-        self._state_tree.setColumnCount(2)
-        self._state_tree.setHeaderLabels(["Key", "Value"])
+        self._state_tree.setColumnCount(3)
+        self._state_tree.setHeaderLabels(["", "Key", "Value"])
         self._state_tree.setRootIsDecorated(False)
         self._state_tree.setAlternatingRowColors(True)
         self._state_tree.setUniformRowHeights(True)
         self._state_tree.setIndentation(0)
         self._state_tree.itemClicked.connect(self._handle_state_item_click)
-        self._state_tree.setColumnWidth(0, 320)
+        self._state_tree.setColumnWidth(0, 28)
+        self._state_tree.setColumnWidth(1, 320)
 
         self._state_footer = self.create_footer_label()
 
         layout.addWidget(toolbar)
         layout.addWidget(self._state_tree, 1)
         layout.addWidget(self._state_footer)
-        self._tabs.addTab(page, "State")
+        self._tabs.addTab(page, "Snapshots")
 
     def _build_runtime_tab(self) -> None:
         page = QWidget()
@@ -234,9 +272,9 @@ class NativeDevToolsWindow(NativeToolWindowBase):
 
         self._runtime_tree = QTreeWidget()
         self._runtime_tree.setObjectName("DevToolsTree")
-        self._runtime_tree.setColumnCount(7)
+        self._runtime_tree.setColumnCount(5)
         self._runtime_tree.setHeaderLabels(
-            ["Unit", "State", "Kind", "Execution", "Activation", "Stage", "Parent"]
+            ["Unit", "State", "Kind", "Execution", "Parent"]
         )
         self._runtime_tree.setAlternatingRowColors(True)
         self._runtime_tree.setRootIsDecorated(False)
@@ -247,40 +285,45 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._runtime_tree.setColumnWidth(1, 88)
         self._runtime_tree.setColumnWidth(2, 78)
         self._runtime_tree.setColumnWidth(3, 96)
-        self._runtime_tree.setColumnWidth(4, 92)
-        self._runtime_tree.setColumnWidth(5, 104)
-        self._runtime_tree.setColumnWidth(6, 160)
-
-        schema_section, schema_layout = self.create_section_frame()
-        schema_section.setObjectName("SchemaSection")
-        schema_label = QLabel("Schemas")
-        schema_label.setObjectName("SectionLabel")
-        schema_layout.addWidget(schema_label)
-
-        self._schema_tree = QTreeWidget()
-        self._schema_tree.setObjectName("DevToolsTree")
-        self._schema_tree.setColumnCount(4)
-        self._schema_tree.setHeaderLabels(["Schema", "Owner", "Changes", "Last Change"])
-        self._schema_tree.setRootIsDecorated(False)
-        self._schema_tree.setAlternatingRowColors(True)
-        self._schema_tree.setUniformRowHeights(True)
-        self._schema_tree.setIndentation(0)
-        self._schema_tree.setMinimumHeight(156)
-        self._schema_tree.setColumnWidth(0, 220)
-        self._schema_tree.setColumnWidth(1, 140)
-        self._schema_tree.setColumnWidth(2, 80)
-        self._schema_tree.setColumnWidth(3, 280)
-        schema_layout.addWidget(self._schema_tree)
-
-        self._schema_footer = self.create_footer_label()
-        schema_layout.addWidget(self._schema_footer)
+        self._runtime_tree.setColumnWidth(4, 180)
 
         layout.addWidget(toolbar)
         layout.addWidget(filters)
         layout.addWidget(self._runtime_tree, 1)
-        layout.addWidget(schema_section)
         layout.addWidget(self._runtime_tasks)
         self._tabs.addTab(page, "Runtime")
+
+    def _build_schema_tab(self) -> None:
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        toolbar, toolbar_layout = self.create_toolbar()
+        self._schema_summary = QLabel("No schema activity yet")
+        self._schema_summary.setObjectName("SummaryLabel")
+        toolbar_layout.addWidget(self._schema_summary, 1)
+
+        self._schema_tree = QTreeWidget()
+        self._schema_tree.setObjectName("DevToolsTree")
+        self._schema_tree.setColumnCount(5)
+        self._schema_tree.setHeaderLabels(["Schema", "Owner", "Package", "Changes", "Last Change"])
+        self._schema_tree.setRootIsDecorated(False)
+        self._schema_tree.setAlternatingRowColors(True)
+        self._schema_tree.setUniformRowHeights(True)
+        self._schema_tree.setIndentation(0)
+        self._schema_tree.setColumnWidth(0, 230)
+        self._schema_tree.setColumnWidth(1, 140)
+        self._schema_tree.setColumnWidth(2, 170)
+        self._schema_tree.setColumnWidth(3, 80)
+        self._schema_tree.setColumnWidth(4, 300)
+
+        self._schema_footer = self.create_footer_label()
+
+        layout.addWidget(toolbar)
+        layout.addWidget(self._schema_tree, 1)
+        layout.addWidget(self._schema_footer)
+        self._tabs.addTab(page, "Schemas")
 
     def _build_console_tab(self) -> None:
         page = QWidget()
@@ -337,6 +380,7 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         category_layout.addWidget(self._console_all_categories_button)
 
         self._console_category_container = QWidget()
+        self._console_category_container.setObjectName("ConsoleCategoryContainer")
         self._console_category_layout = QHBoxLayout(self._console_category_container)
         self._console_category_layout.setContentsMargins(0, 0, 0, 0)
         self._console_category_layout.setSpacing(6)
@@ -349,11 +393,14 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         category_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         category_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         category_scroll.setWidget(self._console_category_container)
+        category_scroll.viewport().setAutoFillBackground(False)
         category_layout.addWidget(category_scroll, 1)
 
         self._console = QPlainTextEdit()
         self._console.setObjectName("ConsoleOutput")
         self._console.setReadOnly(True)
+        self._console.setFrameShape(QFrame.Shape.NoFrame)
+        self._console.viewport().setAutoFillBackground(False)
 
         self._console_footer = self.create_footer_label()
 
@@ -370,9 +417,9 @@ class NativeDevToolsWindow(NativeToolWindowBase):
             {self.apply_shared_toolbar_styles()}
             {self.apply_shared_interactive_styles(include_checkboxes=True)}
             QTabWidget::pane {{
-                border: 1px solid {self._theme.border};
+                border: none;
                 background-color: {self._theme.surface};
-                top: -1px;
+                top: 0px;
             }}
             QTabBar {{
                 background-color: {self._theme.surfaceAlt};
@@ -382,9 +429,9 @@ class NativeDevToolsWindow(NativeToolWindowBase):
                 color: {self._theme.textSecondary};
                 border: none;
                 border-bottom: 2px solid transparent;
-                padding: 6px 14px;
+                padding: 7px 12px 6px 12px;
                 margin-right: 0px;
-                min-width: 84px;
+                min-width: 72px;
                 font-family: "Consolas";
                 font-size: 11px;
             }}
@@ -402,32 +449,51 @@ class NativeDevToolsWindow(NativeToolWindowBase):
                 font-size: {self._theme.fontSizeSmall}px;
                 font-family: "Consolas";
             }}
+            QFrame#SummaryCard {{
+                background-color: {self._theme.surface};
+                border: none;
+                border-bottom: 1px solid {self._theme.border};
+                border-radius: 0px;
+            }}
             QFrame#DevToolsToolbar {{
                 border-radius: 0px;
                 border-left: none;
                 border-right: none;
+                border-top: none;
+                background-color: {self._theme.surfaceAlt};
             }}
             QTreeWidget#DevToolsTree, QPlainTextEdit#ConsoleOutput {{
                 background-color: {self._theme.surface};
-                border: 1px solid {self._theme.border};
+                border: none;
                 alternate-background-color: {with_alpha(self._theme.surfaceAlt, 0.32)};
             }}
             QTreeView::item {{
-                min-height: 22px;
+                min-height: 18px;
+            }}
+            QTreeView::item:hover {{
+                background-color: transparent;
+            }}
+            QTreeWidget::item:hover {{
+                background-color: transparent;
+            }}
+            QTreeWidget::item:selected,
+            QTreeWidget::item:selected:active {{
+                background-color: {with_alpha(self._theme.accent, 0.06)};
+                color: {self._theme.text};
             }}
             QHeaderView::section {{
                 background-color: {self._theme.surfaceAlt};
                 color: {self._theme.textMuted};
                 border: none;
                 border-bottom: 1px solid {self._theme.border};
-                padding: 4px 8px;
+                padding: 3px 8px;
                 font-weight: 600;
                 font-family: "Consolas";
                 font-size: 10px;
             }}
             QPushButton#RuntimeFilterButton {{
                 min-width: 0px;
-                padding: 2px 8px;
+                padding: 1px 8px;
                 border-radius: 3px;
                 color: {self._theme.textMuted};
                 font-family: "Consolas";
@@ -441,7 +507,9 @@ class NativeDevToolsWindow(NativeToolWindowBase):
             QComboBox {{
                 font-family: "Consolas";
                 font-size: 11px;
-                min-height: 24px;
+                min-height: 22px;
+                padding-top: 2px;
+                padding-bottom: 2px;
             }}
             QCheckBox {{
                 font-family: "Consolas";
@@ -449,12 +517,25 @@ class NativeDevToolsWindow(NativeToolWindowBase):
             }}
             QScrollArea#CategoryScrollArea {{
                 background-color: transparent;
+                border: none;
+            }}
+            QWidget#ConsoleCategoryContainer {{
+                background-color: transparent;
+            }}
+            QScrollArea#CategoryScrollArea QWidget {{
+                background-color: transparent;
             }}
             QPlainTextEdit#ConsoleOutput {{
+                background-color: {self._theme.surface};
                 color: {self._theme.text};
                 selection-background-color: {with_alpha(self._theme.accent, 0.18)};
                 font-family: "Consolas";
                 font-size: 11px;
+                border: none;
+            }}
+            QFrame#FooterFrame {{
+                border-top: 1px solid {self._theme.border};
+                padding-top: 0px;
             }}
             """
         )
@@ -499,7 +580,9 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._refresh_schema_view()
 
     def _select_state_source(self, index: int) -> None:
-        self._state_vm.selectSource(index)
+        sources = self._snapshot_source_entries()
+        if 0 <= index < len(sources):
+            self._state_vm.selectSource(sources[index][0])
         self._refresh_state_view()
 
     def _toggle_state_capture(self) -> None:
@@ -513,9 +596,9 @@ class NativeDevToolsWindow(NativeToolWindowBase):
                 self._state_vm.toggleSection(section_name)
                 self._refresh_state_view()
             return
-        if column == 1:
-            key = item.data(0, Qt.ItemDataRole.UserRole)
-            value = item.text(1)
+        if column == 2:
+            key = item.data(1, Qt.ItemDataRole.UserRole)
+            value = item.text(2)
             if isinstance(key, str):
                 self._state_vm.copyEntry(key, value)
 
@@ -549,11 +632,53 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._refresh_console_view()
 
     def _refresh_views(self) -> None:
-        self._refresh_state_view()
-        self._refresh_runtime_view()
-        self._refresh_schema_view()
-        self._refresh_console_view()
-        self._update_header_copy(self._tabs.currentIndex())
+        current_index = self._tabs.currentIndex()
+        panel = self._panel_manifest(current_index)
+        panel_id = "" if panel is None else panel.panel_id
+
+        if self._active_panel_is_interacting(panel_id):
+            self._update_header_copy(current_index)
+            return
+
+        if panel_id == "snapshots":
+            self._refresh_state_view()
+        elif panel_id == "runtime":
+            self._refresh_runtime_view()
+        elif panel_id == "schemas":
+            self._refresh_schema_view()
+        elif panel_id == "console":
+            self._refresh_console_view()
+        else:
+            self._refresh_state_view()
+            self._refresh_runtime_view()
+            self._refresh_schema_view()
+            self._refresh_console_view()
+
+        self._update_header_copy(current_index)
+
+    def _active_panel_is_interacting(self, panel_id: str) -> bool:
+        if panel_id == "snapshots":
+            return bool(
+                self._state_source_combo.view().isVisible()
+                or self._state_tree.verticalScrollBar().isSliderDown()
+                or self._state_tree.horizontalScrollBar().isSliderDown()
+            )
+        if panel_id == "runtime":
+            return bool(
+                self._runtime_tree.verticalScrollBar().isSliderDown()
+                or self._runtime_tree.horizontalScrollBar().isSliderDown()
+            )
+        if panel_id == "schemas":
+            return bool(
+                self._schema_tree.verticalScrollBar().isSliderDown()
+                or self._schema_tree.horizontalScrollBar().isSliderDown()
+            )
+        if panel_id == "console":
+            return bool(
+                self._console.verticalScrollBar().isSliderDown()
+                or self._console.horizontalScrollBar().isSliderDown()
+            )
+        return False
 
     def _update_header_copy(self, index: int) -> None:
         panel = self._panel_manifest(index)
@@ -567,11 +692,11 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._state_capture_button.setText("Recording" if capture_active else "Record")
         self._state_copy_path_button.setEnabled(capture_active)
         self._state_copy_all_button.setEnabled(bool(self._state_vm.entries))
-        sources = self._state_vm.sources
-        selected = self._state_vm.selectedIndex
+        sources = self._snapshot_source_entries()
+        selected = self._state_source_combo.currentIndex()
         source_label = ""
         if 0 <= selected < len(sources):
-            source_label = str(sources[selected].get("label", ""))
+            source_label = str(sources[selected][1].get("label", ""))
         entry_count = len(self._state_vm.entries)
         footer_text = []
         if source_label:
@@ -583,15 +708,35 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._state_footer.setText("  |  ".join(footer_text))
 
     def _refresh_state_view(self) -> None:
-        sources = self._state_vm.sources
-        selected = self._state_vm.selectedIndex
-        self._state_source_combo.blockSignals(True)
-        self._state_source_combo.clear()
-        for source in sources:
-            self._state_source_combo.addItem(str(source["label"]))
-        if 0 <= selected < self._state_source_combo.count():
+        now_ms = int(time() * 1000)
+        sources = self._snapshot_source_entries()
+        source_indices = [index for index, _source in sources]
+        current_vm_index = self._state_vm.selectedIndex
+        selected = source_indices.index(current_vm_index) if current_vm_index in source_indices else -1
+        labels = [str(source["label"]) for _index, source in sources]
+        popup_open = self._state_source_combo.view().isVisible()
+        sources_changed = (
+            labels != self._last_state_source_labels
+            or source_indices != self._last_snapshot_source_indices
+        )
+        if sources_changed and not popup_open:
+            self._state_source_combo.blockSignals(True)
+            self._state_source_combo.clear()
+            for label in labels:
+                self._state_source_combo.addItem(label)
+            if 0 <= selected < self._state_source_combo.count():
+                self._state_source_combo.setCurrentIndex(selected)
+            self._state_source_combo.blockSignals(False)
+            self._last_state_source_labels = labels
+            self._last_snapshot_source_indices = source_indices
+        elif (
+            not popup_open
+            and 0 <= selected < self._state_source_combo.count()
+            and self._state_source_combo.currentIndex() != selected
+        ):
+            self._state_source_combo.blockSignals(True)
             self._state_source_combo.setCurrentIndex(selected)
-        self._state_source_combo.blockSignals(False)
+            self._state_source_combo.blockSignals(False)
 
         grouped: dict[str, list[dict[str, object]]] = defaultdict(list)
         for entry in self._state_vm.entries:
@@ -611,23 +756,34 @@ class NativeDevToolsWindow(NativeToolWindowBase):
         self._state_tree.clear()
         for section_name, entries in grouped.items():
             section_item = QTreeWidgetItem(
-                [section_name.replace("_", " ").title(), f"{len(entries)} item(s)"]
+                ["", section_name.replace("_", " ").title(), f"{len(entries)} item(s)"]
             )
             section_item.setData(0, Qt.ItemDataRole.UserRole, section_name)
-            section_item.setFirstColumnSpanned(True)
+            section_item.setTextAlignment(0, Qt.AlignmentFlag.AlignCenter)
             section_item.setExpanded(True)
-            section_item.setForeground(0, QColor(self._theme.text))
-            section_item.setForeground(1, QColor(self._theme.textMuted))
+            section_item.setForeground(1, QColor(self._theme.text))
+            section_item.setForeground(2, QColor(self._theme.textMuted))
             self._state_tree.addTopLevelItem(section_item)
             for entry in entries:
-                child = QTreeWidgetItem([str(entry["key"]), str(entry["value"])])
-                child.setData(0, Qt.ItemDataRole.UserRole, entry["fullKey"])
-                child.setForeground(0, QColor(self._theme.textSecondary))
-                child.setForeground(1, QColor(self._theme.text))
+                raw_changed_at = entry.get("changedAt", 0)
+                changed_at = int(raw_changed_at) if isinstance(raw_changed_at, int | float) else 0
+                age_ms = max(0, now_ms - changed_at) if changed_at else 999999
+                recently_changed = age_ms < 1800
+                pulse_on = (age_ms // 220) % 2 == 0
+                child = QTreeWidgetItem(["", str(entry["key"]), str(entry["value"])])
+                child.setData(1, Qt.ItemDataRole.UserRole, entry["fullKey"])
+                child.setTextAlignment(0, Qt.AlignmentFlag.AlignCenter)
+                child.setIcon(
+                    0,
+                    self._pulse_icon_bright
+                    if recently_changed and pulse_on
+                    else (self._pulse_icon_dim if recently_changed else self._pulse_icon_off),
+                )
+                child.setForeground(1, QColor(self._theme.textSecondary))
+                child.setForeground(2, QColor(self._theme.text))
                 section_item.addChild(child)
 
         self._state_tree.expandAll()
-        self._state_tree.resizeColumnToContents(0)
         self._refresh_state_toolbar()
 
     def _refresh_runtime_view(self) -> None:
@@ -647,8 +803,6 @@ class NativeDevToolsWindow(NativeToolWindowBase):
                 str(unit["state"]),
                 str(unit["kind"]),
                 str(unit["execution"]),
-                str(unit["activation"]),
-                str(unit["stage"]),
                 parent_id,
             ]
             item = QTreeWidgetItem(row)
@@ -660,8 +814,17 @@ class NativeDevToolsWindow(NativeToolWindowBase):
             item.setForeground(2, QColor(self._theme.textSecondary))
             item.setForeground(3, QColor(self._theme.textSecondary))
             item.setForeground(4, QColor(self._theme.textMuted))
-            item.setForeground(5, QColor(self._theme.textMuted))
-            item.setForeground(6, QColor(self._theme.textMuted))
+            item.setToolTip(
+                0,
+                "\n".join(
+                    [
+                        f"Unit: {unit_id}",
+                        f"Activation: {unit['activation']}",
+                        f"Stage: {unit['stage']}",
+                        f"Owner: {unit['owner']}",
+                    ]
+                ),
+            )
             if parent_id and parent_id in items_by_id:
                 items_by_id[parent_id].addChild(item)
             else:
@@ -672,12 +835,17 @@ class NativeDevToolsWindow(NativeToolWindowBase):
                 item.setExpanded(bool(item.data(0, Qt.ItemDataRole.UserRole + 2)))
         self._runtime_copy_button.setEnabled(bool(self._runtime_vm.units))
         task_ids = self._runtime_vm.taskIds
-        self._runtime_tasks.setVisible(bool(task_ids))
-        self._runtime_tasks.setText("" if not task_ids else f"Tasks: {', '.join(task_ids)}")
+        state_filters = ", ".join(self._runtime_vm.stateFilters)
+        footer_parts = [f"Filters: {state_filters}"]
+        if task_ids:
+            footer_parts.append(f"Tasks: {', '.join(task_ids)}")
+        self._runtime_tasks.setVisible(True)
+        self._runtime_tasks.setText("  |  ".join(footer_parts))
 
     def _refresh_schema_view(self) -> None:
         registrations = self._core.schema_registrations()
         self._schema_tree.clear()
+        changed_count = 0
         for registration in registrations:
             descriptor = registration.descriptor
             last_change = registration.last_change
@@ -685,23 +853,30 @@ class NativeDevToolsWindow(NativeToolWindowBase):
                 last_change_text = "No changes yet"
             else:
                 last_change_text = f"{last_change.change_key} · {last_change.producer}"
+                changed_count += 1
             item = QTreeWidgetItem(
                 [
                     descriptor.schema_id,
                     descriptor.owner,
+                    descriptor.package,
                     str(registration.change_count),
                     last_change_text,
                 ]
             )
             item.setForeground(0, QColor(self._theme.text))
             item.setForeground(1, QColor(self._theme.textSecondary))
-            item.setForeground(2, QColor(self._theme.accent))
-            item.setForeground(3, QColor(self._theme.textMuted))
+            item.setForeground(2, QColor(self._theme.textMuted))
+            item.setForeground(3, QColor(self._theme.accent))
+            item.setForeground(4, QColor(self._theme.textMuted))
             self._schema_tree.addTopLevelItem(item)
+        self._schema_summary.setText(
+            f"{len(registrations)} registered schema surface"
+            f"{'' if len(registrations) == 1 else 's'} · {changed_count} with activity"
+        )
         self._schema_footer.setVisible(True)
         self._schema_footer.setText(
             f"Schemas: {len(registrations)}  |  Changed: "
-            f"{sum(1 for registration in registrations if registration.change_count > 0)}"
+            f"{changed_count}"
         )
 
     def _toggle_runtime_filter(self, state: str) -> None:

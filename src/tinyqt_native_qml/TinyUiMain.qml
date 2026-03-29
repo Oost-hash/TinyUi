@@ -13,10 +13,6 @@ Window {
     property var statusItems: ["LMU", "Overlay", "F12 DevTools"]
     property string statusActiveLabel: "demo"
     property var widgetEditorItems: []
-    property bool devToolsAvailable: false
-    property var devToolsController: null
-    property bool settingsAvailable: false
-    property var settingsController: null
     property var chromePolicy: ({
         showMenuButton: true,
         showTitleText: true,
@@ -37,15 +33,13 @@ Window {
     color: root.theme ? root.theme.surface : "#17181c"
 
     function toggleDevTools() {
-        if (!root.devToolsAvailable || !root.devToolsController)
-            return
-        root.devToolsController.toggle()
+        if (root.hostActions)
+            root.hostActions.trigger("open:tinyqt_devtools.window")
     }
 
     function toggleSettings() {
-        if (!root.settingsAvailable || !root.settingsController)
-            return
-        root.settingsController.toggle()
+        if (root.hostActions)
+            root.hostActions.trigger("open:tinyqt_settings.window")
     }
 
     Shortcut {
@@ -62,8 +56,6 @@ Window {
         x: 0
         y: 0
         width: root.width
-        settingsController: root.settingsController
-        devToolsController: root.devToolsController
         chromePolicy: root.chromePolicy
     }
 

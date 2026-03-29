@@ -5,6 +5,7 @@ import "../tinyqt_main/qml/components" as MainComponents
 Rectangle {
     id: root
     readonly property var hostWindow: Window.window
+    readonly property var hostActions: hostWindow && hostWindow.hostActions ? hostWindow.hostActions : null
     readonly property var hostTheme: hostWindow && hostWindow.theme ? hostWindow.theme : null
 
     property string activeLabel: ""
@@ -59,8 +60,8 @@ Rectangle {
                     anchors.fill: parent
                     hoverEnabled: true
                     onClicked: {
-                        if (hostWindow && hostWindow.settingsController)
-                            hostWindow.settingsController.toggle()
+                        if (root.hostActions)
+                            root.hostActions.trigger("open:tinyqt_settings.window")
                     }
                 }
             }

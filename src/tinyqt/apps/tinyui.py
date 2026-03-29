@@ -461,6 +461,10 @@ def build_tinyui_launch_spec(core) -> QtLaunchSpec:
         )
         host.window.setProperty("settingsController", settings_controller)
         host.window.setProperty("settingsAvailable", True)
+        host_actions = host.window.property("hostActions")
+        register_surface = getattr(host_actions, "register_surface", None)
+        if callable(register_surface):
+            register_surface("tinyqt_settings.window", settings_controller)
 
     return QtLaunchSpec(
         app_name=APP_NAME,

@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 _VALID_LOAD_POLICIES = frozenset({"lazy", "eager"})
-_VALID_MENU_ACTIONS = frozenset({"settings", "devtools", "close"})
+_VALID_MENU_ACTIONS = frozenset({"close"})
 _VALID_WINDOW_KINDS = frozenset({"main", "tool", "dialog"})
 _VALID_WINDOW_PRESENTATIONS = frozenset({"qml", "native"})
 _VALID_BUTTON_ROLES = frozenset({"primary", "secondary"})
@@ -189,9 +189,17 @@ def validate_manifest(manifest: TinyQtAppManifest) -> TinyQtAppManifest:
             continue
         if not label:
             raise ValueError(f"Invalid TinyQt manifest '{app_id}': menu item label must not be empty")
-        if action not in _VALID_MENU_ACTIONS:
+        if action is None:
+            raise ValueError(
+                f"Invalid TinyQt manifest '{app_id}': menu item '{label}' must declare an action"
+            )
+        if action not in _VALID_MENU_ACTIONS and not action.startswith("open:"):
             raise ValueError(
                 f"Invalid TinyQt manifest '{app_id}': unsupported menu action '{item.action}'"
+            )
+        if action.startswith("open:") and not action.removeprefix("open:").strip():
+            raise ValueError(
+                f"Invalid TinyQt manifest '{app_id}': menu item '{label}' has an empty open target"
             )
         normalized_menu_items.append(
             TinyQtMenuItemManifest(

@@ -90,6 +90,30 @@ class LazyNativeWindowController(QObject):
         self._window.toggle()
 
 
+class HostActionController(QObject):
+    """Runtime-resolved shell actions for hosted QML chrome."""
+
+    def __init__(self, *, window: QQuickWindow) -> None:
+        super().__init__(window)
+        self._window = window
+        self._surface_controllers: dict[str, object] = {}
+
+    def register_surface(self, app_id: str, controller: object) -> None:
+        self._surface_controllers[app_id] = controller
+
+    @Slot(str)
+    def trigger(self, action: str) -> None:
+        normalized = action.strip().lower()
+        if normalized.startswith("open:"):
+            controller = self._surface_controllers.get(normalized.removeprefix("open:"))
+            toggle = getattr(controller, "toggle", None)
+            if callable(toggle):
+                toggle()
+            return
+        if normalized == "close":
+            self._window.close()
+
+
 def apply_manifest_shell_state(window: QObject, manifest: TinyQtAppManifest) -> None:
     """Push manifest-defined shell state onto the loaded root object when supported."""
     shell = manifest.shell
@@ -389,6 +413,8 @@ def create_window_host(
     if window is None:
         return None
     window.setProperty("theme", theme)
+    host_actions = HostActionController(window=window)
+    window.setProperty("hostActions", host_actions)
     apply_manifest_shell_state(window, app_manifest)
     devtools_controller = None
     if manifest_has_optional_feature(app_manifest, "devtools_ui"):
@@ -400,6 +426,7 @@ def create_window_host(
         )
         window.setProperty("devToolsController", devtools_controller)
         window.setProperty("devToolsAvailable", True)
+        host_actions.register_surface("tinyqt_devtools.window", devtools_controller)
     else:
         window.setProperty("devToolsAvailable", devtools_ui is not None)
     window.setProperty("devToolsQmlPath", "" if devtools_ui is None else devtools_ui.qml_url)
@@ -408,6 +435,10 @@ def create_window_host(
     windowing = attach_windowing(app=app, window=window, theme=theme, module=module)
     if windowing.registrations:
         register_singletons(list(windowing.registrations))
+        for registration in windowing.registrations:
+            if registration.name == "WindowController":
+                window.setProperty("windowController", registration.instance)
+                break
 
     available_singletons = {registration.name for registration in initial_registrations}
     available_singletons.update(registration.name for registration in windowing.registrations)
