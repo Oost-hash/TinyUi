@@ -24,24 +24,24 @@ from tinycore.paths import AppPaths
 
 from tinyqt.manifests import TinyQtAppManifest
 
-from .devtools import build_tinydevtools_manifest
+from .devtools import build_tinyqt_devtools_manifest
+from .settings import build_tinyqt_settings_manifest
 from .tinyui import (
     TINYUI_HOST_ASSEMBLY,
     build_tinyui_launch_spec,
     build_tinyui_manifest,
-    build_tinyui_settings_manifest,
 )
 
 
 def build_first_party_manifests(paths: AppPaths) -> dict[str, TinyQtAppManifest]:
     """Return the static manifest map for first-party hosted surfaces."""
     tinyui_manifest = build_tinyui_manifest(paths)
-    tinyui_settings_manifest = build_tinyui_settings_manifest(paths)
-    tinydevtools_manifest = build_tinydevtools_manifest(paths)
+    tinyqt_settings_manifest = build_tinyqt_settings_manifest(paths)
+    tinyqt_devtools_manifest = build_tinyqt_devtools_manifest(paths)
     return {
         tinyui_manifest.app_id: tinyui_manifest,
-        tinyui_settings_manifest.app_id: tinyui_settings_manifest,
-        tinydevtools_manifest.app_id: tinydevtools_manifest,
+        tinyqt_settings_manifest.app_id: tinyqt_settings_manifest,
+        tinyqt_devtools_manifest.app_id: tinyqt_devtools_manifest,
     }
 
 
@@ -59,6 +59,6 @@ __all__ = [
     "build_first_party_manifests",
     "get_first_party_manifest",
     "build_tinyui_manifest",
-    "build_tinyui_settings_manifest",
-    "build_tinydevtools_manifest",
+    "build_tinyqt_settings_manifest",
+    "build_tinyqt_devtools_manifest",
 ]

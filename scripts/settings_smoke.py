@@ -27,10 +27,10 @@ from tinyqt.host import attach_window_content, create_window_host
 from tinyqt.launch import _qt_message_handler
 from tinyqt.manifests import TinyQtAppManifest, TinyQtShellManifest, validate_manifest
 from tinyqt.theme import Theme
-from tinyui.viewmodels.core_viewmodel import CoreViewModel
-from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
-from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
-from tinyui.viewmodels.tab_viewmodel import TabViewModel
+from tinyqt_main.viewmodels.core_viewmodel import CoreViewModel
+from tinyqt_settings.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
+from tinyqt_main.viewmodels.statusbar_viewmodel import StatusBarViewModel
+from tinyqt_main.viewmodels.tab_viewmodel import TabViewModel
 
 
 configure()
@@ -105,17 +105,17 @@ def main() -> int:
         runtime.shutdown()
         return 1
 
-    dialog_qml = Path(args.qml_file).resolve() if args.qml_file else paths.source_root / "tinyqt_app" / "TinyUiSettingsWindow.qml"
+    dialog_qml = Path(args.qml_file).resolve() if args.qml_file else paths.source_root / "tinyqt_native_qml" / "TinyUiSettingsWindow.qml"
     dialog_content_qml = (
         Path(args.content_qml_file).resolve()
         if args.content_qml_file
-        else paths.source_root / "tinyui" / "qml" / "SettingsDialogContent.qml"
+        else paths.source_root / "tinyqt_settings" / "qml" / "SettingsDialogContent.qml"
     )
     print(f"Loading: {dialog_qml}")
 
     app_manifest = validate_manifest(
         TinyQtAppManifest(
-            app_id="tinyui.settings_dialog",
+            app_id="tinyqt_settings.dialog",
             title="Settings",
             root_qml=dialog_qml,
             shell=TinyQtShellManifest(

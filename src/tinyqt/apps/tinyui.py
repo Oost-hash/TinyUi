@@ -52,10 +52,10 @@ from tinyqt.app_identity import APP_NAME, VERSION
 from tinyqt.app_info import AppInfo
 from tinyqt.app_manifest_loader import load_tinyqt_app_manifests
 from tinyqt.theme import Theme
-from tinyui.viewmodels.core_viewmodel import CoreViewModel
-from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
-from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
-from tinyui.viewmodels.tab_viewmodel import TabViewModel
+from tinyqt_main.viewmodels.core_viewmodel import CoreViewModel
+from tinyqt_settings.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
+from tinyqt_main.viewmodels.statusbar_viewmodel import StatusBarViewModel
+from tinyqt_main.viewmodels.tab_viewmodel import TabViewModel
 
 _log = get_logger(__name__)
 
@@ -225,8 +225,8 @@ def _bind_theme_settings(
 
 
 def build_tinyui_manifest(paths: AppPaths) -> TinyQtAppManifest:
-    """Build the hosted TinyUI main-window manifest from tinyui/manifest.toml."""
-    manifest_path = paths.source_root / "tinyui" / "manifest.toml" if paths.source_root else None
+    """Build the hosted TinyUI main-window manifest from tinyqt_main/manifest.toml."""
+    manifest_path = paths.source_root / "tinyqt_main" / "manifest.toml" if paths.source_root else None
     if manifest_path is None:
         raise RuntimeError("TinyUI manifest requires a source_root in source runtime mode")
     manifests = load_tinyqt_app_manifests(manifest_path, paths=paths)
@@ -234,18 +234,6 @@ def build_tinyui_manifest(paths: AppPaths) -> TinyQtAppManifest:
         if manifest.app_id == "tinyui.main":
             return manifest
     raise RuntimeError(f"Missing TinyUI app manifest 'tinyui.main' in {manifest_path}")
-
-
-def build_tinyui_settings_manifest(paths: AppPaths) -> TinyQtAppManifest:
-    """Build the native TinyUI settings manifest from tinyui/manifest.toml."""
-    manifest_path = paths.source_root / "tinyui" / "manifest.toml" if paths.source_root else None
-    if manifest_path is None:
-        raise RuntimeError("TinyUI manifest requires a source_root in source runtime mode")
-    manifests = load_tinyqt_app_manifests(manifest_path, paths=paths)
-    for manifest in manifests:
-        if manifest.app_id == "tinyui.settings":
-            return manifest
-    raise RuntimeError(f"Missing TinyUI app manifest 'tinyui.settings' in {manifest_path}")
 
 
 @dataclass
@@ -407,7 +395,7 @@ def build_tinyui_launch_spec(core) -> QtLaunchSpec:
     return QtLaunchSpec(
         app_name=APP_NAME,
         version=VERSION,
-        qml_path=app_manifest.root_qml or (core.paths.source_root / "tinyqt_app" / "TinyUiMain.qml"),
+        qml_path=app_manifest.root_qml or (core.paths.source_root / "tinyqt_native_qml" / "TinyUiMain.qml"),
         app_manifest=app_manifest,
         theme=theme,
         log_inspector=log_inspector,

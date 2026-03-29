@@ -23,10 +23,10 @@ from tinyqt.apps.tinyui import (
 from tinyqt.app_identity import APP_NAME, VERSION
 from tinyqt.host import create_settings_controller
 from tinyqt.theme import Theme
-from tinyui.viewmodels.core_viewmodel import CoreViewModel
-from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
-from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
-from tinyui.viewmodels.tab_viewmodel import TabViewModel
+from tinyqt_main.viewmodels.core_viewmodel import CoreViewModel
+from tinyqt_settings.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
+from tinyqt_main.viewmodels.statusbar_viewmodel import StatusBarViewModel
+from tinyqt_main.viewmodels.tab_viewmodel import TabViewModel
 configure()
 
 

@@ -33,7 +33,7 @@ from PySide6.QtQuick import QQuickItem, QQuickWindow
 
 from tinyqt.devtools_support import DevToolsUiAttachment, attach_devtools_ui
 from tinyqt.engine import create_engine
-from tinyqt.apps.devtools import build_tinydevtools_manifest
+from tinyqt.apps.devtools import build_tinyqt_devtools_manifest
 from tinyqt.manifests import (
     TinyQtAppManifest,
     manifest_eager_panel_indexes,
@@ -213,7 +213,7 @@ def attach_optional_devtools_ui(
     if host_manifest is not None and not manifest_has_optional_feature(host_manifest, "devtools_ui"):
         return None
 
-    devtools_manifest = build_tinydevtools_manifest(core.paths)
+    devtools_manifest = build_tinyqt_devtools_manifest(core.paths)
     qml_path = devtools_manifest.root_qml
     if qml_path is None:
         return None
@@ -309,12 +309,12 @@ def create_settings_controller(
     build_registrations: Callable[[object | None], list[SingletonRegistration]],
 ) -> LazyNativeWindowController:
     """Create the shared TinyUI settings controller from its manifest."""
-    from tinyqt.apps.tinyui import build_tinyui_settings_manifest
+    from tinyqt.apps.settings import build_tinyqt_settings_manifest
 
-    manifest = build_tinyui_settings_manifest(core.paths)
+    manifest = build_tinyqt_settings_manifest(core.paths)
 
     def _build_window(window_manifest: TinyQtAppManifest) -> NativeToolWindowLike:
-        from tinyui.native_settings_window import NativeSettingsWindow
+        from tinyqt_settings.native_settings_window import NativeSettingsWindow
 
         registrations = build_registrations(None)
         settings_vm = next(
@@ -344,10 +344,10 @@ def create_devtools_controller(
     log_inspector: object,
 ) -> LazyNativeWindowController:
     """Create the shared TinyUI devtools controller from its manifest."""
-    manifest = build_tinydevtools_manifest(core.paths)
+    manifest = build_tinyqt_devtools_manifest(core.paths)
 
     def _build_window(window_manifest: TinyQtAppManifest) -> NativeToolWindowLike:
-        from tinydevtools.native_devtools_window import NativeDevToolsWindow
+        from tinyqt_devtools.native_devtools_window import NativeDevToolsWindow
 
         return NativeDevToolsWindow(
             core=core,

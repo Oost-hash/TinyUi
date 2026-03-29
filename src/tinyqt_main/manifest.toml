@@ -1,0 +1,46 @@
+[[app]]
+app_id = "tinyui.main"
+title = "TinyUi"
+root_qml = "tinyqt_native_qml/TinyUiMain.qml"
+optional_features = ["devtools_ui"]
+
+[app.shell]
+use_window_menu_bar = true
+use_tab_bar = true
+use_status_bar = true
+lazy_panel_loading = true
+
+[app.chrome]
+show_menu_button = true
+show_title_text = true
+show_caption_buttons = true
+show_status_left_items = true
+show_status_plugin_picker = true
+
+[app.window]
+window_kind = "main"
+presentation = "qml"
+restore_state_scope = "TinyUI"
+
+[[app.menu_items]]
+label = "Settings"
+action = "settings"
+
+[[app.menu_items]]
+label = "Dev Tools"
+action = "devtools"
+requires_feature = "devtools_ui"
+
+[[app.menu_items]]
+label = ""
+separator = true
+
+[[app.menu_items]]
+label = "Close"
+action = "close"
+
+[[app.panels]]
+panel_id = "widgets"
+label = "Widgets"
+qml_type = "WidgetTab"
+package = "TinyUI"
