@@ -22,7 +22,7 @@
 from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
 from PySide6.QtQml import QmlElement, QmlSingleton
 
-from tinycore.logging import get_logger
+from tinyruntime_schema import get_logger
 
 QML_IMPORT_NAME = "TinyUI"
 QML_IMPORT_MAJOR_VERSION = 1

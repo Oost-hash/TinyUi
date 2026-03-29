@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from typing import Protocol, cast
 
-from tinycore.logging import get_logger
+from tinyruntime_schema import get_logger
 
 from .provider_activity import ProviderActivity
 

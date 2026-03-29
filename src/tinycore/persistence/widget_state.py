@@ -26,7 +26,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tinycore.logging import get_logger
+from tinyruntime_schema import get_logger
 
 _log = get_logger(__name__)
 

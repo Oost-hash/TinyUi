@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from typing import Callable, cast
 
-from tinycore.logging import get_logger
+from tinyruntime_schema import get_logger
 from tinycore.paths import AppPaths
 from tinycore.persistence.widget_state import WidgetStateStore
 from tinyruntime.plugins.facts import PluginParticipationFacts

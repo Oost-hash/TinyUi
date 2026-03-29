@@ -30,7 +30,7 @@ from typing import Any, Protocol, cast
 
 from PySide6.QtCore import QObject
 
-from tinycore.logging import LogInspector, get_logger
+from tinyruntime_schema import LogInspector, get_logger
 from tinycore.paths import AppPaths
 from tinyruntime.boot import HostAssembly, HostOverlayBuild, HostStateMonitorBuild
 from tinyruntime.core_runtime import CoreRuntime

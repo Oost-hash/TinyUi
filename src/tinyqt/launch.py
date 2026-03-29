@@ -32,7 +32,7 @@ from typing import TYPE_CHECKING, Any, Callable, cast
 import PySide6
 from PySide6.QtCore import QtMsgType, qInstallMessageHandler, qVersion
 
-from tinycore.logging import get_logger
+from tinyruntime_schema import get_logger
 from .devtools_support import DevToolsUiAttachment
 
 from .app import create_configured_application

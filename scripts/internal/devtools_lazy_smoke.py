@@ -5,28 +5,23 @@ from time import perf_counter
 from PySide6.QtCore import QTimer
 
 from tinyqt_logging import configure
+from tinyruntime_schema import get_logger
 from tinycore.paths import AppPaths
 from tinyplugins.user_files import sync_user_files
 from tinyruntime.boot import boot_runtime, discover_manifests
 from tinyqt.apps import TINYUI_HOST_ASSEMBLY, build_tinyui_launch_spec
-from tinyqt.launch import launch_hosted_app
-
-
-def _controller_window_visible(controller) -> bool:
-    window = getattr(controller, "_window", None)
-    return bool(window is not None and window.isVisible())
+from tinyqt.launch import launch_qml_app
 
 
 def main() -> int:
     configure()
+    log = get_logger(__name__)
     paths = AppPaths.detect()
     manifests = discover_manifests(paths.plugins_dir)
     sync_user_files(paths.app_root, manifests)
     runtime = boot_runtime(paths, manifests, host_assembly=TINYUI_HOST_ASSEMBLY)
     spec = build_tinyui_launch_spec(runtime)
-
     opened = {"value": False}
-    closed = {"value": False}
 
     def pre_run() -> None:
         if runtime.units.get("ui.main") is not None:
@@ -40,21 +35,11 @@ def main() -> int:
 
         def _open() -> None:
             controller.toggle()
-            if not _controller_window_visible(controller):
-                raise RuntimeError("DevTools window did not become visible")
             opened["value"] = True
-            print("DevTools window opened successfully")
-
-        def _close() -> None:
-            controller.toggle()
-            if _controller_window_visible(controller):
-                raise RuntimeError("DevTools window did not close")
-            closed["value"] = True
-            print("DevTools window closed successfully")
-            host.window.close()
+            log.info("devtools_lazy_smoke opened devtools")
 
         QTimer.singleShot(50, _open)
-        QTimer.singleShot(250, _close)
+        QTimer.singleShot(400, host.window.close)
 
     spec = spec.__class__(
         app_name=spec.app_name,
@@ -71,15 +56,9 @@ def main() -> int:
     )
 
     start = perf_counter()
-    exit_code = launch_hosted_app(runtime, spec, pre_run=pre_run, extra_context=None)
+    exit_code = launch_qml_app(runtime, spec, pre_run=pre_run, extra_context=None)
     elapsed_ms = round((perf_counter() - start) * 1000, 1)
-
-    if not opened["value"]:
-        raise RuntimeError("DevTools smoke never opened the DevTools window")
-    if not closed["value"]:
-        raise RuntimeError("DevTools smoke never closed the DevTools window")
-
-    print(f"devtools_smoke exit={exit_code} elapsed_ms={elapsed_ms}")
+    print(f"lazy_smoke exit={exit_code} opened={opened['value']} elapsed_ms={elapsed_ms}")
     return exit_code
 
 

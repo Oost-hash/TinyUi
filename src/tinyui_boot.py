@@ -26,7 +26,7 @@ from __future__ import annotations
 import multiprocessing as mp
 import sys
 
-from tinycore.logging import configure
+from tinyqt_logging import configure
 from tinycore.paths import AppPaths
 from tinyqt.apps import TINYUI_HOST_ASSEMBLY, build_tinyui_launch_spec
 from tinyqt.bootstrap import boot_and_launch_hosted_app

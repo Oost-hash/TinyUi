@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from numbers import Real
 from typing import Callable, cast
 
-from tinycore.logging import get_logger
+from tinyruntime_schema import get_logger
 from tinyruntime.plugins.facts import PluginParticipationFacts
 
 from .fields import read_field

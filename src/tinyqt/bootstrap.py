@@ -25,7 +25,7 @@ from __future__ import annotations
 from time import perf_counter
 from typing import Callable
 
-from tinycore.logging import get_logger
+from tinyruntime_schema import get_logger
 from tinycore.paths import AppPaths
 from tinyplugins.user_files import sync_user_files
 from tinyruntime.boot import HostAssembly, boot_runtime, discover_manifests

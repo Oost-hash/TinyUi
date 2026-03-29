@@ -20,13 +20,13 @@
 #  licensed under GPLv3.
 """LogSettingsViewModel — runtime control of debug categories for Dev Tools.
 
-Exposes tinycore's category-based debug subscriptions to QML so the user can
-toggle individual channels on/off without restarting the application.
+Exposes runtime-schema debug subscriptions to QML so the user can toggle
+individual channels on/off without restarting the application.
 """
 
 from __future__ import annotations
 
-import tinycore.logging as _core_log
+import tinyruntime_schema.logging as _core_log
 from PySide6.QtCore import Property, QObject, Signal, Slot
 from PySide6.QtQml import QmlElement, QmlSingleton
 
@@ -37,7 +37,7 @@ QML_IMPORT_MAJOR_VERSION = 1
 @QmlElement
 @QmlSingleton
 class LogSettingsViewModel(QObject):
-    """Bridges tinycore debug-category control to QML.
+    """Bridges runtime-schema debug-category control to QML.
 
     Registered as ``logSettingsViewModel`` in the QML engine context.
 

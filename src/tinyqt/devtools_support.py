@@ -7,7 +7,7 @@ from typing import Any, Protocol, cast
 
 from PySide6.QtQml import QQmlApplicationEngine
 
-from tinycore.logging import LogInspector
+from tinyruntime_schema import LogInspector
 from tinyruntime.core_runtime import CoreRuntime
 from tinyruntime.boot import HostStateMonitorBuild
 from tinyqt.registration import SingletonRegistration, register_singletons

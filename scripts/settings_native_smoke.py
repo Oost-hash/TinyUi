@@ -8,7 +8,7 @@ import time
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QWidget
 
-from tinycore.logging import configure
+from tinyqt_logging import configure
 from tinycore.paths import AppPaths
 from tinyplugins.user_files import sync_user_files
 from tinyruntime.boot import boot_runtime, discover_manifests

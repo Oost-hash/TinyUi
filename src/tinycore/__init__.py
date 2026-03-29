@@ -33,16 +33,16 @@ from importlib import import_module
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .logging import LogInspector
     from .paths import AppPaths
     from tinyruntime.boot import boot_runtime, discover_manifests
     from tinyruntime.core_runtime import CoreRuntime
+    from tinyruntime_schema import LogInspector
 
 
 _EXPORTS: dict[str, tuple[str, str]] = {
     "AppPaths": (".paths", "AppPaths"),
     "CoreRuntime": ("tinyruntime.core_runtime", "CoreRuntime"),
-    "LogInspector": (".logging", "LogInspector"),
+    "LogInspector": ("tinyruntime_schema", "LogInspector"),
     "boot_runtime": ("tinyruntime.boot", "boot_runtime"),
     "discover_manifests": ("tinyruntime.boot", "discover_manifests"),
 }

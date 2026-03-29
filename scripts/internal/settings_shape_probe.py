@@ -6,7 +6,7 @@ import argparse
 import time
 from pathlib import Path
 
-from PySide6.QtCore import QtMsgType, qInstallMessageHandler
+from PySide6.QtCore import qInstallMessageHandler
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQuick import QQuickWindow
 
@@ -24,7 +24,7 @@ from tinyqt.apps.tinyui import (
     _build_registrations,
 )
 from tinyqt.app_identity import APP_NAME, VERSION
-from tinyqt.host import attach_window_content, create_window_host
+from tinyqt.host import create_window_host
 from tinyqt.launch import _qt_message_handler
 from tinyqt.manifests import TinyQtAppManifest, TinyQtShellManifest, validate_manifest
 from tinyqt.theme import Theme
@@ -49,30 +49,14 @@ def _pump_events(timeout_seconds: float, predicate) -> bool:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Load SettingsDialog with the real TinyUI runtime and verify it opens."
-    )
-    parser.add_argument(
-        "--open-timeout",
-        type=float,
-        default=5.0,
-        help="Seconds to wait for the settings dialog to become visible.",
-    )
-    parser.add_argument(
-        "--close-timeout",
-        type=float,
-        default=5.0,
-        help="Seconds to wait for the settings dialog to close again.",
-    )
-    parser.add_argument(
-        "--qml-file",
-        help="Optional QML file to load instead of the default settings dialog window.",
-    )
-    parser.add_argument(
-        "--content-qml-file",
-        help="Optional Item-based content QML file to attach into the host window.",
-    )
+    parser = argparse.ArgumentParser(description="Run a host-backed settings window shape probe.")
+    parser.add_argument("qml_file", help="Absolute or workspace-relative path to the QML file to probe.")
+    parser.add_argument("--timeout", type=float, default=2.0)
     args = parser.parse_args()
+
+    qml_path = Path(args.qml_file)
+    if not qml_path.is_absolute():
+        qml_path = (Path.cwd() / qml_path).resolve()
 
     paths = AppPaths.detect()
     manifests = discover_manifests(paths.plugins_dir)
@@ -101,24 +85,11 @@ def main() -> int:
     _bind_statusbar_plugin_switching(runtime, statusbar_vm)
     _bind_theme_settings(runtime, core_vm, settings_vm, theme)
 
-    if paths.source_root is None:
-        print("Settings smoke failed: source_root is unavailable in this runtime mode")
-        runtime.shutdown()
-        return 1
-
-    dialog_qml = Path(args.qml_file).resolve() if args.qml_file else paths.source_root / "tinyqt_native_qml" / "TinyUiSettingsWindow.qml"
-    dialog_content_qml = (
-        Path(args.content_qml_file).resolve()
-        if args.content_qml_file
-        else paths.source_root / "tinyqt_settings" / "qml" / "SettingsDialogContent.qml"
-    )
-    print(f"Loading: {dialog_qml}")
-
-    app_manifest = validate_manifest(
+    manifest = validate_manifest(
         TinyQtAppManifest(
-            app_id="tinyqt_settings.dialog",
-            title="Settings",
-            root_qml=dialog_qml,
+            app_id="tinyui.settings_shape_probe",
+            title="Settings Shape Probe",
+            root_qml=qml_path,
             shell=TinyQtShellManifest(
                 use_window_menu_bar=False,
                 use_tab_bar=False,
@@ -128,11 +99,13 @@ def main() -> int:
             panels=(),
         )
     )
+
+    print(f"Loading probe: {qml_path}")
     host = create_window_host(
         runtime,
         app=app,
-        qml_path=dialog_qml,
-        app_manifest=app_manifest,
+        qml_path=qml_path,
+        app_manifest=manifest,
         theme=theme,
         log_inspector=log_inspector,
         build_registrations=lambda _devtools_ui: _build_registrations(
@@ -147,38 +120,29 @@ def main() -> int:
         module="TinyUI",
     )
     if host is None:
-        print("Settings smoke failed: dialog did not load through tinyqt host")
-        runtime.shutdown()
-        return 1
-
-    if args.content_qml_file and not attach_window_content(host.engine, host.window, dialog_content_qml):
-        print("Settings smoke failed: settings content did not attach through tinyqt host")
+        print("Probe failed: host did not load window")
         runtime.shutdown()
         return 1
 
     root = host.window
     if not isinstance(root, QQuickWindow):
-        print(f"Settings smoke failed: root object is {type(root).__name__}, expected QQuickWindow")
+        print(f"Probe failed: root object is {type(root).__name__}, expected QQuickWindow")
         runtime.shutdown()
         return 1
 
-    root.show()
-    opened = _pump_events(args.open_timeout, lambda: root.isVisible())
+    settings_vm.openPanel()
+    opened = _pump_events(args.timeout, lambda: root.isVisible() and settings_vm.open)
     if not opened:
-        print("Settings smoke failed: dialog did not become visible")
+        print("Probe failed: window did not become visible")
         runtime.shutdown()
         return 1
-    print("Settings dialog opened successfully")
 
-    root.hide()
-    closed = _pump_events(args.close_timeout, lambda: not root.isVisible())
-    if not closed:
-        print("Settings smoke failed: dialog did not close cleanly")
-        runtime.shutdown()
-        return 1
-    print("Settings dialog closed successfully")
-
+    print("Probe opened successfully")
+    settings_vm.closePanel()
+    _pump_events(args.timeout, lambda: (not root.isVisible()) and (not settings_vm.open))
     runtime.shutdown()
     return 0
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

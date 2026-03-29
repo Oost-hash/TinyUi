@@ -26,7 +26,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from tinycore.logging import get_logger
+from tinyruntime_schema import get_logger
 from tinyqt_settings_schema import SettingsSpec
 
 log = get_logger(__name__)

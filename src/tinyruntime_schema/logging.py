@@ -25,7 +25,7 @@ from __future__ import annotations
 import logging
 import os
 
-from tinycore.logging.app_logger import (
+from tinyqt_logging.app_logger import (
     AppLogger,
     get_app_logger,
     read_app_logging_config,

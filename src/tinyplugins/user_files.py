@@ -27,7 +27,7 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
-from tinycore.logging import get_logger
+from tinyruntime_schema import get_logger
 
 from .manifest import PluginManifest
 
