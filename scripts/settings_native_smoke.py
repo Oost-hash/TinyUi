@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QWidget
 
 from tinycore.logging import configure
 from tinycore.paths import AppPaths
-from tinycore.plugin.user_files import sync_user_files
+from tinyplugins.user_files import sync_user_files
 from tinycore.runtime.boot import boot_runtime, discover_manifests
 from tinyqt.app import create_configured_application
 from tinyqt.apps import TINYUI_HOST_ASSEMBLY

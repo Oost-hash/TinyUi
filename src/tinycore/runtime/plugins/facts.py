@@ -26,7 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from tinycore.plugin.manifest import ProviderRequest
+from tinyplugins.manifest import ProviderRequest
 
 from .exports import ExportBinding, ParticipantExports
 

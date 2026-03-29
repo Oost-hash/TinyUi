@@ -31,7 +31,7 @@ from tinycore.composition import create_runtime_composition
 from tinycore.diagnostics.runtime_sources import build_runtime_inspector
 from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
-from tinycore.plugin.manifest import PluginManifest, scan_plugins
+from tinyplugins.manifest import PluginManifest, scan_plugins
 from tinycore.services import HostServices, RuntimeServices
 from tinyqt.registration import RegistrationMap
 

@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from tinycore.logging import get_logger
-from tinycore.plugin.manifest import PluginManifest, ProviderRequest
+from tinyplugins.manifest import PluginManifest, ProviderRequest
 
 from .subprocess import SubprocessPlugin
 from .provider_activity import ProviderActivity

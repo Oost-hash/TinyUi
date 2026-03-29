@@ -27,7 +27,7 @@ import importlib
 import sys
 from multiprocessing.connection import Connection
 
-from tinycore.plugin.runtime_loader import ensure_runtime_import_path
+from tinyplugins.runtime_loader import ensure_runtime_import_path
 
 
 class _ProxySettings:

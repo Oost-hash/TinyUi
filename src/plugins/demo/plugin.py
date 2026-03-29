@@ -38,7 +38,7 @@ from typing import TYPE_CHECKING
 from tinyqt_main_schema import load_editors_toml
 
 if TYPE_CHECKING:
-    from tinycore.plugin.context import PluginContext
+    from tinyplugins.context import PluginContext
 
 
 # --- Default data (used when JSON files don't exist yet) ---

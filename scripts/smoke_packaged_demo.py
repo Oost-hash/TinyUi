@@ -12,9 +12,9 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from build_plugin import build_plugin
-from tinycore.plugin.manifest import scan_plugins
-from tinycore.plugin.runtime_loader import load_runtime_class
-from tinycore.plugin.user_files import sync_user_files
+from tinyplugins.manifest import scan_plugins
+from tinyplugins.runtime_loader import load_runtime_class
+from tinyplugins.user_files import sync_user_files
 
 
 def _purge_plugin_modules(prefix: str) -> None:

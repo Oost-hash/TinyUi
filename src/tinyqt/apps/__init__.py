@@ -20,11 +20,13 @@
 #  licensed under GPLv3.
 """Application-specific compositions and manifests hosted by tinyqt."""
 
-from tinycore.paths import AppPaths
-
-from tinyqt.manifests import TinyQtAppManifest
-
 from .devtools import build_tinyqt_devtools_manifest
+from .registry import (
+    FIRST_PARTY_FEATURES,
+    FirstPartyFeatureSpec,
+    build_first_party_manifests,
+    get_first_party_manifest,
+)
 from .settings import build_tinyqt_settings_manifest
 from .tinyui import (
     TINYUI_HOST_ASSEMBLY,
@@ -32,28 +34,9 @@ from .tinyui import (
     build_tinyui_manifest,
 )
 
-
-def build_first_party_manifests(paths: AppPaths) -> dict[str, TinyQtAppManifest]:
-    """Return the static manifest map for first-party hosted surfaces."""
-    tinyui_manifest = build_tinyui_manifest(paths)
-    tinyqt_settings_manifest = build_tinyqt_settings_manifest(paths)
-    tinyqt_devtools_manifest = build_tinyqt_devtools_manifest(paths)
-    return {
-        tinyui_manifest.app_id: tinyui_manifest,
-        tinyqt_settings_manifest.app_id: tinyqt_settings_manifest,
-        tinyqt_devtools_manifest.app_id: tinyqt_devtools_manifest,
-    }
-
-
-def get_first_party_manifest(paths: AppPaths, app_id: str) -> TinyQtAppManifest:
-    """Resolve a first-party hosted surface manifest by id."""
-    manifests = build_first_party_manifests(paths)
-    try:
-        return manifests[app_id]
-    except KeyError as exc:
-        raise KeyError(f"Unknown TinyQt first-party manifest '{app_id}'") from exc
-
 __all__ = [
+    "FIRST_PARTY_FEATURES",
+    "FirstPartyFeatureSpec",
     "TINYUI_HOST_ASSEMBLY",
     "build_tinyui_launch_spec",
     "build_first_party_manifests",

@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from typing import Any
 from typing import Literal
 
-from tinycore.plugin.spec import ConsumerRuntimeSpec
+from tinyplugins.spec import ConsumerRuntimeSpec
 from .registry import RuntimeRegistry
 from .unit_ids import plugin_participant_unit_id, plugin_process_unit_id
 

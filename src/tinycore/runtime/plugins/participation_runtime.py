@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING
 from .participants import PluginParticipant
 
 if TYPE_CHECKING:
-    from tinycore.plugin.protocol import Plugin
+    from tinyplugins.protocol import Plugin
     from tinycore.services import HostServices, RuntimeServices
 
 
@@ -42,7 +42,7 @@ class PluginParticipationRuntime:
         self._participants.append(participant)
 
     def register_participants(self, host: HostServices, runtime: RuntimeServices) -> None:
-        from tinycore.plugin.context import PluginContext
+        from tinyplugins.context import PluginContext
 
         for participant in self._participants:
             participant.plugin.register(

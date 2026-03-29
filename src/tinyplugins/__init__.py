@@ -18,7 +18,7 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""tinycore.plugin — static plugin description boundary."""
+"""tinyplugins — static plugin description boundary."""
 
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ __all__ = (
 def __getattr__(name: str):
     target = _EXPORTS.get(name)
     if target is None:
-        raise AttributeError(f"module 'tinycore.plugin' has no attribute '{name}'")
+        raise AttributeError(f"module 'tinyplugins' has no attribute '{name}'")
     module_name, attr_name = target
     module = import_module(module_name, __name__)
     value = getattr(module, attr_name)

@@ -26,10 +26,10 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING
 
-from tinycore.plugin.spec import ConsumerRuntimeSpec
+from tinyplugins.spec import ConsumerRuntimeSpec
 
 if TYPE_CHECKING:
-    from tinycore.plugin.context import PluginContext
+    from tinyplugins.context import PluginContext
     from tinycore.runtime.process_supervisor import ProcessSupervisor, SpawnedProcessHandle
 
 
