@@ -37,3 +37,5 @@ Known packages:
 - [0.4.1][tinyui] Fixed all remaining pragma ComponentBehavior: Bound warnings in SettingsDialog — delegates use ListView.view.dialog and settingRow._dlg to propagate context
 - [0.4.1][tinyui][tinydevtools][tinywidgets] QML lint metadata now regenerates into .qml_linter, WindowController type registration no longer conflicts, and Zed qmlls points at the same generated import path
 - [0.4.1][tinyui][tinydevtools][other] Fixed remaining static-analysis issues in SettingsDialog and DevTools color bindings, and aligned Zed with the project's venv-based basedpyright and qmlls configs
+- [0.4.1][tinyui][other] Added compact diagnostics summary and inspect tasks for Zed, and updated qmllint module imports so QML and basedpyright output stay aligned and less verbose
+- [0.4.2][tinycore][tinyui][other] Introduced shared tinyqt ownership for Qt bootstrap, timers, and windowing so tinycore is Qt-free and UI packages consume one shared Qt host layer

@@ -41,10 +41,10 @@ from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QmlElement, QmlSingleton
 
 from tinycore.runtime.core_runtime import CoreRuntime
+from tinyqt.timers.qt_timer import RuntimeQtTimer
 
 QML_IMPORT_NAME = "TinyDevTools"
 QML_IMPORT_MAJOR_VERSION = 1
-from tinycore.runtime.qt_timer import RuntimeQtTimer
 
 
 @dataclass(frozen=True)

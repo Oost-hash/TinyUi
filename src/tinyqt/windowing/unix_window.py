@@ -24,15 +24,15 @@ Window control for PySide6 on Unix (Linux/macOS).
 
 Qt delegates move and resize to the compositor/AppKit via
 startSystemMove() / startSystemResize(). The platform handles
-cursor feedback, snap and animations — no platform-specific code needed.
+cursor feedback, snap and animations - no platform-specific code needed.
 
-QML initiates drag via DragHandler.onActiveChanged → startMove().
+QML initiates drag via DragHandler.onActiveChanged -> startMove().
 Resize is initiated from ResizeHandles.qml via startResize(edge).
 """
 
 from PySide6.QtCore import Qt, Slot
 
-from tinyui.windowing.controller_api import WindowControllerApi
+from tinyqt.windowing.controller_api import WindowControllerApi
 
 
 class WindowController(WindowControllerApi):
@@ -44,7 +44,7 @@ class WindowController(WindowControllerApi):
 
     @Slot(float)
     def setLeftButtonWidth(self, logical_width: float) -> None:
-        pass  # Not applicable — Wayland does not use hit-test zones
+        pass  # Not applicable - Wayland does not use hit-test zones
 
     @Slot()
     def toggleMaximize(self):
@@ -59,10 +59,10 @@ class WindowController(WindowControllerApi):
 
     @Slot()
     def startMove(self):
-        """Called from QML DragHandler — compositor handles the drag."""
+        """Called from QML DragHandler - compositor handles the drag."""
         self._window.startSystemMove()
 
     @Slot(int)
     def startResize(self, edge: int):
-        """Called from ResizeHandles.qml — compositor handles the resize."""
+        """Called from ResizeHandles.qml - compositor handles the resize."""
         self._window.startSystemResize(Qt.Edge(edge))

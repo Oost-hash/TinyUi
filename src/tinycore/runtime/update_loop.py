@@ -27,7 +27,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal, Protocol, runtime_checkable
 
-from .qt_timer import RuntimeQtTimer
+from tinyqt.timers.qt_timer import RuntimeQtTimer
 
 UpdateStage = Literal["refresh", "derive"]
 _UPDATE_STAGE_ORDER: tuple[UpdateStage, ...] = ("refresh", "derive")

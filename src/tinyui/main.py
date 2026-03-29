@@ -41,8 +41,9 @@ from PySide6.QtQml import qmlRegisterSingletonInstance
 from PySide6.QtQuick import QQuickWindow
 
 from tinycore.logging import LogInspector, get_logger
-from tinycore.qt.app import create_application
-from tinycore.qt.engine import create_engine
+from tinyqt.app import create_application
+from tinyqt.engine import create_engine
+from tinyqt.windowing.controller_api import WindowControllerApi
 from tinycore.runtime.core_runtime import CoreRuntime
 from tinyui.app_info import AppInfo
 from tinyui.const import APP_NAME, VERSION
@@ -61,7 +62,6 @@ from tinyui.viewmodels.menu_viewmodel import MenuViewModel
 from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
 from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
 from tinyui.viewmodels.tab_viewmodel import TabViewModel
-from tinyui.windowing.controller_api import WindowControllerApi
 
 
 def _qt_message_handler(mode, context, message):
@@ -194,7 +194,7 @@ def launch(
     _win_ctrl = None
     _chrome_helper = None
     if sys.platform == "win32":
-        from tinyui.windowing.win_window import (
+        from tinyqt.windowing.win_window import (
             WindowChromeHelper,
             WindowController,
             apply_dwm_frame,
@@ -222,7 +222,7 @@ def launch(
         )
 
     elif sys.platform.startswith("linux") or sys.platform == "darwin":
-        from tinyui.windowing.unix_window import WindowController
+        from tinyqt.windowing.unix_window import WindowController
 
         _win_ctrl = WindowController(window)
 

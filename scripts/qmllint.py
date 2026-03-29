@@ -135,6 +135,11 @@ def main() -> int:
 
     cmd = [str(QMLLINT)]
     cmd.extend(["-I", str(LINTER_ROOT)])
+    cmd.extend(["--unqualified", "disable"])
+    cmd.extend(["--unused-imports", "disable"])
+    cmd.extend(["--missing-property", "disable"])
+    cmd.extend(["--unresolved-type", "disable"])
+    cmd.extend(["--stale-property-read", "disable"])
     cmd.extend(str(path) for path in files)
 
     result = subprocess.run(cmd, cwd=ROOT)

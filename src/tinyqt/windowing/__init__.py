@@ -18,17 +18,4 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""QQmlApplicationEngine factory."""
-
-from __future__ import annotations
-
-from PySide6.QtQml import QQmlApplicationEngine
-
-
-def create_engine() -> QQmlApplicationEngine:
-    """Create a QQmlApplicationEngine.
-
-    Each package that needs QML (tinyui, tinywidgets) calls this
-    to get its own engine instance.
-    """
-    return QQmlApplicationEngine()
+"""Shared cross-platform windowing support for the Qt host layer."""

@@ -18,27 +18,12 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""Qt application bootstrap — shared by tinyui and tinywidgets.
+"""tinyqt — shared Qt runtime and render-host layer."""
 
-Call create_application() exactly once, before creating any windows or engines.
-"""
+from .app import create_application
+from .engine import create_engine
 
-from __future__ import annotations
-
-import sys
-
-from PySide6.QtGui import QGuiApplication
-from PySide6.QtQuick import QQuickWindow
-from PySide6.QtQuickControls2 import QQuickStyle
-
-
-def create_application(argv: list[str] | None = None) -> QGuiApplication:
-    """Create and configure the QGuiApplication.
-
-    Must be called before any QML engine or window is created.
-    """
-    if argv is None:
-        argv = sys.argv
-    QQuickWindow.setDefaultAlphaBuffer(True)
-    QQuickStyle.setStyle("Basic")
-    return QGuiApplication(argv)
+__all__ = [
+    "create_application",
+    "create_engine",
+]

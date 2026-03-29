@@ -26,9 +26,9 @@ Approach based on the Microsoft DWM Custom Frame documentation and
 FramelessHelper/QWindowKit reference implementations:
 
   - WM_NCCALCSIZE: remove left/right/bottom NC borders, keep top intact
-    for DWM caption → client area covers the title bar visually, DWM
+    for DWM caption -> client area covers the title bar visually, DWM
     reserves space for caption buttons.
-  - WM_NCHITTEST: call DwmDefWindowProc FIRST — DWM recognizes button
+  - WM_NCHITTEST: call DwmDefWindowProc FIRST - DWM recognizes button
     zones itself, draws hover/pressed states and triggers the Win11
     snap-layout popup. Then apply own hit-test for resize and drag zone.
   - WM_NCLBUTTONUP: click handling for caption buttons via ShowWindow
@@ -49,9 +49,9 @@ from PySide6.QtCore import QObject, Slot
 from PySide6.QtGui import QWindow
 from PySide6.QtQml import QmlElement, QmlSingleton
 
-from tinyui.windowing.controller_api import WindowControllerApi
+from tinyqt.windowing.controller_api import WindowControllerApi
 
-# ── Win32 constants ───────────────────────────────────────────────────────────
+# -- Win32 constants ----------------------------------------------------------
 
 GWL_STYLE        = -16
 GWLP_WNDPROC     = -4
@@ -99,8 +99,6 @@ HTMAXBUTTON   = 9
 HTCLOSE       = 20
 
 
-# ── ctypes structures ─────────────────────────────────────────────────────────
-
 class MARGINS(ctypes.Structure):
     _fields_ = [
         ("cxLeftWidth",    ctypes.c_int),
@@ -126,7 +124,6 @@ class NCCALCSIZE_PARAMS(ctypes.Structure):
     ]
 
 
-# WndProc function type: LRESULT CALLBACK(HWND, UINT, WPARAM, LPARAM)
 _WndProcType = ctypes.WINFUNCTYPE(
     ctypes.c_ssize_t,
     ctypes.c_size_t,
@@ -135,8 +132,6 @@ _WndProcType = ctypes.WINFUNCTYPE(
     ctypes.c_ssize_t,
 )
 
-
-# ── Public API ────────────────────────────────────────────────────────────────
 
 def apply_dwm_frame(hwnd: int) -> None:
     """
@@ -156,7 +151,6 @@ def apply_dwm_frame(hwnd: int) -> None:
         SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOACTIVATE,
     )
 
-    # Rounded corners (Windows 11+, ignored on Win10)
     attr = ctypes.c_int(DWMWCP_ROUND)
     dwmapi.DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ctypes.byref(attr), ctypes.sizeof(attr))
 
@@ -174,30 +168,28 @@ def install_wnd_proc(
     Subclass the WndProc for WM_NCCALCSIZE, WM_NCHITTEST and WM_NCLBUTTONDBLCLK.
 
     Returns (wnd_proc, set_left_button_width):
-      - wnd_proc               : MUST be kept alive, otherwise garbage collected → crash
+      - wnd_proc               : MUST be kept alive, otherwise garbage collected -> crash
       - set_left_button_width  : callable(pixels: int) to update the left zone at runtime
 
     Parameters (physical pixels, i.e. DPI-scaled):
       title_bar_height   : height of the title bar
       resize_border      : width of resize edge along the borders
       resize_corner      : size of resize zone at corners
-      left_button_width  : initial width of left zone (hamburger + title + menu → HTCLIENT)
-      right_button_width : width of right zone (QML buttons → HTCLIENT)
+      left_button_width  : initial width of left zone (hamburger + title + menu -> HTCLIENT)
+      right_button_width : width of right zone (QML buttons -> HTCLIENT)
     """
     user32  = ctypes.windll.user32
     dwmapi  = ctypes.windll.dwmapi
 
-    # DwmDefWindowProc signature
     dwmapi.DwmDefWindowProc.restype  = ctypes.c_bool
     dwmapi.DwmDefWindowProc.argtypes = [
-        ctypes.c_size_t,                      # HWND
-        ctypes.c_uint,                        # UINT
-        ctypes.c_size_t,                      # WPARAM
-        ctypes.c_ssize_t,                     # LPARAM
-        ctypes.POINTER(ctypes.c_ssize_t),     # LRESULT*
+        ctypes.c_size_t,
+        ctypes.c_uint,
+        ctypes.c_size_t,
+        ctypes.c_ssize_t,
+        ctypes.POINTER(ctypes.c_ssize_t),
     ]
 
-    # Explicit 64-bit signatures for SetWindowLongPtrW / CallWindowProcW
     user32.GetWindowLongPtrW.restype  = ctypes.c_ssize_t
     user32.GetWindowLongPtrW.argtypes = [ctypes.c_size_t, ctypes.c_int]
 
@@ -214,8 +206,6 @@ def install_wnd_proc(
     ]
 
     old_proc = user32.GetWindowLongPtrW(hwnd, GWLP_WNDPROC)
-
-    # Mutable container so the left zone can be updated at runtime from QML
     _left = [left_button_width]
 
     def set_left_button_width(pixels: int) -> None:
@@ -234,43 +224,46 @@ def install_wnd_proc(
         w  = rect.right  - rect.left
         h_ = rect.bottom - rect.top
 
-        # Title bar zone
         if ry < title_bar_height:
-            if rx < _left[0]:                 return HTCLIENT   # left buttons
-            if rx > w - right_button_width:   return HTCLIENT   # QML buttons
-            return HTCAPTION                                    # drag zone
+            if rx < _left[0]:
+                return HTCLIENT
+            if rx > w - right_button_width:
+                return HTCLIENT
+            return HTCAPTION
 
         if user32.IsZoomed(h):
-            return None            # no resize when maximized
+            return None
 
         rb = resize_border
         rc = resize_corner
 
-        if rx < rc  and ry < rc:           return HTTOPLEFT
-        if rx > w-rc and ry < rc:          return HTTOPRIGHT
-        if rx < rc  and ry > h_-rc:        return HTBOTTOMLEFT
-        if rx > w-rc and ry > h_-rc:       return HTBOTTOMRIGHT
+        if rx < rc and ry < rc:
+            return HTTOPLEFT
+        if rx > w - rc and ry < rc:
+            return HTTOPRIGHT
+        if rx < rc and ry > h_ - rc:
+            return HTBOTTOMLEFT
+        if rx > w - rc and ry > h_ - rc:
+            return HTBOTTOMRIGHT
 
-        if ry < rb:        return HTTOP
-        if ry > h_ - rb:   return HTBOTTOM
-        if rx < rb:        return HTLEFT
-        if rx > w  - rb:   return HTRIGHT
+        if ry < rb:
+            return HTTOP
+        if ry > h_ - rb:
+            return HTBOTTOM
+        if rx < rb:
+            return HTLEFT
+        if rx > w - rb:
+            return HTRIGHT
 
         return None
 
     @_WndProcType
     def wnd_proc(h: int, msg: int, wparam: int, lparam: int) -> int:
-        # ── DwmDefWindowProc first ────────────────────────────────────────────
-        # Required for caption button hover, pressed states and snap-layout popup.
         dwm_result = ctypes.c_ssize_t(0)
         if dwmapi.DwmDefWindowProc(h, msg, wparam, lparam, ctypes.byref(dwm_result)):
             return dwm_result.value
 
-        # ── Own handling ──────────────────────────────────────────────────────
         if msg == WM_NCCALCSIZE and wparam:
-            # Normal window: no NC adjustment — client area equals full window.
-            # Maximized: Windows places the window border_x/border_y outside the
-            # screen edge; correct all sides so content stays within the screen.
             if user32.IsZoomed(h):
                 nccsp    = ctypes.cast(lparam, ctypes.POINTER(NCCALCSIZE_PARAMS))
                 padding  = user32.GetSystemMetrics(SM_CXPADDEDBORDER)
@@ -297,7 +290,7 @@ def install_wnd_proc(
     result = user32.SetWindowLongPtrW(hwnd, GWLP_WNDPROC, wnd_proc_ptr)
     if result == 0:
         print(f"[win32] ERROR: SetWindowLongPtrW failed! LastError={ctypes.windll.kernel32.GetLastError()}")
-    return wnd_proc, set_left_button_width  # wnd_proc MUST be kept alive — otherwise garbage collected → crash
+    return wnd_proc, set_left_button_width
 
 
 @QmlElement
@@ -309,7 +302,7 @@ class WindowChromeHelper(QObject):
         super().__init__(parent)
         self._dpr        = dpr
         self._applied:   set[int]  = set()
-        self._wnd_procs: list      = []    # MUST be kept alive — otherwise garbage collected → crash
+        self._wnd_procs: list      = []
 
     def _apply(self, hwnd: int) -> None:
         if hwnd in self._applied:
@@ -317,19 +310,18 @@ class WindowChromeHelper(QObject):
         self._applied.add(hwnd)
         wnd_proc, _ = install_wnd_proc(
             hwnd,
-            title_bar_height  = round(36 * self._dpr),
-            resize_border     = round(6  * self._dpr),
-            resize_corner     = round(12 * self._dpr),
-            left_button_width = 0,                         # no left zone for dialog
-            right_button_width= round(138 * self._dpr),   # 3 × TitleBarButton (min + max + close)
+            title_bar_height=round(36 * self._dpr),
+            resize_border=round(6 * self._dpr),
+            resize_corner=round(12 * self._dpr),
+            left_button_width=0,
+            right_button_width=round(138 * self._dpr),
         )
         apply_dwm_frame(hwnd)
         self._wnd_procs.append(wnd_proc)
 
     @Slot(QWindow)
     def applyToWindow(self, window: QWindow) -> None:
-        """Called from QML: windowChromeHelper.applyToWindow(someWindow).
-        QML Window objects inherit QWindow — winId() is available here."""
+        """Called from QML: windowChromeHelper.applyToWindow(someWindow)."""
         self._apply(int(window.winId()))
 
     @Slot(int)

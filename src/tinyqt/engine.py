@@ -18,16 +18,13 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-"""tinycore.qt — shared Qt bootstrap layer.
+"""QQmlApplicationEngine factory for shared Qt hosting."""
 
-The only Qt code in tinycore. Both tinyui and tinywidgets build on this.
-tinycore itself (outside this subpackage) has no Qt dependency.
-"""
+from __future__ import annotations
 
-from .app import create_application
-from .engine import create_engine
+from PySide6.QtQml import QQmlApplicationEngine
 
-__all__ = [
-    "create_application",
-    "create_engine",
-]
+
+def create_engine() -> QQmlApplicationEngine:
+    """Create a QQmlApplicationEngine."""
+    return QQmlApplicationEngine()

@@ -18,7 +18,6 @@
 #
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
-
 """Qt-backed timer adapter for runtime-owned interval work."""
 
 from __future__ import annotations
