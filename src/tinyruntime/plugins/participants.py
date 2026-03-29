@@ -34,7 +34,7 @@ from .subprocess import SubprocessPlugin
 from .provider_activity import ProviderActivity
 
 if TYPE_CHECKING:
-    from tinycore.runtime.process_supervisor import ProcessSupervisor
+    from tinyruntime.process_supervisor import ProcessSupervisor
     from tinycore.services import RuntimeServices
     from .facts import ParticipantBindingSet
 

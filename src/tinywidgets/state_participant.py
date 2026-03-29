@@ -28,7 +28,7 @@ from numbers import Real
 from typing import Callable, cast
 
 from tinycore.logging import get_logger
-from tinycore.runtime.plugins.facts import PluginParticipationFacts
+from tinyruntime.plugins.facts import PluginParticipationFacts
 
 from .fields import read_field
 from .flash import FlashState

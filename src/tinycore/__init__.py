@@ -35,16 +35,16 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .logging import LogInspector
     from .paths import AppPaths
-    from .runtime.boot import boot_runtime, discover_manifests
-    from .runtime.core_runtime import CoreRuntime
+    from tinyruntime.boot import boot_runtime, discover_manifests
+    from tinyruntime.core_runtime import CoreRuntime
 
 
 _EXPORTS: dict[str, tuple[str, str]] = {
     "AppPaths": (".paths", "AppPaths"),
-    "CoreRuntime": (".runtime.core_runtime", "CoreRuntime"),
+    "CoreRuntime": ("tinyruntime.core_runtime", "CoreRuntime"),
     "LogInspector": (".logging", "LogInspector"),
-    "boot_runtime": (".runtime.boot", "boot_runtime"),
-    "discover_manifests": (".runtime.boot", "discover_manifests"),
+    "boot_runtime": ("tinyruntime.boot", "boot_runtime"),
+    "discover_manifests": ("tinyruntime.boot", "discover_manifests"),
 }
 
 __all__ = (

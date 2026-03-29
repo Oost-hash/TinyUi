@@ -34,8 +34,8 @@ from .persistence.config.loader import LoaderRegistry
 from .persistence.config.store import ConfigStore
 from .persistence.settings import SettingsRegistry
 from .persistence.widget_state import WidgetStateRegistry
-from .runtime.plugins.facts import PluginParticipationFacts
-from .runtime.plugins.participation_runtime import PluginParticipationRuntime
+from tinyruntime.plugins.facts import PluginParticipationFacts
+from tinyruntime.plugins.participation_runtime import PluginParticipationRuntime
 
 
 class PersistenceServices:

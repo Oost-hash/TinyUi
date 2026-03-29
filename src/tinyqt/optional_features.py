@@ -26,10 +26,10 @@ from dataclasses import dataclass
 from typing import Protocol, cast
 
 from tinycore.paths import AppPaths
-from tinycore.runtime.boot import HostOverlayBuild, HostStateMonitorBuild
-from tinycore.runtime.core_runtime import CoreRuntime
-from tinycore.runtime.plugins.participants import PluginParticipant
-from tinycore.runtime.plugins.provider_activity import ProviderActivity
+from tinyruntime.boot import HostOverlayBuild, HostStateMonitorBuild
+from tinyruntime.core_runtime import CoreRuntime
+from tinyruntime.plugins.participants import PluginParticipant
+from tinyruntime.plugins.provider_activity import ProviderActivity
 from tinycore.services import HostServices, RuntimeServices
 from tinyqt.devtools_support import build_devtools_state_monitor_attachment
 from tinywidgets.overlay import WidgetOverlay

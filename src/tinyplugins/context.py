@@ -25,8 +25,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from tinycore.runtime.plugins.exports import ParticipantExports
-    from tinycore.runtime.plugins.facts import PluginParticipationFacts
+    from tinyruntime.plugins.exports import ParticipantExports
+    from tinyruntime.plugins.facts import PluginParticipationFacts
     from tinycore.services import PersistenceServices
     from tinyqt_main_schema import EditorRegistry
     from tinyqt_settings_schema import SettingsSpec

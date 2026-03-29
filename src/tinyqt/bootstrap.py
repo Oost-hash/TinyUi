@@ -27,8 +27,8 @@ from typing import Callable
 
 from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
-from tinycore.plugin.user_files import sync_user_files
-from tinycore.runtime.boot import HostAssembly, boot_runtime, discover_manifests
+from tinyplugins.user_files import sync_user_files
+from tinyruntime.boot import HostAssembly, boot_runtime, discover_manifests
 
 from .launch import QtLaunchSpec, launch_hosted_app
 

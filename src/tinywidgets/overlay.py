@@ -29,10 +29,10 @@ from typing import Callable, cast
 from tinycore.logging import get_logger
 from tinycore.paths import AppPaths
 from tinycore.persistence.widget_state import WidgetStateStore
-from tinycore.runtime.plugins.facts import PluginParticipationFacts
-from tinycore.runtime.plugins.provider_activity import ProviderActivity
-from tinycore.runtime.plugins.provider_refresh import ProviderRefreshParticipant
-from tinycore.runtime.update_loop import RuntimeUpdateLoop
+from tinyruntime.plugins.facts import PluginParticipationFacts
+from tinyruntime.plugins.provider_activity import ProviderActivity
+from tinyruntime.plugins.provider_refresh import ProviderRefreshParticipant
+from tinyruntime.update_loop import RuntimeUpdateLoop
 from tinyqt.widget_host import WidgetSurfaceHost, WidgetSurfacePaths
 from tinyqt.registration import RegistrationMap
 from .context import WidgetContext, WidgetModel, WidgetOverlayState

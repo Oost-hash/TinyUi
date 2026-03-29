@@ -30,7 +30,7 @@ from tinyplugins.spec import ConsumerRuntimeSpec
 
 if TYPE_CHECKING:
     from tinyplugins.context import PluginContext
-    from tinycore.runtime.process_supervisor import ProcessSupervisor, SpawnedProcessHandle
+    from tinyruntime.process_supervisor import ProcessSupervisor, SpawnedProcessHandle
 
 
 class SubprocessPlugin:

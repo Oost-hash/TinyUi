@@ -8,8 +8,8 @@ from typing import Any, Protocol, cast
 from PySide6.QtQml import QQmlApplicationEngine
 
 from tinycore.logging import LogInspector
-from tinycore.runtime.core_runtime import CoreRuntime
-from tinycore.runtime.boot import HostStateMonitorBuild
+from tinyruntime.core_runtime import CoreRuntime
+from tinyruntime.boot import HostStateMonitorBuild
 from tinyqt.registration import SingletonRegistration, register_singletons
 from tinywidgets.overlay import WidgetOverlay
 from tinyqt_devtools.viewmodels.log_settings_viewmodel import LogSettingsViewModel

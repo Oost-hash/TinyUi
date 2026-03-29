@@ -13,7 +13,7 @@ from PySide6.QtQuick import QQuickWindow
 from tinycore.logging import LogInspector, configure
 from tinycore.paths import AppPaths
 from tinyplugins.user_files import sync_user_files
-from tinycore.runtime.boot import boot_runtime, discover_manifests
+from tinyruntime.boot import boot_runtime, discover_manifests
 from tinyqt.app import create_configured_application
 from tinyqt.apps import TINYUI_HOST_ASSEMBLY
 from tinyqt.apps.tinyui import (

@@ -32,10 +32,10 @@ from PySide6.QtCore import QObject
 
 from tinycore.logging import LogInspector, get_logger
 from tinycore.paths import AppPaths
-from tinycore.runtime.boot import HostAssembly, HostOverlayBuild, HostStateMonitorBuild
-from tinycore.runtime.core_runtime import CoreRuntime
-from tinycore.runtime.plugins.participants import PluginParticipant
-from tinycore.runtime.plugins.provider_activity import ProviderActivity
+from tinyruntime.boot import HostAssembly, HostOverlayBuild, HostStateMonitorBuild
+from tinyruntime.core_runtime import CoreRuntime
+from tinyruntime.plugins.participants import PluginParticipant
+from tinyruntime.plugins.provider_activity import ProviderActivity
 from tinycore.services import HostServices, RuntimeServices
 from tinyqt_settings_schema import SettingsSpec
 

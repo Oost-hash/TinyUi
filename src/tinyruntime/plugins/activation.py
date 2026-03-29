@@ -26,12 +26,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from tinycore.runtime.unit_ids import plugin_participant_unit_id
+from tinyruntime.unit_ids import plugin_participant_unit_id
 
 if TYPE_CHECKING:
-    from tinycore.runtime.models import RuntimeState
-    from tinycore.runtime.registry import RuntimeRegistry
-    from tinycore.runtime.scheduler import RuntimeScheduler, ScheduledTaskHandle
+    from tinyruntime.models import RuntimeState
+    from tinyruntime.registry import RuntimeRegistry
+    from tinyruntime.scheduler import RuntimeScheduler, ScheduledTaskHandle
     from .provider_activity import ProviderActivity
     from .participation_runtime import PluginParticipationRuntime
 

@@ -7,7 +7,7 @@ from PySide6.QtCore import QTimer
 from tinycore.logging import configure
 from tinycore.paths import AppPaths
 from tinyplugins.user_files import sync_user_files
-from tinycore.runtime.boot import boot_runtime, discover_manifests
+from tinyruntime.boot import boot_runtime, discover_manifests
 from tinyqt.apps import TINYUI_HOST_ASSEMBLY, build_tinyui_launch_spec
 from tinyqt.launch import launch_hosted_app
 

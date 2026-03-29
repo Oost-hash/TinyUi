@@ -26,7 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .paths import AppPaths
-from .runtime.plugins.participants import PluginParticipant
+from tinyruntime.plugins.participants import PluginParticipant
 from .services import HostServices, RuntimeServices, build_host_services, build_runtime_services
 
 

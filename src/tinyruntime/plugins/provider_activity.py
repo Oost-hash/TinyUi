@@ -23,9 +23,9 @@
 
 from __future__ import annotations
 
-from tinycore.runtime.models import RuntimeState
-from tinycore.runtime.unit_ids import provider_export_unit_id, provider_runtime_unit_id
-from tinycore.runtime.registry import RuntimeRegistry
+from tinyruntime.models import RuntimeState
+from tinyruntime.unit_ids import provider_export_unit_id, provider_runtime_unit_id
+from tinyruntime.registry import RuntimeRegistry
 
 from .facts import PluginParticipationFacts
 

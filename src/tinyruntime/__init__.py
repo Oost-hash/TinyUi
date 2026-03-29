@@ -20,7 +20,7 @@
 #  licensed under GPLv3.
 
 #  TinyUI
-"""tinycore.runtime public surface.
+"""tinyruntime public surface.
 
 Only expose the top-level runtime entrypoints that consumers should reasonably
 treat as public. Internal scheduling, diagnostics, adapter, and supervision
@@ -53,7 +53,7 @@ __all__ = (
 def __getattr__(name: str):
     target = _EXPORTS.get(name)
     if target is None:
-        raise AttributeError(f"module 'tinycore.runtime' has no attribute '{name}'")
+        raise AttributeError(f"module 'tinyruntime' has no attribute '{name}'")
     module_name, attr_name = target
     module = import_module(module_name, __name__) if module_name.startswith(".") else import_module(module_name)
     value = getattr(module, attr_name)

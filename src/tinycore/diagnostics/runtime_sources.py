@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from tinywidgets.fields import read_field
 
-from tinycore.runtime.core_runtime import CoreRuntime
+from tinyruntime.core_runtime import CoreRuntime
 
 from .runtime_state import RuntimeInspector
 from .snapshot_protocols import InspectionSnapshot
