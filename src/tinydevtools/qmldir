@@ -1,5 +1,7 @@
 module TinyDevTools
 ConsolePane 1.0 ../tinydevtools/qml/ConsolePane.qml
 DevToolsRoot 1.0 ../tinydevtools/qml/DevToolsRoot.qml
+DevToolsStyledTabBar 1.0 ../tinydevtools/qml/DevToolsStyledTabBar.qml
+DevToolsToolWindow 1.0 ../tinydevtools/qml/DevToolsToolWindow.qml
 DevToolsRuntimeTab 1.0 ../tinydevtools/qml/DevToolsRuntimeTab.qml
 DevToolsStateTab 1.0 ../tinydevtools/qml/DevToolsStateTab.qml

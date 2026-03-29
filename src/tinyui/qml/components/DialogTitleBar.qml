@@ -20,7 +20,6 @@
 //  licensed under GPLv3.
 
 import QtQuick
-import TinyQt 1.0
 import TinyUI
 
 Rectangle {

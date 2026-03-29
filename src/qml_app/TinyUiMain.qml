@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Window
-import TinyQt 1.0
 import TinyUI 1.0
 
 Window {
@@ -83,7 +82,7 @@ Window {
         onActivated: root.toggleDevTools()
     }
 
-    WindowMenuBar {
+    AppWindowMenuBar {
         x: 0
         y: 0
         width: root.width
@@ -96,7 +95,7 @@ Window {
         height: root.height - 32
         color: "#17181c"
 
-        StyledTabBar {
+        AppStyledTabBar {
             id: tabBar
             x: 24
             y: 24
@@ -121,7 +120,7 @@ Window {
             }
         }
 
-        StatusBar {
+        AppStatusBar {
             visible: root.showStatusBar
             x: 24
             y: parent.height - height - 16

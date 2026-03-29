@@ -100,7 +100,7 @@ class LazyDevToolsController(QObject):
     def _create_host(self) -> QtWindowHost | None:
         devtools_manifest = build_tinydevtools_manifest(self._core.paths)
         content_qml_path = devtools_manifest.root_qml
-        tool_window_qml = self._core.paths.source_root / "tinyqt" / "ToolWindow.qml"
+        tool_window_qml = self._core.paths.source_root / "tinydevtools" / "qml" / "DevToolsToolWindow.qml"
         if content_qml_path is None:
             return None
         host = create_window_host(

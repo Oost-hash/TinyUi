@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Window
-import TinyQt 1.0
 import TinyDevTools 1.0
 
 Item {
@@ -43,7 +42,7 @@ Item {
         color: "#17181c"
     }
 
-    StyledTabBar {
+    DevToolsStyledTabBar {
         id: tabBar
         anchors.left: parent.left
         anchors.right: parent.right

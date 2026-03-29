@@ -8,6 +8,7 @@ StatusBarIconButton 1.0 ../tinyui/qml/components/StatusBarIconButton.qml
 ThemedComboBox 1.0 ../tinyui/qml/components/ThemedComboBox.qml
 ThresholdEditor 1.0 ../tinyui/qml/components/ThresholdEditor.qml
 ToggleSwitch 1.0 ../tinyui/qml/components/ToggleSwitch.qml
+WindowButton 1.0 ../tinyui/qml/components/WindowButton.qml
 ResizeHandles 1.0 ../tinyui/qml/layout/ResizeHandles.qml
 WidgetTab 1.0 ../tinyui/qml/tabs/WidgetTab.qml
 ConsoleWindow 1.0 ../tinyui/qml/ConsoleWindow.qml

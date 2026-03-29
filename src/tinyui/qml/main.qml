@@ -21,7 +21,6 @@
 
 import QtQuick
 import QtQuick.Window
-import TinyQt 1.0 as TinyQtModule
 
 Window {
     id: root
@@ -37,9 +36,10 @@ Window {
     flags: nativeChrome ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
     color: "#17181c"
 
-    TinyQtModule.WindowMenuBar {
+    Item {
         x: 0
         y: 0
         width: root.width
+        height: 32
     }
 }

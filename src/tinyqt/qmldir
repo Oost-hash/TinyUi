@@ -1,6 +1,1 @@
 module TinyQt
-StatusBar 1.0 StatusBar.qml
-StyledTabBar 1.0 StyledTabBar.qml
-StyledTabBarButton 1.0 StyledTabBarButton.qml
-WindowButton 1.0 WindowButton.qml
-WindowMenuBar 1.0 WindowMenuBar.qml
