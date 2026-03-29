@@ -59,9 +59,27 @@ class NativeDevToolsWindow(QWidget):
         self.setMinimumSize(720, 480)
         self.setObjectName("NativeDevToolsWindow")
 
+        self._eyebrow_label = QLabel("DEVTOOLS")
+        self._eyebrow_label.setObjectName("EyebrowLabel")
+        self._title_label = QLabel("Dev Tools")
+        self._title_label.setObjectName("WindowTitle")
+        self._subtitle_label = QLabel("Inspect runtime state, graph activity, and logs without leaving the TinyUI host.")
+        self._subtitle_label.setObjectName("WindowSubtitle")
+        self._subtitle_label.setWordWrap(True)
+
+        self._summary_card = QFrame()
+        self._summary_card.setObjectName("SummaryCard")
+        self._summary_layout = QVBoxLayout(self._summary_card)
+        self._summary_layout.setContentsMargins(16, 14, 16, 14)
+        self._summary_layout.setSpacing(6)
+        self._summary_layout.addWidget(self._eyebrow_label)
+        self._summary_layout.addWidget(self._title_label)
+        self._summary_layout.addWidget(self._subtitle_label)
+
         self._tabs = QTabWidget()
         self._tabs.setDocumentMode(True)
         self._tabs.setTabPosition(QTabWidget.TabPosition.North)
+        self._tabs.currentChanged.connect(self._update_header_copy)
 
         self._build_state_tab()
         self._build_runtime_tab()
@@ -69,7 +87,8 @@ class NativeDevToolsWindow(QWidget):
 
         root_layout = QVBoxLayout(self)
         root_layout.setContentsMargins(16, 16, 16, 16)
-        root_layout.setSpacing(0)
+        root_layout.setSpacing(12)
+        root_layout.addWidget(self._summary_card)
         root_layout.addWidget(self._tabs)
 
         self._refresh_timer = QTimer(self)
@@ -78,6 +97,7 @@ class NativeDevToolsWindow(QWidget):
 
         self._apply_theme()
         theme.changed.connect(self._apply_theme)
+        self._update_header_copy(self._tabs.currentIndex())
 
     def _build_state_tab(self) -> None:
         page = QWidget()
@@ -198,6 +218,26 @@ class NativeDevToolsWindow(QWidget):
                 font-family: "{self._theme.fontFamily}";
                 font-size: {self._theme.fontSizeBase}px;
             }}
+            QFrame#SummaryCard {{
+                background-color: {self._theme.surfaceAlt};
+                border: 1px solid {self._theme.border};
+                border-radius: 6px;
+            }}
+            QLabel#EyebrowLabel {{
+                color: {self._theme.accent};
+                font-size: {self._theme.fontSizeSmall}px;
+                font-weight: 700;
+                letter-spacing: 1px;
+            }}
+            QLabel#WindowTitle {{
+                color: {self._theme.text};
+                font-size: {self._theme.fontSizeTitle}px;
+                font-weight: 600;
+            }}
+            QLabel#WindowSubtitle {{
+                color: {self._theme.textMuted};
+                font-size: {self._theme.fontSizeSmall}px;
+            }}
             QTabWidget::pane {{
                 border: 1px solid {self._theme.border};
                 background-color: {self._theme.surface};
@@ -223,6 +263,7 @@ class NativeDevToolsWindow(QWidget):
             QFrame#DevToolsToolbar {{
                 background-color: {self._theme.surfaceAlt};
                 border: 1px solid {self._theme.border};
+                border-radius: 4px;
             }}
             QLabel#SummaryLabel {{
                 color: {self._theme.textSecondary};
@@ -247,6 +288,7 @@ class NativeDevToolsWindow(QWidget):
                 color: {self._theme.textSecondary};
                 padding: 6px 12px;
                 min-width: 82px;
+                border-radius: 4px;
             }}
             QPushButton:hover {{
                 background-color: {self._theme.surfaceRaised};
@@ -257,6 +299,7 @@ class NativeDevToolsWindow(QWidget):
                 border: 1px solid {self._theme.border};
                 padding: 6px 8px;
                 min-height: 28px;
+                border-radius: 4px;
             }}
             QComboBox:focus {{
                 border-color: {self._theme.accent};
@@ -280,6 +323,7 @@ class NativeDevToolsWindow(QWidget):
             QPlainTextEdit#ConsoleOutput {{
                 color: {self._theme.text};
                 selection-background-color: {_with_alpha(self._theme.accent, 0.18)};
+                font-family: "Consolas";
             }}
             """
         )
@@ -354,6 +398,16 @@ class NativeDevToolsWindow(QWidget):
         self._refresh_state_view()
         self._refresh_runtime_view()
         self._refresh_console_view()
+        self._update_header_copy(self._tabs.currentIndex())
+
+    def _update_header_copy(self, index: int) -> None:
+        if index == 0:
+            subtitle = "Inspect live source snapshots, collapse sections, and capture runtime state over time."
+        elif index == 1:
+            subtitle = "Follow the runtime graph, unit ownership, and execution state in the current host."
+        else:
+            subtitle = "Filter Python logs by severity and review recent host activity in one shared console."
+        self._subtitle_label.setText(subtitle)
 
     def _refresh_state_toolbar(self) -> None:
         capture_active = self._state_vm.captureActive

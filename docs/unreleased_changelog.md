@@ -46,3 +46,5 @@ Known packages:
 - [0.4.2][tinyui][tinydevtools][other] Added TinyQt manifest contracts for hosted app surfaces so TinyUI and TinyDevTools declare shared shell usage, panels, and required singleton seams through one host API
 - [0.4.2][tinyui][tinydevtools][other] Moved devtools opening to a lazy TinyQt-hosted tool window and pushed shell state through host-owned window properties so the main app and tool surfaces follow the same window contract
 - [0.4.2][tinyui][tinywidgets][other] Switched widget surfaces to a TinyQt-owned native host path so TinyUI edits real widget contexts while tinywidgets no longer owns top-level QML widget windows
+- [0.4.2][tinyui][other] Replaced the standalone QML settings route with a TinyQt-native settings window and added dedicated settings smoke coverage for the separate settings surface
+- [0.4.2][tinydevtools][other] Replaced the standalone QML devtools window route with a TinyQt-native devtools window and added dedicated smoke coverage for open/close lifecycle validation
