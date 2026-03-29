@@ -61,7 +61,7 @@ from tinyui.viewmodels.menu_viewmodel import MenuViewModel
 from tinyui.viewmodels.settings_panel_viewmodel import SettingsPanelViewModel
 from tinyui.viewmodels.statusbar_viewmodel import StatusBarViewModel
 from tinyui.viewmodels.tab_viewmodel import TabViewModel
-from tinyui.windowing.controller_api import WindowController as WindowControllerApi
+from tinyui.windowing.controller_api import WindowControllerApi
 
 
 def _qt_message_handler(mode, context, message):

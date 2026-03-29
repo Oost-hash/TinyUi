@@ -32,10 +32,10 @@ Resize is initiated from ResizeHandles.qml via startResize(edge).
 
 from PySide6.QtCore import Qt, Slot
 
-from tinyui.windowing.controller_api import WindowController as WindowControllerBase
+from tinyui.windowing.controller_api import WindowControllerApi
 
 
-class WindowController(WindowControllerBase):
+class WindowController(WindowControllerApi):
     """Window control for Linux/Wayland."""
 
     def __init__(self, window, parent=None):

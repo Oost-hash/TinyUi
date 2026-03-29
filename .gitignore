@@ -24,6 +24,7 @@ __pycache__/
 # config files (runtime generated)
 *.json
 !pyrightconfig.json
+!.zed/tasks.json
 !src/tinyui/themes/*.json
 
 # data files

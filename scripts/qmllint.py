@@ -97,9 +97,16 @@ def regenerate_module(module: QmlModule) -> Path:
         )
         qmltypes_files.append(qmltypes_file)
 
+    qml_component_files: list[Path] = []
+    for source_qml in sorted(module.qml_dir.rglob("*.qml")):
+        copied_qml = output_dir / source_qml.name
+        shutil.copy2(source_qml, copied_qml)
+        qml_component_files.append(copied_qml)
+
     qmldir = output_dir / "qmldir"
     lines = [f"module {module.import_name}"]
     lines.extend(f"typeinfo {path.name}" for path in qmltypes_files)
+    lines.extend(f"{path.stem} 1.0 {path.name}" for path in qml_component_files)
     qmldir.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return qmldir
 
@@ -124,11 +131,10 @@ def main() -> int:
         print("No QML files found.")
         return 0
 
-    qmldirs = [regenerate_module(module) for module in MODULES]
+    [regenerate_module(module) for module in MODULES]
 
     cmd = [str(QMLLINT)]
-    for qmldir in qmldirs:
-        cmd.extend(["-i", str(qmldir)])
+    cmd.extend(["-I", str(LINTER_ROOT)])
     cmd.extend(str(path) for path in files)
 
     result = subprocess.run(cmd, cwd=ROOT)

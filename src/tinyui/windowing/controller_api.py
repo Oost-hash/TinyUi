@@ -26,9 +26,7 @@ QML_IMPORT_NAME = "TinyUI"
 QML_IMPORT_MAJOR_VERSION = 1
 
 
-@QmlElement
-@QmlSingleton
-class WindowController(QObject):
+class WindowControllerApi(QObject):
     """Shared QML-facing window control API."""
 
     @Slot(float)
@@ -50,3 +48,11 @@ class WindowController(QObject):
     @Slot(int)
     def startResize(self, edge: int) -> None:
         pass
+
+
+@QmlElement
+@QmlSingleton
+class WindowController(WindowControllerApi):
+    """QML metadata stub for the shared window controller API."""
+
+    pass
