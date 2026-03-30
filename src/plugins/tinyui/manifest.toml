@@ -1,0 +1,37 @@
+[plugin]
+id   = "tinyui"
+type = "host"
+
+[[window]]
+id      = "settings.main"
+title   = "Settings"
+kind    = "dialog"
+surface = "app_settings/qml/surface.qml"
+
+[window.chrome]
+show_menu_button     = false
+show_caption_buttons = true
+
+[[window]]
+id      = "devtools.main"
+title   = "DevTools"
+kind    = "dialog"
+surface = "app_devtools/qml/NewDevtoolsSurface.qml"
+
+[window.chrome]
+show_menu_button     = true
+show_caption_buttons = true
+
+[[menu]]
+window = "tinyui.main"
+label  = "Settings"
+action = "open:settings.main"
+
+[[menu]]
+window    = "tinyui.main"
+separator = true
+
+[[menu]]
+window = "tinyui.main"
+label  = "Close"
+action = "close"
