@@ -11,6 +11,7 @@ Item {
 
     property string windowTitle: hostWindow && typeof hostWindow.windowTitle === "string" ? hostWindow.windowTitle : ""
     property var menuItems: hostWindow && hostWindow.menuItems ? hostWindow.menuItems : []
+    property var pluginMenuItems: hostWindow && hostWindow.pluginMenuItems ? hostWindow.pluginMenuItems : []
     property var tabLabels: hostWindow && hostWindow.tabLabels ? hostWindow.tabLabels : []
     property int currentTab: hostWindow && typeof hostWindow.currentTab === "number" ? hostWindow.currentTab : 0
     property bool showTabBar: hostWindow && typeof hostWindow.showTabBar === "boolean" ? hostWindow.showTabBar : false
@@ -25,6 +26,7 @@ Item {
         showStatusPluginPicker: true
     })
     property bool menuOpen: false
+    property bool pluginMenuOpen: false
 
     readonly property url menuIconSource: Qt.resolvedUrl("../../app_assets/icons/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
     readonly property url minimizeIconSource: Qt.resolvedUrl("../../app_assets/icons/window-minimize.svg")
@@ -96,8 +98,105 @@ Item {
             }
         }
 
+        Rectangle {
+            id: pluginMenuButton
+            visible: root.pluginMenuItems.length > 0
+            anchors.left: menuButton.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: pluginMenuLabel.implicitWidth + 24
+            color: pluginMenuArea.containsMouse || root.pluginMenuOpen
+                ? (root.theme ? root.theme.surfaceAlt : "#2f343e")
+                : "transparent"
+
+            MouseArea {
+                id: pluginMenuArea
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: root.pluginMenuOpen = !root.pluginMenuOpen
+            }
+
+            Text {
+                id: pluginMenuLabel
+                anchors.centerIn: parent
+                text: "Plugins"
+                color: pluginMenuArea.containsMouse || root.pluginMenuOpen
+                    ? "#FFFFFF"
+                    : (root.theme ? root.theme.textMuted : "#878a98")
+                font.pixelSize: 12
+            }
+
+            Item {
+                id: pluginMenuDropdown
+                z: 40
+                x: 0
+                y: pluginMenuButton.height
+                width: 160
+                height: pluginMenuColumn.implicitHeight
+                visible: root.pluginMenuOpen
+
+                Rectangle { anchors.fill: parent; color: root.theme ? root.theme.surfaceAlt : "#2f343e" }
+                Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: root.theme ? root.theme.border : "#464b57" }
+                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.theme ? root.theme.border : "#464b57" }
+                Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: root.theme ? root.theme.border : "#464b57" }
+
+                Column {
+                    id: pluginMenuColumn
+                    width: parent.width
+                    spacing: 0
+
+                    Repeater {
+                        model: root.pluginMenuItems
+
+                        delegate: Rectangle {
+                            required property var modelData
+                            visible: modelData.visible === undefined ? true : !!modelData.visible
+                            width: pluginMenuDropdown.width
+                            height: visible ? (modelData.separator ? 9 : 28) : 0
+                            color: pluginItemMouse.containsMouse
+                                ? (root.theme ? root.theme.surfaceRaised : "#3b414d")
+                                : "transparent"
+
+                            Rectangle {
+                                visible: !!modelData.separator
+                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.leftMargin: 8
+                                anchors.rightMargin: 8
+                                height: 1
+                                color: root.theme ? root.theme.border : "#464b57"
+                            }
+
+                            Text {
+                                visible: !modelData.separator
+                                anchors.left: parent.left
+                                anchors.leftMargin: 12
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: modelData.label
+                                color: root.theme ? root.theme.text : "#dce0e5"
+                                font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                            }
+
+                            MouseArea {
+                                id: pluginItemMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                enabled: !modelData.separator
+                                onClicked: {
+                                    root.pluginMenuOpen = false
+                                    if (root.hostActions)
+                                        root.hostActions.trigger(modelData.action)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         MouseArea {
-            anchors.left: menuButton.visible ? menuButton.right : parent.left
+            anchors.left: pluginMenuButton.visible ? pluginMenuButton.right : (menuButton.visible ? menuButton.right : parent.left)
             anchors.right: captionButtons.visible ? captionButtons.left : parent.right
             anchors.top: parent.top
             anchors.bottom: parent.bottom

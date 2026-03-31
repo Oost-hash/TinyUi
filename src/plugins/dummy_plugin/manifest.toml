@@ -5,7 +5,7 @@ type = "plugin"
 [[window]]
 id      = "tinyui.main"
 title   = "TinyUI"
-kind    = "main"
+window_type = "main"
 surface = "qml/surface.qml"
 
 [window.chrome]
@@ -15,7 +15,7 @@ show_caption_buttons = true
 [[window]]
 id      = "dummy.dialog"
 title   = "Dummy Dialog"
-kind    = "dialog"
+window_type = "dialog"
 surface = "qml/surface.qml"
 
 [window.chrome]

@@ -8,6 +8,7 @@ from pathlib import Path
 from app_schema.manifest import (
     AppManifest, ChromePolicy,
     MenuItemDecl, MenuSeparatorDecl, MenuDecl,
+    SettingDecl,
     PluginManifest,
 )
 
@@ -17,15 +18,17 @@ def load_plugin_manifest(path: Path) -> PluginManifest:
         data = tomllib.load(f)
 
     manifest_dir = path.parent
-    plugin = data.get("plugin", {})
-    windows = [_parse_window(w, manifest_dir) for w in data.get("window", [])]
-    menu    = [_parse_menu(m) for m in data.get("menu", [])]
+    plugin   = data.get("plugin", {})
+    windows  = [_parse_window(w, manifest_dir) for w in data.get("window", [])]
+    menu     = [_parse_menu(m) for m in data.get("menu", [])]
+    settings = [_parse_setting(s) for s in data.get("setting", [])]
 
     return PluginManifest(
         plugin_id=plugin.get("id", manifest_dir.name),
         plugin_type=plugin.get("type", "plugin"),
         windows=windows,
         menu=menu,
+        settings=settings,
     )
 
 
@@ -41,9 +44,20 @@ def _parse_window(entry: dict, manifest_dir: Path) -> AppManifest:
     return AppManifest(
         id=entry["id"],
         title=entry.get("title", ""),
-        kind=entry["kind"],
+        window_type=entry["window_type"],
         surface=(manifest_dir / entry["surface"]).resolve(),
         chrome=chrome,
+        requires=list(entry.get("requires", [])),
+    )
+
+
+def _parse_setting(entry: dict) -> SettingDecl:
+    return SettingDecl(
+        key=entry["key"],
+        label=entry.get("label", entry["key"]),
+        default=entry["default"],
+        type=entry["type"],
+        choices=list(entry.get("choices", [])),
     )
 
 

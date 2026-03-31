@@ -19,12 +19,15 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""TinyUI host plugin — logic only, menu items are in manifest.toml."""
+"""TinyUI host plugin — logic only, settings and menu items are in manifest.toml."""
 
 from __future__ import annotations
 
-from runtime.plugin_context import PluginContext
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from runtime.plugin_context import PluginContext
 
 
 def activate(ctx: PluginContext) -> None:
-    pass  # menu items declared in manifest.toml
+    pass  # settings and menu declared in manifest.toml

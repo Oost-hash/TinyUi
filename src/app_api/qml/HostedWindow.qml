@@ -10,6 +10,7 @@ Window {
     property var surfaceComponent: null
     property string windowTitle: ""
     property var menuItems: []
+    property var pluginMenuItems: []
     property var tabLabels: []
     property int currentTab: 0
     property bool showTabBar: false

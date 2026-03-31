@@ -19,18 +19,16 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Dummy plugin — logic only, menu items are in manifest.toml."""
+"""Dummy plugin — logic only, settings and menu items are in manifest.toml."""
 
 from __future__ import annotations
 
-from runtime.persistence import SettingsSpec
-from runtime.plugin_context import PluginContext
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from runtime.plugin_context import PluginContext
 
 
 def activate(ctx: PluginContext) -> None:
-    ctx.settings.register(SettingsSpec(
-        key="enabled",
-        label="Enable dummy plugin",
-        default=True,
-        type="bool",
-    ))
+    enabled = ctx.settings.get("enabled")
+    print(f"[dummy_plugin] activate — enabled={enabled}")

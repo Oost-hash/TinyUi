@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 
 from app_api.host_actions import HostActions
+from app_api.inspector import RuntimeInspector
 from app_api.qt import create_application, create_engine
 from app_api.theme import Theme
 from app_api.window import open_window
@@ -28,21 +29,24 @@ def main() -> int:
         return 1
 
     main_handle = open_window(main_manifest, engine=engine, app=app, actions=actions, theme=theme)
-    main_handle.qml_window.setProperty("menuItems", runtime.menu.to_qml(main_manifest.id))
+    main_handle.qml_window.setProperty("menuItems", runtime.menu.to_qml_host(main_manifest.id))
+    main_handle.qml_window.setProperty("pluginMenuItems", runtime.menu.to_qml_plugins(main_manifest.id))
 
     open_handles = []
 
-    def make_open_handler(window_id: str):
+    def make_open_handler(window_id: str, requires: list[str]):
         def handler():
             manifest = runtime.window_for(window_id)
             if manifest:
                 h = open_window(manifest, engine=engine, app=app, actions=actions, theme=theme)
+                if "inspector" in requires:
+                    h.qml_window.setProperty("inspector", RuntimeInspector(runtime.devtools_data()))
                 open_handles.append(h)
         return handler
 
     for w in runtime.all_windows():
-        if w.kind == "dialog":
-            actions.register(f"open:{w.id}", make_open_handler(w.id))
+        if w.window_type == "dialog":
+            actions.register(f"open:{w.id}", make_open_handler(w.id, w.requires))
 
     actions.register("close", lambda: main_handle.qml_window.close())
 

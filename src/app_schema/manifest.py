@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -26,11 +27,12 @@ class ChromePolicy:
 
 @dataclass(frozen=True)
 class AppManifest:
-    id:      str
-    title:   str
-    kind:    str        # "main" | "dialog"
-    surface: Path
-    chrome:  ChromePolicy = field(default_factory=ChromePolicy)
+    id:       str
+    title:    str
+    window_type: str                     # "main" | "dialog"
+    surface:  Path
+    chrome:   ChromePolicy = field(default_factory=ChromePolicy)
+    requires: list[str] = field(default_factory=list)  # capabilities: "inspector", ...
 
 
 @dataclass(frozen=True)
@@ -49,8 +51,40 @@ MenuDecl = MenuItemDecl | MenuSeparatorDecl
 
 
 @dataclass(frozen=True)
+class SettingDecl:
+    key:     str
+    label:   str
+    default: Any
+    type:    str                       # "bool" | "str" | "int" | "float" | "choice"
+    choices: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class PluginInfo:
+    plugin_id:     str
+    plugin_type:   str
+    windows:       list[tuple[str, str]]   # [(id, window_type), ...]
+    setting_count: int
+
+
+@dataclass(frozen=True)
+class SettingInfo:
+    namespace:     str
+    key:           str
+    type:          str
+    current_value: str
+
+
+@dataclass(frozen=True)
+class DevToolsData:
+    plugins:  list[PluginInfo]
+    settings: list[SettingInfo]
+
+
+@dataclass(frozen=True)
 class PluginManifest:
     plugin_id:   str
     plugin_type: str                 # "host" | "plugin"
     windows:     list[AppManifest]
     menu:        list[MenuDecl]
+    settings:    list[SettingDecl]

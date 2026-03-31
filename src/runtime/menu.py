@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
 class MenuItem:
     label:  str
     action: str
+    source: str = "host"   # "host" | "plugin"
 
 
 @dataclass(frozen=True)
 class MenuSeparator:
-    pass
+    source: str = "host"   # "host" | "plugin"
 
 
 MenuEntry = MenuItem | MenuSeparator
@@ -29,9 +30,18 @@ class MenuRegistry:
     def items_for(self, window_id: str) -> list[MenuEntry]:
         return list(self._items.get(window_id, []))
 
+    def to_qml_host(self, window_id: str) -> list[dict]:
+        return self._to_qml([e for e in self.items_for(window_id) if e.source == "host"])
+
+    def to_qml_plugins(self, window_id: str) -> list[dict]:
+        return self._to_qml([e for e in self.items_for(window_id) if e.source != "host"])
+
     def to_qml(self, window_id: str) -> list[dict]:
+        return self._to_qml(self.items_for(window_id))
+
+    def _to_qml(self, entries: list[MenuEntry]) -> list[dict]:
         result = []
-        for entry in self.items_for(window_id):
+        for entry in entries:
             if isinstance(entry, MenuSeparator):
                 result.append({"separator": True, "label": ""})
             else:

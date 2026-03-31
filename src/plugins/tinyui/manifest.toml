@@ -5,7 +5,7 @@ type = "host"
 [[window]]
 id      = "settings.main"
 title   = "Settings"
-kind    = "dialog"
+window_type = "dialog"
 surface = "app_settings/qml/surface.qml"
 
 [window.chrome]
@@ -13,10 +13,11 @@ show_menu_button     = false
 show_caption_buttons = true
 
 [[window]]
-id      = "devtools.main"
-title   = "DevTools"
-kind    = "dialog"
-surface = "app_devtools/qml/NewDevtoolsSurface.qml"
+id       = "devtools.main"
+title    = "DevTools"
+window_type = "dialog"
+surface  = "app_devtools/qml/surface.qml"
+requires = ["inspector"]
 
 [window.chrome]
 show_menu_button     = true
@@ -28,6 +29,11 @@ label  = "Settings"
 action = "open:settings.main"
 
 [[menu]]
+window = "tinyui.main"
+label  = "DevTools"
+action = "open:devtools.main"
+
+[[menu]]
 window    = "tinyui.main"
 separator = true
 
@@ -35,3 +41,22 @@ separator = true
 window = "tinyui.main"
 label  = "Close"
 action = "close"
+
+[[setting]]
+key     = "theme"
+label   = "Theme"
+default = "dark"
+type    = "choice"
+choices = ["dark", "light"]
+
+[[setting]]
+key     = "save_location"
+label   = "Save location"
+default = ""
+type    = "str"
+
+[[setting]]
+key     = "plugin_folder"
+label   = "Plugin folder"
+default = ""
+type    = "str"

@@ -68,7 +68,6 @@ class SettingsRegistry:
         if not self._dir:
             return
         path = self._dir / namespace / "settings.json"
-        path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", encoding="utf-8") as f:
             json.dump(self._values.get(namespace, {}), f, indent=2, ensure_ascii=False)
 
