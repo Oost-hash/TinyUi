@@ -22,31 +22,27 @@ def main() -> int:
     theme = Theme(theme_name)
     actions = HostActions()
 
-    main_manifest = runtime.main_window_manifest()
+    main_manifest = runtime.main_window()
     if main_manifest is None:
-        print("No main window manifest found", file=sys.stderr)
+        print("No main window found", file=sys.stderr)
         return 1
 
-    # open main window
     main_handle = open_window(main_manifest, engine=engine, app=app, actions=actions, theme=theme)
+    main_handle.qml_window.setProperty("menuItems", runtime.menu.to_qml(main_manifest.id))
 
-    # set menu items from registry
-    main_handle.qml_window.setProperty("menuItems", runtime.menu.to_qml("tinyui.main"))
-
-    # wire actions: open:<app_id> → open dialog
     open_handles = []
 
-    def make_open_handler(app_id: str):
+    def make_open_handler(window_id: str):
         def handler():
-            manifest = runtime.manifest_for(app_id)
-            if manifest and manifest.window:
+            manifest = runtime.window_for(window_id)
+            if manifest:
                 h = open_window(manifest, engine=engine, app=app, actions=actions, theme=theme)
                 open_handles.append(h)
         return handler
 
-    for m in runtime.all_manifests():
-        if m.window and m.window.kind == "dialog":
-            actions.register(f"open:{m.app_id}", make_open_handler(m.app_id))
+    for w in runtime.all_windows():
+        if w.kind == "dialog":
+            actions.register(f"open:{w.id}", make_open_handler(w.id))
 
     actions.register("close", lambda: main_handle.qml_window.close())
 

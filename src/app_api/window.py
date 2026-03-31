@@ -14,6 +14,7 @@ from app_api.theme import Theme
 from app_schema.manifest import AppManifest
 from app_api.windowing import attach_windowing
 
+
 _HOSTED_WINDOW_QML = Path(__file__).parent / "qml" / "HostedWindow.qml"
 
 
@@ -43,11 +44,9 @@ def open_window(
     obj.setProperty("showStatusBar", manifest.chrome.show_status_bar)
     obj.setProperty("chromePolicy", manifest.chrome.to_qml_dict())
 
-    surface_component = None
-    if manifest.window and manifest.window.root_qml:
-        surface_url = QUrl.fromLocalFile(str(manifest.window.root_qml))
-        surface_component = QQmlComponent(engine, surface_url)
-        obj.setProperty("surfaceComponent", surface_component)
+    surface_url = QUrl.fromLocalFile(str(manifest.surface))
+    surface_component = QQmlComponent(engine, surface_url)
+    obj.setProperty("surfaceComponent", surface_component)
 
     attachment = attach_windowing(app=app, window=obj, theme=theme)
     if attachment.controller is not None:

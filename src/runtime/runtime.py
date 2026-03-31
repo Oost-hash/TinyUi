@@ -5,11 +5,11 @@ from __future__ import annotations
 import importlib
 import sys
 
-from app_schema.manifest import AppManifest, MenuItemDecl, MenuSeparatorDecl, PluginManifest
+from app_schema.manifest import AppManifest, MenuSeparatorDecl, PluginManifest
 from runtime.app_paths import AppPaths
 from runtime.manifest import load_plugin_manifest
 from runtime.menu import MenuRegistry, MenuItem, MenuSeparator
-from runtime.persistence import SettingsRegistry, ScopedSettings
+from runtime.persistence import SettingsRegistry
 from runtime.plugin_context import PluginContext
 
 
@@ -42,7 +42,7 @@ class Runtime:
             if (folder / "manifest.toml").exists():
                 self._load_plugin(folder.name)
 
-    # ── Menu registration (from manifests) ────────────────────────────────
+    # ── Menu registration ─────────────────────────────────────────────────
 
     def _register_menus(self) -> None:
         for plugin_manifest in self._plugins.values():
@@ -52,7 +52,7 @@ class Runtime:
                 else:
                     self.menu.add(decl.window, MenuItem(label=decl.label, action=decl.action))
 
-    # ── Plugin activation (logic only) ───────────────────────────────────
+    # ── Plugin activation ─────────────────────────────────────────────────
 
     def _activate_plugins(self) -> None:
         plugins_parent = str(self.paths.plugins_dir.parent)
@@ -73,17 +73,17 @@ class Runtime:
 
     # ── Manifest queries ──────────────────────────────────────────────────
 
-    def all_manifests(self) -> list[AppManifest]:
-        return [m for pm in self._plugins.values() for m in pm.app_components]
+    def all_windows(self) -> list[AppManifest]:
+        return [w for pm in self._plugins.values() for w in pm.windows]
 
-    def main_window_manifest(self) -> AppManifest | None:
+    def main_window(self) -> AppManifest | None:
         return next(
-            (m for m in self.all_manifests() if m.window and m.window.kind == "main"),
+            (w for w in self.all_windows() if w.kind == "main"),
             None,
         )
 
-    def manifest_for(self, app_id: str) -> AppManifest | None:
+    def window_for(self, window_id: str) -> AppManifest | None:
         return next(
-            (m for m in self.all_manifests() if m.app_id == app_id),
+            (w for w in self.all_windows() if w.id == window_id),
             None,
         )
