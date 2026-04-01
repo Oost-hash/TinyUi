@@ -20,10 +20,6 @@
 #  licensed under GPLv3.
 
 from PySide6.QtCore import QObject, Slot
-from PySide6.QtQml import QmlElement, QmlSingleton
-
-QML_IMPORT_NAME = "TinyUI"
-QML_IMPORT_MAJOR_VERSION = 1
 
 
 class WindowControllerApi(QObject):
@@ -50,9 +46,7 @@ class WindowControllerApi(QObject):
         pass
 
 
-@QmlElement
-@QmlSingleton
 class WindowController(WindowControllerApi):
-    """QML metadata stub for the shared window controller API."""
+    """Concrete QML-facing window controller — subclasses should add @QmlElement if needed."""
 
     pass
