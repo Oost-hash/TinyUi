@@ -39,9 +39,10 @@ def main() -> int:
         def handler():
             manifest = runtime.window_for(window_id)
             if manifest:
-                h = open_window(manifest, engine=engine, app=app, actions=actions, theme=theme)
+                kwargs = {}
                 if "inspector" in requires:
-                    h.qml_window.setProperty("inspector", RuntimeInspector(runtime.devtools_data()))
+                    kwargs["inspector"] = RuntimeInspector(runtime.devtools_data())
+                h = open_window(manifest, engine=engine, app=app, actions=actions, theme=theme, **kwargs)
                 open_handles.append(h)
         return handler
 

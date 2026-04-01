@@ -18,6 +18,7 @@ Window {
     property bool globalShortcutsEnabled: false
     property var statusItems: []
     property string statusActiveLabel: ""
+    property var inspector: null
     property var chromePolicy: ({
         showMenuButton: true,
         showTitleText: true,

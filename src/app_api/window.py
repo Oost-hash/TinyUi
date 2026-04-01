@@ -31,6 +31,7 @@ def open_window(
     app,
     actions: HostActions,
     theme: Theme,
+    **extra_properties: object,
 ) -> WindowHandle:
     url = QUrl.fromLocalFile(str(_HOSTED_WINDOW_QML))
     component = QQmlComponent(engine, url)
@@ -44,6 +45,9 @@ def open_window(
     obj.setProperty("showStatusBar", manifest.chrome.show_status_bar)
     obj.setProperty("chromePolicy", manifest.chrome.to_qml_dict())
 
+    for key, value in extra_properties.items():
+        obj.setProperty(key, value)
+
     surface_url = QUrl.fromLocalFile(str(manifest.surface))
     surface_component = QQmlComponent(engine, surface_url)
     obj.setProperty("surfaceComponent", surface_component)
@@ -52,4 +56,4 @@ def open_window(
     if attachment.controller is not None:
         obj.setProperty("windowController", attachment.controller)
 
-    return WindowHandle(qml_window=obj, keepalive=(component, surface_component, *attachment.keepalive))
+    return WindowHandle(qml_window=obj, keepalive=(component, surface_component, *extra_properties.values(), *attachment.keepalive))
