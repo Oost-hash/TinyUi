@@ -9,6 +9,7 @@ from app_api.inspector import RuntimeInspector
 from app_api.qt import create_application, create_engine
 from app_api.theme import Theme
 from app_api.window import open_window
+from app_api.windowing import win_window  # eager import: registers QML singletons before engine
 from runtime.runtime import Runtime
 
 
