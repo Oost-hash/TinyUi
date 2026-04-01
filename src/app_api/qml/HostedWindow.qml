@@ -42,7 +42,7 @@ Window {
         sequence: "F12"
         onActivated: {
             if (root.hostActions)
-                root.hostActions.trigger("open:new_devtools.main")
+                root.hostActions.trigger("open:devtools.main")
         }
     }
 
