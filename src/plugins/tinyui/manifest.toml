@@ -23,6 +23,22 @@ requires = ["inspector"]
 show_menu_button     = true
 show_caption_buttons = true
 
+[[window]]
+id          = "pluginsPanel.main"
+title       = "Plugins"
+window_type = "dialog"
+surface     = "app_pluginsPanel/qml/surface.qml"
+requires    = ["inspector"]
+
+[window.chrome]
+show_menu_button     = true
+show_caption_buttons = true
+
+[[menu]]
+window = "tinyui.main"
+label  = "Plugins"
+action = "open:pluginsPanel.main"
+
 [[menu]]
 window = "tinyui.main"
 label  = "Settings"
