@@ -48,19 +48,4 @@ class MenuRegistry:
                 result.append({"label": entry.label, "action": entry.action})
         return result
 
-    def scoped(self, window_id: str) -> "ScopedMenu":
-        return ScopedMenu(self, window_id)
 
-
-class ScopedMenu:
-    """Menu view scoped to a specific window — plugins use this."""
-
-    def __init__(self, registry: MenuRegistry, window_id: str) -> None:
-        self._registry  = registry
-        self._window_id = window_id
-
-    def add(self, entry: MenuEntry) -> None:
-        self._registry.add(self._window_id, entry)
-
-    def separator(self) -> None:
-        self._registry.add(self._window_id, MenuSeparator())
