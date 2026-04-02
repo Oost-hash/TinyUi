@@ -2,7 +2,7 @@
 .venv/
 .venv-wsl/
 .vault/
-
+.agents/
 
 # build output
 .output/

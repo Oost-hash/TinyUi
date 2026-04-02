@@ -34,6 +34,21 @@ Rectangle {
     property var hostActions: hostWindow && hostWindow.hostActions ? hostWindow.hostActions : null
     property var selectedPlugin: null
     property string pluginToActivate: ""  // Plugin waiting to be activated on close
+    
+    // Track plugin states locally for live updates
+    property var pluginStates: ({})  // Map pluginId -> state
+
+    // Listen to state changes from runtime
+    Connections {
+        target: hostWindow ? hostWindow.hostRuntime : null
+        function onPluginStateChanged(pluginId, state) {
+            root.pluginStates[pluginId] = state
+            // Force update
+            var temp = root.pluginStates
+            root.pluginStates = {}
+            root.pluginStates = temp
+        }
+    }
 
     // Function to call when panel is closing - activates selected plugin
     function onPanelClosing() {
@@ -419,22 +434,36 @@ Rectangle {
                                 rightPadding: 12
                                 spacing: 8
 
-                                // Status indicator dot
-                                // Priority: Green (active/host/connector-in-use) > Orange (selected) > Red (inactive)
+                                // Status indicator dot based on plugin state and selection
                                 Rectangle {
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: 8
                                     height: 8
                                     radius: 4
                                     color: {
-                                        // Check for "green" states first (highest priority)
-                                        if (modelData.type === "host") return theme ? theme.success : "#4caf50"
-                                        if (modelData.type === "connector" && root.isConnectorUsed(modelData.id)) return theme ? theme.success : "#4caf50"
-                                        if (modelData.id === hostWindow.activePluginId) return theme ? theme.success : "#4caf50"
-                                        // Then check for "orange" state (only if not already green)
+                                        // Selection (orange) has highest priority
                                         if (isSelected) return theme ? theme.warning : "#ff9800"
-                                        // Default: red (inactive)
-                                        return theme ? theme.danger : "#f44336"
+                                        
+                                        // Then check live state from pluginStates, fallback to modelData
+                                        var liveState = root.pluginStates[modelData.id]
+                                        var state = liveState || modelData.state || "disabled"
+                                        if (state === "active") return theme ? theme.success : "#4caf50"
+                                        if (state === "enabling" || state === "loading") return theme ? theme.warning : "#ff9800"
+                                        if (state === "error") return theme ? theme.danger : "#f44336"
+                                        if (state === "unloading") return theme ? theme.warning : "#ff9800"
+                                        return theme ? theme.danger : "#f44336"  // disabled
+                                    }
+                                    
+                                    // Pulse animation for loading states
+                                    SequentialAnimation on opacity {
+                                        running: {
+                                            var liveS = root.pluginStates[modelData.id]
+                                            var s = liveS || modelData.state || "disabled"
+                                            return s === "enabling" || s === "loading" || s === "unloading"
+                                        }
+                                        loops: Animation.Infinite
+                                        NumberAnimation { from: 1.0; to: 0.3; duration: 500 }
+                                        NumberAnimation { from: 0.3; to: 1.0; duration: 500 }
                                     }
                                 }
 

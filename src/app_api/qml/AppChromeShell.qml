@@ -335,7 +335,7 @@ Item {
         }
     }
 
-    // Content area with tab switching
+    // Content area with tab switching or direct surface
     Item {
         id: contentPane
         objectName: "surfaceHost"
@@ -344,19 +344,32 @@ Item {
         width: root.width
         height: root.height - y - (statusBar.visible ? statusBar.height : 0)
 
-        StackLayout {
+        // Use tab model if available, otherwise use surfaceComponent directly
+        Loader {
             anchors.fill: parent
-            currentIndex: hostWindow ? hostWindow.currentTab : 0
+            sourceComponent: {
+                if (hostWindow && hostWindow.tabModel && hostWindow.tabModel.length > 0) {
+                    return tabContentComponent
+                }
+                return hostWindow ? hostWindow.surfaceComponent : null
+            }
+        }
 
-            Repeater {
-                model: hostWindow ? hostWindow.tabModel : []
+        Component {
+            id: tabContentComponent
+            StackLayout {
+                currentIndex: hostWindow ? hostWindow.currentTab : 0
 
-                delegate: Item {
-                    required property var modelData
-                    
-                    Loader {
-                        anchors.fill: parent
-                        source: modelData.surface || ""
+                Repeater {
+                    model: hostWindow ? hostWindow.tabModel : []
+
+                    delegate: Item {
+                        required property var modelData
+                        
+                        Loader {
+                            anchors.fill: parent
+                            source: modelData.surface || ""
+                        }
                     }
                 }
             }

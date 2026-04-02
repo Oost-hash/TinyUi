@@ -78,6 +78,9 @@ class PluginInfo:
     requires:      list[str]
     windows:       list[tuple[str, str]]   # [(id, window_type), ...]
     setting_count: int
+    state:         str = "disabled"        # PluginState name
+    state_history: list[dict] = field(default_factory=list)
+    error_message: str | None = None
 
 
 @dataclass(frozen=True)
