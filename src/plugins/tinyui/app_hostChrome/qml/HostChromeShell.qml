@@ -53,10 +53,11 @@ Item {
         anchors.fill: parent
     }
 
-    // Plugin menu button
+    // Plugin menu button - positioned right after the hamburger menu
     Rectangle {
+        id: pluginMenuButton
         visible: root.pluginMenuItems.length > 0
-        x: 100
+        x: baseChrome.menuButtonWidth || 100  // Use actual width of hamburger menu
         y: 0
         width: pluginMenuLabelText.implicitWidth + 24
         height: 32
@@ -86,7 +87,7 @@ Item {
     // Plugin menu dropdown
     Item {
         z: 40
-        x: 100
+        x: pluginMenuButton.x
         y: 32
         width: 160
         height: pluginMenuColumn.implicitHeight
@@ -101,19 +102,20 @@ Item {
             id: pluginMenuColumn
             width: parent.width
             spacing: 0
+            padding: 0
+            topPadding: 0
+            bottomPadding: 0
 
             Repeater {
                 model: root.pluginMenuItems
 
-                delegate: Rectangle {
+                delegate: Item {
                     required property var modelData
                     visible: modelData.visible === undefined ? true : !!modelData.visible
                     width: 160
                     height: visible ? (modelData.separator ? 9 : 28) : 0
-                    color: pluginItemMouse.containsMouse
-                        ? (root.theme ? root.theme.surfaceRaised : "#3b414d")
-                        : "transparent"
 
+                    // Separator line
                     Rectangle {
                         visible: !!modelData.separator
                         anchors.verticalCenter: parent.verticalCenter
@@ -125,25 +127,32 @@ Item {
                         color: root.theme ? root.theme.border : "#464b57"
                     }
 
-                    Text {
+                    // Clickable/hoverable area for non-separator items
+                    Rectangle {
                         visible: !modelData.separator
-                        anchors.left: parent.left
-                        anchors.leftMargin: 12
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: modelData.label
-                        color: root.theme ? root.theme.text : "#dce0e5"
-                        font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
-                    }
-
-                    MouseArea {
-                        id: pluginItemMouse
                         anchors.fill: parent
-                        hoverEnabled: true
-                        enabled: !modelData.separator
-                        onClicked: {
-                            root.pluginMenuOpen = false
-                            if (root.hostActions)
-                                root.hostActions.trigger(modelData.action)
+                        color: pluginItemMouse.containsMouse
+                            ? (root.theme ? root.theme.surfaceRaised : "#3b414d")
+                            : "transparent"
+
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 12
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData.label
+                            color: root.theme ? root.theme.text : "#dce0e5"
+                            font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                        }
+
+                        MouseArea {
+                            id: pluginItemMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: {
+                                root.pluginMenuOpen = false
+                                if (root.hostActions)
+                                    root.hostActions.trigger(modelData.action)
+                            }
                         }
                     }
                 }
@@ -151,11 +160,11 @@ Item {
         }
     }
 
-    // Plugin panel
+    // Plugin panel - fills space including where tabs were
     Loader {
         id: pluginPanelLoader
         anchors.fill: parent
-        anchors.topMargin: 74
+        anchors.topMargin: 32  // Only titlebar, tabs are hidden when panel is open
         anchors.bottomMargin: 32
         visible: hostWindow && hostWindow.showPluginPanel
         sourceComponent: hostWindow && hostWindow.showPluginPanel 
