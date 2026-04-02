@@ -29,8 +29,25 @@ def main() -> int:
         print("No main window found", file=sys.stderr)
         return 1
 
-    main_handle = open_window(main_manifest, engine=engine, app=app, actions=actions, theme=theme)
+    # Create inspector for plugin panel and devtools
+    inspector = RuntimeInspector(runtime.devtools_data())
+    
+    main_handle = open_window(
+        main_manifest, 
+        engine=engine, 
+        app=app, 
+        actions=actions, 
+        theme=theme,
+        inspector=inspector
+    )
     main_handle.qml_window.setProperty("menuItems", runtime.menu.to_qml_host(main_manifest.id))
+    main_handle.qml_window.setProperty("showStatusBar", True)
+    
+    # Set active plugin for statusbar
+    active_plugin = runtime.active_plugin
+    if active_plugin:
+        main_handle.qml_window.setProperty("activePluginId", active_plugin)
+        main_handle.qml_window.setProperty("statusActiveLabel", active_plugin)
     plugin_menus = runtime.plugin_menus
     if plugin_menus:
         label, items = next(iter(plugin_menus.items()))
@@ -47,7 +64,7 @@ def main() -> int:
             if manifest:
                 kwargs = {}
                 if "inspector" in requires:
-                    kwargs["inspector"] = RuntimeInspector(runtime.devtools_data())
+                    kwargs["inspector"] = inspector
                 h = open_window(manifest, engine=engine, app=app, actions=actions, theme=theme, **kwargs)
                 open_handles.append(h)
         return handler
