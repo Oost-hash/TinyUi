@@ -14,6 +14,36 @@ class RuntimeInspector(QObject):
         self._data = data
 
     @Property(list, constant=True)
+    def pluginList(self) -> list[dict]:
+        """Grouped plugin list for Plugin Panel: host, plugins, connectors."""
+        groups = {
+            "host": {"type": "host", "label": "Host", "plugins": []},
+            "plugin": {"type": "plugin", "label": "Plugins", "plugins": []},
+            "connector": {"type": "connector", "label": "Connectors", "plugins": []},
+        }
+
+        for info in self._data.plugins:
+            plugin_data = {
+                "id": info.plugin_id,
+                "type": info.plugin_type,
+                "version": info.version,
+                "author": info.author,
+                "description": info.description,
+                "requires": info.requires,
+                "windowCount": len(info.windows),
+                "settingCount": info.setting_count,
+            }
+            if info.plugin_type in groups:
+                groups[info.plugin_type]["plugins"].append(plugin_data)
+
+        # Return in fixed order: host first, then plugins, then connectors
+        return [
+            groups["host"],
+            groups["plugin"],
+            groups["connector"],
+        ]
+
+    @Property(list, constant=True)
     def pluginRows(self) -> list[dict]:
         """Flat list for the Plugins tab — sections + rows."""
         rows: list[dict] = []

@@ -1,6 +1,9 @@
 [plugin]
-id   = "tinyui"
-type = "host"
+id          = "tinyui"
+type        = "host"
+version     = "0.5.0"
+author      = "Oost-hash"
+description = "TinyUI host plugin — the application framework"
 
 [[window]]
 id      = "tinyui.main"
@@ -16,7 +19,8 @@ menu = [
 ]
 
 [window.chrome]
-show_menu_button = true
+show_menu_button     = true
+show_status_bar      = true
 
 [[window]]
 id      = "settings.main"

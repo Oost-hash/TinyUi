@@ -54,6 +54,15 @@ def open_window(
         surface_component = QQmlComponent(engine, surface_url)
         obj.setProperty("surfaceComponent", surface_component)
 
+    # Load plugin panel component for main window
+    plugin_panel_component = None
+    if manifest.window_type == "main":
+        plugin_panel_path = Path(__file__).parent.parent / "plugins" / "tinyui" / "app_pluginsPanel" / "qml" / "surface.qml"
+        if plugin_panel_path.exists():
+            panel_url = QUrl.fromLocalFile(str(plugin_panel_path))
+            plugin_panel_component = QQmlComponent(engine, panel_url)
+            obj.setProperty("pluginPanelComponent", plugin_panel_component)
+
     attachment = attach_windowing(app=app, window=obj, theme=theme)
     if attachment.controller is not None:
         obj.setProperty("windowController", attachment.controller)
@@ -61,4 +70,6 @@ def open_window(
     keepalive = [component, *extra_properties.values(), *attachment.keepalive]
     if surface_component:
         keepalive.append(surface_component)
+    if plugin_panel_component:
+        keepalive.append(plugin_panel_component)
     return WindowHandle(qml_window=obj, keepalive=tuple(keepalive))

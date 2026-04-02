@@ -349,7 +349,13 @@ Item {
 
         Loader {
             anchors.fill: parent
-            sourceComponent: root.hostWindow && root.hostWindow.surfaceComponent ? root.hostWindow.surfaceComponent : null
+            sourceComponent: {
+                if (!root.hostWindow)
+                    return null
+                if (root.hostWindow.showPluginPanel && root.hostWindow.pluginPanelComponent)
+                    return root.hostWindow.pluginPanelComponent
+                return root.hostWindow.surfaceComponent
+            }
         }
     }
 
@@ -480,30 +486,64 @@ Item {
             }
         }
 
-        Rectangle {
-            visible: !!root.chromePolicy.showStatusPluginPicker
+        // Active Plugin Button (Host-only) — v0.4.0 style
+        Item {
+            id: pluginNameBtn
             anchors.right: parent.right
-            anchors.rightMargin: 10
-            anchors.verticalCenter: parent.verticalCenter
-            width: activeText.implicitWidth + 20
-            height: 22
-            color: activeMouse.containsMouse
-                ? (root.theme ? root.theme.surfaceFloating : "#20242b")
-                : "transparent"
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: pluginNameRow.width + 20
+            visible: root.statusActiveLabel !== ""
 
-            Text {
-                id: activeText
+            Rectangle {
+                anchors.fill: parent
+                color: root.hostWindow && root.hostWindow.showPluginPanel 
+                       ? (root.theme ? root.theme.surfaceAlt : "#2f343e")
+                       : pluginNameHover.containsMouse 
+                         ? (root.theme ? root.theme.surfaceFloating : "#20242b") 
+                         : "transparent"
+            }
+            
+            // Borders when panel is open
+            Rectangle { 
+                visible: root.hostWindow && root.hostWindow.showPluginPanel
+                anchors.left: parent.left
+                width: 1
+                height: parent.height
+                color: root.theme ? root.theme.border : "#464b57"
+            }
+            Rectangle { 
+                visible: root.hostWindow && root.hostWindow.showPluginPanel
+                anchors.right: parent.right
+                width: 1
+                height: parent.height
+                color: root.theme ? root.theme.border : "#464b57"
+            }
+
+            Row {
+                id: pluginNameRow
                 anchors.centerIn: parent
-                text: root.statusActiveLabel
-                color: "#FFFFFF"
-                font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                spacing: 0
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.statusActiveLabel
+                    color: "#FFFFFF"
+                    font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                }
             }
 
             MouseArea {
-                id: activeMouse
+                id: pluginNameHover
                 anchors.fill: parent
                 hoverEnabled: true
+                onClicked: {
+                    if (root.hostWindow)
+                        root.hostWindow.showPluginPanel = !root.hostWindow.showPluginPanel
+                }
             }
         }
     }
+
 }

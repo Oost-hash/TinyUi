@@ -37,6 +37,16 @@ class MenuSeparator:
 
 
 @dataclass(frozen=True)
+class StatusbarItemDecl:
+    """Statusbar item declaration from manifest."""
+    icon: str = ""       # Icon identifier (optional)
+    text: str = ""       # Text to display (optional)
+    tooltip: str = ""    # Hover tooltip
+    action: str = ""     # Action to trigger
+    side: str = "left"   # "left" or "right"
+
+
+@dataclass(frozen=True)
 class AppManifest:
     id:       str
     title:    str
@@ -45,6 +55,7 @@ class AppManifest:
     chrome:   ChromePolicy = field(default_factory=ChromePolicy)
     requires: list[str] = field(default_factory=list)  # capabilities: "inspector", ...
     menu:     list[MenuItem | MenuSeparator] = field(default_factory=list)
+    statusbar: list[StatusbarItemDecl] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -60,6 +71,10 @@ class SettingDecl:
 class PluginInfo:
     plugin_id:     str
     plugin_type:   str
+    version:       str
+    author:        str
+    description:   str
+    requires:      list[str]
     windows:       list[tuple[str, str]]   # [(id, window_type), ...]
     setting_count: int
 
@@ -81,7 +96,11 @@ class DevToolsData:
 @dataclass(frozen=True)
 class PluginManifest:
     plugin_id:   str
-    plugin_type: str                 # "host" | "plugin"
+    plugin_type: str                 # "host" | "plugin" | "connector"
+    version:     str
+    author:      str
+    description: str
+    requires:    list[str]
     windows:     list[AppManifest]
     settings:    list[SettingDecl]
     plugin_menu: list[MenuItem | MenuSeparator] = field(default_factory=list)

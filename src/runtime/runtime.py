@@ -14,14 +14,17 @@ from runtime.manifest import load_plugin_manifest
 from runtime.menu import MenuRegistry, MenuItem, MenuSeparator
 from runtime.persistence import SettingsRegistry, SettingsSpec
 from runtime.plugin_context import PluginContext
+from runtime.statusbar import StatusbarRegistry, StatusbarItem
 
 
 class Runtime:
     def __init__(self) -> None:
         self._plugins: dict[str, PluginManifest] = {}
-        self.paths:    AppPaths         = AppPaths.detect()
-        self.settings: SettingsRegistry = SettingsRegistry(self.paths.config_dir)
-        self.menu:     MenuRegistry     = MenuRegistry()
+        self.paths:     AppPaths          = AppPaths.detect()
+        self.settings:  SettingsRegistry  = SettingsRegistry(self.paths.config_dir)
+        self.menu:      MenuRegistry      = MenuRegistry()
+        self.statusbar: StatusbarRegistry = StatusbarRegistry()
+        self._active_plugin: str | None = None  # Currently active UI plugin
 
     def boot(self) -> None:
         self._load_plugin("tinyui")
@@ -29,7 +32,9 @@ class Runtime:
         self._register_settings()
         self.settings.load_persisted()
         self._register_menus()
+        self._register_statusbar()
         self._activate_plugins()
+        self._init_active_plugin()
 
     # ── Plugin loading ────────────────────────────────────────────────────
 
@@ -90,6 +95,22 @@ class Runtime:
 
     # ── Plugin activation ─────────────────────────────────────────────────
 
+    def _register_statusbar(self) -> None:
+        """Register statusbar items from manifests."""
+        from app_schema.manifest import StatusbarItemDecl
+        for plugin_manifest in self._plugins.values():
+            source = plugin_manifest.plugin_type
+            for window in plugin_manifest.windows:
+                for item in window.statusbar:
+                    self.statusbar.add(window.id, StatusbarItem(
+                        icon=item.icon,
+                        text=item.text,
+                        tooltip=item.tooltip,
+                        action=item.action,
+                        side=item.side,  # type: ignore
+                        source=source,
+                    ))
+
     def _activate_plugins(self) -> None:
         plugins_parent = str(self.paths.plugins_dir.parent)
         if plugins_parent not in sys.path:
@@ -107,6 +128,32 @@ class Runtime:
             except ModuleNotFoundError:
                 pass
 
+    def _init_active_plugin(self) -> None:
+        """Initialize active plugin to first enabled UI plugin (not host)."""
+        for plugin_id, manifest in self._plugins.items():
+            if manifest.plugin_type == "plugin":  # Only UI plugins, not host or connectors
+                enabled = self.settings.get(plugin_id, "enabled")
+                if enabled is not False:  # Default to True if not set
+                    self._active_plugin = plugin_id
+                    self.statusbar.set_active_plugin(plugin_id)
+                    break
+
+    @property
+    def active_plugin(self) -> str | None:
+        """Get the currently active UI plugin ID."""
+        return self._active_plugin
+
+    def set_active_plugin(self, plugin_id: str) -> bool:
+        """Set the active plugin. Returns False if plugin is host or connector."""
+        if plugin_id not in self._plugins:
+            return False
+        manifest = self._plugins[plugin_id]
+        if manifest.plugin_type != "plugin":
+            return False  # Host and connectors cannot be active plugin
+        self._active_plugin = plugin_id
+        self.statusbar.set_active_plugin(plugin_id)
+        return True
+
     # ── Manifest queries ──────────────────────────────────────────────────
 
     def devtools_data(self) -> DevToolsData:
@@ -114,6 +161,10 @@ class Runtime:
             PluginInfo(
                 plugin_id=plugin_id,
                 plugin_type=manifest.plugin_type,
+                version=manifest.version,
+                author=manifest.author,
+                description=manifest.description,
+                requires=manifest.requires,
                 windows=[(w.id, w.window_type) for w in manifest.windows],
                 setting_count=len(manifest.settings),
             )
