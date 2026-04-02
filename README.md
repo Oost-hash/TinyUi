@@ -33,6 +33,8 @@ No monolithic apps where everything is welded together. No digging through setti
 
 TinyUi handles the boring stuff: window chrome, theming, settings persistence, game connection. You handle the racing.
 
+> **A note from the developer:** All of this is not yet implemented and is still taking shape. But defining a project is important so I wrote it as if it's there. I hope in a couple of releases the text is more honest, but this will take some time and effort.
+
 ---
 
 ## Architecture
@@ -63,15 +65,15 @@ For the latest release overview and current direction, see [docs/ROADMAP.md](doc
 | Platform | Status | Notes |
 |----------|--------|-------|
 | Windows 10 / 11 | ✅ Supported | Primary development and test platform |
-| Linux | ⚠️ Builds, end-to-end untested | Overlay and widget behavior not verified — issues welcome |
+| Linux | ⚠️ Will be added in the future | Year of linux desktop is near |
 | macOS | ❌ Not supported | No builds, no hardware to test on |
 
 **Supported games:**
 
 | Game | Connector | Status |
 |------|-----------|--------|
-| Le Mans Ultimate | LMU_RF2_Connector | ✅ Working |
-| rFactor 2 | LMU_RF2_Connector | ✅ Should work (same API) |
+| Le Mans Ultimate | LMU_RF2_Connector | Not working |
+| rFactor 2 | LMU_RF2_Connector | Not working |
 
 ---
 
