@@ -14,6 +14,7 @@ class ChromePolicy:
     show_caption_buttons: bool = True
     show_tab_bar: bool = False
     show_status_bar: bool = False
+    custom_chrome: Path | None = None  # Path to custom chrome QML (relative to plugin root)
 
     def to_qml_dict(self) -> dict:
         return {
@@ -94,6 +95,16 @@ class DevToolsData:
 
 
 @dataclass(frozen=True)
+class TabDecl:
+    """Tab declaration from manifest."""
+    id: str
+    label: str
+    target: str          # target window ID (e.g., "tinyui.main")
+    surface: Path
+    plugin_id: str       # which plugin owns this tab
+
+
+@dataclass(frozen=True)
 class PluginManifest:
     plugin_id:   str
     plugin_type: str                 # "host" | "plugin" | "connector"
@@ -103,5 +114,6 @@ class PluginManifest:
     requires:    list[str]
     windows:     list[AppManifest]
     settings:    list[SettingDecl]
+    tabs:        list[TabDecl] = field(default_factory=list)
     plugin_menu: list[MenuItem | MenuSeparator] = field(default_factory=list)
     menu_label:  str | None = None

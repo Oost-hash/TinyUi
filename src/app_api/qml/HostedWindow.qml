@@ -8,8 +8,10 @@ Window {
     property var theme: null
     property var windowController: null
     property var surfaceComponent: null
+    property string pluginPanelUrl: ""
     property var pluginPanelComponent: null
     property bool showPluginPanel: false
+    property var hostRuntime: null  // Reference to runtime bridge
     property string windowTitle: ""
     property var menuItems: []
     property var pluginMenuItems: []
@@ -23,6 +25,7 @@ Window {
     property string statusActiveLabel: ""
     property string activePluginId: ""
     property var inspector: null
+    property var tabModel: []
     property var chromePolicy: ({
         showMenuButton: true,
         showTitleText: true,
@@ -30,6 +33,7 @@ Window {
         showStatusLeftItems: true,
         showStatusPluginPicker: true
     })
+    property var chromeComponent: null  // Custom chrome component (null = use default)
     width: 960
     height: 640
     minimumWidth: 480
@@ -49,8 +53,28 @@ Window {
                 root.hostActions.trigger("open:devtools.main")
         }
     }
+    
+    // Connect runtime signals
+    Connections {
+        target: root.hostRuntime
+        function onActivePluginChanged(pluginId) {
+            root.activePluginId = pluginId
+            root.statusActiveLabel = pluginId
+        }
+        function onTabModelChanged(newModel) {
+            root.tabModel = newModel
+        }
+    }
 
-    AppChromeShell {
+    // Chrome loader - uses custom chrome if provided, otherwise default AppChromeShell
+    Loader {
+        id: chromeLoader
         anchors.fill: parent
+        sourceComponent: root.chromeComponent ? root.chromeComponent : defaultChromeComponent
+    }
+
+    Component {
+        id: defaultChromeComponent
+        AppChromeShell {}
     }
 }
