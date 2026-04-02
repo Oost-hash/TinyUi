@@ -4,6 +4,7 @@ type        = "plugin"
 version     = "1.0.0"
 author      = "Test Author"
 description = "A dummy plugin for testing the plugin panel"
+requires    = ["dummy_connector"]
 menu        = "Dummy Plugin"
 
 [[plugin_menu]]
@@ -16,3 +17,9 @@ id      = "dummy.dialog"
 title   = "Dummy Dialog"
 window_type = "dialog"
 surface = "qml/surface.qml"
+
+[[tab]]
+id = "dummy_plugin.widgets"
+label = "Dummy"
+target = "tinyui.main"
+surface = "app_widgets/qml/surface.qml"
