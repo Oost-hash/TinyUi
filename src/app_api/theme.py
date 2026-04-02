@@ -143,6 +143,9 @@ class Theme(QObject):
     def warning(self): return self._c("warning")
 
     @Property(str, notify=changed)
+    def warningAlt(self): return self._c("warning-alt")
+
+    @Property(str, notify=changed)
     def danger(self): return self._c("danger")
 
     @Property(str, notify=changed)

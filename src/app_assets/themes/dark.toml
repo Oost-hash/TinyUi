@@ -16,6 +16,7 @@ accent-pressed = "#457CAD"
 accent-text = "#FFFFFF"
 success = "#4caf50"   # Green - active/host/connector in use
 warning = "#ff9800"   # Orange - selected
+warning-alt = "#B05CFF"  # Purple - outgoing/unloading
 danger = "#f44336"    # Red - inactive
 info = "#74ADE8"
 

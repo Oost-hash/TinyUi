@@ -46,8 +46,36 @@ Item {
     property bool pluginMenuOpen: false
     property bool menuOpen: false
     property string pendingPluginActivation: ""
+    property var pluginStates: ({})
 
     readonly property url menuIconSource: Qt.resolvedUrl("../../../../app_assets/icons/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
+
+    function pluginStatusColor(pluginId: string) : color {
+        if (!pluginId || pluginId === "")
+            return root.theme ? root.theme.textMuted : "#878a98"
+
+        if (root.pendingPluginActivation !== "" && root.pendingPluginActivation !== pluginId)
+            return root.theme ? root.theme.warningAlt : "#B05CFF"
+
+        var state = root.pluginStates[pluginId] || "active"
+        if (state === "active") return root.theme ? root.theme.success : "#4caf50"
+        if (state === "enabling" || state === "loading" || state === "unloading")
+            return state === "unloading"
+                ? (root.theme ? root.theme.warningAlt : "#B05CFF")
+                : (root.theme ? root.theme.warning : "#ff9800")
+        if (state === "error") return root.theme ? root.theme.danger : "#f44336"
+        return root.theme ? root.theme.danger : "#f44336"
+    }
+
+    Connections {
+        target: hostWindow ? hostWindow.hostRuntime : null
+        function onPluginStateChanged(pluginId, state) {
+            root.pluginStates[pluginId] = state
+            var temp = root.pluginStates
+            root.pluginStates = {}
+            root.pluginStates = temp
+        }
+    }
 
     // Base chrome — menu button suppressed so HostChromeShell owns it
     AppApi.AppChromeShell {
@@ -412,7 +440,15 @@ Item {
             Row {
                 id: pluginNameRow
                 anchors.centerIn: parent
-                spacing: 0
+                spacing: 8
+
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 8
+                    height: 8
+                    radius: 4
+                    color: root.pluginStatusColor(root.statusActiveLabel)
+                }
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter

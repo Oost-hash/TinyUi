@@ -16,6 +16,7 @@ accent-pressed = "#1553C7"
 accent-text = "#FFFFFF"
 success = "#40A02B"
 warning = "#DF8E1D"
+warning-alt = "#8F4AE4"
 danger = "#E81123"
 info = "#1E66F5"
 

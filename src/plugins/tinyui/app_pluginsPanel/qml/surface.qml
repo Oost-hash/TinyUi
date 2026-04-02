@@ -68,6 +68,28 @@ Rectangle {
         return false
     }
 
+    function isConnectorPending(connectorId: string) : bool {
+        if (!root.pluginToActivate || !inspector) return false
+
+        for (var i = 0; i < inspector.pluginList.length; i++) {
+            var group = inspector.pluginList[i]
+            for (var j = 0; j < group.plugins.length; j++) {
+                var plugin = group.plugins[j]
+                if (plugin.id === root.pluginToActivate) {
+                    return plugin.requires && plugin.requires.indexOf(connectorId) >= 0
+                }
+            }
+        }
+        return false
+    }
+
+    function isOutgoingPlugin(pluginId: string) : bool {
+        return root.pluginToActivate !== ""
+            && hostWindow
+            && hostWindow.activePluginId === pluginId
+            && root.pluginToActivate !== pluginId
+    }
+
     anchors.fill: parent
     color: theme ? theme.surface : "#17181c"
 
@@ -387,6 +409,12 @@ Rectangle {
                             readonly property bool isPendingActivation:
                                 root.pluginToActivate !== ""
                                 && root.pluginToActivate === modelData.id
+                            readonly property bool isPendingConnector:
+                                modelData.type === "connector"
+                                && root.isConnectorPending(modelData.id)
+                            readonly property bool isOutgoingActivation:
+                                modelData.type === "plugin"
+                                && root.isOutgoingPlugin(modelData.id)
 
                             width: parent.width
                             height: 40
@@ -397,9 +425,11 @@ Rectangle {
                             Rectangle {
                                 width: 3
                                 height: parent.height
-                                color: isPendingActivation
-                                    ? (theme ? theme.warning : "#ff9800")
-                                    : (theme ? theme.accent : "#4a9eff")
+                                color: isOutgoingActivation
+                                    ? (theme ? theme.warningAlt : "#B05CFF")
+                                    : ((isPendingActivation || isPendingConnector)
+                                        ? (theme ? theme.warning : "#ff9800")
+                                        : (theme ? theme.accent : "#4a9eff"))
                                 visible: isSelected
                             }
 
@@ -437,8 +467,9 @@ Rectangle {
                                     height: 8
                                     radius: 4
                                     color: {
-                                        // Pending activation is orange until the panel closes
-                                        if (isPendingActivation) return theme ? theme.warning : "#ff9800"
+                                        // Pending activation takes precedence until the panel closes
+                                        if (isOutgoingActivation) return theme ? theme.warningAlt : "#B05CFF"
+                                        if (isPendingActivation || isPendingConnector) return theme ? theme.warning : "#ff9800"
                                         
                                         // Then check live state from pluginStates, fallback to modelData
                                         var liveState = root.pluginStates[modelData.id]
@@ -446,7 +477,7 @@ Rectangle {
                                         if (state === "active") return theme ? theme.success : "#4caf50"
                                         if (state === "enabling" || state === "loading") return theme ? theme.warning : "#ff9800"
                                         if (state === "error") return theme ? theme.danger : "#f44336"
-                                        if (state === "unloading") return theme ? theme.warning : "#ff9800"
+                                        if (state === "unloading") return theme ? theme.warningAlt : "#B05CFF"
                                         return theme ? theme.danger : "#f44336"  // disabled
                                     }
                                     
