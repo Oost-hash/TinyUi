@@ -45,6 +45,19 @@ Window {
     flags: nativeChrome ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
     color: root.theme ? root.theme.surface : "#17181c"
 
+    // Sync all properties when hostRuntime changes (initial sync + updates)
+    onHostRuntimeChanged: {
+        if (hostRuntime) {
+            root.menuItems = hostRuntime.menuItems
+            root.pluginMenuItems = hostRuntime.pluginMenuItems
+            root.pluginMenuLabel = hostRuntime.pluginMenuLabel
+            root.tabModel = hostRuntime.tabModel
+            root.statusItems = hostRuntime.statusbarLeftItems
+            root.activePluginId = hostRuntime.activePlugin
+            root.statusActiveLabel = hostRuntime.activePlugin  // For statusbar plugin picker
+        }
+    }
+
     Shortcut {
         enabled: root.globalShortcutsEnabled
         sequence: "F12"
@@ -54,15 +67,25 @@ Window {
         }
     }
     
-    // Connect runtime signals
+    // Connect runtime signals - update properties when bridge emits signals
     Connections {
         target: root.hostRuntime
         function onActivePluginChanged(pluginId) {
             root.activePluginId = pluginId
             root.statusActiveLabel = pluginId
         }
-        function onTabModelChanged(newModel) {
-            root.tabModel = newModel
+        function onTabModelChanged() {
+            root.tabModel = root.hostRuntime ? root.hostRuntime.tabModel : []
+        }
+        function onMenuItemsChanged() {
+            root.menuItems = root.hostRuntime ? root.hostRuntime.menuItems : []
+        }
+        function onPluginMenuItemsChanged() {
+            root.pluginMenuItems = root.hostRuntime ? root.hostRuntime.pluginMenuItems : []
+            root.pluginMenuLabel = root.hostRuntime ? root.hostRuntime.pluginMenuLabel : ""
+        }
+        function onStatusbarItemsChanged() {
+            root.statusItems = root.hostRuntime ? root.hostRuntime.statusbarLeftItems : []
         }
     }
 
