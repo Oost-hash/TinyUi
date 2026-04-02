@@ -289,8 +289,9 @@ class Runtime:
         
         new_sm = self._plugin_states.get(plugin_id)
         if new_sm and new_sm.state == PluginState.DISABLED:
-            new_sm.transition(PluginState.LOADING, "Switch loading")
-            new_sm.transition(PluginState.ACTIVE, "Switch activation")
+            new_sm.transition(PluginState.ENABLING, "User enabled")
+            new_sm.transition(PluginState.LOADING, "Loading module")
+            self._load_and_activate_plugin(plugin_id)
         
         return True
 
