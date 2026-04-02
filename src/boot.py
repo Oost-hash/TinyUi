@@ -12,6 +12,8 @@ from app_api.qt import create_application, create_engine
 from app_api.theme import Theme
 from app_api.window import open_window
 from app_api.windowing import win_window  # eager import: registers QML singletons before engine
+from PySide6.QtCore import QUrl
+from PySide6.QtQml import QQmlComponent
 from runtime.runtime import Runtime
 from runtime_schema import EventBus, EventType, BootInitData, BootReadyData
 
@@ -66,6 +68,12 @@ def main() -> int:
     ))
     
     # Open main window
+    plugin_panel_component = None
+    plugin_panel_path = runtime.paths.plugins_dir / "tinyui" / "app_pluginsPanel" / "qml" / "surface.qml"
+    if plugin_panel_path.exists():
+        plugin_panel_url = QUrl.fromLocalFile(str(plugin_panel_path))
+        plugin_panel_component = QQmlComponent(engine, plugin_panel_url)
+
     main_handle = open_window(
         main_manifest, 
         engine=engine, 
@@ -75,7 +83,13 @@ def main() -> int:
         inspector=inspector,
         hostRuntime=host_runtime,
         providerHub=provider_hub,
+        pluginPanelUrl=str(plugin_panel_path) if plugin_panel_component else "",
+        pluginPanelComponent=plugin_panel_component,
     )
+
+    # When the main window is destroyed, terminate the whole application
+    # even if auxiliary dialogs are still open.
+    main_handle.qml_window.destroyed.connect(app.quit)
     
     # Enable UI features
     main_handle.qml_window.setProperty("showStatusBar", True)
@@ -97,7 +111,7 @@ def main() -> int:
         return handler
     
     for w in runtime.all_windows():
-        if w.window_type == "dialog":
+        if w.id != main_manifest.id:
             actions.register(f"open:{w.id}", make_open_handler(w.id, w.requires))
     
     actions.register("close", lambda: main_handle.qml_window.close())

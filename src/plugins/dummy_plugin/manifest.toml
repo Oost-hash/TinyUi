@@ -15,7 +15,6 @@ items = [
 [[window]]
 id      = "dummy.dialog"
 title   = "Dummy Dialog"
-window_type = "dialog"
 surface = "qml/surface.qml"
 
 [[tab]]

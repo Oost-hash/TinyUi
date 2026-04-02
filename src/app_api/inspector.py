@@ -91,12 +91,12 @@ class RuntimeInspector(QObject):
                 })
             
             # Windows
-            for window_id, window_type in info.windows:
+            for window_id in info.windows:
                 rows.append({
                     "rowType": "row",
                     "key":     "window",
                     "value":   window_id,
-                    "tag":     window_type,
+                    "tag":     "window",
                 })
             
             # Settings count

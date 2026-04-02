@@ -477,7 +477,7 @@ class Runtime:
                 author=manifest.author,
                 description=manifest.description,
                 requires=manifest.requires,
-                windows=[(w.id, w.window_type) for w in manifest.windows],
+                windows=[w.id for w in manifest.windows],
                 setting_count=len(manifest.settings),
                 state=self._plugin_states.get(plugin_id, PluginStateMachine(plugin_id)).state_name,
                 state_history=[
@@ -509,10 +509,13 @@ class Runtime:
         return [w for pm in self._plugins.values() for w in pm.windows]
 
     def main_window(self) -> AppManifest | None:
-        return next(
-            (w for w in self.all_windows() if w.window_type == "main"),
+        host_manifest = next(
+            (manifest for manifest in self._plugins.values() if manifest.plugin_type == "host"),
             None,
         )
+        if host_manifest is None or not host_manifest.windows:
+            return None
+        return host_manifest.windows[0]
 
     def window_for(self, window_id: str) -> AppManifest | None:
         return next(

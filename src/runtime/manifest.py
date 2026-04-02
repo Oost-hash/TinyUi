@@ -39,7 +39,7 @@ def load_plugin_manifest(path: Path) -> PluginManifest:
     connector = data.get("connector", {})
     provider = data.get("provider", {})
 
-    return PluginManifest(
+    manifest = PluginManifest(
         plugin_id=plugin_id,
         plugin_type=plugin.get("type", "plugin"),
         version=plugin.get("version", ""),
@@ -55,6 +55,13 @@ def load_plugin_manifest(path: Path) -> PluginManifest:
         provider_module=provider.get("module"),
         provider_class=provider.get("class"),
     )
+    _validate_plugin_manifest(manifest)
+    return manifest
+
+
+def _validate_plugin_manifest(manifest: PluginManifest) -> None:
+    if manifest.plugin_type == "host" and not manifest.windows:
+        raise ValueError(f"Host plugin must declare at least one window (plugin: {manifest.plugin_id})")
 
 
 def _parse_window(entry: dict, manifest_dir: Path) -> AppManifest:
@@ -75,7 +82,6 @@ def _parse_window(entry: dict, manifest_dir: Path) -> AppManifest:
     return AppManifest(
         id=entry["id"],
         title=entry.get("title", ""),
-        window_type=entry["window_type"],
         surface=(manifest_dir / entry["surface"]).resolve() if "surface" in entry else None,
         chrome=chrome,
         requires=list(entry.get("requires", [])),

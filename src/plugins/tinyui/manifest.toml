@@ -8,7 +8,6 @@ description = "TinyUI host plugin — the application framework"
 [[window]]
 id      = "tinyui.main"
 title   = "TinyUI"
-window_type = "main"
 
 menu = [
     { label = "Plugins", action = "open:pluginsPanel.main" },
@@ -33,20 +32,17 @@ surface = "app_widgetsTab/qml/surface.qml"
 [[window]]
 id      = "settings.main"
 title   = "Settings"
-window_type = "dialog"
 surface = "app_settings/qml/surface.qml"
 
 [[window]]
 id       = "devtools.main"
 title    = "DevTools"
-window_type = "dialog"
 surface  = "app_devtools/qml/surface.qml"
 requires = ["inspector"]
 
 [[window]]
 id          = "pluginsPanel.main"
 title       = "Plugins"
-window_type = "dialog"
 surface     = "app_pluginsPanel/qml/surface.qml"
 requires    = ["inspector"]
 

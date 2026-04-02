@@ -51,7 +51,6 @@ class StatusbarItemDecl:
 class AppManifest:
     id:       str
     title:    str
-    window_type: str                     # "main" | "dialog"
     surface:  Path | None = None
     chrome:   ChromePolicy = field(default_factory=ChromePolicy)
     requires: list[str] = field(default_factory=list)  # capabilities: "inspector", ...
@@ -76,7 +75,7 @@ class PluginInfo:
     author:        str
     description:   str
     requires:      list[str]
-    windows:       list[tuple[str, str]]   # [(id, window_type), ...]
+    windows:       list[str]
     setting_count: int
     state:         str = "disabled"        # PluginState name
     state_history: list[dict] = field(default_factory=list)

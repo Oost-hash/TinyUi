@@ -41,6 +41,16 @@ def _write_manifest(
         rendered = ", ".join(f'"{item}"' for item in requires)
         lines.append(f"requires = [{rendered}]")
     lines.append("")
+    if plugin_type == "host":
+        lines.extend(
+            [
+                "[[window]]",
+                f'id = "{plugin_id}.main"',
+                f'title = "{plugin_id}"',
+                'surface = "app_main/qml/surface.qml"',
+                "",
+            ]
+        )
     if connector_provides:
         rendered = ", ".join(f'"{item}"' for item in connector_provides)
         lines.extend(

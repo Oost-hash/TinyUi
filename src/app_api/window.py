@@ -57,16 +57,6 @@ def open_window(
         surface_component = QQmlComponent(engine, surface_url)
         obj.setProperty("surfaceComponent", surface_component)
 
-    # Load plugin panel component for main window
-    plugin_panel_component = None
-    if manifest.window_type == "main":
-        plugin_panel_path = Path(__file__).parent.parent / "plugins" / "tinyui" / "app_pluginsPanel" / "qml" / "surface.qml"
-        if plugin_panel_path.exists():
-            plugin_panel_url = QUrl.fromLocalFile(str(plugin_panel_path))
-            obj.setProperty("pluginPanelUrl", plugin_panel_url.toString())
-            plugin_panel_component = QQmlComponent(engine, plugin_panel_url)
-            obj.setProperty("pluginPanelComponent", plugin_panel_component)
-    
     # Load custom chrome from manifest if specified and no override provided
     if chrome_component is None and manifest.chrome.custom_chrome:
         chrome_url = QUrl.fromLocalFile(str(manifest.chrome.custom_chrome))
@@ -83,8 +73,6 @@ def open_window(
     keepalive = [component, *extra_properties.values(), *attachment.keepalive]
     if surface_component:
         keepalive.append(surface_component)
-    if plugin_panel_component:
-        keepalive.append(plugin_panel_component)
     if chrome_component:
         keepalive.append(chrome_component)
     return WindowHandle(qml_window=obj, keepalive=tuple(keepalive))
