@@ -1,0 +1,28 @@
+[plugin]
+id = "LMU_RF2_Connector"
+type = "connector"
+version = "0.5.0"
+author = "Oost-hash"
+description = "LMU / RF2 telemetry connector family with live and mock sources."
+
+[connector]
+provides = [
+  "telemetry.state.v1",
+  "telemetry.session.v1",
+  "telemetry.track.v1",
+  "telemetry.car.v1",
+  "telemetry.tyre.v1",
+  "telemetry.timing.v1",
+  "telemetry.opponents.v1",
+  "telemetry.inputs.v1",
+]
+
+[provider]
+module = "plugins.LMU_RF2_Connector.plugin"
+class = "LMURF2Connector"
+
+[[setting]]
+key = "enabled"
+label = "Enable connector"
+default = true
+type = "bool"

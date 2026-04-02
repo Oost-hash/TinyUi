@@ -120,3 +120,6 @@ class PluginManifest:
     tabs:        list[TabDecl] = field(default_factory=list)
     plugin_menu: list[MenuItem | MenuSeparator] = field(default_factory=list)
     menu_label:  str | None = None
+    connector_provides: list[str] = field(default_factory=list)
+    provider_module: str | None = None
+    provider_class: str | None = None

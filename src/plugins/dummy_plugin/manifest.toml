@@ -4,7 +4,7 @@ type        = "plugin"
 version     = "1.0.0"
 author      = "Test Author"
 description = "A dummy plugin for testing the plugin panel"
-requires    = ["dummy_connector"]
+requires    = ["LMU_RF2_Connector"]
 menu        = "Dummy Plugin"
 
 [[plugin_menu]]

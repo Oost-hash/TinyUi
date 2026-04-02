@@ -24,17 +24,16 @@
 
 from __future__ import annotations
 
+import logging
 import math
 from typing import cast
-
-from tinyruntime_schema import get_logger
 
 from ..contracts.telemetry import Brake, ElectricMotor, Engine, Inputs, Lap, Session, State, Switch, Timing, Tyre, Vehicle, Wheel
 from . import _LeMansUltimate_data as lmu_data
 from ._LeMansUltimate_data import LMUConstants
 from ._LeMansUltimate_mmap import MMapControl
 
-_log = get_logger(__name__)
+_log = logging.getLogger(__name__)
 _KELVIN = 273.15
 _SESSION_NAMES = {0: "test", 1: "practice", 2: "qualify", 3: "warmup", 4: "race"}
 

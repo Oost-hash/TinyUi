@@ -12,6 +12,7 @@ Window {
     property var pluginPanelComponent: null
     property bool showPluginPanel: false
     property var hostRuntime: null  // Reference to runtime bridge
+    property var providerHub: null
     property string windowTitle: ""
     property var menuItems: []
     property var pluginMenuItems: []

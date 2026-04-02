@@ -36,6 +36,8 @@ def load_plugin_manifest(path: Path) -> PluginManifest:
     plugin_menu = []
     for pm in data.get("plugin_menu", []):
         plugin_menu.extend(_parse_menu_items(pm.get("items", [])))
+    connector = data.get("connector", {})
+    provider = data.get("provider", {})
 
     return PluginManifest(
         plugin_id=plugin_id,
@@ -49,6 +51,9 @@ def load_plugin_manifest(path: Path) -> PluginManifest:
         tabs=tabs,
         plugin_menu=plugin_menu,
         menu_label=plugin.get("menu"),
+        connector_provides=list(connector.get("provides", [])),
+        provider_module=provider.get("module"),
+        provider_class=provider.get("class"),
     )
 
 

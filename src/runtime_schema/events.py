@@ -24,6 +24,10 @@ class EventType(Enum):
     PLUGIN_ERROR = auto()
     UI_PLUGIN_SELECTED = auto()
     UI_TAB_CHANGED = auto()
+    # Provider lifecycle events
+    PROVIDER_REGISTERED = auto()
+    PROVIDER_UNREGISTERED = auto()
+    PROVIDER_UPDATED = auto()
     # UI registration events - emitted by runtime, consumed by UI layer
     MENU_REGISTERED = auto()
     STATUSBAR_REGISTERED = auto()

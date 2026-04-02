@@ -26,7 +26,7 @@ from __future__ import annotations
 from numbers import Real
 from typing import Protocol, cast
 
-from tinyruntime_schema.snapshot_protocols import InspectionSnapshot
+from runtime_schema.provider import InspectionSnapshot
 from .contracts.source import ConnectorSource
 from .contracts.telemetry import TelemetryReader
 from .sources.lmu import LMULiveSource

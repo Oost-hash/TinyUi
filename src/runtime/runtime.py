@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import sys
 
 from app_schema.manifest import (
@@ -10,14 +9,18 @@ from app_schema.manifest import (
     DevToolsData, PluginInfo, SettingInfo,
 )
 from runtime.app_paths import AppPaths
+from runtime.provider_loader import load_provider
+from runtime.provider_registry import ProviderRegistry
 from runtime_schema import (
     EventBus, EventType, PluginState, PluginStateData,
     PluginActivatedData, PluginErrorData,
     MenuRegisteredData, StatusbarRegisteredData, TabRegisteredData,
+    ProviderRegisteredData, ProviderUnregisteredData, ProviderUpdatedData,
 )
 from runtime.manifest import load_plugin_manifest
 from runtime.persistence import SettingsRegistry, SettingsSpec
 from runtime.plugin_context import PluginContext
+from runtime.plugin_lifecycle import resolve_plugin_lifecycle
 from runtime.plugin_state import PluginStateMachine
 from runtime_schema.plugin import PluginState
 
@@ -29,13 +32,19 @@ class Runtime:
         self.settings: SettingsRegistry | None = None
         self._plugin_states: dict[str, PluginStateMachine] = {}
         self._active_plugin: str | None = None  # Currently active UI plugin
+        self.providers = ProviderRegistry()
         self.events = event_bus  # Use shared event bus
         self._subscribe_to_events()
     
     def _subscribe_to_events(self) -> None:
-        """Subscribe to boot events."""
+        """Subscribe to boot and UI events."""
         self.events.on(EventType.BOOT_INIT, self._on_boot_init)
+        self.events.on(EventType.UI_PLUGIN_SELECTED, self._on_ui_plugin_selected)
     
+    def _on_ui_plugin_selected(self, event) -> None:
+        """Handle user plugin selection — activate the chosen plugin."""
+        self.set_active_plugin(event.data.plugin_id)
+
     def _on_boot_init(self, event) -> None:
         """Handle boot initialization."""
         # AppPaths.detect() handles both frozen and source modes
@@ -53,7 +62,6 @@ class Runtime:
         self._register_menus()
         self._register_statusbar()
         self._register_tabs()
-        self._activate_plugins()
         self._init_active_plugin()
 
     # ── Plugin loading ────────────────────────────────────────────────────
@@ -168,6 +176,125 @@ class Runtime:
 
     # ── Plugin activation ─────────────────────────────────────────────────
 
+    def _plugin_lifecycle(self, plugin_id: str):
+        """Resolve lifecycle adapter for the plugin."""
+        manifest = self._plugins[plugin_id]
+        return resolve_plugin_lifecycle(
+            plugin_id=plugin_id,
+            plugin_type=manifest.plugin_type,
+            plugins_dir=self.paths.plugins_dir,
+        )
+
+    def _provider_id_for(self, plugin_id: str) -> str:
+        """Map connector plugin ids to provider ids."""
+        return plugin_id
+
+    def _register_provider_for(self, plugin_id: str) -> None:
+        """Instantiate and register provider for an active connector."""
+        manifest = self._plugins[plugin_id]
+        if not manifest.provider_module or not manifest.provider_class:
+            return
+
+        provider_id = self._provider_id_for(plugin_id)
+        if self.providers.has(provider_id):
+            return
+
+        provider = load_provider(manifest.provider_module, manifest.provider_class)
+        if hasattr(provider, "supports_source") and provider.supports_source("mock") and hasattr(provider, "request_source"):
+            provider.request_source("__runtime__", "mock")
+        if hasattr(provider, "open"):
+            provider.open()
+        self.providers.register(provider_id, plugin_id, manifest.plugin_id, provider)
+        self.events.emit_typed(
+            EventType.PROVIDER_REGISTERED,
+            ProviderRegisteredData(
+                provider_id=provider_id,
+                plugin_id=plugin_id,
+                display_name=manifest.plugin_id,
+            ),
+        )
+        self.events.emit_typed(
+            EventType.PROVIDER_UPDATED,
+            ProviderUpdatedData(provider_id=provider_id, plugin_id=plugin_id),
+        )
+
+    def _unregister_provider_for(self, plugin_id: str) -> None:
+        """Close and unregister provider for a connector."""
+        provider_id = self._provider_id_for(plugin_id)
+        provider = self.providers.get(provider_id)
+        if provider is not None and hasattr(provider, "release_source"):
+            provider.release_source("__runtime__")
+        if provider is not None and hasattr(provider, "close"):
+            provider.close()
+        if self.providers.unregister(provider_id):
+            self.events.emit_typed(
+                EventType.PROVIDER_UNREGISTERED,
+                ProviderUnregisteredData(provider_id=provider_id, plugin_id=plugin_id),
+            )
+
+    def _activate_component(self, plugin_id: str, *, enabling_reason: str, loading_reason: str) -> bool:
+        """Transition a plugin or connector into the active state."""
+        sm = self._plugin_states.get(plugin_id)
+        if sm is None:
+            return False
+        if sm.state == PluginState.ACTIVE:
+            return True
+        if sm.state == PluginState.DISABLED:
+            sm.transition(PluginState.ENABLING, enabling_reason)
+            self.events.emit_typed(
+                EventType.PLUGIN_STATE_CHANGED,
+                PluginStateData(plugin_id=plugin_id, old_state="disabled", new_state="enabling"),
+            )
+            sm.transition(PluginState.LOADING, loading_reason)
+            self.events.emit_typed(
+                EventType.PLUGIN_STATE_CHANGED,
+                PluginStateData(plugin_id=plugin_id, old_state="enabling", new_state="loading"),
+            )
+        self._load_and_activate_plugin(plugin_id)
+        if sm.state == PluginState.ACTIVE and self._plugins[plugin_id].plugin_type == "connector":
+            self._register_provider_for(plugin_id)
+            self.events.emit_typed(
+                EventType.PROVIDER_UPDATED,
+                ProviderUpdatedData(provider_id=self._provider_id_for(plugin_id), plugin_id=plugin_id),
+            )
+        return sm.state == PluginState.ACTIVE
+
+    def _deactivate_component(self, plugin_id: str, *, unloading_reason: str, disabled_reason: str) -> bool:
+        """Transition a plugin or connector into the disabled state."""
+        sm = self._plugin_states.get(plugin_id)
+        if sm is None:
+            return False
+        if sm.state == PluginState.ACTIVE:
+            old_state = sm.state_name
+            sm.transition(PluginState.UNLOADING, unloading_reason)
+            self.events.emit_typed(
+                EventType.PLUGIN_STATE_CHANGED,
+                PluginStateData(plugin_id=plugin_id, old_state=old_state, new_state="unloading"),
+            )
+            if self._plugins[plugin_id].plugin_type == "connector":
+                self._unregister_provider_for(plugin_id)
+            self._deactivate_plugin(plugin_id)
+            sm.transition(PluginState.DISABLED, disabled_reason)
+            self.events.emit_typed(
+                EventType.PLUGIN_STATE_CHANGED,
+                PluginStateData(plugin_id=plugin_id, old_state="unloading", new_state="disabled"),
+            )
+            return True
+        return False
+
+    def _required_connectors_for(self, plugin_id: str | None) -> set[str]:
+        """Return connector ids required by the given UI plugin."""
+        if not plugin_id:
+            return set()
+        manifest = self._plugins.get(plugin_id)
+        if manifest is None:
+            return set()
+        return {
+            required_id
+            for required_id in manifest.requires
+            if required_id in self._plugins and self._plugins[required_id].plugin_type == "connector"
+        }
+
     def _load_and_activate_plugin(self, plugin_id: str) -> None:
         """Load plugin module and activate it."""
         sm = self._plugin_states.get(plugin_id)
@@ -177,12 +304,11 @@ class Runtime:
         ctx = PluginContext(
             plugin_id=plugin_id,
             settings=self.settings.scoped(plugin_id),
+            providers=self.providers,
         )
         
         try:
-            mod = importlib.import_module(f"plugins.{plugin_id}.plugin")
-            if hasattr(mod, "activate"):
-                mod.activate(ctx)
+            self._plugin_lifecycle(plugin_id).activate(ctx)
             sm.transition(PluginState.ACTIVE, "Activation successful")
             self.events.emit_typed(EventType.PLUGIN_STATE_CHANGED, PluginStateData(
                 plugin_id=plugin_id,
@@ -209,73 +335,48 @@ class Runtime:
         ctx = PluginContext(
             plugin_id=plugin_id,
             settings=self.settings.scoped(plugin_id),
+            providers=self.providers,
         )
         
         try:
-            mod = importlib.import_module(f"plugins.{plugin_id}.plugin")
-            if hasattr(mod, "deactivate"):
-                mod.deactivate(ctx)
+            self._plugin_lifecycle(plugin_id).deactivate(ctx)
         except Exception:
             pass  # Ignore deactivation errors
 
-    def _activate_plugins(self) -> None:
+    def _init_active_plugin(self) -> None:
+        """Initialize active plugin to first enabled UI plugin (not host)."""
         plugins_parent = str(self.paths.plugins_dir.parent)
         if plugins_parent not in sys.path:
             sys.path.insert(0, plugins_parent)
 
-        for plugin_id in self._plugins:
-            ctx = PluginContext(
-                plugin_id=plugin_id,
-                settings=self.settings.scoped(plugin_id),
-            )
-            try:
-                mod = importlib.import_module(f"plugins.{plugin_id}.plugin")
-                if hasattr(mod, "activate"):
-                    mod.activate(ctx)
-            except ModuleNotFoundError:
-                pass
-
-    def _init_active_plugin(self) -> None:
-        """Initialize active plugin to first enabled UI plugin (not host)."""
         for plugin_id, manifest in self._plugins.items():
             if manifest.plugin_type == "plugin":  # Only UI plugins, not host or connectors
                 enabled = self.settings.get(plugin_id, "enabled")
                 if enabled is not False:  # Default to True if not set
                     self._active_plugin = plugin_id
                     break
-        
-        # Initialize state machines for all plugins
+
         for plugin_id, manifest in self._plugins.items():
-            sm = self._plugin_states.get(plugin_id)
-            if not sm:
-                continue
-            
-            if plugin_id == self._active_plugin:
-                # Active UI plugin - transition through all states quickly
-                if sm.state == PluginState.DISABLED:
-                    sm.transition(PluginState.ENABLING, "Boot enabling")
-                    sm.transition(PluginState.LOADING, "Boot loading")
-                    sm.transition(PluginState.ACTIVE, "Boot active")
-                    # Emit activation event for UI layer
-                    self.events.emit_typed(EventType.PLUGIN_ACTIVATED, PluginActivatedData(
-                        plugin_id=plugin_id
-                    ))
-            elif manifest.plugin_type == "host":
-                # Host is always conceptually active
-                if sm.state == PluginState.DISABLED:
-                    sm.transition(PluginState.ENABLING, "Host enabling")
-                    sm.transition(PluginState.LOADING, "Host loading")
-                    sm.transition(PluginState.ACTIVE, "Host active")
-            elif manifest.plugin_type == "connector":
-                # Check if connector is used by active plugin
-                if self._active_plugin:
-                    active_manifest = self._plugins.get(self._active_plugin)
-                    if active_manifest and plugin_id in active_manifest.requires:
-                        if sm.state == PluginState.DISABLED:
-                            sm.transition(PluginState.ENABLING, "Connector enabling")
-                            sm.transition(PluginState.LOADING, "Connector loading")
-                            sm.transition(PluginState.ACTIVE, "Connector in use")
-            # Other plugins stay disabled
+            if manifest.plugin_type == "host":
+                self._activate_component(
+                    plugin_id,
+                    enabling_reason="Host enabling",
+                    loading_reason="Host loading",
+                )
+
+        for connector_id in self._required_connectors_for(self._active_plugin):
+            self._activate_component(
+                connector_id,
+                enabling_reason="Connector enabling",
+                loading_reason="Connector loading",
+            )
+
+        if self._active_plugin:
+            self._activate_component(
+                self._active_plugin,
+                enabling_reason="Boot enabling",
+                loading_reason="Boot loading",
+            )
 
     @property
     def active_plugin(self) -> str | None:
@@ -289,44 +390,40 @@ class Runtime:
         manifest = self._plugins[plugin_id]
         if manifest.plugin_type != "plugin":
             return False  # Host and connectors cannot be active plugin
-        
-        # Deactivate old plugin
-        if self._active_plugin and self._active_plugin != plugin_id:
-            old_sm = self._plugin_states.get(self._active_plugin)
-            if old_sm and old_sm.state == PluginState.ACTIVE:
-                old_state = old_sm.state_name
-                old_sm.transition(PluginState.UNLOADING, "Switching plugin")
-                self.events.emit_typed(EventType.PLUGIN_STATE_CHANGED, PluginStateData(
-                    plugin_id=self._active_plugin,
-                    old_state=old_state,
-                    new_state="unloading"
-                ))
-                self._deactivate_plugin(self._active_plugin)
-                old_sm.transition(PluginState.DISABLED, "Switched away")
-                self.events.emit_typed(EventType.PLUGIN_STATE_CHANGED, PluginStateData(
-                    plugin_id=self._active_plugin,
-                    old_state="unloading",
-                    new_state="disabled"
-                ))
-        
-        # Activate new plugin
+        if self._active_plugin == plugin_id:
+            return True
+
+        old_plugin = self._active_plugin
+        old_connectors = self._required_connectors_for(old_plugin)
+        new_connectors = self._required_connectors_for(plugin_id)
+
+        if old_plugin:
+            self._deactivate_component(
+                old_plugin,
+                unloading_reason="Switching plugin",
+                disabled_reason="Switched away",
+            )
+
+        for connector_id in sorted(old_connectors - new_connectors):
+            self._deactivate_component(
+                connector_id,
+                unloading_reason="Connector no longer required",
+                disabled_reason="Connector released",
+            )
+
+        for connector_id in sorted(new_connectors - old_connectors):
+            self._activate_component(
+                connector_id,
+                enabling_reason="Connector enabling",
+                loading_reason="Connector loading",
+            )
+
         self._active_plugin = plugin_id
-        
-        new_sm = self._plugin_states.get(plugin_id)
-        if new_sm and new_sm.state == PluginState.DISABLED:
-            new_sm.transition(PluginState.ENABLING, "User enabled")
-            self.events.emit_typed(EventType.PLUGIN_STATE_CHANGED, PluginStateData(
-                plugin_id=plugin_id,
-                old_state="disabled",
-                new_state="enabling"
-            ))
-            new_sm.transition(PluginState.LOADING, "Loading module")
-            self.events.emit_typed(EventType.PLUGIN_STATE_CHANGED, PluginStateData(
-                plugin_id=plugin_id,
-                old_state="enabling",
-                new_state="loading"
-            ))
-            self._load_and_activate_plugin(plugin_id)
+        self._activate_component(
+            plugin_id,
+            enabling_reason="User enabled",
+            loading_reason="Loading module",
+        )
         
         return True
 
@@ -352,31 +449,22 @@ class Runtime:
         sm = self._plugin_states.get(plugin_id)
         if not sm:
             return False
-        
-        # Start transition: disabled -> enabling
-        if not sm.transition(PluginState.ENABLING, "User enabled"):
-            return False
-        
-        # Continue to loading immediately
-        sm.transition(PluginState.LOADING, "Loading module")
-        
-        # Actually load and activate the plugin
-        self._load_and_activate_plugin(plugin_id)
-        return True
+        return self._activate_component(
+            plugin_id,
+            enabling_reason="User enabled",
+            loading_reason="Loading module",
+        )
 
     def disable_plugin(self, plugin_id: str) -> bool:
         """Disable a plugin (active -> unloading -> disabled)."""
         sm = self._plugin_states.get(plugin_id)
         if not sm:
             return False
-        
-        current = sm.state
-        if current == PluginState.ACTIVE:
-            sm.transition(PluginState.UNLOADING, "User disabled")
-            self._deactivate_plugin(plugin_id)
-        
-        sm.transition(PluginState.DISABLED, "Disabled")
-        return True
+        return self._deactivate_component(
+            plugin_id,
+            unloading_reason="User disabled",
+            disabled_reason="Disabled",
+        )
 
     # ── Manifest queries ──────────────────────────────────────────────────
 

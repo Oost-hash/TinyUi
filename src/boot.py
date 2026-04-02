@@ -7,6 +7,7 @@ import sys
 from app_api.host_actions import HostActions
 from app_api.host_runtime import HostRuntimeBridge
 from app_api.inspector import RuntimeInspector
+from app_api.provider_hub import ProviderHubBridge
 from app_api.qt import create_application, create_engine
 from app_api.theme import Theme
 from app_api.window import open_window
@@ -33,6 +34,7 @@ def main() -> int:
     
     # Create bridge — subscribes to events and exposes Qt signals to QML
     host_runtime = HostRuntimeBridge(event_bus)
+    provider_hub = ProviderHubBridge(event_bus, runtime.providers)
     
     # Inspector for devtools
     from app_schema.manifest import DevToolsData
@@ -53,6 +55,10 @@ def main() -> int:
     
     # Update inspector with runtime data
     inspector.update_data(runtime.devtools_data())
+
+    # Keep inspector in sync when plugin states change (devtool stays live)
+    event_bus.on(EventType.PLUGIN_STATE_CHANGED, lambda _: inspector.update_data(runtime.devtools_data()))
+    event_bus.on(EventType.PLUGIN_ACTIVATED, lambda _: inspector.update_data(runtime.devtools_data()))
     
     # Emit boot ready
     event_bus.emit_typed(EventType.BOOT_READY, BootReadyData(
@@ -67,7 +73,8 @@ def main() -> int:
         actions=actions, 
         theme=theme,
         inspector=inspector,
-        hostRuntime=host_runtime
+        hostRuntime=host_runtime,
+        providerHub=provider_hub,
     )
     
     # Enable UI features
@@ -84,6 +91,7 @@ def main() -> int:
                 kwargs = {}
                 if "inspector" in requires:
                     kwargs["inspector"] = inspector
+                kwargs["providerHub"] = provider_hub
                 h = open_window(manifest, engine=engine, app=app, actions=actions, theme=theme, **kwargs)
                 open_handles.append(h)
         return handler

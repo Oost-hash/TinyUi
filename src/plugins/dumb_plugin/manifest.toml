@@ -4,7 +4,7 @@ type        = "plugin"
 version     = "1.0.0"
 author      = "Test Author"
 description = "Another dummy plugin for testing plugin switching"
-requires    = ["dummy_connector", "dumb_connector"]
+requires    = []
 
 [[tab]]
 id = "dumb_plugin.widgets"

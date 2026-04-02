@@ -20,15 +20,95 @@
 //  licensed under GPLv3.
 
 import QtQuick
+import QtQuick.Window
 
 Rectangle {
+    id: root
     anchors.fill: parent
     color: "transparent"
 
-    Text {
-        anchors.centerIn: parent
-        text: "Dummy Plugin Widgets"
-        color: "#ffffff"
-        font.pixelSize: 18
+    readonly property var hostWindow: Window.window
+    readonly property var providerHub: hostWindow && hostWindow.providerHub ? hostWindow.providerHub : null
+    readonly property string providerId: "LMU_RF2_Connector"
+    property var providerRows: []
+
+    function refreshProviderRows() {
+        if (!providerHub) {
+            providerRows = []
+            return
+        }
+        providerHub.updateProvider(providerId)
+        providerRows = providerHub.inspectionRows(providerId)
+    }
+
+    Component.onCompleted: {
+        if (providerHub) {
+            providerHub.requestSource(providerId, "dummy_plugin.widgets", "mock")
+            refreshProviderRows()
+        }
+    }
+
+    Component.onDestruction: {
+        if (providerHub) {
+            providerHub.releaseSource(providerId, "dummy_plugin.widgets")
+        }
+    }
+
+    Connections {
+        target: providerHub
+        function onProviderDataChanged(changedProviderId) {
+            if (changedProviderId === root.providerId) {
+                root.providerRows = providerHub.inspectionRows(root.providerId)
+            }
+        }
+    }
+
+    Timer {
+        interval: 1000
+        running: root.providerHub !== null
+        repeat: true
+        onTriggered: root.refreshProviderRows()
+    }
+
+    Column {
+        anchors.fill: parent
+        anchors.margins: 24
+        spacing: 12
+
+        Text {
+            text: "Dummy Plugin Tyres"
+            color: "#ffffff"
+            font.pixelSize: 20
+        }
+
+        Text {
+            text: providerRows.length > 0
+                ? "Telemetry from LMU_RF2_Connector (mock source)"
+                : "Provider not active"
+            color: "#c8ccd4"
+            font.pixelSize: 12
+        }
+
+        Repeater {
+            model: providerRows
+
+            delegate: Row {
+                required property var modelData
+                spacing: 12
+                visible: String(modelData.key).indexOf("provider.") === 0 || String(modelData.key).indexOf("tyre.") === 0
+
+                Text {
+                    text: modelData.key
+                    color: "#878a98"
+                    font.pixelSize: 12
+                }
+
+                Text {
+                    text: modelData.value
+                    color: "#ffffff"
+                    font.pixelSize: 12
+                }
+            }
+        }
     }
 }
