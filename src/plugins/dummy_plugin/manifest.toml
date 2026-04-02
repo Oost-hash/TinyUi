@@ -1,7 +1,10 @@
 [plugin]
-id   = "dummy_plugin"
-type = "plugin"
-menu = "Dummy Plugin"
+id          = "dummy_plugin"
+type        = "plugin"
+version     = "1.0.0"
+author      = "Test Author"
+description = "A dummy plugin for testing the plugin panel"
+menu        = "Dummy Plugin"
 
 [[plugin_menu]]
 items = [
