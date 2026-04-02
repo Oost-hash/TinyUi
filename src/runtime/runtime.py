@@ -12,31 +12,39 @@ from app_schema.manifest import (
 from runtime.app_paths import AppPaths
 from runtime_schema import (
     EventBus, EventType, PluginState, PluginStateData,
-    PluginActivatedData, PluginErrorData
+    PluginActivatedData, PluginErrorData,
+    MenuRegisteredData, StatusbarRegisteredData, TabRegisteredData,
 )
 from runtime.manifest import load_plugin_manifest
-from runtime.menu import MenuRegistry, MenuItem, MenuSeparator
 from runtime.persistence import SettingsRegistry, SettingsSpec
 from runtime.plugin_context import PluginContext
-from runtime.statusbar import StatusbarRegistry, StatusbarItem
 from runtime.plugin_state import PluginStateMachine
 from runtime_schema.plugin import PluginState
-from runtime.tabs import TabRegistry
 
 
 class Runtime:
-    def __init__(self) -> None:
+    def __init__(self, event_bus: EventBus) -> None:
         self._plugins: dict[str, PluginManifest] = {}
-        self.paths:     AppPaths          = AppPaths.detect()
-        self.settings:  SettingsRegistry  = SettingsRegistry(self.paths.config_dir)
-        self.menu:      MenuRegistry      = MenuRegistry()
-        self.statusbar: StatusbarRegistry = StatusbarRegistry()
-        self.tabs:      TabRegistry       = TabRegistry()
+        self.paths: AppPaths | None = None
+        self.settings: SettingsRegistry | None = None
         self._plugin_states: dict[str, PluginStateMachine] = {}
         self._active_plugin: str | None = None  # Currently active UI plugin
-        self.events = EventBus()  # Pub/sub for state changes
-
-    def boot(self) -> None:
+        self.events = event_bus  # Use shared event bus
+        self._subscribe_to_events()
+    
+    def _subscribe_to_events(self) -> None:
+        """Subscribe to boot events."""
+        self.events.on(EventType.BOOT_INIT, self._on_boot_init)
+    
+    def _on_boot_init(self, event) -> None:
+        """Handle boot initialization."""
+        # AppPaths.detect() handles both frozen and source modes
+        self.paths = AppPaths.detect()
+        self.settings = SettingsRegistry(self.paths.config_dir)
+        self._do_boot()
+    
+    def _do_boot(self) -> None:
+        """Internal boot sequence."""
         self._load_plugin("tinyui")
         self._discover_plugins()
         self._init_plugin_states()
@@ -89,93 +97,76 @@ class Runtime:
     # ── Menu registration ─────────────────────────────────────────────────
 
     def _register_menus(self) -> None:
+        """Register menus from manifests - emit events for UI layer."""
         for plugin_manifest in self._plugins.values():
             source = plugin_manifest.plugin_type
             for window in plugin_manifest.windows:
                 for item in window.menu:
                     if isinstance(item, MenuSeparatorDecl):
-                        self.menu.add(window.id, MenuSeparator(source=source))
+                        self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
+                            window_id=window.id,
+                            separator=True,
+                            source=source,
+                        ))
                     else:
-                        self.menu.add(window.id, MenuItem(label=item.label, action=item.action, source=source))
+                        self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
+                            window_id=window.id,
+                            label=item.label,
+                            action=item.action,
+                            source=source,
+                        ))
             if plugin_manifest.menu_label and plugin_manifest.plugin_menu:
                 window_id = f"plugin:{plugin_manifest.plugin_id}"
                 for item in plugin_manifest.plugin_menu:
                     if isinstance(item, MenuSeparatorDecl):
-                        self.menu.add(window_id, MenuSeparator(source="plugin"))
+                        self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
+                            window_id=window_id,
+                            separator=True,
+                            source="plugin",
+                        ))
                     else:
-                        self.menu.add(window_id, MenuItem(label=item.label, action=item.action, source="plugin"))
+                        self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
+                            window_id=window_id,
+                            label=item.label,
+                            action=item.action,
+                            source="plugin",
+                        ))
 
-    # ── Plugin activation ─────────────────────────────────────────────────
+    # ── Statusbar registration ────────────────────────────────────────────
 
     def _register_statusbar(self) -> None:
-        """Register statusbar items from manifests."""
+        """Register statusbar items from manifests - emit events for UI layer."""
         from app_schema.manifest import StatusbarItemDecl
         for plugin_manifest in self._plugins.values():
             source = plugin_manifest.plugin_type
             for window in plugin_manifest.windows:
                 for item in window.statusbar:
-                    self.statusbar.add(window.id, StatusbarItem(
+                    self.events.emit_typed(EventType.STATUSBAR_REGISTERED, StatusbarRegisteredData(
+                        window_id=window.id,
                         icon=item.icon,
                         text=item.text,
                         tooltip=item.tooltip,
                         action=item.action,
-                        side=item.side,  # type: ignore
+                        side=item.side,
                         source=source,
                     ))
 
+    # ── Tab registration ──────────────────────────────────────────────────
+
     def _register_tabs(self) -> None:
-        """Register tabs from manifests."""
+        """Register tabs from manifests - emit events for UI layer."""
         for plugin_manifest in self._plugins.values():
             for tab in plugin_manifest.tabs:
-                self.tabs.register(tab.target, tab)
+                self.events.emit_typed(EventType.TAB_REGISTERED, TabRegisteredData(
+                    window_id=tab.target,
+                    id=tab.id,
+                    label=tab.label,
+                    target=tab.target,
+                    surface=str(tab.surface),
+                    plugin_id=tab.plugin_id,
+                ))
 
-    # ── Plugin state management ───────────────────────────────────────────
-
-    def _init_plugin_states(self) -> None:
-        """Initialize state machines for all plugins."""
-        for plugin_id in self._plugins:
-            self._plugin_states[plugin_id] = PluginStateMachine(plugin_id)
-
-    def get_plugin_state(self, plugin_id: str) -> PluginState:
-        """Get current state of a plugin."""
-        if plugin_id not in self._plugin_states:
-            return PluginState.DISABLED
-        return self._plugin_states[plugin_id].state
-
-    def get_plugin_state_machine(self, plugin_id: str) -> PluginStateMachine | None:
-        """Get state machine for a plugin."""
-        return self._plugin_states.get(plugin_id)
-
-    def enable_plugin(self, plugin_id: str) -> bool:
-        """Start enabling a plugin (disabled -> enabling -> loading -> active)."""
-        sm = self._plugin_states.get(plugin_id)
-        if not sm:
-            return False
-        
-        # Start transition: disabled -> enabling
-        if not sm.transition(PluginState.ENABLING, "User enabled"):
-            return False
-        
-        # Continue to loading immediately
-        sm.transition(PluginState.LOADING, "Loading module")
-        
-        # Actually load and activate the plugin
-        self._load_and_activate_plugin(plugin_id)
-        return True
-
-    def disable_plugin(self, plugin_id: str) -> bool:
-        """Disable a plugin (active -> unloading -> disabled)."""
-        sm = self._plugin_states.get(plugin_id)
-        if not sm:
-            return False
-        
-        current = sm.state
-        if current == PluginState.ACTIVE:
-            sm.transition(PluginState.UNLOADING, "User disabled")
-            self._deactivate_plugin(plugin_id)
-        
-        sm.transition(PluginState.DISABLED, "Disabled")
-        return True
+    # ── Plugin activation ─────────────────────────────────────────────────
 
     def _load_and_activate_plugin(self, plugin_id: str) -> None:
         """Load plugin module and activate it."""
@@ -251,8 +242,6 @@ class Runtime:
                 enabled = self.settings.get(plugin_id, "enabled")
                 if enabled is not False:  # Default to True if not set
                     self._active_plugin = plugin_id
-                    self.statusbar.set_active_plugin(plugin_id)
-                    self.tabs.set_active_plugin(plugin_id)
                     break
         
         # Initialize state machines for all plugins
@@ -267,6 +256,10 @@ class Runtime:
                     sm.transition(PluginState.ENABLING, "Boot enabling")
                     sm.transition(PluginState.LOADING, "Boot loading")
                     sm.transition(PluginState.ACTIVE, "Boot active")
+                    # Emit activation event for UI layer
+                    self.events.emit_typed(EventType.PLUGIN_ACTIVATED, PluginActivatedData(
+                        plugin_id=plugin_id
+                    ))
             elif manifest.plugin_type == "host":
                 # Host is always conceptually active
                 if sm.state == PluginState.DISABLED:
@@ -318,8 +311,6 @@ class Runtime:
         
         # Activate new plugin
         self._active_plugin = plugin_id
-        self.statusbar.set_active_plugin(plugin_id)
-        self.tabs.set_active_plugin(plugin_id)
         
         new_sm = self._plugin_states.get(plugin_id)
         if new_sm and new_sm.state == PluginState.DISABLED:
@@ -337,6 +328,54 @@ class Runtime:
             ))
             self._load_and_activate_plugin(plugin_id)
         
+        return True
+
+    # ── Plugin state management ───────────────────────────────────────────
+
+    def _init_plugin_states(self) -> None:
+        """Initialize state machines for all plugins."""
+        for plugin_id in self._plugins:
+            self._plugin_states[plugin_id] = PluginStateMachine(plugin_id)
+
+    def get_plugin_state(self, plugin_id: str) -> PluginState:
+        """Get current state of a plugin."""
+        if plugin_id not in self._plugin_states:
+            return PluginState.DISABLED
+        return self._plugin_states[plugin_id].state
+
+    def get_plugin_state_machine(self, plugin_id: str) -> PluginStateMachine | None:
+        """Get state machine for a plugin."""
+        return self._plugin_states.get(plugin_id)
+
+    def enable_plugin(self, plugin_id: str) -> bool:
+        """Start enabling a plugin (disabled -> enabling -> loading -> active)."""
+        sm = self._plugin_states.get(plugin_id)
+        if not sm:
+            return False
+        
+        # Start transition: disabled -> enabling
+        if not sm.transition(PluginState.ENABLING, "User enabled"):
+            return False
+        
+        # Continue to loading immediately
+        sm.transition(PluginState.LOADING, "Loading module")
+        
+        # Actually load and activate the plugin
+        self._load_and_activate_plugin(plugin_id)
+        return True
+
+    def disable_plugin(self, plugin_id: str) -> bool:
+        """Disable a plugin (active -> unloading -> disabled)."""
+        sm = self._plugin_states.get(plugin_id)
+        if not sm:
+            return False
+        
+        current = sm.state
+        if current == PluginState.ACTIVE:
+            sm.transition(PluginState.UNLOADING, "User disabled")
+            self._deactivate_plugin(plugin_id)
+        
+        sm.transition(PluginState.DISABLED, "Disabled")
         return True
 
     # ── Manifest queries ──────────────────────────────────────────────────
@@ -377,15 +416,6 @@ class Runtime:
             for spec in specs
         ]
         return DevToolsData(plugins=plugins, settings=settings)
-
-    @property
-    def plugin_menus(self) -> dict[str, list[dict]]:
-        result: dict[str, list[dict]] = {}
-        for pm in self._plugins.values():
-            if pm.menu_label and pm.plugin_menu:
-                window_id = f"plugin:{pm.plugin_id}"
-                result[pm.menu_label] = self.menu.to_qml(window_id)
-        return result
 
     def all_windows(self) -> list[AppManifest]:
         return [w for pm in self._plugins.values() for w in pm.windows]

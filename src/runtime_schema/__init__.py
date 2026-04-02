@@ -2,10 +2,15 @@
 
 from runtime_schema.context import PluginContext
 from runtime_schema.events import (
+    BootInitData,
+    BootReadyData,
     Event,
     EventBus,
     EventCallback,
     EventType,
+    MenuRegisteredData,
+    StatusbarRegisteredData,
+    TabRegisteredData,
     UIPluginSelectedData,
 )
 from runtime_schema.menu import MenuEntry, MenuItem, MenuSeparator
@@ -23,10 +28,15 @@ __all__ = [
     # Context
     "PluginContext",
     # Events
+    "BootInitData",
+    "BootReadyData",
     "Event",
     "EventBus",
     "EventCallback",
     "EventType",
+    "MenuRegisteredData",
+    "StatusbarRegisteredData",
+    "TabRegisteredData",
     "UIPluginSelectedData",
     # Menu
     "MenuEntry",
