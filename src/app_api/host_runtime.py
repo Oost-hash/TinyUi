@@ -27,8 +27,8 @@ class HostRuntimeBridge(QObject):
         
         # UI state (accumulated from events)
         self._menu_items: list[dict] = []
-        self._plugin_menu_items: list[dict] = []
-        self._plugin_menu_label: str = ""
+        self._plugin_menu_labels: dict[str, str] = {}  # plugin_id -> label
+        self._plugin_menu_items: dict[str, list[dict]] = {}  # plugin_id -> items
         self._statusbar_left: list[dict] = []
         self._statusbar_right: list[dict] = []
         self._all_tabs: list[dict] = []  # All tabs from all plugins
@@ -67,13 +67,15 @@ class HostRuntimeBridge(QObject):
             self.pluginError.emit(data.plugin_id, data.error_message)
     
     def _on_plugin_activated(self, event: Event) -> None:
-        """Handle plugin activation - update active plugin and filter tabs."""
+        """Handle plugin activation - update active plugin and filter tabs/menu."""
         data = event.data
         plugin_id = data.plugin_id
         self._active_plugin = plugin_id
         self.activePluginChanged.emit(plugin_id)
         # Update tab model to show only host + active plugin tabs
         self._update_tab_model()
+        # Update plugin menu to show only active plugin's menu
+        self.pluginMenuItemsChanged.emit()
     
     def _on_menu_registered(self, event: Event) -> None:
         """Handle menu registration from runtime."""
@@ -89,12 +91,17 @@ class HostRuntimeBridge(QObject):
             self._menu_items.append(item)
             self.menuItemsChanged.emit()
         else:
-            # Plugin menu - check if this is a new plugin menu window
+            # Plugin menu - store per plugin_id
             window_id = data.window_id
             if window_id.startswith("plugin:"):
-                self._plugin_menu_items.append(item)
-                # Extract label from window_id (plugin:xxx)
-                self._plugin_menu_label = window_id.replace("plugin:", "").replace("_", " ").title()
+                plugin_id = window_id.replace("plugin:", "")
+                # Extract label from plugin_id (convert dumb_plugin -> Dumb Plugin)
+                label = plugin_id.replace("_", " ").title()
+                
+                if plugin_id not in self._plugin_menu_items:
+                    self._plugin_menu_labels[plugin_id] = label
+                    self._plugin_menu_items[plugin_id] = []
+                self._plugin_menu_items[plugin_id].append(item)
                 self.pluginMenuItemsChanged.emit()
     
     def _on_statusbar_registered(self, event: Event) -> None:
@@ -147,13 +154,17 @@ class HostRuntimeBridge(QObject):
     
     @Property(list, notify=pluginMenuItemsChanged)
     def pluginMenuItems(self) -> list[dict]:
-        """Plugin menu items."""
-        return self._plugin_menu_items
+        """Plugin menu items for the active plugin only."""
+        if self._active_plugin and self._active_plugin in self._plugin_menu_items:
+            return self._plugin_menu_items[self._active_plugin]
+        return []
     
     @Property(str, notify=pluginMenuItemsChanged)
     def pluginMenuLabel(self) -> str:
-        """Plugin menu label."""
-        return self._plugin_menu_label
+        """Plugin menu label for the active plugin."""
+        if self._active_plugin and self._active_plugin in self._plugin_menu_labels:
+            return self._plugin_menu_labels[self._active_plugin]
+        return ""
     
     @Property(list, notify=statusbarItemsChanged)
     def statusbarLeftItems(self) -> list[dict]:
