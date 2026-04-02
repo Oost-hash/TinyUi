@@ -8,6 +8,8 @@ Window {
     property var theme: null
     property var windowController: null
     property var surfaceComponent: null
+    property var pluginPanelComponent: null
+    property bool showPluginPanel: false
     property string windowTitle: ""
     property var menuItems: []
     property var pluginMenuItems: []
@@ -19,6 +21,7 @@ Window {
     property bool globalShortcutsEnabled: false
     property var statusItems: []
     property string statusActiveLabel: ""
+    property string activePluginId: ""
     property var inspector: null
     property var chromePolicy: ({
         showMenuButton: true,
