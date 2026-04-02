@@ -8,7 +8,7 @@ from pathlib import Path
 from app_schema.manifest import (
     AppManifest, ChromePolicy,
     MenuItem, MenuSeparator,
-    SettingDecl,
+    SettingDecl, StatusbarItemDecl,
     PluginManifest,
 )
 
@@ -38,6 +38,10 @@ def load_plugin_manifest(path: Path) -> PluginManifest:
     return PluginManifest(
         plugin_id=plugin.get("id", manifest_dir.name),
         plugin_type=plugin.get("type", "plugin"),
+        version=plugin.get("version", ""),
+        author=plugin.get("author", ""),
+        description=plugin.get("description", ""),
+        requires=list(plugin.get("requires", [])),
         windows=windows,
         settings=settings,
         plugin_menu=plugin_menu,
@@ -55,6 +59,9 @@ def _parse_window(entry: dict, manifest_dir: Path) -> AppManifest:
         show_status_bar=chrome_data.get("show_status_bar", False),
     )
     menu = _parse_menu_items([m for m in entry.get("menu", [])])
+    # Parse statusbar items for this window
+    statusbar = [_parse_statusbar_item(sb) for sb in entry.get("statusbar", [])]
+
     return AppManifest(
         id=entry["id"],
         title=entry.get("title", ""),
@@ -63,6 +70,7 @@ def _parse_window(entry: dict, manifest_dir: Path) -> AppManifest:
         chrome=chrome,
         requires=list(entry.get("requires", [])),
         menu=menu,
+        statusbar=statusbar,
     )
 
 
@@ -73,4 +81,14 @@ def _parse_setting(entry: dict) -> SettingDecl:
         default=entry["default"],
         type=entry["type"],
         choices=list(entry.get("choices", [])),
+    )
+
+
+def _parse_statusbar_item(entry: dict) -> StatusbarItemDecl:
+    return StatusbarItemDecl(
+        icon=entry.get("icon", ""),
+        text=entry.get("text", ""),
+        tooltip=entry.get("tooltip", ""),
+        action=entry.get("action", ""),
+        side=entry.get("side", "left"),
     )
