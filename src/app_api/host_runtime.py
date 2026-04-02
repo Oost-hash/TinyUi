@@ -41,8 +41,10 @@ class HostRuntimeBridge(QObject):
     @Slot(str, result=bool)
     def setActivePlugin(self, plugin_id: str) -> bool:
         """Set the active plugin. Returns True on success."""
+        print(f"[HostRuntimeBridge] setActivePlugin called: {plugin_id}")
         if hasattr(self._runtime, 'set_active_plugin'):
             result = self._runtime.set_active_plugin(plugin_id)
+            print(f"[HostRuntimeBridge] set_active_plugin result: {result}")
             if result:
                 self.activePluginChanged.emit(plugin_id)
                 # Also emit updated tab model

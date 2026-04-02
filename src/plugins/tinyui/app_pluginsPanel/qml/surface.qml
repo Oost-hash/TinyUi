@@ -37,8 +37,11 @@ Rectangle {
 
     // Function to call when panel is closing - activates selected plugin
     function onPanelClosing() {
+        console.log("onPanelClosing called, pluginToActivate:", pluginToActivate)
         if (pluginToActivate !== "" && hostWindow && hostWindow.hostRuntime) {
-            hostWindow.hostRuntime.setActivePlugin(pluginToActivate)
+            console.log("Calling setActivePlugin for:", pluginToActivate)
+            var result = hostWindow.hostRuntime.setActivePlugin(pluginToActivate)
+            console.log("setActivePlugin result:", result)
             pluginToActivate = ""  // Reset
         }
     }
@@ -419,13 +422,17 @@ Rectangle {
                                 rightPadding: 12
                                 spacing: 8
 
-                                // Status indicator dot based on plugin state
+                                // Status indicator dot based on plugin state and selection
                                 Rectangle {
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: 8
                                     height: 8
                                     radius: 4
                                     color: {
+                                        // Selection (orange) has highest priority
+                                        if (isSelected) return theme ? theme.warning : "#ff9800"
+                                        
+                                        // Then check state
                                         var state = modelData.state || "disabled"
                                         if (state === "active") return theme ? theme.success : "#4caf50"
                                         if (state === "enabling" || state === "loading") return theme ? theme.warning : "#ff9800"
