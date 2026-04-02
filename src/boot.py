@@ -31,7 +31,13 @@ def main() -> int:
 
     main_handle = open_window(main_manifest, engine=engine, app=app, actions=actions, theme=theme)
     main_handle.qml_window.setProperty("menuItems", runtime.menu.to_qml_host(main_manifest.id))
-    main_handle.qml_window.setProperty("pluginMenuItems", runtime.menu.to_qml_plugins(main_manifest.id))
+    plugin_menus = runtime.plugin_menus
+    if plugin_menus:
+        label, items = next(iter(plugin_menus.items()))
+        main_handle.qml_window.setProperty("pluginMenuLabel", label)
+        main_handle.qml_window.setProperty("pluginMenuItems", items)
+    else:
+        main_handle.qml_window.setProperty("pluginMenuItems", [])
 
     open_handles = []
 

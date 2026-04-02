@@ -3,14 +3,26 @@ id   = "tinyui"
 type = "host"
 
 [[window]]
+id      = "tinyui.main"
+title   = "TinyUI"
+window_type = "main"
+
+menu = [
+    { label = "Plugins", action = "open:pluginsPanel.main" },
+    { label = "Settings", action = "open:settings.main" },
+    { label = "DevTools", action = "open:devtools.main" },
+    { separator = true },
+    { label = "Close", action = "close" },
+]
+
+[window.chrome]
+show_menu_button = true
+
+[[window]]
 id      = "settings.main"
 title   = "Settings"
 window_type = "dialog"
 surface = "app_settings/qml/surface.qml"
-
-[window.chrome]
-show_menu_button     = false
-show_caption_buttons = true
 
 [[window]]
 id       = "devtools.main"
@@ -19,44 +31,12 @@ window_type = "dialog"
 surface  = "app_devtools/qml/surface.qml"
 requires = ["inspector"]
 
-[window.chrome]
-show_menu_button     = true
-show_caption_buttons = true
-
 [[window]]
 id          = "pluginsPanel.main"
 title       = "Plugins"
 window_type = "dialog"
 surface     = "app_pluginsPanel/qml/surface.qml"
 requires    = ["inspector"]
-
-[window.chrome]
-show_menu_button     = true
-show_caption_buttons = true
-
-[[menu]]
-window = "tinyui.main"
-label  = "Plugins"
-action = "open:pluginsPanel.main"
-
-[[menu]]
-window = "tinyui.main"
-label  = "Settings"
-action = "open:settings.main"
-
-[[menu]]
-window = "tinyui.main"
-label  = "DevTools"
-action = "open:devtools.main"
-
-[[menu]]
-window    = "tinyui.main"
-separator = true
-
-[[menu]]
-window = "tinyui.main"
-label  = "Close"
-action = "close"
 
 [[setting]]
 key     = "theme"

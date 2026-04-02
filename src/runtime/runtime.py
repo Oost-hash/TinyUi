@@ -6,7 +6,7 @@ import importlib
 import sys
 
 from app_schema.manifest import (
-    AppManifest, MenuSeparatorDecl, PluginManifest,
+    AppManifest, PluginManifest, MenuItem as MenuItemDecl, MenuSeparator as MenuSeparatorDecl,
     DevToolsData, PluginInfo, SettingInfo,
 )
 from runtime.app_paths import AppPaths
@@ -74,11 +74,19 @@ class Runtime:
     def _register_menus(self) -> None:
         for plugin_manifest in self._plugins.values():
             source = plugin_manifest.plugin_type
-            for decl in plugin_manifest.menu:
-                if isinstance(decl, MenuSeparatorDecl):
-                    self.menu.add(decl.window, MenuSeparator(source=source))
-                else:
-                    self.menu.add(decl.window, MenuItem(label=decl.label, action=decl.action, source=source))
+            for window in plugin_manifest.windows:
+                for item in window.menu:
+                    if isinstance(item, MenuSeparatorDecl):
+                        self.menu.add(window.id, MenuSeparator(source=source))
+                    else:
+                        self.menu.add(window.id, MenuItem(label=item.label, action=item.action, source=source))
+            if plugin_manifest.menu_label and plugin_manifest.plugin_menu:
+                window_id = f"plugin:{plugin_manifest.plugin_id}"
+                for item in plugin_manifest.plugin_menu:
+                    if isinstance(item, MenuSeparatorDecl):
+                        self.menu.add(window_id, MenuSeparator(source="plugin"))
+                    else:
+                        self.menu.add(window_id, MenuItem(label=item.label, action=item.action, source="plugin"))
 
     # ── Plugin activation ─────────────────────────────────────────────────
 
@@ -122,6 +130,15 @@ class Runtime:
             for spec in specs
         ]
         return DevToolsData(plugins=plugins, settings=settings)
+
+    @property
+    def plugin_menus(self) -> dict[str, list[dict]]:
+        result: dict[str, list[dict]] = {}
+        for pm in self._plugins.values():
+            if pm.menu_label and pm.plugin_menu:
+                window_id = f"plugin:{pm.plugin_id}"
+                result[pm.menu_label] = self.menu.to_qml(window_id)
+        return result
 
     def all_windows(self) -> list[AppManifest]:
         return [w for pm in self._plugins.values() for w in pm.windows]

@@ -12,6 +12,7 @@ Item {
     property string windowTitle: hostWindow && typeof hostWindow.windowTitle === "string" ? hostWindow.windowTitle : ""
     property var menuItems: hostWindow && hostWindow.menuItems ? hostWindow.menuItems : []
     property var pluginMenuItems: hostWindow && hostWindow.pluginMenuItems ? hostWindow.pluginMenuItems : []
+    property var pluginMenuLabel: hostWindow && hostWindow.pluginMenuLabel ? hostWindow.pluginMenuLabel : "Plugins"
     property var tabLabels: hostWindow && hostWindow.tabLabels ? hostWindow.tabLabels : []
     property int currentTab: hostWindow && typeof hostWindow.currentTab === "number" ? hostWindow.currentTab : 0
     property bool showTabBar: hostWindow && typeof hostWindow.showTabBar === "boolean" ? hostWindow.showTabBar : false
@@ -119,7 +120,7 @@ Item {
             Text {
                 id: pluginMenuLabel
                 anchors.centerIn: parent
-                text: "Plugins"
+                text: root.pluginMenuLabel || "Plugins"
                 color: pluginMenuArea.containsMouse || root.pluginMenuOpen
                     ? "#FFFFFF"
                     : (root.theme ? root.theme.textMuted : "#878a98")

@@ -48,12 +48,17 @@ def open_window(
     for key, value in extra_properties.items():
         obj.setProperty(key, value)
 
-    surface_url = QUrl.fromLocalFile(str(manifest.surface))
-    surface_component = QQmlComponent(engine, surface_url)
-    obj.setProperty("surfaceComponent", surface_component)
+    surface_component = None
+    if manifest.surface:
+        surface_url = QUrl.fromLocalFile(str(manifest.surface))
+        surface_component = QQmlComponent(engine, surface_url)
+        obj.setProperty("surfaceComponent", surface_component)
 
     attachment = attach_windowing(app=app, window=obj, theme=theme)
     if attachment.controller is not None:
         obj.setProperty("windowController", attachment.controller)
 
-    return WindowHandle(qml_window=obj, keepalive=(component, surface_component, *extra_properties.values(), *attachment.keepalive))
+    keepalive = [component, *extra_properties.values(), *attachment.keepalive]
+    if surface_component:
+        keepalive.append(surface_component)
+    return WindowHandle(qml_window=obj, keepalive=tuple(keepalive))

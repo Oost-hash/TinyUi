@@ -11,6 +11,7 @@ Window {
     property string windowTitle: ""
     property var menuItems: []
     property var pluginMenuItems: []
+    property string pluginMenuLabel: "Plugins"
     property var tabLabels: []
     property int currentTab: 0
     property bool showTabBar: false

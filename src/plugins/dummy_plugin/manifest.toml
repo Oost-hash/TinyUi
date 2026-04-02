@@ -1,28 +1,15 @@
 [plugin]
 id   = "dummy_plugin"
 type = "plugin"
+menu = "Dummy Plugin"
 
-[[window]]
-id      = "tinyui.main"
-title   = "TinyUI"
-window_type = "main"
-surface = "qml/surface.qml"
-
-[window.chrome]
-show_menu_button     = true
-show_caption_buttons = true
+[[plugin_menu]]
+items = [
+    { label = "Dummy Dialog", action = "open:dummy.dialog" },
+]
 
 [[window]]
 id      = "dummy.dialog"
 title   = "Dummy Dialog"
 window_type = "dialog"
 surface = "qml/surface.qml"
-
-[window.chrome]
-show_menu_button     = false
-show_caption_buttons = true
-
-[[menu]]
-window = "tinyui.main"
-label  = "Dummy Dialog"
-action = "open:dummy.dialog"
