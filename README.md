@@ -8,8 +8,9 @@
 
 ## Table of Contents
 
-- [Development](#latest-update)
 - [What is TinyUi?](#what-is-tinyui)
+- [Architecture](#architecture)
+- [Development](#development)
 - [Supported platforms](#supported-platforms)
 - [Help Wanted: Logo](#help-wanted-tinyui-logo)
 - [Credits](#credits)
@@ -20,28 +21,34 @@
 
 ## What is TinyUi?
 
-TinyUi is a modular overlay platform for sim racing.
+TinyUi is a modular overlay platform for sim racing with a manifest-driven plugin system.
 
-The goal is simple: connect to supported games, install or build plugins, and
-show live telemetry as overlays without turning game integration, runtime
-logic, and UI into one monolithic app.
+The goal is simple: connect to supported games, install or build plugins, and show live telemetry as overlays — without turning game integration, runtime logic, and UI into one monolithic app.
 
-The architecture is split into four hard layers:
+Everything declares itself via `manifest.toml`. The runtime reads these manifests, loads plugins in the right order, and gives each one a scoped context to work in. No hardcoded menus, no magic global state.
 
-- **tinycore** — the host runtime. Session ownership, capability binding, subprocess consumer hosting, config persistence, and inspection.
-- **plugins** — where game-specific and runtime-facing plugin code lives. Plugins split into explicit provider and consumer roles.
-- **tinywidgets** — the widget runtime and overlay rendering layer. Turns plugin-fed data into on-screen widget behavior.
-- **tinyui** — the overlay UI, built in QML. Talks to tinycore, knows nothing about games.
+---
 
-TinyUi is still early, but the direction is clear: build a clean
-plugin platform, make the runtime fast and understandable, and then layer a
-better day-to-day overlay experience on top.
+## Architecture
+
+TinyUi is built around three concepts:
+
+- **runtime** — The orchestrator. Reads manifests, manages settings persistence, handles plugin discovery and activation order. Lives in `src/runtime/`.
+
+- **app_api** — The windowing and theming layer. Gives every plugin a chrome (titlebar, menu, statusbar) and handles QML surface loading. Lives in `src/app_api/`.
+
+- **plugins** — Self-contained units that declare themselves via `manifest.toml`. Three types:
+  - **host** (`tinyui`) — The application framework. Declares the main window, built-in dialogs, and the plugin panel.
+  - **plugin** — UI plugins that add functionality. Can declare windows, settings, and menu items.
+  - **connector** — Data providers with no UI. Export capabilities like telemetry for other plugins to consume.
+
+Plugins never import runtime internals directly. They receive a `PluginContext` at activation with scoped settings access. Menu items, windows, and settings are declared in `manifest.toml`, not created in code.
 
 ---
 
 ## Development
 
-For the latest release overview and current direction, see [docs/ROADMAP.md](docs/ROADMAP.md). It is a live document, gets updated most often, and the next update is still being planned there.
+For the latest release overview and current direction, see [docs/ROADMAP.md](docs/ROADMAP.md). It is a live document that gets updated as the project evolves.
 
 ---
 
@@ -57,8 +64,8 @@ For the latest release overview and current direction, see [docs/ROADMAP.md](doc
 
 | Game | Connector | Status |
 |------|-----------|--------|
-| Le Mans Ultimate | LMU shared memory | ✅ Working |
-| rFactor 2 | LMU shared memory | ✅ Should work (same API) |
+| Le Mans Ultimate | LMU_RF2_Connector | ✅ Working |
+| rFactor 2 | LMU_RF2_Connector | ✅ Should work (same API) |
 
 ---
 
