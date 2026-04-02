@@ -38,6 +38,9 @@ def open_window(
     obj = component.create()
     assert obj is not None, component.errorString()
 
+    # Extract chrome component override first (before iterating extra_properties)
+    chrome_component = extra_properties.pop("chromeComponent", None)
+    
     obj.setProperty("hostActions", actions)
     obj.setProperty("theme", theme)
     obj.setProperty("windowTitle", manifest.title)
@@ -59,9 +62,19 @@ def open_window(
     if manifest.window_type == "main":
         plugin_panel_path = Path(__file__).parent.parent / "plugins" / "tinyui" / "app_pluginsPanel" / "qml" / "surface.qml"
         if plugin_panel_path.exists():
-            panel_url = QUrl.fromLocalFile(str(plugin_panel_path))
-            plugin_panel_component = QQmlComponent(engine, panel_url)
+            plugin_panel_url = QUrl.fromLocalFile(str(plugin_panel_path))
+            obj.setProperty("pluginPanelUrl", plugin_panel_url.toString())
+            plugin_panel_component = QQmlComponent(engine, plugin_panel_url)
             obj.setProperty("pluginPanelComponent", plugin_panel_component)
+    
+    # Load custom chrome from manifest if specified and no override provided
+    if chrome_component is None and manifest.chrome.custom_chrome:
+        chrome_url = QUrl.fromLocalFile(str(manifest.chrome.custom_chrome))
+        chrome_component = QQmlComponent(engine, chrome_url)
+    
+    # Apply custom chrome component if specified
+    if chrome_component is not None:
+        obj.setProperty("chromeComponent", chrome_component)
 
     attachment = attach_windowing(app=app, window=obj, theme=theme)
     if attachment.controller is not None:
@@ -72,4 +85,7 @@ def open_window(
         keepalive.append(surface_component)
     if plugin_panel_component:
         keepalive.append(plugin_panel_component)
+    if chrome_component:
+        keepalive.append(chrome_component)
     return WindowHandle(qml_window=obj, keepalive=tuple(keepalive))
+

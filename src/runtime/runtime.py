@@ -15,6 +15,7 @@ from runtime.menu import MenuRegistry, MenuItem, MenuSeparator
 from runtime.persistence import SettingsRegistry, SettingsSpec
 from runtime.plugin_context import PluginContext
 from runtime.statusbar import StatusbarRegistry, StatusbarItem
+from runtime.tabs import TabRegistry
 
 
 class Runtime:
@@ -24,6 +25,7 @@ class Runtime:
         self.settings:  SettingsRegistry  = SettingsRegistry(self.paths.config_dir)
         self.menu:      MenuRegistry      = MenuRegistry()
         self.statusbar: StatusbarRegistry = StatusbarRegistry()
+        self.tabs:      TabRegistry       = TabRegistry()
         self._active_plugin: str | None = None  # Currently active UI plugin
 
     def boot(self) -> None:
@@ -33,6 +35,7 @@ class Runtime:
         self.settings.load_persisted()
         self._register_menus()
         self._register_statusbar()
+        self._register_tabs()
         self._activate_plugins()
         self._init_active_plugin()
 
@@ -111,6 +114,12 @@ class Runtime:
                         source=source,
                     ))
 
+    def _register_tabs(self) -> None:
+        """Register tabs from manifests."""
+        for plugin_manifest in self._plugins.values():
+            for tab in plugin_manifest.tabs:
+                self.tabs.register(tab.target, tab)
+
     def _activate_plugins(self) -> None:
         plugins_parent = str(self.paths.plugins_dir.parent)
         if plugins_parent not in sys.path:
@@ -136,6 +145,7 @@ class Runtime:
                 if enabled is not False:  # Default to True if not set
                     self._active_plugin = plugin_id
                     self.statusbar.set_active_plugin(plugin_id)
+                    self.tabs.set_active_plugin(plugin_id)
                     break
 
     @property
@@ -152,6 +162,7 @@ class Runtime:
             return False  # Host and connectors cannot be active plugin
         self._active_plugin = plugin_id
         self.statusbar.set_active_plugin(plugin_id)
+        self.tabs.set_active_plugin(plugin_id)
         return True
 
     # ── Manifest queries ──────────────────────────────────────────────────

@@ -14,9 +14,9 @@ accent = "#74ADE8"
 accent-hover = "#85C1FF"
 accent-pressed = "#457CAD"
 accent-text = "#FFFFFF"
-success = "#A1C181"
-warning = "#DEC184"
-danger = "#E81123"
+success = "#4caf50"   # Green - active/host/connector in use
+warning = "#ff9800"   # Orange - selected
+danger = "#f44336"    # Red - inactive
 info = "#74ADE8"
 
 [font]

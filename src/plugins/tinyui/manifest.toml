@@ -20,7 +20,15 @@ menu = [
 
 [window.chrome]
 show_menu_button     = true
+show_tab_bar         = true
 show_status_bar      = true
+custom_chrome        = "app_hostChrome/qml/HostChromeShell.qml"
+
+[[tab]]
+id = "tinyui.widgets"
+label = "Widgets"
+target = "tinyui.main"
+surface = "app_widgetsTab/qml/surface.qml"
 
 [[window]]
 id      = "settings.main"

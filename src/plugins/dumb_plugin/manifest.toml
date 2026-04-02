@@ -1,0 +1,19 @@
+[plugin]
+id          = "dumb_plugin"
+type        = "plugin"
+version     = "1.0.0"
+author      = "Test Author"
+description = "Another dummy plugin for testing plugin switching"
+requires    = ["dummy_connector", "dumb_connector"]
+
+[[tab]]
+id = "dumb_plugin.widgets"
+label = "Dumb"
+target = "tinyui.main"
+surface = "app_widgets/qml/surface.qml"
+
+[[tab]]
+id = "dumb_plugin.settings"
+label = "Settings"
+target = "tinyui.main"
+surface = "app_widgets/qml/surface.qml"

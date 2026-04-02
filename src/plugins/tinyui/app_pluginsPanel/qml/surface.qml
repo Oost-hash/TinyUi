@@ -28,8 +28,40 @@ Rectangle {
     property var hostWindow: Window.window
     property var inspector: hostWindow && hostWindow.inspector ? hostWindow.inspector : null
     property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
+    
+    // Signal to request plugin activation
+    signal requestActivatePlugin(string pluginId)
     property var hostActions: hostWindow && hostWindow.hostActions ? hostWindow.hostActions : null
     property var selectedPlugin: null
+    property string pluginToActivate: ""  // Plugin waiting to be activated on close
+
+    // Function to call when panel is closing - activates selected plugin
+    function onPanelClosing() {
+        if (pluginToActivate !== "" && hostWindow && hostWindow.hostRuntime) {
+            hostWindow.hostRuntime.setActivePlugin(pluginToActivate)
+            pluginToActivate = ""  // Reset
+        }
+    }
+    
+    // Check if a connector is used by the active plugin
+    function isConnectorUsed(connectorId: string) : bool {
+        if (!hostWindow || !hostWindow.activePluginId || !inspector) return false
+        
+        // Find the active plugin
+        for (var i = 0; i < inspector.pluginList.length; i++) {
+            var group = inspector.pluginList[i]
+            for (var j = 0; j < group.plugins.length; j++) {
+                var plugin = group.plugins[j]
+                if (plugin.id === hostWindow.activePluginId) {
+                    // Check if this plugin requires the connector
+                    if (plugin.requires && plugin.requires.indexOf(connectorId) >= 0) {
+                        return true
+                    }
+                }
+            }
+        }
+        return false
+    }
 
     anchors.fill: parent
     color: theme ? theme.surface : "#17181c"
@@ -349,13 +381,10 @@ Rectangle {
 
                             width: parent.width
                             height: 40
-                            // Alternating: start with dark (surface), then surfaceAlt
-                            color: isSelected
-                                ? (theme ? theme.surfaceRaised : "#3b414d")
-                                : (index % 2 === 0 ? (theme ? theme.surface : "#17181c") : (theme ? theme.surfaceAlt : "#2f343e"))
-                            Behavior on color { ColorAnimation { duration: 80 } }
+                            // Alternating colors
+                            color: index % 2 === 0 ? (theme ? theme.surface : "#17181c") : (theme ? theme.surfaceAlt : "#2f343e")
 
-                            // Selected indicator
+                            // Selected indicator (accent color)
                             Rectangle {
                                 width: 3
                                 height: parent.height
@@ -386,20 +415,37 @@ Rectangle {
 
                             Row {
                                 anchors.fill: parent
-                                leftPadding: 16 + (isSelected ? 6 : 0)
+                                leftPadding: 16
                                 rightPadding: 12
                                 spacing: 8
-                                Behavior on leftPadding { NumberAnimation { duration: 120 } }
+
+                                // Status indicator dot
+                                // Priority: Green (active/host/connector-in-use) > Orange (selected) > Red (inactive)
+                                Rectangle {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 8
+                                    height: 8
+                                    radius: 4
+                                    color: {
+                                        // Check for "green" states first (highest priority)
+                                        if (modelData.type === "host") return theme ? theme.success : "#4caf50"
+                                        if (modelData.type === "connector" && root.isConnectorUsed(modelData.id)) return theme ? theme.success : "#4caf50"
+                                        if (modelData.id === hostWindow.activePluginId) return theme ? theme.success : "#4caf50"
+                                        // Then check for "orange" state (only if not already green)
+                                        if (isSelected) return theme ? theme.warning : "#ff9800"
+                                        // Default: red (inactive)
+                                        return theme ? theme.danger : "#f44336"
+                                    }
+                                }
 
                                 // Plugin name (bold)
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: modelData.id
-                                    color: isSelected ? (theme ? theme.accent : "#4a9eff") : (theme ? theme.text : "#ffffff")
+                                    color: theme ? theme.text : "#ffffff"
                                     font.pixelSize: theme ? theme.fontSizeBase : 13
                                     font.family: theme ? theme.fontFamily : "sans-serif"
                                     font.weight: Font.DemiBold
-                                    Behavior on color { ColorAnimation { duration: 80 } }
                                 }
 
                                 // Version
@@ -468,7 +514,13 @@ Rectangle {
                             MouseArea {
                                 anchors.fill: parent
                                 anchors.rightMargin: 80  // Don't trigger when clicking toggle/settings
-                                onClicked: root.selectedPlugin = modelData
+                                onClicked: {
+                                    root.selectedPlugin = modelData
+                                    // Mark for activation on panel close (not immediate)
+                                    if (modelData.type === "plugin") {
+                                        root.pluginToActivate = modelData.id
+                                    }
+                                }
                             }
                             HoverHandler { id: rowHover }
                         }

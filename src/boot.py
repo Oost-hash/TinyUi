@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 
 from app_api.host_actions import HostActions
+from app_api.host_runtime import HostRuntimeBridge
 from app_api.inspector import RuntimeInspector
 from app_api.qt import create_application, create_engine
 from app_api.theme import Theme
@@ -31,6 +32,7 @@ def main() -> int:
 
     # Create inspector for plugin panel and devtools
     inspector = RuntimeInspector(runtime.devtools_data())
+    host_runtime = HostRuntimeBridge(runtime, main_manifest.id)
     
     main_handle = open_window(
         main_manifest, 
@@ -38,10 +40,15 @@ def main() -> int:
         app=app, 
         actions=actions, 
         theme=theme,
-        inspector=inspector
+        inspector=inspector,
+        hostRuntime=host_runtime
     )
     main_handle.qml_window.setProperty("menuItems", runtime.menu.to_qml_host(main_manifest.id))
     main_handle.qml_window.setProperty("showStatusBar", True)
+    main_handle.qml_window.setProperty("showTabBar", True)
+    
+    # Set tabs from runtime
+    main_handle.qml_window.setProperty("tabModel", runtime.tabs.active_tab_model(main_manifest.id))
     
     # Set active plugin for statusbar
     active_plugin = runtime.active_plugin
