@@ -184,7 +184,17 @@ Item {
                         height: parent.height
                         verticalAlignment: Text.AlignVCenter
                         text:  modelData.value ?? ""
-                        color: theme ? theme.text : "#fff"
+                        color: {
+                            if (modelData.tag === "status") {
+                                var val = modelData.value ?? ""
+                                if (val === "active") return theme ? theme.success : "#4caf50"
+                                if (val === "error") return theme ? theme.danger : "#f44336"
+                                if (val === "enabling" || val === "loading") return theme ? theme.warning : "#ff9800"
+                                return theme ? theme.textMuted : "#888"
+                            }
+                            if (modelData.tag === "error") return theme ? theme.danger : "#f44336"
+                            return theme ? theme.text : "#fff"
+                        }
                         font.pixelSize: 11
                         font.family:    "Consolas, Courier New, monospace"
                         elide: Text.ElideRight

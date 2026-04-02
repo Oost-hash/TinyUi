@@ -48,14 +48,42 @@ class RuntimeInspector(QObject):
 
     @Property(list, constant=True)
     def pluginRows(self) -> list[dict]:
-        """Flat list for the Plugins tab — sections + rows."""
+        """Flat list for the Plugins tab — sections + rows with state."""
         rows: list[dict] = []
         for info in self._data.plugins:
+            # Section header with state
+            state_indicator = ""
+            if info.state == "active":
+                state_indicator = "[active]"
+            elif info.state in ("enabling", "loading"):
+                state_indicator = "[loading]"
+            elif info.state == "error":
+                state_indicator = "[error]"
+            
             rows.append({
                 "rowType":  "section",
                 "label":    info.plugin_id,
-                "sublabel": info.plugin_type,
+                "sublabel": f"{info.plugin_type} {state_indicator}".strip(),
             })
+            
+            # State row
+            rows.append({
+                "rowType": "row",
+                "key":     "state",
+                "value":   info.state,
+                "tag":     "status",
+            })
+            
+            # Error message if present
+            if info.error_message:
+                rows.append({
+                    "rowType": "row",
+                    "key":     "error",
+                    "value":   info.error_message,
+                    "tag":     "error",
+                })
+            
+            # Windows
             for window_id, window_type in info.windows:
                 rows.append({
                     "rowType": "row",
@@ -63,6 +91,8 @@ class RuntimeInspector(QObject):
                     "value":   window_id,
                     "tag":     window_type,
                 })
+            
+            # Settings count
             rows.append({
                 "rowType": "row",
                 "key":     "settings",
