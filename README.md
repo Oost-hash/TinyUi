@@ -21,11 +21,17 @@
 
 ## What is TinyUi?
 
-TinyUi is a modular overlay platform for sim racing with a manifest-driven plugin system.
+**TinyUi is a sim racing overlay platform that stays out of your way.**
 
-The goal is simple: connect to supported games, install or build plugins, and show live telemetry as overlays — without turning game integration, runtime logic, and UI into one monolithic app.
+Install plugins. Connect to your game. See live telemetry as overlays. That's it.
 
-Everything declares itself via `manifest.toml`. The runtime reads these manifests, loads plugins in the right order, and gives each one a scoped context to work in. No hardcoded menus, no magic global state.
+No monolithic apps where everything is welded together. No digging through settings that don't concern you. TinyUi is built around the idea that **plugins should just work** — independently, modularly, without stepping on each other.
+
+- **Connect** — Fire up your game. The connector finds it automatically.
+- **Install** — Drop a plugin in the folder. It shows up in the plugin panel, ready to use.
+- **Build** — Want your own overlay? Write a plugin. Declare what you need, get what you asked for. No boilerplate.
+
+TinyUi handles the boring stuff: window chrome, theming, settings persistence, game connection. You handle the racing.
 
 ---
 
