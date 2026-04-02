@@ -232,14 +232,34 @@ class Runtime:
                     self.tabs.set_active_plugin(plugin_id)
                     break
         
-        # Update state machines based on which plugins are active
-        for plugin_id, sm in self._plugin_states.items():
+        # Initialize state machines for all plugins
+        for plugin_id, manifest in self._plugins.items():
+            sm = self._plugin_states.get(plugin_id)
+            if not sm:
+                continue
+            
             if plugin_id == self._active_plugin:
+                # Active UI plugin - transition through all states quickly
                 if sm.state == PluginState.DISABLED:
+                    sm.transition(PluginState.ENABLING, "Boot enabling")
+                    sm.transition(PluginState.LOADING, "Boot loading")
                     sm.transition(PluginState.ACTIVE, "Boot active")
-            else:
-                # Keep as disabled
-                pass
+            elif manifest.plugin_type == "host":
+                # Host is always conceptually active
+                if sm.state == PluginState.DISABLED:
+                    sm.transition(PluginState.ENABLING, "Host enabling")
+                    sm.transition(PluginState.LOADING, "Host loading")
+                    sm.transition(PluginState.ACTIVE, "Host active")
+            elif manifest.plugin_type == "connector":
+                # Check if connector is used by active plugin
+                if self._active_plugin:
+                    active_manifest = self._plugins.get(self._active_plugin)
+                    if active_manifest and plugin_id in active_manifest.requires:
+                        if sm.state == PluginState.DISABLED:
+                            sm.transition(PluginState.ENABLING, "Connector enabling")
+                            sm.transition(PluginState.LOADING, "Connector loading")
+                            sm.transition(PluginState.ACTIVE, "Connector in use")
+            # Other plugins stay disabled
 
     @property
     def active_plugin(self) -> str | None:
