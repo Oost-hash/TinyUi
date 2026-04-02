@@ -38,6 +38,16 @@ Rectangle {
     Column {
         anchors.fill: parent
         spacing: 0
+        
+        // Refresh model when inspector data changes
+        Connections {
+            target: root.inspector
+            function onDataChanged() {
+                // Force model refresh by reassigning
+                pluginsTab.model = root.inspector ? root.inspector.pluginRows : []
+                settingsTab.model = root.inspector ? root.inspector.settingRows : []
+            }
+        }
 
         // Tab strip
         Rectangle {
@@ -99,6 +109,7 @@ Rectangle {
 
         // Plugins tab
         SchemaList {
+            id: pluginsTab
             visible: root.currentTab === 0
             width: parent.width
             height: parent.height - 32
@@ -111,6 +122,7 @@ Rectangle {
 
         // Settings tab
         SchemaList {
+            id: settingsTab
             visible: root.currentTab === 1
             width: parent.width
             height: parent.height - 32

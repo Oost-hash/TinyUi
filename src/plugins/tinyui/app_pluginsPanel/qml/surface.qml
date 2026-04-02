@@ -34,6 +34,21 @@ Rectangle {
     property var hostActions: hostWindow && hostWindow.hostActions ? hostWindow.hostActions : null
     property var selectedPlugin: null
     property string pluginToActivate: ""  // Plugin waiting to be activated on close
+    
+    // Track plugin states locally for live updates
+    property var pluginStates: ({})  // Map pluginId -> state
+
+    // Listen to state changes from runtime
+    Connections {
+        target: hostWindow ? hostWindow.hostRuntime : null
+        function onPluginStateChanged(pluginId, state) {
+            root.pluginStates[pluginId] = state
+            // Force update
+            var temp = root.pluginStates
+            root.pluginStates = {}
+            root.pluginStates = temp
+        }
+    }
 
     // Function to call when panel is closing - activates selected plugin
     function onPanelClosing() {
@@ -429,8 +444,9 @@ Rectangle {
                                         // Selection (orange) has highest priority
                                         if (isSelected) return theme ? theme.warning : "#ff9800"
                                         
-                                        // Then check state
-                                        var state = modelData.state || "disabled"
+                                        // Then check live state from pluginStates, fallback to modelData
+                                        var liveState = root.pluginStates[modelData.id]
+                                        var state = liveState || modelData.state || "disabled"
                                         if (state === "active") return theme ? theme.success : "#4caf50"
                                         if (state === "enabling" || state === "loading") return theme ? theme.warning : "#ff9800"
                                         if (state === "error") return theme ? theme.danger : "#f44336"
@@ -441,7 +457,8 @@ Rectangle {
                                     // Pulse animation for loading states
                                     SequentialAnimation on opacity {
                                         running: {
-                                            var s = modelData.state || "disabled"
+                                            var liveS = root.pluginStates[modelData.id]
+                                            var s = liveS || modelData.state || "disabled"
                                             return s === "enabling" || s === "loading" || s === "unloading"
                                         }
                                         loops: Animation.Infinite

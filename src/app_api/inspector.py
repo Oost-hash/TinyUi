@@ -3,17 +3,24 @@
 from __future__ import annotations
 
 from app_schema.manifest import DevToolsData
-from PySide6.QtCore import Property, QObject
+from PySide6.QtCore import Property, QObject, Signal
 
 
 class RuntimeInspector(QObject):
     """Read-only QML view of runtime schema data. Receives DevToolsData — no runtime dependency."""
+    
+    dataChanged = Signal()  # Emitted when data needs refresh
 
     def __init__(self, data: DevToolsData, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._data = data
+    
+    def update_data(self, data: DevToolsData) -> None:
+        """Update inspector data and notify QML."""
+        self._data = data
+        self.dataChanged.emit()
 
-    @Property(list, constant=True)
+    @Property(list, notify=dataChanged)
     def pluginList(self) -> list[dict]:
         """Grouped plugin list for Plugin Panel: host, plugins, connectors."""
         groups = {
@@ -46,7 +53,7 @@ class RuntimeInspector(QObject):
             groups["connector"],
         ]
 
-    @Property(list, constant=True)
+    @Property(list, notify=dataChanged)
     def pluginRows(self) -> list[dict]:
         """Flat list for the Plugins tab — sections + rows with state."""
         rows: list[dict] = []
@@ -101,7 +108,7 @@ class RuntimeInspector(QObject):
             })
         return rows
 
-    @Property(list, constant=True)
+    @Property(list, notify=dataChanged)
     def settingRows(self) -> list[dict]:
         """Flat list for the Settings tab — sections + rows."""
         rows: list[dict] = []
