@@ -2,27 +2,17 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import Literal
 
-
-@dataclass(frozen=True)
-class StatusbarItem:
-    """A statusbar item declared by a plugin."""
-    icon: str = ""           # Icon name/path (optional)
-    text: str = ""           # Text label (optional)
-    tooltip: str = ""        # Tooltip on hover
-    action: str = ""         # Action to trigger on click
-    source: str = "host"     # "host" | "plugin"
-    side: Literal["left", "right"] = "left"  # Which side of statusbar
+from runtime_schema import StatusbarItem
 
 
 class StatusbarRegistry:
-    """Collects statusbar items per window, similar to MenuRegistry."""
+    """Collects statusbar items per window."""
 
     def __init__(self) -> None:
         self._items: dict[str, list[StatusbarItem]] = {}
-        self._active_plugin: str | None = None  # Currently active plugin ID
+        self._active_plugin: str | None = None
 
     def add(self, window_id: str, item: StatusbarItem) -> None:
         """Add a statusbar item to a window."""
@@ -36,7 +26,7 @@ class StatusbarRegistry:
         return items
 
     def set_active_plugin(self, plugin_id: str | None) -> None:
-        """Set the currently active plugin (for right-side display)."""
+        """Set the currently active plugin."""
         self._active_plugin = plugin_id
 
     def get_active_plugin(self) -> str | None:

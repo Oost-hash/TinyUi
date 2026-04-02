@@ -24,22 +24,9 @@
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
-from enum import Enum, auto
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
 
-if TYPE_CHECKING:
-    from runtime.runtime import Runtime
-
-
-class PluginState(Enum):
-    """Plugin lifecycle states."""
-    DISABLED = auto()    # Plugin is disabled
-    ENABLING = auto()    # User enabled, preparing to load
-    LOADING = auto()     # Importing plugin module
-    ACTIVE = auto()      # Plugin is running
-    UNLOADING = auto()   # Deactivating, cleaning up
-    ERROR = auto()       # Error occurred during lifecycle
+from runtime_schema.plugin import PluginState
 
 
 @dataclass

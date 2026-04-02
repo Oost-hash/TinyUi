@@ -4,24 +4,24 @@ from __future__ import annotations
 
 import importlib
 import sys
-from typing import Callable
 
 from app_schema.manifest import (
     AppManifest, PluginManifest, MenuItem as MenuItemDecl, MenuSeparator as MenuSeparatorDecl,
     DevToolsData, PluginInfo, SettingInfo,
 )
 from runtime.app_paths import AppPaths
+from runtime_schema import (
+    EventBus, EventType, PluginState, PluginStateData,
+    PluginActivatedData, PluginErrorData
+)
 from runtime.manifest import load_plugin_manifest
 from runtime.menu import MenuRegistry, MenuItem, MenuSeparator
 from runtime.persistence import SettingsRegistry, SettingsSpec
-from runtime.events import EventBus
 from runtime.plugin_context import PluginContext
 from runtime.statusbar import StatusbarRegistry, StatusbarItem
-from runtime.plugin_state import PluginState, PluginStateMachine
+from runtime.plugin_state import PluginStateMachine
+from runtime_schema.plugin import PluginState
 from runtime.tabs import TabRegistry
-
-
-StateChangeCallback = Callable[[str, str], None]  # plugin_id, state_name
 
 
 class Runtime:
@@ -193,10 +193,25 @@ class Runtime:
             if hasattr(mod, "activate"):
                 mod.activate(ctx)
             sm.transition(PluginState.ACTIVE, "Activation successful")
-            self.events.emit_state_change(plugin_id, "active")
+            self.events.emit_typed(EventType.PLUGIN_STATE_CHANGED, PluginStateData(
+                plugin_id=plugin_id,
+                old_state="loading",
+                new_state="active"
+            ))
+            self.events.emit_typed(EventType.PLUGIN_ACTIVATED, PluginActivatedData(
+                plugin_id=plugin_id
+            ))
         except Exception as e:
             sm.set_error(str(e))
-            self.events.emit_state_change(plugin_id, "error")
+            self.events.emit_typed(EventType.PLUGIN_STATE_CHANGED, PluginStateData(
+                plugin_id=plugin_id,
+                old_state="loading",
+                new_state="error"
+            ))
+            self.events.emit_typed(EventType.PLUGIN_ERROR, PluginErrorData(
+                plugin_id=plugin_id,
+                error_message=str(e)
+            ))
 
     def _deactivate_plugin(self, plugin_id: str) -> None:
         """Deactivate a plugin."""
@@ -286,24 +301,40 @@ class Runtime:
         if self._active_plugin and self._active_plugin != plugin_id:
             old_sm = self._plugin_states.get(self._active_plugin)
             if old_sm and old_sm.state == PluginState.ACTIVE:
+                old_state = old_sm.state_name
                 old_sm.transition(PluginState.UNLOADING, "Switching plugin")
-                self.events.emit_state_change(self._active_plugin, "unloading")
+                self.events.emit_typed(EventType.PLUGIN_STATE_CHANGED, PluginStateData(
+                    plugin_id=self._active_plugin,
+                    old_state=old_state,
+                    new_state="unloading"
+                ))
                 self._deactivate_plugin(self._active_plugin)
                 old_sm.transition(PluginState.DISABLED, "Switched away")
-                self.events.emit_state_change(self._active_plugin, "disabled")
+                self.events.emit_typed(EventType.PLUGIN_STATE_CHANGED, PluginStateData(
+                    plugin_id=self._active_plugin,
+                    old_state="unloading",
+                    new_state="disabled"
+                ))
         
         # Activate new plugin
         self._active_plugin = plugin_id
         self.statusbar.set_active_plugin(plugin_id)
         self.tabs.set_active_plugin(plugin_id)
-        self.events.emit_active_plugin_change(plugin_id)
         
         new_sm = self._plugin_states.get(plugin_id)
         if new_sm and new_sm.state == PluginState.DISABLED:
             new_sm.transition(PluginState.ENABLING, "User enabled")
-            self.events.emit_state_change(plugin_id, "enabling")
+            self.events.emit_typed(EventType.PLUGIN_STATE_CHANGED, PluginStateData(
+                plugin_id=plugin_id,
+                old_state="disabled",
+                new_state="enabling"
+            ))
             new_sm.transition(PluginState.LOADING, "Loading module")
-            self.events.emit_state_change(plugin_id, "loading")
+            self.events.emit_typed(EventType.PLUGIN_STATE_CHANGED, PluginStateData(
+                plugin_id=plugin_id,
+                old_state="enabling",
+                new_state="loading"
+            ))
             self._load_and_activate_plugin(plugin_id)
         
         return True

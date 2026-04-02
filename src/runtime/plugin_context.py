@@ -1,13 +1,7 @@
-"""PluginContext — what a plugin receives upon activation."""
+"""PluginContext re-export from runtime_schema."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from runtime_schema import PluginContext
 
-from runtime.persistence import ScopedSettings
-
-
-@dataclass
-class PluginContext:
-    plugin_id: str
-    settings:  ScopedSettings
+__all__ = ["PluginContext"]

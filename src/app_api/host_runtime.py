@@ -1,29 +1,10 @@
-#  TinyUI
-#  Copyright (C) 2026 Oost-hash
-#
-#  This file is part of TinyUI.
-#
-#  TinyUI is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  TinyUI is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#
-#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
-#  licensed under GPLv3.
-
 """Bridge between QML and Python runtime for host operations."""
 
 from __future__ import annotations
 
 from PySide6.QtCore import QObject, Signal, Slot
+
+from runtime_schema import Event, EventType, PluginStateData, PluginErrorData
 
 
 class HostRuntimeBridge(QObject):
@@ -32,6 +13,7 @@ class HostRuntimeBridge(QObject):
     # Signals for QML
     activePluginChanged = Signal(str)       # plugin_id
     pluginStateChanged = Signal(str, str)   # plugin_id, state_name
+    pluginError = Signal(str, str)          # plugin_id, error_message
     tabModelChanged = Signal(list)          # tab_model
     
     def __init__(self, runtime: object, main_window_id: str = "") -> None:
@@ -41,16 +23,19 @@ class HostRuntimeBridge(QObject):
         
         # Subscribe to runtime events
         if hasattr(runtime, 'events'):
-            runtime.events.on_state_change(self._on_state_changed)
-            runtime.events.on_active_plugin_change(self._on_active_changed)
+            runtime.events.on(EventType.PLUGIN_STATE_CHANGED, self._on_state_changed)
+            runtime.events.on(EventType.PLUGIN_ERROR, self._on_error)
     
-    def _on_state_changed(self, plugin_id: str, state: str) -> None:
+    def _on_state_changed(self, event: Event[PluginStateData]) -> None:
         """Forward runtime state changes to QML."""
-        self.pluginStateChanged.emit(plugin_id, state)
+        data = event.data
+        self.pluginStateChanged.emit(data.plugin_id, data.new_state)
     
-    def _on_active_changed(self, plugin_id: str) -> None:
-        """Forward active plugin changes to QML."""
-        self.activePluginChanged.emit(plugin_id)
+    def _on_error(self, event: Event) -> None:
+        """Forward plugin errors to QML."""
+        data = event.data
+        if isinstance(data, PluginErrorData):
+            self.pluginError.emit(data.plugin_id, data.error_message)
     
     @Slot(str, result=bool)
     def setActivePlugin(self, plugin_id: str) -> bool:
@@ -58,7 +43,6 @@ class HostRuntimeBridge(QObject):
         if hasattr(self._runtime, 'set_active_plugin'):
             result = self._runtime.set_active_plugin(plugin_id)
             if result and hasattr(self._runtime, 'tabs'):
-                # Emit tab model update
                 new_model = self._runtime.tabs.active_tab_model(self._main_window_id)
                 self.tabModelChanged.emit(new_model)
             return result
@@ -68,6 +52,7 @@ class HostRuntimeBridge(QObject):
     def getPluginState(self, plugin_id: str) -> str:
         """Get current state of a plugin."""
         if hasattr(self._runtime, '_plugin_states'):
+            from runtime.plugin_state import PluginStateMachine
             sm = self._runtime._plugin_states.get(plugin_id)
             return sm.state_name if sm else "disabled"
         return "disabled"

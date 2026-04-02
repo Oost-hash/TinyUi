@@ -3,21 +3,10 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-
-@dataclass(frozen=True)
-class SettingsSpec:
-    key:     str
-    label:   str
-    default: Any
-    type:    str                       # "bool" | "str" | "int" | "float" | "choice"
-    choices: list[str] = field(default_factory=list)
-
-
-_VALID_TYPES = {"bool", "str", "int", "float", "choice"}
+from runtime_schema import SettingsSpec, VALID_SETTING_TYPES
 
 
 class SettingsRegistry:
