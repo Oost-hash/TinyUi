@@ -44,20 +44,159 @@ Item {
     property var pluginMenuLabel: hostWindow && hostWindow.pluginMenuLabel ? hostWindow.pluginMenuLabel : "Plugins"
     property string statusActiveLabel: hostWindow && typeof hostWindow.statusActiveLabel === "string" ? hostWindow.statusActiveLabel : ""
     property bool pluginMenuOpen: false
+    property bool menuOpen: false
+    property string pendingPluginActivation: ""
 
-    readonly property url menuIconSource: Qt.resolvedUrl("../../../../app_assets/icons/" + (baseChrome.menuOpen ? "menu-open.svg" : "menu.svg"))
+    readonly property url menuIconSource: Qt.resolvedUrl("../../../../app_assets/icons/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
 
-    // Base chrome
+    // Base chrome — menu button suppressed so HostChromeShell owns it
     AppApi.AppChromeShell {
         id: baseChrome
         anchors.fill: parent
+        externalMenuButton: true
     }
 
-    // Plugin menu button - positioned right after the hamburger menu
+    // Close menus when clicking anywhere outside them
+    MouseArea {
+        anchors.fill: parent
+        enabled: root.menuOpen || root.pluginMenuOpen
+        onClicked: {
+            root.menuOpen = false
+            root.pluginMenuOpen = false
+        }
+        z: 15
+    }
+
+    // Hamburger menu button — owned by host plugin for full styling control
+    Rectangle {
+        id: hamburgerButton
+        x: 0
+        y: 0
+        z: 25
+        height: 32
+        width: hamburgerRow.implicitWidth + 28
+        color: hamburgerMouse.containsMouse || root.menuOpen
+            ? (root.theme ? root.theme.surfaceAlt : "#2f343e")
+            : "transparent"
+
+        Row {
+            id: hamburgerRow
+            anchors.left: parent.left
+            anchors.leftMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 10
+
+            Image {
+                anchors.verticalCenter: parent.verticalCenter
+                source: root.menuIconSource
+                sourceSize.width: 18
+                sourceSize.height: 18
+                width: 18
+                height: 18
+                smooth: true
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.windowTitle
+                color: hamburgerMouse.containsMouse || root.menuOpen
+                    ? "#FFFFFF"
+                    : (root.theme ? root.theme.textMuted : "#878a98")
+                font.pixelSize: 12
+            }
+        }
+
+        MouseArea {
+            id: hamburgerMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            onClicked: root.menuOpen = !root.menuOpen
+        }
+    }
+
+    // Hamburger dropdown — rendered at HostChromeShell level so z-index is correct above plugin panel
+    Item {
+        z: 50
+        x: 0
+        y: 32
+        width: 160
+        height: hamburgerMenuColumn.implicitHeight
+        visible: root.menuOpen
+
+        Rectangle { anchors.fill: parent; color: root.theme ? root.theme.surfaceAlt : "#2f343e" }
+        Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: root.theme ? root.theme.border : "#464b57" }
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.theme ? root.theme.border : "#464b57" }
+        Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: root.theme ? root.theme.border : "#464b57" }
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: mouse.accepted = true
+        }
+
+        Column {
+            id: hamburgerMenuColumn
+            width: parent.width
+            spacing: 0
+
+            Repeater {
+                model: root.menuItems
+
+                delegate: Item {
+                    required property var modelData
+                    visible: modelData.visible === undefined ? true : !!modelData.visible
+                    width: 160
+                    height: visible ? (modelData.separator ? 9 : 28) : 0
+
+                    Rectangle {
+                        visible: !!modelData.separator
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        height: 1
+                        color: root.theme ? root.theme.border : "#464b57"
+                    }
+
+                    Rectangle {
+                        visible: !modelData.separator
+                        anchors.fill: parent
+                        color: hamburgerItemMouse.containsMouse
+                            ? (root.theme ? root.theme.surfaceRaised : "#3b414d")
+                            : "transparent"
+
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 12
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData.label
+                            color: root.theme ? root.theme.text : "#dce0e5"
+                            font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                        }
+
+                        MouseArea {
+                            id: hamburgerItemMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: {
+                                root.menuOpen = false
+                                if (root.hostActions)
+                                    root.hostActions.trigger(modelData.action)
+                                else if (modelData.action === "close" && root.hostWindow)
+                                    root.hostWindow.close()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Plugin menu button - positioned right after the hamburger button
     Rectangle {
         id: pluginMenuButton
         visible: root.pluginMenuItems.length > 0
-        x: baseChrome.menuButtonWidth || 100  // Use actual width of hamburger menu
+        x: hamburgerButton.width
         y: 0
         width: pluginMenuLabelText.implicitWidth + 24
         height: 32
@@ -84,9 +223,9 @@ Item {
         }
     }
 
-    // Plugin menu dropdown
+    // Plugin menu dropdown — z:50 so it renders above the plugin panel (z:30)
     Item {
-        z: 40
+        z: 50
         x: pluginMenuButton.x
         y: 32
         width: 160
@@ -174,26 +313,15 @@ Item {
         
         onLoaded: {
             if (item && hostWindow) {
-                // Connect immediate activation (for backwards compatibility)
-                item.requestActivatePlugin.connect(function(pluginId) {
-                    if (hostWindow.hostRuntime) {
-                        hostWindow.hostRuntime.setActivePlugin(pluginId)
-                    }
+                // Mirror selected plugin into HostChromeShell so it survives item destruction
+                item.pluginToActivateChanged.connect(function() {
+                    root.pendingPluginActivation = item.pluginToActivate || ""
                 })
+                root.pendingPluginActivation = item.pluginToActivate || ""
             }
         }
     }
-    
-    // Notify panel when it's being closed (to trigger delayed activation)
-    Connections {
-        target: hostWindow
-        function onShowPluginPanelChanged() {
-            if (!hostWindow.showPluginPanel && pluginPanelLoader.item) {
-                // Panel is closing - trigger activation
-                pluginPanelLoader.item.onPanelClosing()
-            }
-        }
-    }
+
 
     // Statusbar with plugin picker
     Rectangle {
@@ -300,8 +428,16 @@ Item {
                 anchors.fill: parent
                 hoverEnabled: true
                 onClicked: {
-                    if (hostWindow)
-                        hostWindow.showPluginPanel = !hostWindow.showPluginPanel
+                    if (!hostWindow) return
+                    // Activate pending plugin before destroying the panel item
+                    if (hostWindow.showPluginPanel && root.pendingPluginActivation !== "" && hostWindow.hostRuntime) {
+                        hostWindow.hostRuntime.setActivePlugin(root.pendingPluginActivation)
+                        root.pendingPluginActivation = ""
+                    }
+                    if (!hostWindow.showPluginPanel) {
+                        root.pendingPluginActivation = ""
+                    }
+                    hostWindow.showPluginPanel = !hostWindow.showPluginPanel
                 }
             }
         }

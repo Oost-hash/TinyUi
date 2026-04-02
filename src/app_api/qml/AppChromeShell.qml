@@ -52,6 +52,8 @@ Item {
         showStatusLeftItems: true
     })
     property bool menuOpen: false
+    // When true, the menu button and dropdown are suppressed so an external chrome can own them
+    property bool externalMenuButton: false
 
     readonly property url menuIconSource: Qt.resolvedUrl("../../app_assets/icons/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
     readonly property url minimizeIconSource: Qt.resolvedUrl("../../app_assets/icons/window-minimize.svg")
@@ -59,8 +61,8 @@ Item {
     readonly property url restoreIconSource: Qt.resolvedUrl("../../app_assets/icons/window-restore.svg")
     readonly property url closeIconSource: Qt.resolvedUrl("../../app_assets/icons/window-close.svg")
     
-    // Export menu button width for HostChromeShell to position plugin menu
-    readonly property real menuButtonWidth: menuButton.width
+    // Export menu button width for external chrome to position adjacent buttons (0 when suppressed)
+    readonly property real menuButtonWidth: root.externalMenuButton ? 0 : menuButton.width
 
     // Close menu when clicking anywhere in the window (behind other content)
     MouseArea {
@@ -88,7 +90,7 @@ Item {
 
         Rectangle {
             id: menuButton
-            visible: !!root.chromePolicy.showMenuButton
+            visible: !!root.chromePolicy.showMenuButton && !root.externalMenuButton
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
@@ -107,6 +109,7 @@ Item {
 
         Row {
             id: menuRow
+            visible: !root.externalMenuButton
             anchors.left: menuButton.left
             anchors.leftMargin: 12
             anchors.verticalCenter: parent.verticalCenter
@@ -153,7 +156,7 @@ Item {
             y: titleBar.height
             width: 160
             height: menuColumn.implicitHeight
-            visible: !!root.chromePolicy.showMenuButton && root.menuOpen
+            visible: !!root.chromePolicy.showMenuButton && root.menuOpen && !root.externalMenuButton
 
             Rectangle { anchors.fill: parent; color: root.theme ? root.theme.surfaceAlt : "#2f343e" }
             Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: root.theme ? root.theme.border : "#464b57" }

@@ -29,8 +29,6 @@ Rectangle {
     property var inspector: hostWindow && hostWindow.inspector ? hostWindow.inspector : null
     property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     
-    // Signal to request plugin activation
-    signal requestActivatePlugin(string pluginId)
     property var hostActions: hostWindow && hostWindow.hostActions ? hostWindow.hostActions : null
     property var selectedPlugin: null
     property string pluginToActivate: ""  // Plugin waiting to be activated on close
@@ -50,14 +48,6 @@ Rectangle {
         }
     }
 
-    // Function to call when panel is closing - activates selected plugin
-    function onPanelClosing() {
-        if (pluginToActivate !== "" && hostWindow && hostWindow.hostRuntime) {
-            hostWindow.hostRuntime.setActivePlugin(pluginToActivate)
-            pluginToActivate = ""  // Reset
-        }
-    }
-    
     // Check if a connector is used by the active plugin
     function isConnectorUsed(connectorId: string) : bool {
         if (!hostWindow || !hostWindow.activePluginId || !inspector) return false
@@ -90,6 +80,7 @@ Rectangle {
                 for (var j = 0; j < group.plugins.length; j++) {
                     if (group.plugins[j].id === hostWindow.activePluginId) {
                         selectedPlugin = group.plugins[j]
+                        pluginToActivate = ""
                         return
                     }
                 }
@@ -349,7 +340,7 @@ Rectangle {
                 anchors.top: listHeader.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.bottom: parent.bottom
+                anchors.bottom: pendingActivationFooter.visible ? pendingActivationFooter.top : parent.bottom
                 clip: true
                 spacing: 0
                 model: root.inspector ? root.inspector.pluginList : []
@@ -393,6 +384,9 @@ Rectangle {
                             readonly property bool isSelected:
                                 root.selectedPlugin !== null
                                 && root.selectedPlugin.id === modelData.id
+                            readonly property bool isPendingActivation:
+                                root.pluginToActivate !== ""
+                                && root.pluginToActivate === modelData.id
 
                             width: parent.width
                             height: 40
@@ -403,7 +397,9 @@ Rectangle {
                             Rectangle {
                                 width: 3
                                 height: parent.height
-                                color: theme ? theme.accent : "#4a9eff"
+                                color: isPendingActivation
+                                    ? (theme ? theme.warning : "#ff9800")
+                                    : (theme ? theme.accent : "#4a9eff")
                                 visible: isSelected
                             }
 
@@ -441,8 +437,8 @@ Rectangle {
                                     height: 8
                                     radius: 4
                                     color: {
-                                        // Selection (orange) has highest priority
-                                        if (isSelected) return theme ? theme.warning : "#ff9800"
+                                        // Pending activation is orange until the panel closes
+                                        if (isPendingActivation) return theme ? theme.warning : "#ff9800"
                                         
                                         // Then check live state from pluginStates, fallback to modelData
                                         var liveState = root.pluginStates[modelData.id]
@@ -487,7 +483,7 @@ Rectangle {
                                     font.family: theme ? theme.fontFamily : "sans-serif"
                                 }
 
-                                Item { Layout.fillWidth: true; width: parent.width - 200 }  // Spacer that pushes right items to edge
+                                Item { width: parent.width - 200 }  // Spacer that pushes right items to edge
 
                                 // Toggle switch (not for host)
                                 Rectangle {
@@ -545,15 +541,46 @@ Rectangle {
                                 anchors.rightMargin: 80  // Don't trigger when clicking toggle/settings
                                 onClicked: {
                                     root.selectedPlugin = modelData
-                                    // Mark for activation on panel close (not immediate)
                                     if (modelData.type === "plugin") {
-                                        root.pluginToActivate = modelData.id
+                                        root.pluginToActivate = modelData.id !== hostWindow.activePluginId
+                                            ? modelData.id
+                                            : ""
+                                    } else {
+                                        root.pluginToActivate = ""
                                     }
                                 }
                             }
                             HoverHandler { id: rowHover }
                         }
                     }
+                }
+            }
+
+            Rectangle {
+                id: pendingActivationFooter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                height: 30
+                visible: root.pluginToActivate !== ""
+                color: theme ? theme.surfaceAlt : "#2f343e"
+
+                Rectangle {
+                    anchors.top: parent.top
+                    width: parent.width
+                    height: 1
+                    color: theme ? theme.border : "#464b57"
+                }
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 16
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "Close to load plugin"
+                    color: theme ? theme.warning : "#ff9800"
+                    font.pixelSize: theme ? theme.fontSizeSmall : 11
+                    font.family: theme ? theme.fontFamily : "sans-serif"
+                    font.weight: Font.Medium
                 }
             }
         }
