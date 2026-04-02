@@ -27,18 +27,24 @@ Item {
     id: root
 
     readonly property var hostWindow: Window.window
+    readonly property var hostRuntime: hostWindow && hostWindow.hostRuntime ? hostWindow.hostRuntime : null
     readonly property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     readonly property var hostActions: hostWindow && hostWindow.hostActions ? hostWindow.hostActions : null
     readonly property var windowController: hostWindow && hostWindow.windowController ? hostWindow.windowController : null
 
     property string windowTitle: hostWindow && typeof hostWindow.windowTitle === "string" ? hostWindow.windowTitle : ""
-    property var menuItems: hostWindow && hostWindow.menuItems ? hostWindow.menuItems : []
-    property var tabLabels: hostWindow && hostWindow.tabLabels ? hostWindow.tabLabels : []
+    
+    // UI state from hostWindow (set by HostedWindow from hostRuntime signals)
+    property var menuItems: hostWindow ? hostWindow.menuItems : []
+    property var pluginMenuItems: hostWindow ? hostWindow.pluginMenuItems : []
+    property var pluginMenuLabel: hostWindow ? hostWindow.pluginMenuLabel : ""
+    property var tabModel: hostWindow ? hostWindow.tabModel : []
+    property var activePlugin: hostWindow ? hostWindow.activePluginId : ""
+    
     property int currentTab: hostWindow && typeof hostWindow.currentTab === "number" ? hostWindow.currentTab : 0
     property bool showTabBar: hostWindow && typeof hostWindow.showTabBar === "boolean" ? hostWindow.showTabBar : false
     property bool showStatusBar: hostWindow && typeof hostWindow.showStatusBar === "boolean" ? hostWindow.showStatusBar : false
-    property var statusItems: hostWindow && hostWindow.statusItems ? hostWindow.statusItems : []
-    property string statusActiveLabel: hostWindow && typeof hostWindow.statusActiveLabel === "string" ? hostWindow.statusActiveLabel : ""
+    property var statusItems: hostWindow ? hostWindow.statusItems : []
     property var chromePolicy: hostWindow && hostWindow.chromePolicy ? hostWindow.chromePolicy : ({
         showMenuButton: true,
         showTitleText: true,
@@ -52,6 +58,17 @@ Item {
     readonly property url maximizeIconSource: Qt.resolvedUrl("../../app_assets/icons/window-maximize.svg")
     readonly property url restoreIconSource: Qt.resolvedUrl("../../app_assets/icons/window-restore.svg")
     readonly property url closeIconSource: Qt.resolvedUrl("../../app_assets/icons/window-close.svg")
+    
+    // Export menu button width for HostChromeShell to position plugin menu
+    readonly property real menuButtonWidth: menuButton.width
+
+    // Close menu when clicking anywhere in the window (behind other content)
+    MouseArea {
+        anchors.fill: parent
+        enabled: root.menuOpen
+        onClicked: root.menuOpen = false
+        z: 15  // Below menu dropdown (z:40) but above content
+    }
 
     Rectangle {
         id: titleBar
@@ -143,6 +160,12 @@ Item {
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.theme ? root.theme.border : "#464b57" }
             Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: root.theme ? root.theme.border : "#464b57" }
 
+            // Prevent clicks from closing the menu immediately
+            MouseArea {
+                anchors.fill: parent
+                onClicked: mouse.accepted = true
+            }
+
             Column {
                 id: menuColumn
                 width: parent.width
@@ -151,15 +174,13 @@ Item {
                 Repeater {
                     model: root.menuItems
 
-                    delegate: Rectangle {
+                    delegate: Item {
                         required property var modelData
                         visible: modelData.visible === undefined ? true : !!modelData.visible
                         width: menuDropdown.width
                         height: visible ? (modelData.separator ? 9 : 28) : 0
-                        color: menuItemMouse.containsMouse
-                            ? (root.theme ? root.theme.surfaceRaised : "#3b414d")
-                            : "transparent"
 
+                        // Separator line
                         Rectangle {
                             visible: !!modelData.separator
                             anchors.verticalCenter: parent.verticalCenter
@@ -171,27 +192,34 @@ Item {
                             color: root.theme ? root.theme.border : "#464b57"
                         }
 
-                        Text {
+                        // Clickable/hoverable area for non-separator items
+                        Rectangle {
                             visible: !modelData.separator
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.label
-                            color: root.theme ? root.theme.text : "#dce0e5"
-                            font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
-                        }
-
-                        MouseArea {
-                            id: menuItemMouse
                             anchors.fill: parent
-                            hoverEnabled: true
-                            enabled: !modelData.separator
-                            onClicked: {
-                                root.menuOpen = false
-                                if (root.hostActions)
-                                    root.hostActions.trigger(modelData.action)
-                                else if (modelData.action === "close" && root.hostWindow)
-                                    root.hostWindow.close()
+                            color: menuItemMouse.containsMouse
+                                ? (root.theme ? root.theme.surfaceRaised : "#3b414d")
+                                : "transparent"
+
+                            Text {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 12
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: modelData.label
+                                color: root.theme ? root.theme.text : "#dce0e5"
+                                font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                            }
+
+                            MouseArea {
+                                id: menuItemMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: {
+                                    root.menuOpen = false
+                                    if (root.hostActions)
+                                        root.hostActions.trigger(modelData.action)
+                                    else if (modelData.action === "close" && root.hostWindow)
+                                        root.hostWindow.close()
+                                }
                             }
                         }
                     }
@@ -267,9 +295,10 @@ Item {
         y: titleBar.height
         width: root.width
         height: 42
-        visible: root.showTabBar && hostWindow && hostWindow.tabModel && hostWindow.tabModel.length > 0
+        visible: root.showTabBar && hostWindow && hostWindow.tabModel && hostWindow.tabModel.length > 0 && !(hostWindow && hostWindow.showPluginPanel)
         color: root.theme ? root.theme.surfaceAlt : "#2f343e"
         z: 5
+        
 
         Rectangle {
             anchors.bottom: parent.bottom
@@ -295,6 +324,7 @@ Item {
                         ? (root.theme ? root.theme.surface : "#282c33")
                         : (root.theme ? root.theme.surfaceAlt : "#2f343e")
 
+                    // Left border
                     Rectangle {
                         anchors.left: parent.left
                         anchors.top: parent.top
@@ -303,6 +333,16 @@ Item {
                         color: root.theme ? root.theme.border : "#3a4452"
                     }
 
+                    // Right border
+                    Rectangle {
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: 1
+                        color: root.theme ? root.theme.border : "#3a4452"
+                    }
+
+                    // Bottom border (only for inactive tabs)
                     Rectangle {
                         anchors.bottom: parent.bottom
                         anchors.left: parent.left
