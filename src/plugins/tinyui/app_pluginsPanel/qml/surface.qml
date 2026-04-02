@@ -37,11 +37,8 @@ Rectangle {
 
     // Function to call when panel is closing - activates selected plugin
     function onPanelClosing() {
-        console.log("onPanelClosing called, pluginToActivate:", pluginToActivate)
         if (pluginToActivate !== "" && hostWindow && hostWindow.hostRuntime) {
-            console.log("Calling setActivePlugin for:", pluginToActivate)
-            var result = hostWindow.hostRuntime.setActivePlugin(pluginToActivate)
-            console.log("setActivePlugin result:", result)
+            hostWindow.hostRuntime.setActivePlugin(pluginToActivate)
             pluginToActivate = ""  // Reset
         }
     }
