@@ -15,6 +15,7 @@ from runtime.menu import MenuRegistry, MenuItem, MenuSeparator
 from runtime.persistence import SettingsRegistry, SettingsSpec
 from runtime.plugin_context import PluginContext
 from runtime.statusbar import StatusbarRegistry, StatusbarItem
+from runtime.plugin_state import PluginState, PluginStateMachine
 from runtime.tabs import TabRegistry
 
 
@@ -26,11 +27,13 @@ class Runtime:
         self.menu:      MenuRegistry      = MenuRegistry()
         self.statusbar: StatusbarRegistry = StatusbarRegistry()
         self.tabs:      TabRegistry       = TabRegistry()
+        self._plugin_states: dict[str, PluginStateMachine] = {}
         self._active_plugin: str | None = None  # Currently active UI plugin
 
     def boot(self) -> None:
         self._load_plugin("tinyui")
         self._discover_plugins()
+        self._init_plugin_states()
         self._register_settings()
         self.settings.load_persisted()
         self._register_menus()
@@ -120,6 +123,87 @@ class Runtime:
             for tab in plugin_manifest.tabs:
                 self.tabs.register(tab.target, tab)
 
+    # ── Plugin state management ───────────────────────────────────────────
+
+    def _init_plugin_states(self) -> None:
+        """Initialize state machines for all plugins."""
+        for plugin_id in self._plugins:
+            self._plugin_states[plugin_id] = PluginStateMachine(plugin_id)
+
+    def get_plugin_state(self, plugin_id: str) -> PluginState:
+        """Get current state of a plugin."""
+        if plugin_id not in self._plugin_states:
+            return PluginState.DISABLED
+        return self._plugin_states[plugin_id].state
+
+    def get_plugin_state_machine(self, plugin_id: str) -> PluginStateMachine | None:
+        """Get state machine for a plugin."""
+        return self._plugin_states.get(plugin_id)
+
+    def enable_plugin(self, plugin_id: str) -> bool:
+        """Start enabling a plugin (disabled -> enabling -> loading -> active)."""
+        sm = self._plugin_states.get(plugin_id)
+        if not sm:
+            return False
+        
+        # Start transition: disabled -> enabling
+        if not sm.transition(PluginState.ENABLING, "User enabled"):
+            return False
+        
+        # Continue to loading immediately
+        sm.transition(PluginState.LOADING, "Loading module")
+        
+        # Actually load and activate the plugin
+        self._load_and_activate_plugin(plugin_id)
+        return True
+
+    def disable_plugin(self, plugin_id: str) -> bool:
+        """Disable a plugin (active -> unloading -> disabled)."""
+        sm = self._plugin_states.get(plugin_id)
+        if not sm:
+            return False
+        
+        current = sm.state
+        if current == PluginState.ACTIVE:
+            sm.transition(PluginState.UNLOADING, "User disabled")
+            self._deactivate_plugin(plugin_id)
+        
+        sm.transition(PluginState.DISABLED, "Disabled")
+        return True
+
+    def _load_and_activate_plugin(self, plugin_id: str) -> None:
+        """Load plugin module and activate it."""
+        sm = self._plugin_states.get(plugin_id)
+        if not sm:
+            return
+        
+        ctx = PluginContext(
+            plugin_id=plugin_id,
+            settings=self.settings.scoped(plugin_id),
+        )
+        
+        try:
+            mod = importlib.import_module(f"plugins.{plugin_id}.plugin")
+            if hasattr(mod, "activate"):
+                mod.activate(ctx)
+            sm.transition(PluginState.ACTIVE, "Activation successful")
+        except Exception as e:
+            sm.set_error(str(e))
+
+    def _deactivate_plugin(self, plugin_id: str) -> None:
+        """Deactivate a plugin."""
+        ctx = PluginContext(
+            plugin_id=plugin_id,
+            settings=self.settings.scoped(plugin_id),
+        )
+        
+        try:
+            mod = importlib.import_module(f"plugins.{plugin_id}.plugin")
+            if hasattr(mod, "deactivate"):
+                mod.deactivate(ctx)
+        except Exception:
+            pass  # Ignore deactivation errors
+
     def _activate_plugins(self) -> None:
         plugins_parent = str(self.paths.plugins_dir.parent)
         if plugins_parent not in sys.path:
@@ -147,6 +231,15 @@ class Runtime:
                     self.statusbar.set_active_plugin(plugin_id)
                     self.tabs.set_active_plugin(plugin_id)
                     break
+        
+        # Update state machines based on which plugins are active
+        for plugin_id, sm in self._plugin_states.items():
+            if plugin_id == self._active_plugin:
+                if sm.state == PluginState.DISABLED:
+                    sm.transition(PluginState.ACTIVE, "Boot active")
+            else:
+                # Keep as disabled
+                pass
 
     @property
     def active_plugin(self) -> str | None:
@@ -160,9 +253,25 @@ class Runtime:
         manifest = self._plugins[plugin_id]
         if manifest.plugin_type != "plugin":
             return False  # Host and connectors cannot be active plugin
+        
+        # Deactivate old plugin
+        if self._active_plugin and self._active_plugin != plugin_id:
+            old_sm = self._plugin_states.get(self._active_plugin)
+            if old_sm and old_sm.state == PluginState.ACTIVE:
+                old_sm.transition(PluginState.UNLOADING, "Switching plugin")
+                self._deactivate_plugin(self._active_plugin)
+                old_sm.transition(PluginState.DISABLED, "Switched away")
+        
+        # Activate new plugin
         self._active_plugin = plugin_id
         self.statusbar.set_active_plugin(plugin_id)
         self.tabs.set_active_plugin(plugin_id)
+        
+        new_sm = self._plugin_states.get(plugin_id)
+        if new_sm and new_sm.state == PluginState.DISABLED:
+            new_sm.transition(PluginState.LOADING, "Switch loading")
+            new_sm.transition(PluginState.ACTIVE, "Switch activation")
+        
         return True
 
     # ── Manifest queries ──────────────────────────────────────────────────
@@ -178,6 +287,17 @@ class Runtime:
                 requires=manifest.requires,
                 windows=[(w.id, w.window_type) for w in manifest.windows],
                 setting_count=len(manifest.settings),
+                state=self._plugin_states.get(plugin_id, PluginStateMachine(plugin_id)).state_name,
+                state_history=[
+                    {
+                        "from": t.from_state.name.lower(),
+                        "to": t.to_state.name.lower(),
+                        "time": t.timestamp,
+                        "reason": t.reason,
+                    }
+                    for t in self._plugin_states.get(plugin_id, PluginStateMachine(plugin_id)).history
+                ],
+                error_message=self._plugin_states.get(plugin_id, PluginStateMachine(plugin_id)).error_message,
             )
             for plugin_id, manifest in self._plugins.items()
         ]

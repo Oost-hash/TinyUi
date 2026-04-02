@@ -419,22 +419,30 @@ Rectangle {
                                 rightPadding: 12
                                 spacing: 8
 
-                                // Status indicator dot
-                                // Priority: Green (active/host/connector-in-use) > Orange (selected) > Red (inactive)
+                                // Status indicator dot based on plugin state
                                 Rectangle {
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: 8
                                     height: 8
                                     radius: 4
                                     color: {
-                                        // Check for "green" states first (highest priority)
-                                        if (modelData.type === "host") return theme ? theme.success : "#4caf50"
-                                        if (modelData.type === "connector" && root.isConnectorUsed(modelData.id)) return theme ? theme.success : "#4caf50"
-                                        if (modelData.id === hostWindow.activePluginId) return theme ? theme.success : "#4caf50"
-                                        // Then check for "orange" state (only if not already green)
-                                        if (isSelected) return theme ? theme.warning : "#ff9800"
-                                        // Default: red (inactive)
-                                        return theme ? theme.danger : "#f44336"
+                                        var state = modelData.state || "disabled"
+                                        if (state === "active") return theme ? theme.success : "#4caf50"
+                                        if (state === "enabling" || state === "loading") return theme ? theme.warning : "#ff9800"
+                                        if (state === "error") return theme ? theme.danger : "#f44336"
+                                        if (state === "unloading") return theme ? theme.warning : "#ff9800"
+                                        return theme ? theme.danger : "#f44336"  // disabled
+                                    }
+                                    
+                                    // Pulse animation for loading states
+                                    SequentialAnimation on opacity {
+                                        running: {
+                                            var s = modelData.state || "disabled"
+                                            return s === "enabling" || s === "loading" || s === "unloading"
+                                        }
+                                        loops: Animation.Infinite
+                                        NumberAnimation { from: 1.0; to: 0.3; duration: 500 }
+                                        NumberAnimation { from: 0.3; to: 1.0; duration: 500 }
                                     }
                                 }
 

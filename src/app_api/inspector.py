@@ -32,6 +32,9 @@ class RuntimeInspector(QObject):
                 "requires": info.requires,
                 "windowCount": len(info.windows),
                 "settingCount": info.setting_count,
+                "state": info.state,
+                "stateHistory": info.state_history,
+                "errorMessage": info.error_message or "",
             }
             if info.plugin_type in groups:
                 groups[info.plugin_type]["plugins"].append(plugin_data)
