@@ -200,17 +200,17 @@ Rectangle {
 
                         // Toggle (smaller in hero)
                         Rectangle {
-                            width: 36
-                            height: 20
-                            radius: 10
+                            width: 28
+                            height: 16
+                            radius: 8
                             color: theme ? theme.accent : "#4a9eff"
 
                             Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter
                                 x: parent.width - width - 2
-                                width: 16
-                                height: 16
-                                radius: 8
+                                width: 12
+                                height: 12
+                                radius: 6
                                 color: "#FFFFFF"
                             }
 
@@ -487,24 +487,24 @@ Rectangle {
                                     font.family: theme ? theme.fontFamily : "sans-serif"
                                 }
 
-                                Item { width: parent.width - 200 }  // Spacer
+                                Item { Layout.fillWidth: true; width: parent.width - 200 }  // Spacer that pushes right items to edge
 
                                 // Toggle switch (not for host)
                                 Rectangle {
                                     visible: modelData.type !== "host"
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: 36
-                                    height: 20
-                                    radius: 10
+                                    width: 28
+                                    height: 16
+                                    radius: 8
                                     color: theme ? theme.accent : "#4a9eff"
 
                                     // White disk/knob
                                     Rectangle {
                                         anchors.verticalCenter: parent.verticalCenter
                                         x: parent.width - width - 2  // Right side = ON
-                                        width: 16
-                                        height: 16
-                                        radius: 8
+                                        width: 12
+                                        height: 12
+                                        radius: 6
                                         color: "#FFFFFF"
                                     }
 
