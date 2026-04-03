@@ -6,13 +6,10 @@ import sys
 from dataclasses import dataclass, field
 from typing import Callable, Protocol, cast
 
+from PySide6.QtCore import QObject
 from PySide6.QtQuick import QQuickWindow
 
 from app_api.windowing.controller_api import WindowControllerApi
-
-
-class _ThemeLike(Protocol):
-    def property(self, name: str) -> object: ...
 
 
 @dataclass(frozen=True)
@@ -25,7 +22,7 @@ def attach_windowing(
     *,
     app,
     window: QQuickWindow,
-    theme: _ThemeLike,
+    theme: QObject,
 ) -> WindowingAttachment:
     """Attach platform-specific windowing and return keepalive + controller."""
     dpr = app.devicePixelRatio()

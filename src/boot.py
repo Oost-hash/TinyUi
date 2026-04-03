@@ -57,6 +57,7 @@ def main() -> int:
     
     # Update inspector with runtime data
     inspector.update_data(runtime.devtools_data())
+    assert runtime.paths is not None
 
     # Keep inspector in sync when plugin states change (devtool stays live)
     event_bus.on(EventType.PLUGIN_STATE_CHANGED, lambda _: inspector.update_data(runtime.devtools_data()))
@@ -114,7 +115,10 @@ def main() -> int:
         if w.id != main_manifest.id:
             actions.register(f"open:{w.id}", make_open_handler(w.id, w.requires))
     
-    actions.register("close", lambda: main_handle.qml_window.close())
+    def close_main_window() -> None:
+        main_handle.qml_window.close()
+
+    actions.register("close", close_main_window)
     
     return app.exec()
 

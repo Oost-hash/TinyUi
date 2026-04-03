@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import QObject, QUrl
 from PySide6.QtQml import QQmlComponent, QQmlEngine
 from PySide6.QtQuick import QQuickWindow
 
@@ -37,25 +38,27 @@ def open_window(
     component = QQmlComponent(engine, url)
     obj = component.create()
     assert obj is not None, component.errorString()
+    assert isinstance(obj, QQuickWindow), component.errorString()
+    window = cast(QQuickWindow, obj)
 
     # Extract chrome component override first (before iterating extra_properties)
     chrome_component = extra_properties.pop("chromeComponent", None)
     
-    obj.setProperty("hostActions", actions)
-    obj.setProperty("theme", theme)
-    obj.setProperty("windowTitle", manifest.title)
-    obj.setProperty("showTabBar", manifest.chrome.show_tab_bar)
-    obj.setProperty("showStatusBar", manifest.chrome.show_status_bar)
-    obj.setProperty("chromePolicy", manifest.chrome.to_qml_dict())
+    window.setProperty("hostActions", actions)
+    window.setProperty("theme", theme)
+    window.setProperty("windowTitle", manifest.title)
+    window.setProperty("showTabBar", manifest.chrome.show_tab_bar)
+    window.setProperty("showStatusBar", manifest.chrome.show_status_bar)
+    window.setProperty("chromePolicy", manifest.chrome.to_qml_dict())
 
     for key, value in extra_properties.items():
-        obj.setProperty(key, value)
+        window.setProperty(key, value)
 
     surface_component = None
     if manifest.surface:
         surface_url = QUrl.fromLocalFile(str(manifest.surface))
         surface_component = QQmlComponent(engine, surface_url)
-        obj.setProperty("surfaceComponent", surface_component)
+        window.setProperty("surfaceComponent", surface_component)
 
     # Load custom chrome from manifest if specified and no override provided
     if chrome_component is None and manifest.chrome.custom_chrome:
@@ -64,16 +67,16 @@ def open_window(
     
     # Apply custom chrome component if specified
     if chrome_component is not None:
-        obj.setProperty("chromeComponent", chrome_component)
+        window.setProperty("chromeComponent", chrome_component)
 
-    attachment = attach_windowing(app=app, window=obj, theme=theme)
+    attachment = attach_windowing(app=app, window=window, theme=theme)
     if attachment.controller is not None:
-        obj.setProperty("windowController", attachment.controller)
+        window.setProperty("windowController", attachment.controller)
 
     keepalive = [component, *extra_properties.values(), *attachment.keepalive]
     if surface_component:
         keepalive.append(surface_component)
     if chrome_component:
         keepalive.append(chrome_component)
-    return WindowHandle(qml_window=obj, keepalive=tuple(keepalive))
+    return WindowHandle(qml_window=window, keepalive=tuple(keepalive))
 

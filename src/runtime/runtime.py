@@ -35,6 +35,14 @@ class Runtime:
         self.providers = ProviderRegistry()
         self.events = event_bus  # Use shared event bus
         self._subscribe_to_events()
+
+    def _require_paths(self) -> AppPaths:
+        assert self.paths is not None, "Runtime paths are unavailable before BOOT_INIT"
+        return self.paths
+
+    def _require_settings(self) -> SettingsRegistry:
+        assert self.settings is not None, "Runtime settings are unavailable before BOOT_INIT"
+        return self.settings
     
     def _subscribe_to_events(self) -> None:
         """Subscribe to boot and UI events."""
@@ -54,11 +62,12 @@ class Runtime:
     
     def _do_boot(self) -> None:
         """Internal boot sequence."""
+        settings = self._require_settings()
         self._load_plugin("tinyui")
         self._discover_plugins()
         self._init_plugin_states()
         self._register_settings()
-        self.settings.load_persisted()
+        settings.load_persisted()
         self._register_menus()
         self._register_statusbar()
         self._register_tabs()
@@ -67,13 +76,15 @@ class Runtime:
     # ── Plugin loading ────────────────────────────────────────────────────
 
     def _load_plugin(self, plugin_id: str) -> None:
-        manifest_path = self.paths.plugins_dir / plugin_id / "manifest.toml"
+        paths = self._require_paths()
+        manifest_path = paths.plugins_dir / plugin_id / "manifest.toml"
         if not manifest_path.exists():
             return
         self._plugins[plugin_id] = load_plugin_manifest(manifest_path)
 
     def _discover_plugins(self) -> None:
-        for folder in sorted(self.paths.plugins_dir.iterdir()):
+        paths = self._require_paths()
+        for folder in sorted(paths.plugins_dir.iterdir()):
             if not folder.is_dir() or folder.name == "tinyui":
                 continue
             if (folder / "manifest.toml").exists():
@@ -82,17 +93,19 @@ class Runtime:
     # ── Settings registration ─────────────────────────────────────────────
 
     def _register_settings(self) -> None:
+        settings = self._require_settings()
+        paths = self._require_paths()
         for plugin_id, plugin_manifest in self._plugins.items():
             declared_keys = {s.key for s in plugin_manifest.settings}
             if "enabled" not in declared_keys:
-                self.settings.register(plugin_id, SettingsSpec(
+                settings.register(plugin_id, SettingsSpec(
                     key="enabled",
                     label="Enable plugin",
                     default=True,
                     type="bool",
                 ))
             for decl in plugin_manifest.settings:
-                self.settings.register(plugin_id, SettingsSpec(
+                settings.register(plugin_id, SettingsSpec(
                     key=decl.key,
                     label=decl.label,
                     default=decl.default,
@@ -100,7 +113,7 @@ class Runtime:
                     choices=list(decl.choices),
                 ))
             # create namespace dir so persistence.save() only writes the file
-            (self.paths.config_dir / plugin_id).mkdir(exist_ok=True)
+            (paths.config_dir / plugin_id).mkdir(exist_ok=True)
 
     # ── Menu registration ─────────────────────────────────────────────────
 
@@ -182,7 +195,7 @@ class Runtime:
         return resolve_plugin_lifecycle(
             plugin_id=plugin_id,
             plugin_type=manifest.plugin_type,
-            plugins_dir=self.paths.plugins_dir,
+            plugins_dir=self._require_paths().plugins_dir,
         )
 
     def _provider_id_for(self, plugin_id: str) -> str:
@@ -303,7 +316,7 @@ class Runtime:
         
         ctx = PluginContext(
             plugin_id=plugin_id,
-            settings=self.settings.scoped(plugin_id),
+            settings=self._require_settings().scoped(plugin_id),
             providers=self.providers,
         )
         
@@ -334,7 +347,7 @@ class Runtime:
         """Deactivate a plugin."""
         ctx = PluginContext(
             plugin_id=plugin_id,
-            settings=self.settings.scoped(plugin_id),
+            settings=self._require_settings().scoped(plugin_id),
             providers=self.providers,
         )
         
@@ -345,13 +358,15 @@ class Runtime:
 
     def _init_active_plugin(self) -> None:
         """Initialize active plugin to first enabled UI plugin (not host)."""
-        plugins_parent = str(self.paths.plugins_dir.parent)
+        paths = self._require_paths()
+        settings = self._require_settings()
+        plugins_parent = str(paths.plugins_dir.parent)
         if plugins_parent not in sys.path:
             sys.path.insert(0, plugins_parent)
 
         for plugin_id, manifest in self._plugins.items():
             if manifest.plugin_type == "plugin":  # Only UI plugins, not host or connectors
-                enabled = self.settings.get(plugin_id, "enabled")
+                enabled = settings.get(plugin_id, "enabled")
                 if enabled is not False:  # Default to True if not set
                     self._active_plugin = plugin_id
                     break
@@ -469,6 +484,7 @@ class Runtime:
     # ── Manifest queries ──────────────────────────────────────────────────
 
     def devtools_data(self) -> DevToolsData:
+        settings = self._require_settings()
         plugins = [
             PluginInfo(
                 plugin_id=plugin_id,
@@ -498,9 +514,9 @@ class Runtime:
                 namespace=namespace,
                 key=spec.key,
                 type=spec.type,
-                current_value=str(self.settings.get(namespace, spec.key) if self.settings.get(namespace, spec.key) is not None else spec.default),
+                current_value=str(settings.get(namespace, spec.key) if settings.get(namespace, spec.key) is not None else spec.default),
             )
-            for namespace, specs in self.settings.by_namespace().items()
+            for namespace, specs in settings.by_namespace().items()
             for spec in specs
         ]
         return DevToolsData(plugins=plugins, settings=settings)
