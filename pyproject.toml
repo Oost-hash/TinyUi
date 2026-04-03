@@ -12,6 +12,7 @@ tinyui = "tinyui_boot:main"
 
 [project.optional-dependencies]
 dev = [
+    "basedpyright>=1.31",
     "pytest>=8.0",
     "pyinstaller>=6.0",
 ]
