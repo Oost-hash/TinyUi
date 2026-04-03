@@ -34,6 +34,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 """
 
 VALID_BUMPS = {"patch", "minor", "major"}
+SPECIAL_VERSION_MODES = {"auto-minor"}
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 
 
@@ -52,6 +53,35 @@ def _bump(version: tuple[int, int, int], bump_type: str) -> tuple[int, int, int]
     if bump_type == "minor":
         return major, minor + 1, 0
     return major, minor, patch + 1
+
+
+def _latest_semver_tag() -> tuple[int, int, int] | None:
+    result = subprocess.run(
+        ["git", "tag", "--list", "v*", "--sort=-version:refname"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    if result.returncode != 0:
+        return None
+    for raw_line in result.stdout.splitlines():
+        tag = raw_line.strip()
+        if not tag:
+            continue
+        match = re.fullmatch(r"v(\d+)\.(\d+)\.(\d+)", tag)
+        if match is None:
+            continue
+        return int(match.group(1)), int(match.group(2)), int(match.group(3))
+    return None
+
+
+def _auto_minor_from_latest_tag() -> str:
+    latest = _latest_semver_tag()
+    if latest is None:
+        return "0.1.0"
+    major, minor, _patch = latest
+    return f"{major}.{minor + 1}.0"
 
 
 def _write_version(version: tuple[int, int, int]):
@@ -103,18 +133,21 @@ def _commit_and_tag(version_str: str):
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python scripts/prepare_release.py patch|minor|major|<version>")
+        print("Usage: python scripts/prepare_release.py patch|minor|major|auto-minor|<version>")
         sys.exit(1)
 
     arg = sys.argv[1]
     if arg in VALID_BUMPS:
         old_version = _read_version()
         target_version = "%d.%d.%d" % _bump(old_version, arg)
+    elif arg in SPECIAL_VERSION_MODES:
+        old_version = _read_version()
+        target_version = _auto_minor_from_latest_tag()
     elif SEMVER_RE.match(arg):
         old_version = _read_version()
         target_version = arg
     else:
-        print("Usage: python scripts/prepare_release.py patch|minor|major|<version>")
+        print("Usage: python scripts/prepare_release.py patch|minor|major|auto-minor|<version>")
         sys.exit(1)
 
     header, entries = parse_unreleased(UNRELEASED)

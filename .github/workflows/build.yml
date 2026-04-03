@@ -7,9 +7,23 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version (e.g. v0.1.0)"
-        required: true
-        default: "v0.1.0"
+        description: "Explicit release version (e.g. v0.5.0). Used only when version_mode=explicit."
+        required: false
+        default: ""
+      version_mode:
+        description: "How to determine the release version"
+        type: choice
+        options:
+          - auto-minor
+          - explicit
+        default: auto-minor
+      release_channel:
+        description: "Publish as prerelease or latest"
+        type: choice
+        options:
+          - prerelease
+          - latest
+        default: prerelease
       dry_run:
         description: "Dry run — build only, skip release"
         type: boolean
@@ -145,7 +159,32 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "name=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            VERSION_MODE="${{ github.event.inputs.version_mode }}"
+            EXPLICIT_VERSION="${{ github.event.inputs.version }}"
+
+            git fetch --tags --force
+
+            latest_tag=$(git tag --list 'v*' --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)
+
+            if [ "$VERSION_MODE" = "explicit" ]; then
+              if [ -z "$EXPLICIT_VERSION" ]; then
+                echo "Explicit version is required when version_mode=explicit" >&2
+                exit 1
+              fi
+              if [[ "$EXPLICIT_VERSION" != v* ]]; then
+                EXPLICIT_VERSION="v$EXPLICIT_VERSION"
+              fi
+              echo "name=$EXPLICIT_VERSION" >> $GITHUB_OUTPUT
+            else
+              if [ -z "$latest_tag" ]; then
+                next_tag="v0.1.0"
+              else
+                version="${latest_tag#v}"
+                IFS='.' read -r major minor patch <<< "$version"
+                next_tag="v${major}.$((minor + 1)).0"
+              fi
+              echo "name=$next_tag" >> $GITHUB_OUTPUT
+            fi
           else
             echo "name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
@@ -177,7 +216,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.name }}
-          prerelease: true
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_channel == 'prerelease' || github.event_name != 'workflow_dispatch' }}
+          make_latest: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_channel == 'latest' && 'true' || 'false' }}
           body_path: release_notes.md
           files: |
             TinyUi-windows/TinyUi-windows.zip
