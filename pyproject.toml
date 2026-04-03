@@ -19,7 +19,7 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["src/tinyqt_main/tests", "src/tinycore/tests"]
-pythonpath = ["src"]
+pythonpath = [".", "src"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
