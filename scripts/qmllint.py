@@ -7,6 +7,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+import site
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,19 +32,49 @@ MODULES = [
 
 def find_tool(name: str, *, libexec: bool = False) -> Path:
     suffix = ".exe" if sys.platform == "win32" else ""
-    base = ROOT / ".venv" / "Lib" / "site-packages" / "PySide6"
-    if libexec:
-        tool = base / "Qt" / "libexec" / f"{name}{suffix}"
-        if tool.exists():
-            return tool
-    else:
-        tool = base / f"{name}{suffix}"
+    candidate_roots: list[Path] = []
+
+    local_site = ROOT / ".venv" / "Lib" / "site-packages"
+    if local_site.exists():
+        candidate_roots.append(local_site)
+
+    for site_dir in site.getsitepackages():
+        path = Path(site_dir)
+        if path.exists():
+            candidate_roots.append(path)
+
+    user_site = Path(site.getusersitepackages())
+    if user_site.exists():
+        candidate_roots.append(user_site)
+
+    for site_root in candidate_roots:
+        base = site_root / "PySide6"
+        if libexec:
+            tool = base / "Qt" / "libexec" / f"{name}{suffix}"
+        else:
+            tool = base / f"{name}{suffix}"
         if tool.exists():
             return tool
 
-    script_dir = ROOT / ".venv" / ("Scripts" if sys.platform == "win32" else "bin")
-    fallback = script_dir / f"pyside6-{name}{suffix}"
-    return fallback
+    script_dirs = [
+        ROOT / ".venv" / ("Scripts" if sys.platform == "win32" else "bin"),
+        Path(sys.executable).resolve().parent,
+    ]
+
+    for script_dir in script_dirs:
+        fallback = script_dir / f"pyside6-{name}{suffix}"
+        if fallback.exists():
+            return fallback
+
+    resolved = shutil.which(f"pyside6-{name}")
+    if resolved is not None:
+        return Path(resolved)
+
+    resolved = shutil.which(name)
+    if resolved is not None:
+        return Path(resolved)
+
+    return script_dirs[-1] / f"pyside6-{name}{suffix}"
 
 
 QMLLINT = find_tool("qmllint")

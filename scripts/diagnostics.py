@@ -7,6 +7,7 @@ import json
 import re
 import subprocess
 import sys
+from shutil import which
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,7 +29,16 @@ class Diagnostic:
 
 def _venv_python() -> Path:
     scripts_dir = ROOT / ".venv" / ("Scripts" if sys.platform == "win32" else "bin")
-    return scripts_dir / ("python.exe" if sys.platform == "win32" else "python")
+    local_python = scripts_dir / ("python.exe" if sys.platform == "win32" else "python")
+    if local_python.exists():
+        return local_python
+    current_python = Path(sys.executable)
+    if current_python.exists():
+        return current_python
+    resolved = which("python")
+    if resolved is not None:
+        return Path(resolved)
+    raise FileNotFoundError("No Python interpreter found for diagnostics")
 
 
 def _run(command: list[str]) -> subprocess.CompletedProcess[str]:
