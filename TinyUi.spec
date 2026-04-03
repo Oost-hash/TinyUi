@@ -55,6 +55,7 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name="TinyUi",
+    icon=str(SRC / "app_assets" / "logo" / "logo.ico"),
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

@@ -1,36 +1,36 @@
 #!/usr/bin/env python3
-"""Generate icon.png and icon.ico from icon.svg.
+"""Generate logo.png and logo.ico from logo assets.
 
 Usage:
     python scripts/build_icon.py
 """
 
 import sys
-import os
+from pathlib import Path
 
 # Ensure we can import PySide6
-from PySide6.QtWidgets import QApplication
-from PySide6.QtSvg import QSvgRenderer
-from PySide6.QtGui import QImage, QPainter
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QImage, QPainter
+from PySide6.QtSvg import QSvgRenderer
+from PySide6.QtWidgets import QApplication
 
-IMAGES_DIR = os.path.join(os.path.dirname(__file__), "..", "src", "tinyqt_main", "images")
-SVG_PATH = os.path.join(IMAGES_DIR, "src", "icon.svg")
-PNG_PATH = os.path.join(IMAGES_DIR, "icon.png")
-ICO_PATH = os.path.join(IMAGES_DIR, "icon.ico")
+ASSET_DIR = Path(__file__).resolve().parent.parent / "src" / "app_assets" / "logo"
+SVG_PATH = ASSET_DIR / "logo.svg"
+PNG_PATH = ASSET_DIR / "logo.png"
+ICO_PATH = ASSET_DIR / "logo.ico"
 
 ICO_SIZES = [(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
 
 
 def main():
-    if not os.path.exists(SVG_PATH):
+    if not SVG_PATH.exists():
         print(f"  SVG not found: {SVG_PATH}")
         return 1
 
     _app = QApplication(sys.argv)
 
-    renderer = QSvgRenderer(SVG_PATH)
-    if not renderer.isValid():
+    png_renderer = QSvgRenderer(str(SVG_PATH))
+    if not png_renderer.isValid():
         print(f"  Invalid SVG: {SVG_PATH}")
         return 1
 
@@ -38,16 +38,24 @@ def main():
     img = QImage(256, 256, QImage.Format.Format_ARGB32)
     img.fill(Qt.GlobalColor.transparent)
     painter = QPainter(img)
-    renderer.render(painter)
+    png_renderer.render(painter)
     painter.end()
-    img.save(PNG_PATH)
+    img.save(str(PNG_PATH))
     print(f"  icon.png saved ({PNG_PATH})")
 
     # Generate ICO with multiple sizes
     try:
         from PIL import Image
 
-        pil_img = Image.open(PNG_PATH)
+        ico_img = QImage(256, 256, QImage.Format.Format_ARGB32)
+        ico_img.fill(Qt.GlobalColor.transparent)
+        ico_painter = QPainter(ico_img)
+        png_renderer.render(ico_painter)
+        ico_painter.end()
+        ico_png_path = ASSET_DIR / "logo-ico.png"
+        ico_img.save(str(ico_png_path))
+
+        pil_img = Image.open(ico_png_path)
         pil_img.save(ICO_PATH, sizes=ICO_SIZES)
         print(f"  icon.ico saved ({ICO_PATH})")
     except ImportError:

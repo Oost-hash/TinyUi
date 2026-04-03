@@ -17,6 +17,7 @@ BUILD = ROOT / "build"
 SPEC = ROOT / "TinyUi.spec"
 EGG_INFO = ROOT / "src" / "TinyUi.egg-info"
 APP_DIR = DIST / "TinyUi"
+BUILD_ICON_SCRIPT = ROOT / "scripts" / "build_icon.py"
 
 IS_WINDOWS = platform.system() == "Windows"
 EXE_NAME = "TinyUi.exe" if IS_WINDOWS else "TinyUi"
@@ -133,6 +134,13 @@ def _pyinstaller_cmd() -> list[str]:
     ]
 
 
+def _build_app_icon() -> None:
+    """Ensure the logo PNG/ICO exist before packaging."""
+    result = subprocess.run([sys.executable, str(BUILD_ICON_SCRIPT)], cwd=ROOT)
+    if result.returncode != 0:
+        raise RuntimeError(f"Icon build failed with code {result.returncode}")
+
+
 def _print_structure() -> None:
     print(f"\nBuild complete: {APP_DIR}")
     print("Structure:")
@@ -148,6 +156,7 @@ def _print_structure() -> None:
 
 def build(*, skip_clean: bool) -> int:
     _clean_source_bytecode()
+    _build_app_icon()
 
     if not skip_clean:
         clean()
