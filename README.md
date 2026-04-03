@@ -27,9 +27,9 @@ Install plugins. Connect to your game. See live telemetry as overlays. That's it
 
 No monolithic apps where everything is welded together. No digging through settings that don't concern you. TinyUi is built around the idea that **plugins should just work** — independently, modularly, without stepping on each other.
 
+- **Build** — Want your own overlay? Write a plugin. Declare what you need, get what you asked for. No boilerplate.
 - **Install** — Drop a plugin in the folder. It shows up in the plugin panel, ready to use.
 - **Connect** — Fire up your game. The connector finds it automatically.
-- **Build** — Want your own overlay? Write a plugin. Declare what you need, get what you asked for. No boilerplate.
 
 TinyUi handles the boring stuff: window chrome, theming, settings persistence, game connection. You handle the racing.
 
@@ -99,8 +99,7 @@ TinyUi builds on lessons, ideas, and data model inspiration from
 TinyUi is not a fork of TinyPedal. It became its own project after it became
 clear that the desired architecture required a different core.
 
-The current skull-based logo is derived from an image by
-[Freepik](http://www.freepik.com).
+The flaming tyre logo and skull logo are derived images from [Freepik](http://www.freepik.com). 
 
 ---
 
