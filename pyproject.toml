@@ -37,7 +37,7 @@ console_level = "INFO"
 [tool.basedpyright]
 typeCheckingMode = "standard"
 pythonVersion = "3.12"
-include = ["src", "scripts"]
+include = ["src"]
 exclude = [
     "**/.git",
     "**/__pycache__",
