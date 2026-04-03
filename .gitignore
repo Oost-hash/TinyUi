@@ -10,6 +10,7 @@
 build/
 dist/
 *.spec
+!TinyUi.spec
 
 # git submodules (tracked separately)
 tinypedal_repo
