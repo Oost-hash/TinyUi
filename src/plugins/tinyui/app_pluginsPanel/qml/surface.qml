@@ -371,6 +371,7 @@ Rectangle {
 
                 delegate: Column {
                     id: pluginGroupDelegate
+                    required property var modelData
                     width: parent.width
                     spacing: 0
 
