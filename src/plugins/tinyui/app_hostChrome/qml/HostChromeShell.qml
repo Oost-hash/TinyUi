@@ -32,12 +32,11 @@ Item {
 
     readonly property var hostWindow: Window.window
     readonly property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
-    readonly property var hostActions: hostWindow && hostWindow.hostActions ? hostWindow.hostActions : null
+    readonly property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
     readonly property var windowController: hostWindow && hostWindow.windowController ? hostWindow.windowController : null
 
     property string windowTitle: hostWindow && typeof hostWindow.windowTitle === "string" ? hostWindow.windowTitle : ""
     property var menuItems: hostWindow && hostWindow.menuItems ? hostWindow.menuItems : []
-    property var tabLabels: hostWindow && hostWindow.tabLabels ? hostWindow.tabLabels : []
     property int currentTab: hostWindow && typeof hostWindow.currentTab === "number" ? hostWindow.currentTab : 0
     property bool showTabBar: hostWindow && typeof hostWindow.showTabBar === "boolean" ? hostWindow.showTabBar : false
     property bool showStatusBar: hostWindow && typeof hostWindow.showStatusBar === "boolean" ? hostWindow.showStatusBar : false
@@ -70,7 +69,7 @@ Item {
     }
 
     Connections {
-        target: root.hostWindow ? root.hostWindow.hostRuntime : null
+        target: root.hostWindow ? root.hostWindow.pluginState : null
         function onPluginStateChanged(pluginId, state) {
             root.pluginStates[pluginId] = state
             var temp = root.pluginStates
@@ -213,8 +212,8 @@ Item {
                             hoverEnabled: true
                             onClicked: {
                                 root.menuOpen = false
-                                if (root.hostActions)
-                                    root.hostActions.trigger(hamburgerMenuDelegate.modelData.action)
+                                if (root.appActions)
+                                    root.appActions.trigger(hamburgerMenuDelegate.modelData.action)
                                 else if (hamburgerMenuDelegate.modelData.action === "close" && root.hostWindow)
                                     root.hostWindow.close()
                             }
@@ -323,8 +322,8 @@ Item {
                             hoverEnabled: true
                             onClicked: {
                                 root.pluginMenuOpen = false
-                                if (root.hostActions)
-                                    root.hostActions.trigger(pluginMenuDelegate.modelData.action)
+                                if (root.appActions)
+                                    root.appActions.trigger(pluginMenuDelegate.modelData.action)
                             }
                         }
                     }
@@ -473,8 +472,8 @@ Item {
                 onClicked: {
                     if (!root.hostWindow) return
                     // Activate pending plugin before destroying the panel item
-                    if (root.hostWindow.showPluginPanel && root.pendingPluginActivation !== "" && root.hostWindow.hostRuntime) {
-                        root.hostWindow.hostRuntime.setActivePlugin(root.pendingPluginActivation)
+                    if (root.hostWindow.showPluginPanel && root.pendingPluginActivation !== "" && root.hostWindow.pluginSelectionActions) {
+                        root.hostWindow.pluginSelectionActions.setActivePlugin(root.pendingPluginActivation)
                         root.pendingPluginActivation = ""
                     }
                     if (!root.hostWindow.showPluginPanel) {

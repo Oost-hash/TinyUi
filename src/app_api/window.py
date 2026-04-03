@@ -10,7 +10,7 @@ from PySide6.QtCore import QObject, QUrl
 from PySide6.QtQml import QQmlComponent, QQmlEngine
 from PySide6.QtQuick import QQuickWindow
 
-from app_api.host_actions import HostActions
+from app_api.api.app_actions import AppActions
 from app_api.theme import Theme
 from app_schema.manifest import AppManifest
 from app_api.windowing import attach_windowing
@@ -30,7 +30,7 @@ def open_window(
     *,
     engine: QQmlEngine,
     app,
-    actions: HostActions,
+    actions: AppActions,
     theme: Theme,
     **extra_properties: object,
 ) -> WindowHandle:
@@ -44,7 +44,7 @@ def open_window(
     # Extract chrome component override first (before iterating extra_properties)
     chrome_component = extra_properties.pop("chromeComponent", None)
     
-    window.setProperty("hostActions", actions)
+    window.setProperty("appActions", actions)
     window.setProperty("theme", theme)
     window.setProperty("windowTitle", manifest.title)
     window.setProperty("showTabBar", manifest.chrome.show_tab_bar)

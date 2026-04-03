@@ -4,20 +4,24 @@ import QtQuick.Window
 Window {
     id: root
 
-    property var hostActions: null
+    property var appActions: null
     property var theme: null
     property var windowController: null
     property var surfaceComponent: null
     property string pluginPanelUrl: ""
     property var pluginPanelComponent: null
     property bool showPluginPanel: false
-    property var hostRuntime: null  // Reference to runtime bridge
-    property var providerHub: null
+    property var menus: null
+    property var statusbar: null
+    property var pluginSelection: null
+    property var pluginSelectionActions: null
+    property var pluginState: null
+    property var tabs: null
+    property var connectorApi: null
     property string windowTitle: ""
     property var menuItems: []
     property var pluginMenuItems: []
     property string pluginMenuLabel: "Plugins"
-    property var tabLabels: []
     property int currentTab: 0
     property bool showTabBar: false
     property bool showStatusBar: false
@@ -46,16 +50,34 @@ Window {
     flags: nativeChrome ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
     color: root.theme ? root.theme.surface : "#17181c"
 
-    // Sync all properties when hostRuntime changes (initial sync + updates)
-    onHostRuntimeChanged: {
-        if (hostRuntime) {
-            root.menuItems = hostRuntime.menuItems
-            root.pluginMenuItems = hostRuntime.pluginMenuItems
-            root.pluginMenuLabel = hostRuntime.pluginMenuLabel
-            root.tabModel = hostRuntime.tabModel
-            root.statusItems = hostRuntime.statusbarLeftItems
-            root.activePluginId = hostRuntime.activePlugin
-            root.statusActiveLabel = hostRuntime.activePlugin  // For statusbar plugin picker
+    // Sync menu properties when menu model changes
+    onMenusChanged: {
+        if (menus) {
+            root.menuItems = menus.menuItems
+            root.pluginMenuItems = menus.pluginMenuItems
+            root.pluginMenuLabel = menus.pluginMenuLabel
+        }
+    }
+
+    // Sync statusbar properties when statusbar model changes
+    onStatusbarChanged: {
+        if (statusbar) {
+            root.statusItems = statusbar.leftItems
+        }
+    }
+
+    // Sync active plugin properties when plugin selection changes
+    onPluginSelectionChanged: {
+        if (pluginSelection) {
+            root.activePluginId = pluginSelection.activePlugin
+            root.statusActiveLabel = pluginSelection.activePlugin
+        }
+    }
+
+    // Sync tab properties when tabs API changes
+    onTabsChanged: {
+        if (tabs) {
+            root.tabModel = tabs.tabModel
         }
     }
 
@@ -63,30 +85,41 @@ Window {
         enabled: root.globalShortcutsEnabled
         sequence: "F12"
         onActivated: {
-            if (root.hostActions)
-                root.hostActions.trigger("open:devtools.main")
+            if (root.appActions)
+                root.appActions.trigger("open:devtools.main")
         }
     }
     
-    // Connect runtime signals - update properties when bridge emits signals
     Connections {
-        target: root.hostRuntime
+        target: root.menus
+        function onMenuItemsChanged() {
+            root.menuItems = root.menus ? root.menus.menuItems : []
+        }
+        function onPluginMenuItemsChanged() {
+            root.pluginMenuItems = root.menus ? root.menus.pluginMenuItems : []
+            root.pluginMenuLabel = root.menus ? root.menus.pluginMenuLabel : ""
+        }
+    }
+
+    Connections {
+        target: root.statusbar
+        function onStatusbarItemsChanged() {
+            root.statusItems = root.statusbar ? root.statusbar.leftItems : []
+        }
+    }
+
+    Connections {
+        target: root.pluginSelection
         function onActivePluginChanged(pluginId) {
             root.activePluginId = pluginId
             root.statusActiveLabel = pluginId
         }
+    }
+
+    Connections {
+        target: root.tabs
         function onTabModelChanged() {
-            root.tabModel = root.hostRuntime ? root.hostRuntime.tabModel : []
-        }
-        function onMenuItemsChanged() {
-            root.menuItems = root.hostRuntime ? root.hostRuntime.menuItems : []
-        }
-        function onPluginMenuItemsChanged() {
-            root.pluginMenuItems = root.hostRuntime ? root.hostRuntime.pluginMenuItems : []
-            root.pluginMenuLabel = root.hostRuntime ? root.hostRuntime.pluginMenuLabel : ""
-        }
-        function onStatusbarItemsChanged() {
-            root.statusItems = root.hostRuntime ? root.hostRuntime.statusbarLeftItems : []
+            root.tabModel = root.tabs ? root.tabs.tabModel : []
         }
     }
 

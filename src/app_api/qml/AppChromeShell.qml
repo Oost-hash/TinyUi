@@ -29,14 +29,13 @@ Item {
     id: root
 
     readonly property var hostWindow: Window.window
-    readonly property var hostRuntime: hostWindow && hostWindow.hostRuntime ? hostWindow.hostRuntime : null
     readonly property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
-    readonly property var hostActions: hostWindow && hostWindow.hostActions ? hostWindow.hostActions : null
+    readonly property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
     readonly property var windowController: hostWindow && hostWindow.windowController ? hostWindow.windowController : null
 
     property string windowTitle: hostWindow && typeof hostWindow.windowTitle === "string" ? hostWindow.windowTitle : ""
     
-    // UI state from hostWindow (set by HostedWindow from hostRuntime signals)
+    // UI state from hostWindow capability models
     property var menuItems: hostWindow ? hostWindow.menuItems : []
     property var pluginMenuItems: hostWindow ? hostWindow.pluginMenuItems : []
     property var pluginMenuLabel: hostWindow ? hostWindow.pluginMenuLabel : ""
@@ -223,8 +222,8 @@ Item {
                                 hoverEnabled: true
                             onClicked: {
                                 root.menuOpen = false
-                                if (root.hostActions)
-                                    root.hostActions.trigger(menuDelegate.modelData.action)
+                                if (root.appActions)
+                                    root.appActions.trigger(menuDelegate.modelData.action)
                                 else if (menuDelegate.modelData.action === "close" && root.hostWindow)
                                     root.hostWindow.close()
                             }

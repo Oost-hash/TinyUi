@@ -31,7 +31,7 @@ Rectangle {
     property var inspector: hostWindow && hostWindow.inspector ? hostWindow.inspector : null
     property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     
-    property var hostActions: hostWindow && hostWindow.hostActions ? hostWindow.hostActions : null
+    property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
     property var selectedPlugin: null
     property string pluginToActivate: ""  // Plugin waiting to be activated on close
     
@@ -40,7 +40,7 @@ Rectangle {
 
     // Listen to state changes from runtime
     Connections {
-        target: root.hostWindow ? root.hostWindow.hostRuntime : null
+        target: root.hostWindow ? root.hostWindow.pluginState : null
         function onPluginStateChanged(pluginId, state) {
             root.pluginStates[pluginId] = state
             // Force update

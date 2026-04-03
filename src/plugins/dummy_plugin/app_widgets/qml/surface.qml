@@ -28,44 +28,44 @@ Rectangle {
     color: "transparent"
 
     readonly property var hostWindow: Window.window
-    readonly property var providerHub: hostWindow && hostWindow.providerHub ? hostWindow.providerHub : null
+    readonly property var connectorApi: hostWindow && hostWindow.connectorApi ? hostWindow.connectorApi : null
     readonly property string providerId: "LMU_RF2_Connector"
     property var providerRows: []
 
     function refreshProviderRows() {
-        if (!providerHub) {
+        if (!connectorApi) {
             root.providerRows = []
             return
         }
-        root.providerHub.updateProvider(root.providerId)
-        root.providerRows = root.providerHub.inspectionRows(root.providerId)
+        root.connectorApi.updateProvider(root.providerId)
+        root.providerRows = root.connectorApi.inspectionRows(root.providerId)
     }
 
     Component.onCompleted: {
-        if (providerHub) {
-            providerHub.requestSource(providerId, "dummy_plugin.widgets", "mock")
+        if (connectorApi) {
+            connectorApi.requestSource(providerId, "dummy_plugin.widgets", "mock")
             refreshProviderRows()
         }
     }
 
     Component.onDestruction: {
-        if (providerHub) {
-            providerHub.releaseSource(providerId, "dummy_plugin.widgets")
+        if (connectorApi) {
+            connectorApi.releaseSource(providerId, "dummy_plugin.widgets")
         }
     }
 
     Connections {
-        target: root.providerHub
+        target: root.connectorApi
         function onProviderDataChanged(changedProviderId) {
             if (changedProviderId === root.providerId) {
-                root.providerRows = root.providerHub.inspectionRows(root.providerId)
+                root.providerRows = root.connectorApi.inspectionRows(root.providerId)
             }
         }
     }
 
     Timer {
         interval: 1000
-        running: root.providerHub !== null
+        running: root.connectorApi !== null
         repeat: true
         onTriggered: root.refreshProviderRows()
     }

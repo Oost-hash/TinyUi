@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import sys
 
-from app_api.host_actions import HostActions
-from app_api.host_runtime import HostRuntimeBridge
+from app_api.api.app_actions import AppActions
+from app_api.api.connector_api import ConnectorApi
+from app_api.api.menu import MenuApi
+from app_api.api.plugin_selection import PluginSelectionActions, PluginSelectionApi
+from app_api.api.plugin_state import PluginStateReadModel
+from app_api.api.statusbar import StatusbarApi
+from app_api.api.tabs import TabsApi
 from app_api.inspector import RuntimeInspector
-from app_api.provider_hub import ProviderHubBridge
 from app_api.qt import create_application, create_engine
 from app_api.theme import Theme
 from app_api.window import open_window
@@ -34,11 +38,16 @@ def main() -> int:
     # Create theme and actions
     theme_name = "dark"  # Will be read from settings after boot
     theme = Theme(theme_name)
-    actions = HostActions()
+    actions = AppActions()
     
-    # Create bridge — subscribes to events and exposes Qt signals to QML
-    host_runtime = HostRuntimeBridge(event_bus)
-    provider_hub = ProviderHubBridge(event_bus, runtime.providers)
+    # Create capability read/write models for QML
+    menus = MenuApi(event_bus)
+    statusbar = StatusbarApi(event_bus)
+    plugin_selection = PluginSelectionApi(event_bus)
+    plugin_selection_actions = PluginSelectionActions(event_bus)
+    plugin_state = PluginStateReadModel(event_bus)
+    tabs = TabsApi(event_bus)
+    connector_api = ConnectorApi(event_bus, runtime.providers)
     
     # Inspector for devtools
     from app_schema.manifest import DevToolsData
@@ -84,8 +93,13 @@ def main() -> int:
         actions=actions, 
         theme=theme,
         inspector=inspector,
-        hostRuntime=host_runtime,
-        providerHub=provider_hub,
+        menus=menus,
+        statusbar=statusbar,
+        pluginSelection=plugin_selection,
+        pluginSelectionActions=plugin_selection_actions,
+        pluginState=plugin_state,
+        tabs=tabs,
+        connectorApi=connector_api,
         pluginPanelUrl=str(plugin_panel_path) if plugin_panel_component else "",
         pluginPanelComponent=plugin_panel_component,
     )
@@ -108,7 +122,7 @@ def main() -> int:
                 kwargs = {}
                 if "inspector" in requires:
                     kwargs["inspector"] = inspector
-                kwargs["providerHub"] = provider_hub
+                kwargs["connectorApi"] = connector_api
                 h = open_window(manifest, engine=engine, app=app, actions=actions, theme=theme, **kwargs)
                 open_handles.append(h)
         return handler
