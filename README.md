@@ -99,6 +99,9 @@ TinyUi builds on lessons, ideas, and data model inspiration from
 TinyUi is not a fork of TinyPedal. It became its own project after it became
 clear that the desired architecture required a different core.
 
+The current skull-based logo is derived from an image by
+[Freepik](http://www.freepik.com).
+
 ---
 
 ## AI use
