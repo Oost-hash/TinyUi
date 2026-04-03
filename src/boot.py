@@ -11,11 +11,13 @@ from app_api.provider_hub import ProviderHubBridge
 from app_api.qt import create_application, create_engine
 from app_api.theme import Theme
 from app_api.window import open_window
-from app_api.windowing import win_window  # eager import: registers QML singletons before engine
 from PySide6.QtCore import QUrl
 from PySide6.QtQml import QQmlComponent
 from runtime.runtime import Runtime
 from runtime_schema import EventBus, EventType, BootInitData, BootReadyData
+
+if sys.platform == "win32":
+    from app_api.windowing import win_window  # noqa: F401  # eager import for Windows QML singletons
 
 
 def main() -> int:
