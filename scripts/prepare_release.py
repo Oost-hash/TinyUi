@@ -34,7 +34,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 """
 
 VALID_BUMPS = {"patch", "minor", "major"}
-SPECIAL_VERSION_MODES = {"auto-minor"}
+SPECIAL_VERSION_MODES = {"auto-patch", "auto-minor", "auto-major"}
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 
 
@@ -76,11 +76,15 @@ def _latest_semver_tag() -> tuple[int, int, int] | None:
     return None
 
 
-def _auto_minor_from_latest_tag() -> str:
+def _auto_version_from_latest_tag(mode: str) -> str:
     latest = _latest_semver_tag()
     if latest is None:
         return "0.1.0"
-    major, minor, _patch = latest
+    major, minor, patch = latest
+    if mode == "auto-patch":
+        return f"{major}.{minor}.{patch + 1}"
+    if mode == "auto-major":
+        return f"{major + 1}.0.0"
     return f"{major}.{minor + 1}.0"
 
 
@@ -133,7 +137,7 @@ def _commit_and_tag(version_str: str):
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python scripts/prepare_release.py patch|minor|major|auto-minor|<version>")
+        print("Usage: python scripts/prepare_release.py patch|minor|major|auto-patch|auto-minor|auto-major|<version>")
         sys.exit(1)
 
     arg = sys.argv[1]
@@ -142,12 +146,12 @@ def main():
         target_version = "%d.%d.%d" % _bump(old_version, arg)
     elif arg in SPECIAL_VERSION_MODES:
         old_version = _read_version()
-        target_version = _auto_minor_from_latest_tag()
+        target_version = _auto_version_from_latest_tag(arg)
     elif SEMVER_RE.match(arg):
         old_version = _read_version()
         target_version = arg
     else:
-        print("Usage: python scripts/prepare_release.py patch|minor|major|auto-minor|<version>")
+        print("Usage: python scripts/prepare_release.py patch|minor|major|auto-patch|auto-minor|auto-major|<version>")
         sys.exit(1)
 
     header, entries = parse_unreleased(UNRELEASED)
