@@ -74,6 +74,7 @@ class PluginInfo:
     version:       str
     author:        str
     description:   str
+    icon_url:      str
     requires:      list[str]
     windows:       list[str]
     setting_count: int
@@ -113,6 +114,7 @@ class PluginManifest:
     version:     str
     author:      str
     description: str
+    icon:        str
     requires:    list[str]
     windows:     list[AppManifest]
     settings:    list[SettingDecl]

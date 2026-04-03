@@ -36,6 +36,7 @@ class RuntimeInspector(QObject):
                 "version": info.version,
                 "author": info.author,
                 "description": info.description,
+                "iconUrl": info.icon_url,
                 "requires": info.requires,
                 "windowCount": len(info.windows),
                 "settingCount": info.setting_count,

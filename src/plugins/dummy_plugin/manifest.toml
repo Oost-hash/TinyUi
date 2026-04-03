@@ -4,6 +4,7 @@ type        = "plugin"
 version     = "1.0.0"
 author      = "Test Author"
 description = "A dummy plugin for testing the plugin panel"
+icon        = "assets/logo.png"
 requires    = ["LMU_RF2_Connector"]
 menu        = "Dummy Plugin"
 

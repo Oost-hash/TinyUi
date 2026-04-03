@@ -4,6 +4,7 @@ type        = "host"
 version     = "0.5.0"
 author      = "Oost-hash"
 description = "TinyUI host plugin — the application framework"
+icon        = "assets/logo.png"
 
 [[window]]
 id      = "tinyui.main"

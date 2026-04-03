@@ -45,6 +45,7 @@ def load_plugin_manifest(path: Path) -> PluginManifest:
         version=plugin.get("version", ""),
         author=plugin.get("author", ""),
         description=plugin.get("description", ""),
+        icon=plugin.get("icon", ""),
         requires=list(plugin.get("requires", [])),
         windows=windows,
         settings=settings,

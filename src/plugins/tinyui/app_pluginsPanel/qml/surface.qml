@@ -34,7 +34,7 @@ Rectangle {
     property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
     property var selectedPlugin: null
     property string pluginToActivate: ""  // Plugin waiting to be activated on close
-    readonly property url appLogoSource: Qt.resolvedUrl("../../../../app_assets/logo/logo.svg")
+    readonly property bool selectedPluginHasIcon: root.selectedPlugin && root.selectedPlugin.iconUrl !== ""
     
     // Track plugin states locally for live updates
     property var pluginStates: ({})  // Map pluginId -> state
@@ -142,15 +142,16 @@ Rectangle {
                         anchors.right: parent.right
                         anchors.rightMargin: 140
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 8
+                        spacing: root.selectedPluginHasIcon ? 8 : 0
 
                         Item {
-                            width: 128
-                            height: 128
+                            width: root.selectedPluginHasIcon ? 128 : 0
+                            height: root.selectedPluginHasIcon ? 128 : 0
+                            visible: root.selectedPluginHasIcon
 
                             Image {
                                 anchors.fill: parent
-                                source: root.appLogoSource
+                                source: root.selectedPlugin ? root.selectedPlugin.iconUrl : ""
                                 sourceSize.width: width
                                 sourceSize.height: height
                                 fillMode: Image.PreserveAspectFit
@@ -162,7 +163,7 @@ Rectangle {
 
                         Column {
                             id: heroInfoColumn
-                            width: parent.width - 136
+                            width: parent.width - (root.selectedPluginHasIcon ? 136 : 0)
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 8
 

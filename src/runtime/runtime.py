@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 from app_schema.manifest import (
     AppManifest, PluginManifest, MenuItem as MenuItemDecl, MenuSeparator as MenuSeparatorDecl,
@@ -32,6 +33,7 @@ class Runtime:
         self.settings: SettingsRegistry | None = None
         self._plugin_states: dict[str, PluginStateMachine] = {}
         self._active_plugin: str | None = None  # Currently active UI plugin
+        self._invalid_plugin_icons: set[str] = set()
         self.providers = ProviderRegistry()
         self.events = event_bus  # Use shared event bus
         self._subscribe_to_events()
@@ -92,6 +94,42 @@ class Runtime:
                 continue
             if (folder / "manifest.toml").exists():
                 self._load_plugin(folder.name)
+
+    def _plugin_root(self, plugin_id: str) -> Path:
+        paths = self._require_paths()
+        if plugin_id == "tinyui":
+            return paths.host_dir
+        return paths.plugins_dir / plugin_id
+
+    def _plugin_icon_url(self, plugin_id: str) -> str:
+        manifest = self._plugins.get(plugin_id)
+        if manifest is None or not manifest.icon:
+            return ""
+
+        plugin_root = self._plugin_root(plugin_id).resolve()
+        icon_path = (plugin_root / manifest.icon).resolve()
+        try:
+            icon_path.relative_to(plugin_root)
+        except ValueError:
+            self._warn_invalid_plugin_icon(
+                plugin_id,
+                f"resolved outside plugin root: {manifest.icon}",
+            )
+            return ""
+        if not icon_path.exists():
+            self._warn_invalid_plugin_icon(
+                plugin_id,
+                f"file not found: {manifest.icon}",
+            )
+            return ""
+        self._invalid_plugin_icons.discard(plugin_id)
+        return icon_path.as_uri()
+
+    def _warn_invalid_plugin_icon(self, plugin_id: str, reason: str) -> None:
+        if plugin_id in self._invalid_plugin_icons:
+            return
+        self._invalid_plugin_icons.add(plugin_id)
+        print(f"[runtime] Ignoring invalid plugin icon for '{plugin_id}': {reason}", file=sys.stderr)
 
     # ── Settings registration ─────────────────────────────────────────────
 
@@ -495,6 +533,7 @@ class Runtime:
                 version=manifest.version,
                 author=manifest.author,
                 description=manifest.description,
+                icon_url=self._plugin_icon_url(plugin_id),
                 requires=manifest.requires,
                 windows=[w.id for w in manifest.windows],
                 setting_count=len(manifest.settings),
