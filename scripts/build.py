@@ -86,7 +86,10 @@ def _copy_user_dir(name: str, src: Path) -> None:
     dst = APP_DIR / name
     if dst.exists():
         shutil.rmtree(dst)
-    shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    if src.exists():
+        shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    else:
+        dst.mkdir(parents=True, exist_ok=True)
 
 
 def _promote_internal_host() -> None:
@@ -111,9 +114,9 @@ def _promote_external_plugins() -> None:
     shutil.move(str(bundled_plugins), str(plugins_dst))
 
 
-def _ensure_user_data_dir() -> None:
-    """Create the user-facing runtime data directory next to the executable."""
-    (APP_DIR / "data").mkdir(parents=True, exist_ok=True)
+def _ensure_user_dir(name: str) -> None:
+    """Create a canonical user-facing directory next to the executable."""
+    (APP_DIR / name).mkdir(parents=True, exist_ok=True)
 
 
 def _pyinstaller_cmd() -> list[str]:
@@ -160,11 +163,10 @@ def build(*, skip_clean: bool) -> int:
         return result.returncode
 
     for name, src in USER_DIRS.items():
-        if src.exists():
-            _copy_user_dir(name, src)
+        _copy_user_dir(name, src)
     _promote_internal_host()
     _promote_external_plugins()
-    _ensure_user_data_dir()
+    _ensure_user_dir("data")
     _print_structure()
     return 0
 
