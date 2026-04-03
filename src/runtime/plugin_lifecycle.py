@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -63,6 +64,8 @@ def resolve_plugin_lifecycle(
 ) -> PluginLifecycle:
     """Resolve the lifecycle adapter for a plugin."""
     module_path = plugins_dir / plugin_id / "plugin.py"
-    if plugin_type == "plugin" and not module_path.exists():
+    module_name = f"plugins.{plugin_id}.plugin"
+    has_module = module_path.exists() or importlib.util.find_spec(module_name) is not None
+    if plugin_type == "plugin" and not has_module:
         return NoOpPluginLifecycle(plugin_id)
     return PythonModulePluginLifecycle(plugin_id)

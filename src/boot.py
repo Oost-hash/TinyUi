@@ -70,7 +70,7 @@ def main() -> int:
     
     # Open main window
     plugin_panel_component = None
-    plugin_panel_path = runtime.paths.plugins_dir / "tinyui" / "app_pluginsPanel" / "qml" / "surface.qml"
+    plugin_panel_path = runtime.paths.host_dir / "app_pluginsPanel" / "qml" / "surface.qml"
     if plugin_panel_path.exists():
         plugin_panel_url = QUrl.fromLocalFile(str(plugin_panel_path))
         plugin_panel_component = QQmlComponent(engine, plugin_panel_url)

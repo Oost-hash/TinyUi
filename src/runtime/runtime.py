@@ -77,7 +77,10 @@ class Runtime:
 
     def _load_plugin(self, plugin_id: str) -> None:
         paths = self._require_paths()
-        manifest_path = paths.plugins_dir / plugin_id / "manifest.toml"
+        if plugin_id == "tinyui":
+            manifest_path = paths.host_dir / "manifest.toml"
+        else:
+            manifest_path = paths.plugins_dir / plugin_id / "manifest.toml"
         if not manifest_path.exists():
             return
         self._plugins[plugin_id] = load_plugin_manifest(manifest_path)

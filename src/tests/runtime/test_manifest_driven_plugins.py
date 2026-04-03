@@ -136,6 +136,7 @@ def manifest_plugin_runtime(tmp_path: Path):
     paths = AppPaths(
         app_root=source_root,
         config_dir=config_dir,
+        host_dir=plugins_dir / "tinyui",
         plugins_dir=plugins_dir,
         data_dir=data_dir,
         source_root=source_root,
@@ -273,6 +274,7 @@ def provider_runtime(tmp_path: Path):
     paths = AppPaths(
         app_root=source_root,
         config_dir=config_dir,
+        host_dir=plugins_dir / "tinyui",
         plugins_dir=plugins_dir,
         data_dir=data_dir,
         source_root=source_root,

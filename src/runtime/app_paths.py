@@ -22,6 +22,7 @@ def _os_config_dir(app_name: str) -> Path:
 class AppPaths:
     app_root:    Path
     config_dir:  Path
+    host_dir:    Path
     plugins_dir: Path
     data_dir:    Path
     source_root: Path | None = None
@@ -29,15 +30,14 @@ class AppPaths:
 
     @classmethod
     def detect(cls) -> "AppPaths":
-        from runtime.app_identity import APP_NAME
-
         if getattr(sys, "frozen", False):
             app_root = Path(sys.executable).resolve().parent
             meipass = getattr(sys, "_MEIPASS", None)
-            frozen_root = Path(meipass).resolve() if isinstance(meipass, str) else app_root / "_runtime"
+            frozen_root = Path(meipass).resolve() if isinstance(meipass, str) else app_root / "libs"
             paths = cls(
                 app_root=app_root,
-                config_dir=_os_config_dir(APP_NAME),
+                config_dir=app_root / "config",
+                host_dir=app_root / "tinyui",
                 plugins_dir=app_root / "plugins",
                 data_dir=app_root / "data",
                 source_root=None,
@@ -49,6 +49,7 @@ class AppPaths:
             paths = cls(
                 app_root=source_root,
                 config_dir=repo_root / "data" / "config",
+                host_dir=source_root / "plugins" / "tinyui",
                 plugins_dir=source_root / "plugins",
                 data_dir=repo_root / "data" / "state",
                 source_root=source_root,

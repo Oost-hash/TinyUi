@@ -1,13 +1,4 @@
-"""Build a TinyUi plugin package from a source plugin directory.
-
-MVP goals:
-- validate a legacy source plugin directory
-- assemble the future packaged layout
-- bundle runtime code into runtime/<name>.pkg
-- copy user-facing widget and editor files plus config defaults
-- write an internal plugin.toml for the packaged shape
-- optionally create a zip artifact
-"""
+"""Build a compiled TinyUi plugin package from a manifest-driven source plugin."""
 
 from __future__ import annotations
 
@@ -26,7 +17,7 @@ import tomllib
 ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = ROOT / "src"
 DEFAULT_DIST = ROOT / "dist" / "plugins"
-DEFAULT_CONFIG_ROOT = ROOT / "data" / "plugin-config"
+DEFAULT_CONFIG_ROOT = ROOT / "data" / "config"
 
 IGNORE_NAMES = {
     "__pycache__",
@@ -52,7 +43,8 @@ IGNORE_SUFFIXES = {
     ".pylintrc",
     ".requirements",
 }
-USER_FACING_RUNTIME_EXCLUDES = {"plugin.toml", "widgets.toml", "editors.toml"}
+
+FROZEN_SOURCE_EXCLUDES = {"manifest.toml"}
 
 
 def _parse_args() -> argparse.Namespace:
@@ -76,25 +68,16 @@ def _require_string(data: dict, key: str) -> str:
     return value
 
 
-def _validate_runtime_source(data: dict) -> tuple[str, str]:
-    if "logic" in data:
-        section_name = "logic"
-    elif "provider" in data:
-        section_name = "provider"
-    else:
-        raise ValueError("Plugin manifest must define either [logic] or [provider]")
-
-    section = data[section_name]
-    if not isinstance(section, dict):
-        raise ValueError(f"Manifest section [{section_name}] must be a table")
-
-    module = section.get("module")
-    class_name = section.get("class")
-    if not isinstance(module, str) or not module.strip():
-        raise ValueError(f"Manifest section [{section_name}] must define 'module'")
-    if not isinstance(class_name, str) or not class_name.strip():
-        raise ValueError(f"Manifest section [{section_name}] must define 'class'")
-    return module, class_name
+def _plugin_meta(data: dict, plugin_dir: Path) -> tuple[str, str, str]:
+    plugin = data.get("plugin")
+    if not isinstance(plugin, dict):
+        raise ValueError("Plugin manifest must define a [plugin] table")
+    plugin_id = _require_string(plugin, "id")
+    plugin_type = _require_string(plugin, "type")
+    version = _require_string(plugin, "version")
+    if plugin_id != plugin_dir.name:
+        raise ValueError(f"Manifest plugin id '{plugin_id}' must match directory name '{plugin_dir.name}'")
+    return plugin_id, plugin_type, version
 
 
 def _copytree_filtered(src: Path, dst: Path) -> None:
@@ -102,7 +85,7 @@ def _copytree_filtered(src: Path, dst: Path) -> None:
         ignored: set[str] = set()
         for name in names:
             p = Path(directory) / name
-            if name in IGNORE_NAMES:
+            if name in IGNORE_NAMES or name in FROZEN_SOURCE_EXCLUDES:
                 ignored.add(name)
                 continue
             if p.is_file() and any(name.endswith(suffix) for suffix in IGNORE_SUFFIXES):
@@ -120,131 +103,34 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _runtime_archive_name(plugin_name: str) -> str:
-    return f"{plugin_name}.pkg"
+def _runtime_archive_name(plugin_id: str) -> str:
+    return f"{plugin_id}.pkg"
 
 
-def _runtime_section(data: dict, plugin_name: str) -> str:
-    entry_module, entry_class = _validate_runtime_source(data)
-
-    return (
-        "[runtime]\n"
-        'kind = "compiled"\n'
-        f'entry_module = "{entry_module}"\n'
-        f'entry_class = "{entry_class}"\n'
-        f'artifact = "runtime/{_runtime_archive_name(plugin_name)}"\n'
-    )
-
-
-def _format_string_list(values: list[str]) -> str:
-    if not values:
-        return "[]"
-    lines = ["["]
-    lines.extend(f'  "{value}",' for value in values)
-    lines.append("]")
-    return "\n".join(lines)
-
-
-def _build_packaged_manifest(
-    data: dict,
-    plugin_name: str,
-    widget_files: list[tuple[str, str]],
-    editor_files: list[tuple[str, str]],
-    config_defaults: list[Path],
-) -> str:
-    lines: list[str] = [
-        f'name = "{data["name"]}"',
-        f'type = "{data["type"]}"',
-        f'version = "{data["version"]}"',
-        'api_version = "1"',
-        'package_format = "compiled-v1"',
-        "",
-    ]
-
-    requires = data.get("requires", [])
-    exports = data.get("exports", [])
-    if requires:
-        lines.extend(["requires = " + _format_string_list(requires), ""])
-    if exports:
-        lines.extend(["exports = " + _format_string_list(exports), ""])
-
-    if "logic" in data:
-        lines.extend(
-            [
-                "[logic]",
-                f'module = "{data["logic"]["module"]}"',
-                f'class = "{data["logic"]["class"]}"',
-                "",
-            ]
-        )
-
-    if "provider" in data:
-        lines.extend(
-            [
-                "[provider]",
-                f'module = "{data["provider"]["module"]}"',
-                f'class = "{data["provider"]["class"]}"',
-                "",
-            ]
-        )
-
-    lines.append(_runtime_section(data, plugin_name).rstrip())
-    lines.append("")
-
-    if any(src == "widgets/widgets.toml" for src, _ in widget_files):
-        lines.extend(["[widgets]", 'file = "widgets/widgets.toml"', ""])
-
-    if any(src == "editors/editors.toml" for src, _ in editor_files):
-        lines.extend(["[editors]", 'file = "editors/editors.toml"', ""])
-
-    lines.extend(["[user_files]", "preserve_user_files = true", ""])
-
-    for src, target in [*widget_files, *editor_files]:
-        lines.extend(
-            [
-                "[[user_files.files]]",
-                f'source = "{src}"',
-                f'target = "{target}"',
-                'kind = "manifest"',
-                "",
-            ]
-        )
-
-    for cfg in config_defaults:
-        lines.extend(
-            [
-                "[[user_files.files]]",
-                f'source = "config/defaults/{cfg.name}"',
-                f'target = "config/{plugin_name}/{cfg.name}"',
-                'kind = "default-config"',
-                "copy_if_missing = true",
-                "",
-            ]
-        )
-
-    return "\n".join(lines).rstrip() + "\n"
+def _write_packaged_manifest(source_manifest: Path, target_manifest: Path) -> None:
+    target_manifest.write_text(source_manifest.read_text(encoding="utf-8"), encoding="utf-8")
 
 
 def _write_manifest_lock(
     path: Path,
     *,
-    plugin_name: str,
+    plugin_id: str,
     version: str,
     runtime_artifact: str,
     runtime_hash: str,
-    user_files: list[str],
+    config_defaults: list[str],
 ) -> None:
     lines = [
-        f'plugin = "{plugin_name}"',
+        f'plugin = "{plugin_id}"',
         f'version = "{version}"',
-        'package_format = "compiled-v1"',
+        'package_format = "compiled-v2"',
         f'runtime_artifact = "{runtime_artifact}"',
         f'runtime_sha256 = "{runtime_hash}"',
         "",
-        "[user_files]",
+        "[config_defaults]",
         "items = [",
     ]
-    lines.extend(f'  "{item}",' for item in user_files)
+    lines.extend(f'  "{item}",' for item in config_defaults)
     lines.append("]")
     lines.append("")
     path.write_text("\n".join(lines), encoding="utf-8")
@@ -288,10 +174,6 @@ def _build_runtime_package(plugin_dir: Path, artifact_path: Path) -> None:
             if file.is_dir():
                 continue
             rel = file.relative_to(source_root)
-            if rel.name in USER_FACING_RUNTIME_EXCLUDES:
-                continue
-            if rel.parts and rel.parts[0] in {"ui", "config"}:
-                continue
             if "__pycache__" in rel.parts and file.suffix == ".pyc":
                 parent = rel.parent.parent if rel.parent.name == "__pycache__" else rel.parent
                 compiled_name = file.name.split(".", 1)[0] + ".pyc"
@@ -311,23 +193,18 @@ def _build_runtime_package(plugin_dir: Path, artifact_path: Path) -> None:
 
 def build_plugin(plugin_dir: Path, output_dir: Path, *, clean: bool, create_zip: bool) -> Path:
     plugin_dir = plugin_dir.resolve()
-    manifest_path = plugin_dir / "plugin.toml"
+    manifest_path = plugin_dir / "manifest.toml"
     if not manifest_path.exists():
-        raise FileNotFoundError(f"Missing plugin.toml in {plugin_dir}")
+        raise FileNotFoundError(f"Missing manifest.toml in {plugin_dir}")
 
     data = _read_manifest(manifest_path)
-    plugin_name = _require_string(data, "name")
-    _require_string(data, "type")
-    _require_string(data, "version")
-    _validate_runtime_source(data)
-    package_dir = output_dir / plugin_name
+    plugin_id, _plugin_type, version = _plugin_meta(data, plugin_dir)
+    package_dir = output_dir / plugin_id
 
     if clean and package_dir.exists():
         shutil.rmtree(package_dir)
 
     runtime_dir = package_dir / "runtime"
-    widgets_dir = package_dir / "widgets"
-    editors_dir = package_dir / "editors"
     internal_dir = package_dir / "_internal"
     config_defaults_dir = package_dir / "config" / "defaults"
 
@@ -335,56 +212,31 @@ def build_plugin(plugin_dir: Path, output_dir: Path, *, clean: bool, create_zip:
     runtime_dir.mkdir(parents=True, exist_ok=True)
     internal_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime_artifact = runtime_dir / _runtime_archive_name(plugin_name)
+    runtime_artifact = runtime_dir / _runtime_archive_name(plugin_id)
     _build_runtime_package(plugin_dir, runtime_artifact)
+    _write_packaged_manifest(manifest_path, internal_dir / "manifest.toml")
 
-    widget_files: list[tuple[str, str]] = []
-    editor_files: list[tuple[str, str]] = []
-    widgets_src = plugin_dir / "widgets" / "widgets.toml"
-    editors_src = plugin_dir / "editors" / "editors.toml"
-    if widgets_src.exists():
-        widgets_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(widgets_src, widgets_dir / "widgets.toml")
-        widget_files.append(("widgets/widgets.toml", f"plugins/{plugin_name}/widgets/widgets.toml"))
-    if editors_src.exists():
-        editors_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(editors_src, editors_dir / "editors.toml")
-        editor_files.append(("editors/editors.toml", f"plugins/{plugin_name}/editors/editors.toml"))
-
-    config_defaults: list[Path] = []
+    config_defaults: list[str] = []
     source_defaults_dir = plugin_dir / "config" / "defaults"
     if not source_defaults_dir.exists():
-        source_defaults_dir = DEFAULT_CONFIG_ROOT / plugin_name
+        source_defaults_dir = DEFAULT_CONFIG_ROOT / plugin_id
     if source_defaults_dir.exists():
         config_defaults_dir.mkdir(parents=True, exist_ok=True)
         for file in sorted(source_defaults_dir.glob("*.json")):
             shutil.copy2(file, config_defaults_dir / file.name)
-            config_defaults.append(file)
-
-    packaged_manifest = _build_packaged_manifest(
-        data,
-        plugin_name,
-        widget_files,
-        editor_files,
-        config_defaults,
-    )
-    (internal_dir / "plugin.toml").write_text(packaged_manifest, encoding="utf-8")
+            config_defaults.append(file.name)
 
     _write_manifest_lock(
         package_dir / "manifest.lock",
-        plugin_name=plugin_name,
-        version=_require_string(data, "version"),
+        plugin_id=plugin_id,
+        version=version,
         runtime_artifact=f"runtime/{runtime_artifact.name}",
         runtime_hash=_sha256(runtime_artifact),
-        user_files=[
-            *[src for src, _ in widget_files],
-            *[src for src, _ in editor_files],
-            *[f"config/defaults/{file.name}" for file in config_defaults],
-        ],
+        config_defaults=config_defaults,
     )
 
     if create_zip:
-        zip_path = output_dir / f"{plugin_name}-{data['version']}.zip"
+        zip_path = output_dir / f"{plugin_id}-{version}.zip"
         if zip_path.exists():
             zip_path.unlink()
         _zip_dir(package_dir, zip_path)

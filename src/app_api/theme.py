@@ -23,7 +23,9 @@
 
 import os
 import platform as _platform
+import sys
 import tomllib
+from pathlib import Path
 
 from PySide6.QtCore import QObject, Property, Signal, Slot
 from PySide6.QtGui import QColor
@@ -36,10 +38,19 @@ _FONT_FAMILY = (
 )
 
 
+def _theme_path(name: str) -> Path:
+    theme_file = f"{name.lower()}.toml"
+    if getattr(sys, "frozen", False):
+        app_root = Path(sys.executable).resolve().parent
+        external = app_root / "themes" / theme_file
+        if external.exists():
+            return external
+    return Path(__file__).resolve().parent.parent / "app_assets" / "themes" / theme_file
+
+
 def _load_toml(name: str) -> dict:
-    themes_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app_assets", "themes")
-    path = os.path.join(themes_dir, f"{name.lower()}.toml")
-    with open(path, "rb") as f:
+    path = _theme_path(name)
+    with path.open("rb") as f:
         return tomllib.load(f)
 
 
