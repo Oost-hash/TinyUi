@@ -19,6 +19,8 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Window
 import QtQuick.Layouts
@@ -68,7 +70,7 @@ Item {
     }
 
     Connections {
-        target: hostWindow ? hostWindow.hostRuntime : null
+        target: root.hostWindow ? root.hostWindow.hostRuntime : null
         function onPluginStateChanged(pluginId, state) {
             root.pluginStates[pluginId] = state
             var temp = root.pluginStates
@@ -158,7 +160,9 @@ Item {
 
         MouseArea {
             anchors.fill: parent
-            onClicked: mouse.accepted = true
+            onClicked: function(mouse) {
+                mouse.accepted = true
+            }
         }
 
         Column {
@@ -170,13 +174,14 @@ Item {
                 model: root.menuItems
 
                 delegate: Item {
+                    id: hamburgerMenuDelegate
                     required property var modelData
-                    visible: modelData.visible === undefined ? true : !!modelData.visible
+                    visible: hamburgerMenuDelegate.modelData.visible === undefined ? true : !!hamburgerMenuDelegate.modelData.visible
                     width: 160
-                    height: visible ? (modelData.separator ? 9 : 28) : 0
+                    height: visible ? (hamburgerMenuDelegate.modelData.separator ? 9 : 28) : 0
 
                     Rectangle {
-                        visible: !!modelData.separator
+                        visible: !!hamburgerMenuDelegate.modelData.separator
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.left: parent.left
                         anchors.right: parent.right
@@ -187,7 +192,7 @@ Item {
                     }
 
                     Rectangle {
-                        visible: !modelData.separator
+                        visible: !hamburgerMenuDelegate.modelData.separator
                         anchors.fill: parent
                         color: hamburgerItemMouse.containsMouse
                             ? (root.theme ? root.theme.surfaceRaised : "#3b414d")
@@ -197,7 +202,7 @@ Item {
                             anchors.left: parent.left
                             anchors.leftMargin: 12
                             anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.label
+                            text: hamburgerMenuDelegate.modelData.label
                             color: root.theme ? root.theme.text : "#dce0e5"
                             font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
                         }
@@ -209,8 +214,8 @@ Item {
                             onClicked: {
                                 root.menuOpen = false
                                 if (root.hostActions)
-                                    root.hostActions.trigger(modelData.action)
-                                else if (modelData.action === "close" && root.hostWindow)
+                                    root.hostActions.trigger(hamburgerMenuDelegate.modelData.action)
+                                else if (hamburgerMenuDelegate.modelData.action === "close" && root.hostWindow)
                                     root.hostWindow.close()
                             }
                         }
@@ -277,14 +282,15 @@ Item {
                 model: root.pluginMenuItems
 
                 delegate: Item {
+                    id: pluginMenuDelegate
                     required property var modelData
-                    visible: modelData.visible === undefined ? true : !!modelData.visible
+                    visible: pluginMenuDelegate.modelData.visible === undefined ? true : !!pluginMenuDelegate.modelData.visible
                     width: 160
-                    height: visible ? (modelData.separator ? 9 : 28) : 0
+                    height: visible ? (pluginMenuDelegate.modelData.separator ? 9 : 28) : 0
 
                     // Separator line
                     Rectangle {
-                        visible: !!modelData.separator
+                        visible: !!pluginMenuDelegate.modelData.separator
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.left: parent.left
                         anchors.right: parent.right
@@ -296,7 +302,7 @@ Item {
 
                     // Clickable/hoverable area for non-separator items
                     Rectangle {
-                        visible: !modelData.separator
+                        visible: !pluginMenuDelegate.modelData.separator
                         anchors.fill: parent
                         color: pluginItemMouse.containsMouse
                             ? (root.theme ? root.theme.surfaceRaised : "#3b414d")
@@ -306,7 +312,7 @@ Item {
                             anchors.left: parent.left
                             anchors.leftMargin: 12
                             anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.label
+                            text: pluginMenuDelegate.modelData.label
                             color: root.theme ? root.theme.text : "#dce0e5"
                             font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
                         }
@@ -318,7 +324,7 @@ Item {
                             onClicked: {
                                 root.pluginMenuOpen = false
                                 if (root.hostActions)
-                                    root.hostActions.trigger(modelData.action)
+                                    root.hostActions.trigger(pluginMenuDelegate.modelData.action)
                             }
                         }
                     }
@@ -333,14 +339,14 @@ Item {
         anchors.fill: parent
         anchors.topMargin: 32  // Only titlebar, tabs are hidden when panel is open
         anchors.bottomMargin: 32
-        visible: hostWindow && hostWindow.showPluginPanel
-        sourceComponent: hostWindow && hostWindow.showPluginPanel 
-            ? hostWindow.pluginPanelComponent 
+        visible: root.hostWindow && root.hostWindow.showPluginPanel
+        sourceComponent: root.hostWindow && root.hostWindow.showPluginPanel
+            ? root.hostWindow.pluginPanelComponent
             : null
         z: 30
         
         onLoaded: {
-            if (item && hostWindow) {
+            if (item && root.hostWindow) {
                 // Mirror selected plugin into HostChromeShell so it survives item destruction
                 item.pluginToActivateChanged.connect(function() {
                     root.pendingPluginActivation = item.pluginToActivate || ""
@@ -380,8 +386,9 @@ Item {
                 model: root.statusItems
 
                 delegate: Rectangle {
+                    id: statusItemDelegate
                     required property var modelData
-                    width: Math.max(label.implicitWidth + 12, 24)
+                    width: Math.max(statusItemLabel.implicitWidth + 12, 24)
                     height: 20
                     radius: 3
                     color: itemMouse.containsMouse
@@ -389,9 +396,9 @@ Item {
                         : "transparent"
 
                     Text {
-                        id: label
+                        id: statusItemLabel
                         anchors.centerIn: parent
-                        text: typeof modelData === "string" ? modelData : ""
+                        text: typeof statusItemDelegate.modelData === "string" ? statusItemDelegate.modelData : ""
                         color: root.theme ? root.theme.textMuted : "#c8ccd4"
                         font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
                     }
@@ -415,7 +422,7 @@ Item {
 
             Rectangle {
                 anchors.fill: parent
-                color: hostWindow && hostWindow.showPluginPanel 
+                color: root.hostWindow && root.hostWindow.showPluginPanel
                        ? (root.theme ? root.theme.surfaceAlt : "#2f343e")
                        : pluginNameHover.containsMouse 
                          ? (root.theme ? root.theme.surfaceFloating : "#20242b") 
@@ -423,14 +430,14 @@ Item {
             }
             
             Rectangle { 
-                visible: hostWindow && hostWindow.showPluginPanel
+                visible: root.hostWindow && root.hostWindow.showPluginPanel
                 anchors.left: parent.left
                 width: 1
                 height: parent.height
                 color: root.theme ? root.theme.border : "#464b57"
             }
             Rectangle { 
-                visible: hostWindow && hostWindow.showPluginPanel
+                visible: root.hostWindow && root.hostWindow.showPluginPanel
                 anchors.right: parent.right
                 width: 1
                 height: parent.height
@@ -464,16 +471,16 @@ Item {
                 anchors.fill: parent
                 hoverEnabled: true
                 onClicked: {
-                    if (!hostWindow) return
+                    if (!root.hostWindow) return
                     // Activate pending plugin before destroying the panel item
-                    if (hostWindow.showPluginPanel && root.pendingPluginActivation !== "" && hostWindow.hostRuntime) {
-                        hostWindow.hostRuntime.setActivePlugin(root.pendingPluginActivation)
+                    if (root.hostWindow.showPluginPanel && root.pendingPluginActivation !== "" && root.hostWindow.hostRuntime) {
+                        root.hostWindow.hostRuntime.setActivePlugin(root.pendingPluginActivation)
                         root.pendingPluginActivation = ""
                     }
-                    if (!hostWindow.showPluginPanel) {
+                    if (!root.hostWindow.showPluginPanel) {
                         root.pendingPluginActivation = ""
                     }
-                    hostWindow.showPluginPanel = !hostWindow.showPluginPanel
+                    root.hostWindow.showPluginPanel = !root.hostWindow.showPluginPanel
                 }
             }
         }

@@ -19,6 +19,8 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Window
 
@@ -53,13 +55,13 @@ Rectangle {
         Rectangle {
             width: parent.width
             height: 32
-            color: theme ? theme.surfaceAlt : "#2f343e"
+            color: root.theme ? root.theme.surfaceAlt : "#2f343e"
 
             Rectangle {
                 anchors.bottom: parent.bottom
                 width: parent.width
                 height: 1
-                color: theme ? theme.border : "#464b57"
+                color: root.theme ? root.theme.border : "#464b57"
             }
 
             Row {
@@ -73,34 +75,37 @@ Rectangle {
                     model: root.tabs
 
                     delegate: Rectangle {
+                        id: tabDelegate
                         required property string modelData
                         required property int index
                         width: tabLabel.implicitWidth + 24
                         height: parent.height
                         color: "transparent"
 
-                        readonly property bool active: root.currentTab === index
+                        readonly property bool active: root.currentTab === tabDelegate.index
 
                         Rectangle {
                             anchors.bottom: parent.bottom
                             width: parent.width
                             height: 2
-                            color: active ? (theme ? theme.accent : "#4a9eff") : "transparent"
+                            color: tabDelegate.active ? (root.theme ? root.theme.accent : "#4a9eff") : "transparent"
                         }
 
                         Text {
                             id: tabLabel
                             anchors.centerIn: parent
-                            text: modelData
-                            color: active ? (theme ? theme.accent : "#4a9eff") : (theme ? theme.textMuted : "#878a98")
-                            font.pixelSize: theme ? theme.fontSizeSmall : 11
-                            font.family: theme ? theme.fontFamily : "sans-serif"
-                            font.weight: active ? Font.DemiBold : Font.Normal
+                            text: tabDelegate.modelData
+                            color: tabDelegate.active
+                                ? (root.theme ? root.theme.accent : "#4a9eff")
+                                : (root.theme ? root.theme.textMuted : "#878a98")
+                            font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                            font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                            font.weight: tabDelegate.active ? Font.DemiBold : Font.Normal
                         }
 
                         MouseArea {
                             anchors.fill: parent
-                            onClicked: root.currentTab = index
+                            onClicked: root.currentTab = tabDelegate.index
                         }
                     }
                 }

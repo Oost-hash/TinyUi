@@ -19,6 +19,8 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Window
 import QtQuick.Layouts
@@ -166,7 +168,9 @@ Item {
             // Prevent clicks from closing the menu immediately
             MouseArea {
                 anchors.fill: parent
-                onClicked: mouse.accepted = true
+                onClicked: function(mouse) {
+                    mouse.accepted = true
+                }
             }
 
             Column {
@@ -178,14 +182,15 @@ Item {
                     model: root.menuItems
 
                     delegate: Item {
+                        id: menuDelegate
                         required property var modelData
-                        visible: modelData.visible === undefined ? true : !!modelData.visible
+                        visible: menuDelegate.modelData.visible === undefined ? true : !!menuDelegate.modelData.visible
                         width: menuDropdown.width
-                        height: visible ? (modelData.separator ? 9 : 28) : 0
+                        height: visible ? (menuDelegate.modelData.separator ? 9 : 28) : 0
 
                         // Separator line
                         Rectangle {
-                            visible: !!modelData.separator
+                            visible: !!menuDelegate.modelData.separator
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
                             anchors.right: parent.right
@@ -197,33 +202,33 @@ Item {
 
                         // Clickable/hoverable area for non-separator items
                         Rectangle {
-                            visible: !modelData.separator
+                            visible: !menuDelegate.modelData.separator
                             anchors.fill: parent
                             color: menuItemMouse.containsMouse
                                 ? (root.theme ? root.theme.surfaceRaised : "#3b414d")
                                 : "transparent"
 
-                            Text {
-                                anchors.left: parent.left
-                                anchors.leftMargin: 12
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: modelData.label
-                                color: root.theme ? root.theme.text : "#dce0e5"
-                                font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
-                            }
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 12
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: menuDelegate.modelData.label
+                            color: root.theme ? root.theme.text : "#dce0e5"
+                            font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                        }
 
                             MouseArea {
                                 id: menuItemMouse
                                 anchors.fill: parent
                                 hoverEnabled: true
-                                onClicked: {
-                                    root.menuOpen = false
-                                    if (root.hostActions)
-                                        root.hostActions.trigger(modelData.action)
-                                    else if (modelData.action === "close" && root.hostWindow)
-                                        root.hostWindow.close()
-                                }
+                            onClicked: {
+                                root.menuOpen = false
+                                if (root.hostActions)
+                                    root.hostActions.trigger(menuDelegate.modelData.action)
+                                else if (menuDelegate.modelData.action === "close" && root.hostWindow)
+                                    root.hostWindow.close()
                             }
+                        }
                         }
                     }
                 }
@@ -252,11 +257,12 @@ Item {
                 ]
 
                 delegate: Rectangle {
+                    id: titleButtonDelegate
                     required property var modelData
                     width: 46
                     height: titleBar.height
                     color: titleButtonArea.containsMouse
-                        ? (modelData.close
+                        ? (titleButtonDelegate.modelData.close
                             ? (root.theme ? root.theme.danger : "#d15b5b")
                             : (root.theme ? root.theme.surfaceFloating : "#20242b"))
                         : "transparent"
@@ -265,7 +271,7 @@ Item {
                         anchors.centerIn: parent
                         width: 16
                         height: 16
-                        source: modelData.icon
+                        source: titleButtonDelegate.modelData.icon
                         sourceSize.width: width
                         sourceSize.height: height
                         fillMode: Image.PreserveAspectFit
@@ -277,11 +283,11 @@ Item {
                         anchors.fill: parent
                         hoverEnabled: true
                         onClicked: {
-                            if (modelData.action === "minimize" && root.windowController) {
+                            if (titleButtonDelegate.modelData.action === "minimize" && root.windowController) {
                                 root.windowController.minimize()
-                            } else if (modelData.action === "maximize" && root.windowController) {
+                            } else if (titleButtonDelegate.modelData.action === "maximize" && root.windowController) {
                                 root.windowController.toggleMaximize()
-                            } else if (modelData.action === "close" && root.hostWindow) {
+                            } else if (titleButtonDelegate.modelData.action === "close" && root.hostWindow) {
                                 root.hostWindow.close()
                             }
                         }
@@ -298,7 +304,11 @@ Item {
         y: titleBar.height
         width: root.width
         height: 42
-        visible: root.showTabBar && hostWindow && hostWindow.tabModel && hostWindow.tabModel.length > 0 && !(hostWindow && hostWindow.showPluginPanel)
+        visible: root.showTabBar
+            && root.hostWindow
+            && root.hostWindow.tabModel
+            && root.hostWindow.tabModel.length > 0
+            && !root.hostWindow.showPluginPanel
         color: root.theme ? root.theme.surfaceAlt : "#2f343e"
         z: 5
         
@@ -315,15 +325,16 @@ Item {
             spacing: -1
 
             Repeater {
-                model: hostWindow ? hostWindow.tabModel : []
+                model: root.hostWindow ? root.hostWindow.tabModel : []
 
                 delegate: Rectangle {
+                    id: tabDelegate
                     required property var modelData
                     required property int index
 
                     width: Math.max(tabLabel.implicitWidth + 40, 88)
                     height: tabBar.height
-                    color: hostWindow.currentTab === index
+                    color: root.hostWindow.currentTab === index
                         ? (root.theme ? root.theme.surface : "#282c33")
                         : (root.theme ? root.theme.surfaceAlt : "#2f343e")
 
@@ -351,15 +362,15 @@ Item {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         height: 1
-                        visible: hostWindow.currentTab !== index
+                        visible: root.hostWindow.currentTab !== tabDelegate.index
                         color: root.theme ? root.theme.border : "#464b57"
                     }
 
                     Text {
                         id: tabLabel
                         anchors.centerIn: parent
-                        text: modelData.label
-                        color: hostWindow.currentTab === index
+                        text: tabDelegate.modelData.label
+                        color: root.hostWindow.currentTab === tabDelegate.index
                             ? (root.theme ? root.theme.text : "#dce0e5")
                             : (root.theme ? root.theme.textSecondary : "#a9afbc")
                         font.pixelSize: root.theme ? root.theme.fontSizeBase : 13
@@ -369,8 +380,8 @@ Item {
                         anchors.fill: parent
                         hoverEnabled: true
                         onClicked: {
-                            if (hostWindow)
-                                hostWindow.currentTab = index
+                            if (root.hostWindow)
+                                root.hostWindow.currentTab = tabDelegate.index
                         }
                     }
                 }
@@ -391,27 +402,28 @@ Item {
         Loader {
             anchors.fill: parent
             sourceComponent: {
-                if (hostWindow && hostWindow.tabModel && hostWindow.tabModel.length > 0) {
+                if (root.hostWindow && root.hostWindow.tabModel && root.hostWindow.tabModel.length > 0) {
                     return tabContentComponent
                 }
-                return hostWindow ? hostWindow.surfaceComponent : null
+                return root.hostWindow ? root.hostWindow.surfaceComponent : null
             }
         }
 
         Component {
             id: tabContentComponent
             StackLayout {
-                currentIndex: hostWindow ? hostWindow.currentTab : 0
+                currentIndex: root.hostWindow ? root.hostWindow.currentTab : 0
 
                 Repeater {
-                    model: hostWindow ? hostWindow.tabModel : []
+                    model: root.hostWindow ? root.hostWindow.tabModel : []
 
                     delegate: Item {
+                        id: tabContentDelegate
                         required property var modelData
                         
                         Loader {
                             anchors.fill: parent
-                            source: modelData.surface || ""
+                            source: tabContentDelegate.modelData.surface || ""
                         }
                     }
                 }
@@ -446,8 +458,9 @@ Item {
                 model: root.statusItems
 
                 delegate: Rectangle {
+                    id: statusItemDelegate
                     required property var modelData
-                    width: Math.max(label.implicitWidth + 12, 24)
+                    width: Math.max(statusItemLabel.implicitWidth + 12, 24)
                     height: 20
                     radius: 3
                     color: itemMouse.containsMouse
@@ -455,9 +468,9 @@ Item {
                         : "transparent"
 
                     Text {
-                        id: label
+                        id: statusItemLabel
                         anchors.centerIn: parent
-                        text: typeof modelData === "string" ? modelData : ""
+                        text: typeof statusItemDelegate.modelData === "string" ? statusItemDelegate.modelData : ""
                         color: root.theme ? root.theme.textMuted : "#c8ccd4"
                         font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
                     }

@@ -30,7 +30,7 @@ Rectangle {
 
     Text {
         anchors.centerIn: parent
-        text: hostWindow ? hostWindow.windowTitle : "New Main"
+        text: root.hostWindow ? root.hostWindow.windowTitle : "New Main"
         color: "#ffffff"
         font.pixelSize: 24
     }

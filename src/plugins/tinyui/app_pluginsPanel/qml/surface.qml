@@ -19,6 +19,8 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Window
 
@@ -38,7 +40,7 @@ Rectangle {
 
     // Listen to state changes from runtime
     Connections {
-        target: hostWindow ? hostWindow.hostRuntime : null
+        target: root.hostWindow ? root.hostWindow.hostRuntime : null
         function onPluginStateChanged(pluginId, state) {
             root.pluginStates[pluginId] = state
             // Force update
@@ -85,8 +87,8 @@ Rectangle {
 
     function isOutgoingPlugin(pluginId: string) : bool {
         return root.pluginToActivate !== ""
-            && hostWindow
-            && hostWindow.activePluginId === pluginId
+            && root.hostWindow
+            && root.hostWindow.activePluginId === pluginId
             && root.pluginToActivate !== pluginId
     }
 
@@ -125,9 +127,9 @@ Rectangle {
                 anchors.top: parent.top
                 anchors.left: parent.left
                 anchors.right: parent.right
-                height: selectedPlugin ? 64 : 0
+                height: root.selectedPlugin ? 64 : 0
                 visible: height > 0
-                color: theme ? Qt.rgba(0, 0, 0, 0.2) : "#121316"
+                color: root.theme ? Qt.rgba(0, 0, 0, 0.2) : "#121316"
 
                 Item {
                     anchors.fill: parent
@@ -146,18 +148,18 @@ Rectangle {
                             height: 48
                             radius: 8
                             color: {
-                                if (!selectedPlugin) return "#666"
-                                if (selectedPlugin.type === "host") return theme ? theme.accent : "#4a9eff"
-                                if (selectedPlugin.type === "connector") return theme ? theme.success : "#2ecc71"
-                                return theme ? theme.warning : "#f39c12"
+                                if (!root.selectedPlugin) return "#666"
+                                if (root.selectedPlugin.type === "host") return root.theme ? root.theme.accent : "#4a9eff"
+                                if (root.selectedPlugin.type === "connector") return root.theme ? root.theme.success : "#2ecc71"
+                                return root.theme ? root.theme.warning : "#f39c12"
                             }
 
                             Text {
                                 anchors.centerIn: parent
-                                text: selectedPlugin ? selectedPlugin.type.charAt(0).toUpperCase() : "?"
+                                text: root.selectedPlugin ? root.selectedPlugin.type.charAt(0).toUpperCase() : "?"
                                 color: "#FFFFFF"
                                 font.pixelSize: 24
-                                font.family: theme ? theme.fontFamily : "sans-serif"
+                                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                                 font.weight: Font.Bold
                             }
                         }
@@ -167,10 +169,10 @@ Rectangle {
 
                             // Plugin name (hero style - large and bold)
                             Text {
-                                text: selectedPlugin ? selectedPlugin.id : ""
-                                color: theme ? theme.text : "#ffffff"
+                                text: root.selectedPlugin ? root.selectedPlugin.id : ""
+                                color: root.theme ? root.theme.text : "#ffffff"
                                 font.pixelSize: 20
-                                font.family: theme ? theme.fontFamily : "sans-serif"
+                                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                                 font.weight: Font.Bold
                             }
 
@@ -179,26 +181,26 @@ Rectangle {
                                 spacing: 8
 
                                 Text {
-                                    visible: selectedPlugin && selectedPlugin.version !== ""
-                                    text: selectedPlugin ? "v" + selectedPlugin.version : ""
-                                    color: theme ? theme.accent : "#4a9eff"
-                                    font.pixelSize: theme ? theme.fontSizeSmall : 11
-                                    font.family: theme ? theme.fontFamily : "sans-serif"
+                                    visible: root.selectedPlugin && root.selectedPlugin.version !== ""
+                                    text: root.selectedPlugin ? "v" + root.selectedPlugin.version : ""
+                                    color: root.theme ? root.theme.accent : "#4a9eff"
+                                    font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                                 }
 
                                 Text {
-                                    visible: selectedPlugin && selectedPlugin.author !== ""
+                                    visible: root.selectedPlugin && root.selectedPlugin.author !== ""
                                     text: "•"
-                                    color: theme ? theme.textMuted : "#878a98"
-                                    font.pixelSize: theme ? theme.fontSizeSmall : 11
+                                    color: root.theme ? root.theme.textMuted : "#878a98"
+                                    font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
                                 }
 
                                 Text {
-                                    visible: selectedPlugin && selectedPlugin.author !== ""
-                                    text: selectedPlugin ? selectedPlugin.author : ""
-                                    color: theme ? theme.textSecondary : "#a9afbc"
-                                    font.pixelSize: theme ? theme.fontSizeSmall : 11
-                                    font.family: theme ? theme.fontFamily : "sans-serif"
+                                    visible: root.selectedPlugin && root.selectedPlugin.author !== ""
+                                    text: root.selectedPlugin ? root.selectedPlugin.author : ""
+                                    color: root.theme ? root.theme.textSecondary : "#a9afbc"
+                                    font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                                 }
                             }
                         }
@@ -209,14 +211,14 @@ Rectangle {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 12
-                        visible: selectedPlugin && selectedPlugin.type !== "host"
+                        visible: root.selectedPlugin && root.selectedPlugin.type !== "host"
 
                         // Toggle (smaller in hero)
                         Rectangle {
                             width: 28
                             height: 16
                             radius: 8
-                            color: theme ? theme.accent : "#4a9eff"
+                            color: root.theme ? root.theme.accent : "#4a9eff"
 
                             Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter
@@ -230,7 +232,7 @@ Rectangle {
                             MouseArea {
                                 anchors.fill: parent
                                 hoverEnabled: true
-                                onClicked: console.log("Toggle:", selectedPlugin.id)
+                                onClicked: console.log("Toggle:", root.selectedPlugin.id)
                             }
                         }
 
@@ -248,7 +250,7 @@ Rectangle {
                                 id: settingsMouse
                                 anchors.fill: parent
                                 hoverEnabled: true
-                                onClicked: console.log("Settings:", selectedPlugin.id)
+                                onClicked: console.log("Settings:", root.selectedPlugin.id)
                             }
                         }
                     }
@@ -258,7 +260,7 @@ Rectangle {
                     anchors.bottom: parent.bottom
                     width: parent.width
                     height: 1
-                    color: theme ? theme.border : "#464b57"
+                    color: root.theme ? root.theme.border : "#464b57"
                 }
             }
 
@@ -280,41 +282,41 @@ Rectangle {
                     // Description (if present)
                     DetailRow {
                         label: "Description"
-                        description: selectedPlugin ? selectedPlugin.description : ""
-                        visible: selectedPlugin && selectedPlugin.description !== ""
+                        description: root.selectedPlugin ? root.selectedPlugin.description : ""
+                        visible: root.selectedPlugin && root.selectedPlugin.description !== ""
                     }
 
-                    SectionHeader { text: "Info"; visible: selectedPlugin }
+                    SectionHeader { text: "Info"; visible: root.selectedPlugin }
 
                     DetailRow {
                         label: "Windows"
-                        value: selectedPlugin ? String(selectedPlugin.windowCount) : "0"
-                        visible: selectedPlugin
+                        value: root.selectedPlugin ? String(root.selectedPlugin.windowCount) : "0"
+                        visible: root.selectedPlugin
                     }
 
                     DetailRow {
                         label: "Settings"
-                        value: selectedPlugin ? String(selectedPlugin.settingCount) : "0"
-                        visible: selectedPlugin
+                        value: root.selectedPlugin ? String(root.selectedPlugin.settingCount) : "0"
+                        visible: root.selectedPlugin
                     }
 
                     DetailRow {
                         label: "Dependencies"
-                        value: selectedPlugin && selectedPlugin.requires.length > 0
-                            ? selectedPlugin.requires.join(", ")
+                        value: root.selectedPlugin && root.selectedPlugin.requires.length > 0
+                            ? root.selectedPlugin.requires.join(", ")
                             : "None"
-                        visible: selectedPlugin
+                        visible: root.selectedPlugin
                     }
 
                     // Empty state
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         y: 100
-                        visible: selectedPlugin === null
+                        visible: root.selectedPlugin === null
                         text: "Select a plugin from the list"
-                        color: theme ? theme.textMuted : "#878a98"
-                        font.pixelSize: theme ? theme.fontSizeBase : 13
-                        font.family: theme ? theme.fontFamily : "sans-serif"
+                        color: root.theme ? root.theme.textMuted : "#878a98"
+                        font.pixelSize: root.theme ? root.theme.fontSizeBase : 13
+                        font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                     }
                 }
             }
@@ -324,7 +326,7 @@ Rectangle {
         Rectangle {
             width: 1
             height: parent.height
-            color: theme ? theme.border : "#464b57"
+            color: root.theme ? root.theme.border : "#464b57"
         }
 
         // ── Right pane (30%) ── Plugin list
@@ -345,16 +347,16 @@ Rectangle {
                     anchors.left: parent.left; anchors.leftMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Plugins"
-                    color: theme ? theme.text : "#ffffff"
-                    font.pixelSize: theme ? theme.fontSizeSmall : 11
-                    font.family: theme ? theme.fontFamily : "sans-serif"
+                    color: root.theme ? root.theme.text : "#ffffff"
+                    font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                 }
 
                 Rectangle {
                     anchors.bottom: parent.bottom
                     width: parent.width
                     height: 1
-                    color: theme ? theme.border : "#464b57"
+                    color: root.theme ? root.theme.border : "#464b57"
                 }
             }
 
@@ -368,6 +370,7 @@ Rectangle {
                 model: root.inspector ? root.inspector.pluginList : []
 
                 delegate: Column {
+                    id: pluginGroupDelegate
                     width: parent.width
                     spacing: 0
 
@@ -375,15 +378,15 @@ Rectangle {
                     Rectangle {
                         width: parent.width
                         height: 28
-                        color: theme ? theme.surfaceAlt : "#2f343e"
+                        color: root.theme ? root.theme.surfaceAlt : "#2f343e"
 
                         Text {
                             anchors.left: parent.left; anchors.leftMargin: 12
                             anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.label
-                            color: theme ? theme.textSecondary : "#a9afbc"
-                            font.pixelSize: theme ? theme.fontSizeSmall : 11
-                            font.family: theme ? theme.fontFamily : "sans-serif"
+                            text: pluginGroupDelegate.modelData.label
+                            color: root.theme ? root.theme.textSecondary : "#a9afbc"
+                            font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                            font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                             font.weight: Font.Medium
                         }
 
@@ -391,52 +394,55 @@ Rectangle {
                             anchors.bottom: parent.bottom
                             width: parent.width
                             height: 1
-                            color: theme ? theme.border : "#464b57"
+                            color: root.theme ? root.theme.border : "#464b57"
                         }
                     }
 
                     // Plugins in this group — alternating colors starting with dark
                     Repeater {
-                        model: modelData.plugins
+                        model: pluginGroupDelegate.modelData.plugins
 
                         delegate: Rectangle {
+                            id: pluginRowDelegate
                             required property var modelData
                             required property int index
 
                             readonly property bool isSelected:
                                 root.selectedPlugin !== null
-                                && root.selectedPlugin.id === modelData.id
+                                && root.selectedPlugin.id === pluginRowDelegate.modelData.id
                             readonly property bool isPendingActivation:
                                 root.pluginToActivate !== ""
-                                && root.pluginToActivate === modelData.id
+                                && root.pluginToActivate === pluginRowDelegate.modelData.id
                             readonly property bool isPendingConnector:
-                                modelData.type === "connector"
-                                && root.isConnectorPending(modelData.id)
+                                pluginRowDelegate.modelData.type === "connector"
+                                && root.isConnectorPending(pluginRowDelegate.modelData.id)
                             readonly property bool isOutgoingActivation:
-                                modelData.type === "plugin"
-                                && root.isOutgoingPlugin(modelData.id)
+                                pluginRowDelegate.modelData.type === "plugin"
+                                && root.isOutgoingPlugin(pluginRowDelegate.modelData.id)
 
                             width: parent.width
                             height: 40
                             // Alternating colors
-                            color: index % 2 === 0 ? (theme ? theme.surface : "#17181c") : (theme ? theme.surfaceAlt : "#2f343e")
+                            color: pluginRowDelegate.index % 2 === 0
+                                ? (root.theme ? root.theme.surface : "#17181c")
+                                : (root.theme ? root.theme.surfaceAlt : "#2f343e")
 
                             // Selected indicator (accent color)
                             Rectangle {
                                 width: 3
                                 height: parent.height
-                                color: isOutgoingActivation
-                                    ? (theme ? theme.warningAlt : "#B05CFF")
-                                    : ((isPendingActivation || isPendingConnector)
-                                        ? (theme ? theme.warning : "#ff9800")
-                                        : (theme ? theme.accent : "#4a9eff"))
-                                visible: isSelected
+                                color: pluginRowDelegate.isOutgoingActivation
+                                    ? (root.theme ? root.theme.warningAlt : "#B05CFF")
+                                    : ((pluginRowDelegate.isPendingActivation || pluginRowDelegate.isPendingConnector)
+                                        ? (root.theme ? root.theme.warning : "#ff9800")
+                                        : (root.theme ? root.theme.accent : "#4a9eff"))
+                                visible: pluginRowDelegate.isSelected
                             }
 
                             // Hover gradient
                             Rectangle {
                                 anchors.fill: parent
-                                opacity: rowHover.hovered && !isSelected ? 1 : 0
+                                opacity: rowHover.hovered && !pluginRowDelegate.isSelected ? 1 : 0
                                 Behavior on opacity { NumberAnimation { duration: 120 } }
                                 gradient: Gradient {
                                     orientation: Gradient.Horizontal
@@ -450,7 +456,7 @@ Rectangle {
                                 anchors.bottom: parent.bottom
                                 width: parent.width
                                 height: 1
-                                color: theme ? theme.border : "#464b57"
+                                color: root.theme ? root.theme.border : "#464b57"
                                 opacity: 0.4
                             }
 
@@ -468,24 +474,24 @@ Rectangle {
                                     radius: 4
                                     color: {
                                         // Pending activation takes precedence until the panel closes
-                                        if (isOutgoingActivation) return theme ? theme.warningAlt : "#B05CFF"
-                                        if (isPendingActivation || isPendingConnector) return theme ? theme.warning : "#ff9800"
+                                        if (pluginRowDelegate.isOutgoingActivation) return root.theme ? root.theme.warningAlt : "#B05CFF"
+                                        if (pluginRowDelegate.isPendingActivation || pluginRowDelegate.isPendingConnector) return root.theme ? root.theme.warning : "#ff9800"
                                         
                                         // Then check live state from pluginStates, fallback to modelData
-                                        var liveState = root.pluginStates[modelData.id]
-                                        var state = liveState || modelData.state || "disabled"
-                                        if (state === "active") return theme ? theme.success : "#4caf50"
-                                        if (state === "enabling" || state === "loading") return theme ? theme.warning : "#ff9800"
-                                        if (state === "error") return theme ? theme.danger : "#f44336"
-                                        if (state === "unloading") return theme ? theme.warningAlt : "#B05CFF"
-                                        return theme ? theme.danger : "#f44336"  // disabled
+                                        var liveState = root.pluginStates[pluginRowDelegate.modelData.id]
+                                        var state = liveState || pluginRowDelegate.modelData.state || "disabled"
+                                        if (state === "active") return root.theme ? root.theme.success : "#4caf50"
+                                        if (state === "enabling" || state === "loading") return root.theme ? root.theme.warning : "#ff9800"
+                                        if (state === "error") return root.theme ? root.theme.danger : "#f44336"
+                                        if (state === "unloading") return root.theme ? root.theme.warningAlt : "#B05CFF"
+                                        return root.theme ? root.theme.danger : "#f44336"  // disabled
                                     }
                                     
                                     // Pulse animation for loading states
                                     SequentialAnimation on opacity {
                                         running: {
-                                            var liveS = root.pluginStates[modelData.id]
-                                            var s = liveS || modelData.state || "disabled"
+                                            var liveS = root.pluginStates[pluginRowDelegate.modelData.id]
+                                            var s = liveS || pluginRowDelegate.modelData.state || "disabled"
                                             return s === "enabling" || s === "loading" || s === "unloading"
                                         }
                                         loops: Animation.Infinite
@@ -497,33 +503,33 @@ Rectangle {
                                 // Plugin name (bold)
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: modelData.id
-                                    color: theme ? theme.text : "#ffffff"
-                                    font.pixelSize: theme ? theme.fontSizeBase : 13
-                                    font.family: theme ? theme.fontFamily : "sans-serif"
+                                    text: pluginRowDelegate.modelData.id
+                                    color: root.theme ? root.theme.text : "#ffffff"
+                                    font.pixelSize: root.theme ? root.theme.fontSizeBase : 13
+                                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                                     font.weight: Font.DemiBold
                                 }
 
                                 // Version
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    visible: modelData.version !== ""
-                                    text: modelData.version
-                                    color: theme ? theme.textMuted : "#878a98"
-                                    font.pixelSize: theme ? theme.fontSizeSmall : 11
-                                    font.family: theme ? theme.fontFamily : "sans-serif"
+                                    visible: pluginRowDelegate.modelData.version !== ""
+                                    text: pluginRowDelegate.modelData.version
+                                    color: root.theme ? root.theme.textMuted : "#878a98"
+                                    font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                                 }
 
                                 Item { width: parent.width - 200 }  // Spacer that pushes right items to edge
 
                                 // Toggle switch (not for host)
                                 Rectangle {
-                                    visible: modelData.type !== "host"
+                                    visible: pluginRowDelegate.modelData.type !== "host"
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: 28
                                     height: 16
                                     radius: 8
-                                    color: theme ? theme.accent : "#4a9eff"
+                                    color: root.theme ? root.theme.accent : "#4a9eff"
 
                                     // White disk/knob
                                     Rectangle {
@@ -539,7 +545,7 @@ Rectangle {
                                         anchors.fill: parent
                                         hoverEnabled: true
                                         onClicked: {
-                                            console.log("Toggle:", modelData.id)
+                                            console.log("Toggle:", pluginRowDelegate.modelData.id)
                                         }
                                     }
                                 }
@@ -561,7 +567,7 @@ Rectangle {
                                         anchors.fill: parent
                                         hoverEnabled: true
                                         onClicked: {
-                                            console.log("Settings:", modelData.id)
+                                            console.log("Settings:", pluginRowDelegate.modelData.id)
                                         }
                                     }
                                 }
@@ -571,10 +577,10 @@ Rectangle {
                                 anchors.fill: parent
                                 anchors.rightMargin: 80  // Don't trigger when clicking toggle/settings
                                 onClicked: {
-                                    root.selectedPlugin = modelData
-                                    if (modelData.type === "plugin") {
-                                        root.pluginToActivate = modelData.id !== hostWindow.activePluginId
-                                            ? modelData.id
+                                    root.selectedPlugin = pluginRowDelegate.modelData
+                                    if (pluginRowDelegate.modelData.type === "plugin") {
+                                        root.pluginToActivate = pluginRowDelegate.modelData.id !== root.hostWindow.activePluginId
+                                            ? pluginRowDelegate.modelData.id
                                             : ""
                                     } else {
                                         root.pluginToActivate = ""
@@ -594,13 +600,13 @@ Rectangle {
                 anchors.bottom: parent.bottom
                 height: 30
                 visible: root.pluginToActivate !== ""
-                color: theme ? theme.surfaceAlt : "#2f343e"
+                color: root.theme ? root.theme.surfaceAlt : "#2f343e"
 
                 Rectangle {
                     anchors.top: parent.top
                     width: parent.width
                     height: 1
-                    color: theme ? theme.border : "#464b57"
+                    color: root.theme ? root.theme.border : "#464b57"
                 }
 
                 Text {
@@ -608,9 +614,9 @@ Rectangle {
                     anchors.leftMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Close to load plugin"
-                    color: theme ? theme.warning : "#ff9800"
-                    font.pixelSize: theme ? theme.fontSizeSmall : 11
-                    font.family: theme ? theme.fontFamily : "sans-serif"
+                    color: root.theme ? root.theme.warning : "#ff9800"
+                    font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                     font.weight: Font.Medium
                 }
             }
@@ -619,32 +625,34 @@ Rectangle {
 
     // ── Components ───────────────────────────────────────────────────────────
 
-    component SectionHeader: Rectangle {
+            component SectionHeader: Rectangle {
+        id: sectionHeaderRoot
         property string text: ""
         anchors.left: parent ? parent.left : undefined
         anchors.right: parent ? parent.right : undefined
         height: visible ? 28 : 0
-        color: theme ? theme.surfaceAlt : "#2f343e"
+        color: root.theme ? root.theme.surfaceAlt : "#2f343e"
         visible: text !== ""
 
         Text {
             anchors.left: parent.left; anchors.leftMargin: 16
             anchors.verticalCenter: parent.verticalCenter
             text: parent.text
-            color: theme ? theme.textSecondary : "#a9afbc"
-            font.pixelSize: theme ? theme.fontSizeSmall : 11
-            font.family: theme ? theme.fontFamily : "sans-serif"
+            color: root.theme ? root.theme.textSecondary : "#a9afbc"
+            font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+            font.family: root.theme ? root.theme.fontFamily : "sans-serif"
             font.weight: Font.Medium
         }
         Rectangle {
             anchors.bottom: parent.bottom
             width: parent.width
             height: 1
-            color: theme ? theme.border : "#464b57"
+            color: root.theme ? root.theme.border : "#464b57"
         }
     }
 
     component DetailRow: Rectangle {
+        id: detailRowRoot
         property string label: ""
         property string value: ""
         property string description: ""
@@ -657,7 +665,7 @@ Rectangle {
 
         Rectangle {
             anchors.fill: parent
-            opacity: rowHover.hovered ? 1 : 0
+            opacity: detailRowHover.hovered ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
             gradient: Gradient {
                 orientation: Gradient.Horizontal
@@ -671,7 +679,7 @@ Rectangle {
             anchors.bottom: parent.bottom
             width: parent.width
             height: 1
-            color: theme ? theme.border : "#464b57"
+            color: root.theme ? root.theme.border : "#464b57"
             opacity: 0.4
         }
 
@@ -682,28 +690,28 @@ Rectangle {
             spacing: 3
 
             Text {
-                text: label
-                color: theme ? theme.text : "#ffffff"
-                font.pixelSize: theme ? theme.fontSizeBase : 13
-                font.family: theme ? theme.fontFamily : "sans-serif"
+                text: detailRowRoot.label
+                color: root.theme ? root.theme.text : "#ffffff"
+                font.pixelSize: root.theme ? root.theme.fontSizeBase : 13
+                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
             }
             Text {
-                visible: description !== ""
-                text: description
-                color: rowHover.hovered ? "#dec184" : (theme ? theme.textMuted : "#878a98")
-                font.pixelSize: theme ? theme.fontSizeSmall : 11
-                font.family: theme ? theme.fontFamily : "sans-serif"
+                visible: detailRowRoot.description !== ""
+                text: detailRowRoot.description
+                color: detailRowHover.hovered ? "#dec184" : (root.theme ? root.theme.textMuted : "#878a98")
+                font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                 Behavior on color { ColorAnimation { duration: 120 } }
             }
             Text {
-                visible: description === "" && value !== ""
-                text: value
-                color: theme ? theme.textSecondary : "#a9afbc"
-                font.pixelSize: theme ? theme.fontSizeSmall : 11
-                font.family: theme ? theme.fontFamily : "sans-serif"
+                visible: detailRowRoot.description === "" && detailRowRoot.value !== ""
+                text: detailRowRoot.value
+                color: root.theme ? root.theme.textSecondary : "#a9afbc"
+                font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
             }
         }
 
-        HoverHandler { id: rowHover }
+        HoverHandler { id: detailRowHover }
     }
 }

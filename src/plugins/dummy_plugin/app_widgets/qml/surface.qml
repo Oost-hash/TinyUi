@@ -34,11 +34,11 @@ Rectangle {
 
     function refreshProviderRows() {
         if (!providerHub) {
-            providerRows = []
+            root.providerRows = []
             return
         }
-        providerHub.updateProvider(providerId)
-        providerRows = providerHub.inspectionRows(providerId)
+        root.providerHub.updateProvider(root.providerId)
+        root.providerRows = root.providerHub.inspectionRows(root.providerId)
     }
 
     Component.onCompleted: {
@@ -55,10 +55,10 @@ Rectangle {
     }
 
     Connections {
-        target: providerHub
+        target: root.providerHub
         function onProviderDataChanged(changedProviderId) {
             if (changedProviderId === root.providerId) {
-                root.providerRows = providerHub.inspectionRows(root.providerId)
+                root.providerRows = root.providerHub.inspectionRows(root.providerId)
             }
         }
     }
@@ -82,7 +82,7 @@ Rectangle {
         }
 
         Text {
-            text: providerRows.length > 0
+            text: root.providerRows.length > 0
                 ? "Telemetry from LMU_RF2_Connector (mock source)"
                 : "Provider not active"
             color: "#c8ccd4"
@@ -90,21 +90,23 @@ Rectangle {
         }
 
         Repeater {
-            model: providerRows
+            model: root.providerRows
 
             delegate: Row {
+                id: providerRowDelegate
                 required property var modelData
                 spacing: 12
-                visible: String(modelData.key).indexOf("provider.") === 0 || String(modelData.key).indexOf("tyre.") === 0
+                visible: String(providerRowDelegate.modelData.key).indexOf("provider.") === 0
+                    || String(providerRowDelegate.modelData.key).indexOf("tyre.") === 0
 
                 Text {
-                    text: modelData.key
+                    text: providerRowDelegate.modelData.key
                     color: "#878a98"
                     font.pixelSize: 12
                 }
 
                 Text {
-                    text: modelData.value
+                    text: providerRowDelegate.modelData.value
                     color: "#ffffff"
                     font.pixelSize: 12
                 }

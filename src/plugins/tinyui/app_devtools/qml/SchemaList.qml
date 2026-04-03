@@ -19,10 +19,13 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 // Reusable schema list with column headers and scrollable rows
 import QtQuick
 
 Item {
+    id: root
     property var    theme
     property var    model:      []
     property string keyLabel:   "key"
@@ -39,13 +42,13 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            color: theme ? theme.surfaceAlt : "#1e1f23"
+            color: root.theme ? root.theme.surfaceAlt : "#1e1f23"
         }
         Rectangle {
             anchors.bottom: parent.bottom
             width: parent.width
             height: 1
-            color: theme ? theme.border : "#2a2b30"
+            color: root.theme ? root.theme.border : "#2a2b30"
         }
 
         Row {
@@ -57,8 +60,8 @@ Item {
                 width:  parent.width * 0.45
                 height: parent.height
                 verticalAlignment: Text.AlignVCenter
-                text:  keyLabel
-                color: theme ? theme.textMuted : "#888"
+                text:  root.keyLabel
+                color: root.theme ? root.theme.textMuted : "#888"
                 font.pixelSize: 10
                 font.family:    "Consolas, Courier New, monospace"
                 font.weight:    Font.DemiBold
@@ -67,8 +70,8 @@ Item {
                 width:  parent.width * 0.35
                 height: parent.height
                 verticalAlignment: Text.AlignVCenter
-                text:  valueLabel
-                color: theme ? theme.textMuted : "#888"
+                text:  root.valueLabel
+                color: root.theme ? root.theme.textMuted : "#888"
                 font.pixelSize: 10
                 font.family:    "Consolas, Courier New, monospace"
                 font.weight:    Font.DemiBold
@@ -78,7 +81,7 @@ Item {
                 height: parent.height
                 verticalAlignment: Text.AlignVCenter
                 text:  "type / kind"
-                color: theme ? theme.textMuted : "#888"
+                color: root.theme ? root.theme.textMuted : "#888"
                 font.pixelSize: 10
                 font.family:    "Consolas, Courier New, monospace"
                 font.weight:    Font.DemiBold
@@ -93,38 +96,39 @@ Item {
         anchors.right:  parent.right
         anchors.bottom: parent.bottom
         clip: true
-        model: parent.model
+        model: root.model
 
         delegate: Item {
+            id: rowDelegate
             required property var modelData
             required property int index
 
-            readonly property bool isSection: modelData.rowType === "section"
+            readonly property bool isSection: rowDelegate.modelData.rowType === "section"
 
             width:  ListView.view.width
-            height: isSection ? 28 : 22
+            height: rowDelegate.isSection ? 28 : 22
 
             // Section row
             Item {
                 anchors.fill: parent
-                visible: isSection
+                visible: rowDelegate.isSection
 
                 Rectangle {
                     anchors.fill: parent
-                    color: theme ? theme.surfaceAlt : "#1e1f23"
+                    color: root.theme ? root.theme.surfaceAlt : "#1e1f23"
                 }
                 Rectangle {
                     anchors.bottom: parent.bottom
                     width: parent.width
                     height: 1
-                    color: theme ? theme.border : "#2a2b30"
+                    color: root.theme ? root.theme.border : "#2a2b30"
                 }
                 Rectangle {
                     anchors.top: parent.top
                     width: parent.width
                     height: 1
-                    color: theme ? theme.border : "#2a2b30"
-                    visible: index > 0
+                    color: root.theme ? root.theme.border : "#2a2b30"
+                    visible: rowDelegate.index > 0
                 }
 
                 Row {
@@ -135,19 +139,19 @@ Item {
                     Text {
                         height: parent.height
                         verticalAlignment: Text.AlignVCenter
-                        text:  modelData.label ?? ""
-                        color: theme ? theme.text : "#fff"
-                        font.pixelSize: theme ? theme.fontSizeSmall : 12
-                        font.family:    theme ? theme.fontFamily : "sans-serif"
+                        text:  rowDelegate.modelData.label ?? ""
+                        color: root.theme ? root.theme.text : "#fff"
+                        font.pixelSize: root.theme ? root.theme.fontSizeSmall : 12
+                        font.family:    root.theme ? root.theme.fontFamily : "sans-serif"
                         font.weight:    Font.DemiBold
                     }
                     Text {
                         height: parent.height
                         verticalAlignment: Text.AlignVCenter
-                        text:  modelData.sublabel ?? ""
-                        color: theme ? theme.textMuted : "#888"
-                        font.pixelSize: theme ? theme.fontSizeSmall : 12
-                        font.family:    theme ? theme.fontFamily : "sans-serif"
+                        text:  rowDelegate.modelData.sublabel ?? ""
+                        color: root.theme ? root.theme.textMuted : "#888"
+                        font.pixelSize: root.theme ? root.theme.fontSizeSmall : 12
+                        font.family:    root.theme ? root.theme.fontFamily : "sans-serif"
                     }
                 }
             }
@@ -155,13 +159,13 @@ Item {
             // Data row
             Item {
                 anchors.fill: parent
-                visible: !isSection
+                visible: !rowDelegate.isSection
 
                 Rectangle {
                     anchors.fill: parent
-                    color: index % 2 === 0
+                    color: rowDelegate.index % 2 === 0
                            ? "transparent"
-                           : (theme ? Qt.rgba(1, 1, 1, 0.02) : "#1a1b1f")
+                           : (root.theme ? Qt.rgba(1, 1, 1, 0.02) : "#1a1b1f")
                 }
 
                 Row {
@@ -173,8 +177,8 @@ Item {
                         width:  parent.width * 0.45
                         height: parent.height
                         verticalAlignment: Text.AlignVCenter
-                        text:  modelData.key ?? ""
-                        color: theme ? theme.textMuted : "#888"
+                        text:  rowDelegate.modelData.key ?? ""
+                        color: root.theme ? root.theme.textMuted : "#888"
                         font.pixelSize: 11
                         font.family:    "Consolas, Courier New, monospace"
                         elide: Text.ElideRight
@@ -183,17 +187,17 @@ Item {
                         width:  parent.width * 0.35
                         height: parent.height
                         verticalAlignment: Text.AlignVCenter
-                        text:  modelData.value ?? ""
+                        text:  rowDelegate.modelData.value ?? ""
                         color: {
-                            if (modelData.tag === "status") {
-                                var val = modelData.value ?? ""
-                                if (val === "active") return theme ? theme.success : "#4caf50"
-                                if (val === "error") return theme ? theme.danger : "#f44336"
-                                if (val === "enabling" || val === "loading") return theme ? theme.warning : "#ff9800"
-                                return theme ? theme.textMuted : "#888"
+                            if (rowDelegate.modelData.tag === "status") {
+                                var val = rowDelegate.modelData.value ?? ""
+                                if (val === "active") return root.theme ? root.theme.success : "#4caf50"
+                                if (val === "error") return root.theme ? root.theme.danger : "#f44336"
+                                if (val === "enabling" || val === "loading") return root.theme ? root.theme.warning : "#ff9800"
+                                return root.theme ? root.theme.textMuted : "#888"
                             }
-                            if (modelData.tag === "error") return theme ? theme.danger : "#f44336"
-                            return theme ? theme.text : "#fff"
+                            if (rowDelegate.modelData.tag === "error") return root.theme ? root.theme.danger : "#f44336"
+                            return root.theme ? root.theme.text : "#fff"
                         }
                         font.pixelSize: 11
                         font.family:    "Consolas, Courier New, monospace"
@@ -203,8 +207,8 @@ Item {
                         width:  parent.width * 0.20
                         height: parent.height
                         verticalAlignment: Text.AlignVCenter
-                        text:  modelData.tag ?? ""
-                        color: theme ? theme.textMuted : "#888"
+                        text:  rowDelegate.modelData.tag ?? ""
+                        color: root.theme ? root.theme.textMuted : "#888"
                         font.pixelSize: 10
                         font.family:    "Consolas, Courier New, monospace"
                         elide: Text.ElideRight
@@ -217,10 +221,10 @@ Item {
         Text {
             anchors.centerIn: parent
             visible: parent.count === 0
-            text:  emptyText
-            color: theme ? theme.textMuted : "#888"
-            font.pixelSize: theme ? theme.fontSizeSmall : 12
-            font.family:    theme ? theme.fontFamily : "sans-serif"
+            text:  root.emptyText
+            color: root.theme ? root.theme.textMuted : "#888"
+            font.pixelSize: root.theme ? root.theme.fontSizeSmall : 12
+            font.family:    root.theme ? root.theme.fontFamily : "sans-serif"
         }
     }
 }
