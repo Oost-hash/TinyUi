@@ -8,6 +8,7 @@ import platform
 import subprocess
 import sys
 import time
+import tempfile
 from pathlib import Path
 
 
@@ -29,6 +30,10 @@ def _smoke_env() -> dict[str, str]:
     env["PYTHONPATH"] = os.pathsep.join(python_path_entries)
     if platform.system() == "Linux":
         env.setdefault("QT_QPA_PLATFORM", "offscreen")
+        env.setdefault("QT_QUICK_BACKEND", "software")
+        env.setdefault("QSG_RHI_BACKEND", "software")
+        env.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
+        env.setdefault("XDG_RUNTIME_DIR", tempfile.gettempdir())
     return env
 
 
@@ -38,13 +43,18 @@ def main() -> int:
         [sys.executable, "-m", "boot"],
         cwd=str(ROOT),
         env=_smoke_env(),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
     )
 
     try:
         time.sleep(args.timeout)
         if proc.poll() not in (None, 0):
+            stdout, stderr = proc.communicate(timeout=5)
+            output = "\n".join(part.strip() for part in (stdout, stderr) if part.strip())
+            if output:
+                print(output)
             return proc.returncode or 1
         proc.terminate()
         proc.wait(timeout=10)
