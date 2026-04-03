@@ -34,6 +34,7 @@ Rectangle {
     property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
     property var selectedPlugin: null
     property string pluginToActivate: ""  // Plugin waiting to be activated on close
+    readonly property url appLogoSource: Qt.resolvedUrl("../../../../app_assets/logo/logo.svg")
     
     // Track plugin states locally for live updates
     property var pluginStates: ({})  // Map pluginId -> state
@@ -127,7 +128,7 @@ Rectangle {
                 anchors.top: parent.top
                 anchors.left: parent.left
                 anchors.right: parent.right
-                height: root.selectedPlugin ? 64 : 0
+                height: root.selectedPlugin ? 152 : 0
                 visible: height > 0
                 color: root.theme ? Qt.rgba(0, 0, 0, 0.2) : "#121316"
 
@@ -137,50 +138,50 @@ Rectangle {
                     anchors.rightMargin: 20
 
                     Row {
-                        id: heroRow
                         anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.rightMargin: 140
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 16
+                        spacing: 8
 
-                        // Large type icon/badge
-                        Rectangle {
-                            width: 48
-                            height: 48
-                            radius: 8
-                            color: {
-                                if (!root.selectedPlugin) return "#666"
-                                if (root.selectedPlugin.type === "host") return root.theme ? root.theme.accent : "#4a9eff"
-                                if (root.selectedPlugin.type === "connector") return root.theme ? root.theme.success : "#2ecc71"
-                                return root.theme ? root.theme.warning : "#f39c12"
-                            }
+                        Item {
+                            width: 128
+                            height: 128
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: root.selectedPlugin ? root.selectedPlugin.type.charAt(0).toUpperCase() : "?"
-                                color: "#FFFFFF"
-                                font.pixelSize: 24
-                                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
-                                font.weight: Font.Bold
+                            Image {
+                                anchors.fill: parent
+                                source: root.appLogoSource
+                                sourceSize.width: width
+                                sourceSize.height: height
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
+                                horizontalAlignment: Image.AlignLeft
+                                verticalAlignment: Image.AlignVCenter
                             }
                         }
 
                         Column {
-                            spacing: 4
+                            id: heroInfoColumn
+                            width: parent.width - 136
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 8
 
-                            // Plugin name (hero style - large and bold)
                             Text {
                                 text: root.selectedPlugin ? root.selectedPlugin.id : ""
                                 color: root.theme ? root.theme.text : "#ffffff"
-                                font.pixelSize: 20
+                                font.pixelSize: 24
                                 font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                                 font.weight: Font.Bold
+                                elide: Text.ElideRight
+                                width: parent.width
                             }
 
-                            // Version and author row
                             Row {
+                                id: heroMetaRow
                                 spacing: 8
 
                                 Text {
+                                    id: heroVersionText
                                     visible: root.selectedPlugin && root.selectedPlugin.version !== ""
                                     text: root.selectedPlugin ? "v" + root.selectedPlugin.version : ""
                                     color: root.theme ? root.theme.accent : "#4a9eff"
@@ -189,19 +190,41 @@ Rectangle {
                                 }
 
                                 Text {
+                                    id: heroAuthorDot
                                     visible: root.selectedPlugin && root.selectedPlugin.author !== ""
-                                    text: "•"
+                                    text: "\u2022"
                                     color: root.theme ? root.theme.textMuted : "#878a98"
                                     font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
                                 }
 
                                 Text {
+                                    id: heroAuthorText
                                     visible: root.selectedPlugin && root.selectedPlugin.author !== ""
                                     text: root.selectedPlugin ? root.selectedPlugin.author : ""
                                     color: root.theme ? root.theme.textSecondary : "#a9afbc"
                                     font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
                                     font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                    elide: Text.ElideRight
+                                    width: Math.max(
+                                        0,
+                                        heroInfoColumn.width
+                                        - (heroVersionText.visible ? heroVersionText.implicitWidth : 0)
+                                        - (heroAuthorDot.visible ? heroAuthorDot.implicitWidth : 0)
+                                        - 24
+                                    )
                                 }
+                            }
+
+                            Text {
+                                visible: root.selectedPlugin && root.selectedPlugin.description !== ""
+                                text: root.selectedPlugin ? root.selectedPlugin.description : ""
+                                color: root.theme ? root.theme.textSecondary : "#a9afbc"
+                                font.pixelSize: root.theme ? root.theme.fontSizeBase : 13
+                                font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                wrapMode: Text.WordWrap
+                                width: parent.width
+                                maximumLineCount: 2
+                                elide: Text.ElideRight
                             }
                         }
                     }
@@ -240,7 +263,7 @@ Rectangle {
                         Image {
                             width: 18
                             height: 18
-                            source: "../../../../app_assets/icons/cog.svg"
+                            source: "../../../../app_assets/ui/cog.svg"
                             sourceSize.width: 18
                             sourceSize.height: 18
                             fillMode: Image.PreserveAspectFit
@@ -283,7 +306,7 @@ Rectangle {
                     DetailRow {
                         label: "Description"
                         description: root.selectedPlugin ? root.selectedPlugin.description : ""
-                        visible: root.selectedPlugin && root.selectedPlugin.description !== ""
+                        visible: false
                     }
 
                     SectionHeader { text: "Info"; visible: root.selectedPlugin }
@@ -556,7 +579,7 @@ Rectangle {
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: 14
                                     height: 14
-                                    source: "../../../../app_assets/icons/cog.svg"
+                                    source: "../../../../app_assets/ui/cog.svg"
                                     sourceSize.width: 14
                                     sourceSize.height: 14
                                     fillMode: Image.PreserveAspectFit
@@ -657,15 +680,19 @@ Rectangle {
         property string label: ""
         property string value: ""
         property string description: ""
+        property bool heroStyle: false
 
         anchors.left: parent ? parent.left : undefined
         anchors.right: parent ? parent.right : undefined
-        height: visible ? (description !== "" ? 52 : 44) : 0
-        color: "transparent"
+        height: visible ? (heroStyle ? 58 : (description !== "" ? 52 : 44)) : 0
+        color: heroStyle
+            ? (root.theme ? Qt.rgba(0, 0, 0, 0.2) : "#121316")
+            : "transparent"
         visible: true
 
         Rectangle {
             anchors.fill: parent
+            visible: !detailRowRoot.heroStyle
             opacity: detailRowHover.hovered ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
             gradient: Gradient {
@@ -691,6 +718,7 @@ Rectangle {
             spacing: 3
 
             Text {
+                visible: !detailRowRoot.heroStyle
                 text: detailRowRoot.label
                 color: root.theme ? root.theme.text : "#ffffff"
                 font.pixelSize: root.theme ? root.theme.fontSizeBase : 13
@@ -699,10 +727,15 @@ Rectangle {
             Text {
                 visible: detailRowRoot.description !== ""
                 text: detailRowRoot.description
-                color: detailRowHover.hovered ? "#dec184" : (root.theme ? root.theme.textMuted : "#878a98")
-                font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                color: detailRowRoot.heroStyle
+                    ? (root.theme ? root.theme.textSecondary : "#a9afbc")
+                    : (detailRowHover.hovered ? "#dec184" : (root.theme ? root.theme.textMuted : "#878a98"))
+                font.pixelSize: detailRowRoot.heroStyle
+                    ? (root.theme ? root.theme.fontSizeBase : 13)
+                    : (root.theme ? root.theme.fontSizeSmall : 11)
                 font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                 Behavior on color { ColorAnimation { duration: 120 } }
+                wrapMode: Text.WordWrap
             }
             Text {
                 visible: detailRowRoot.description === "" && detailRowRoot.value !== ""
