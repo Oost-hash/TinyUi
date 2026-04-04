@@ -232,7 +232,7 @@ jobs:
 
   release:
     needs: [build, release_meta]
-    if: github.event_name == 'push' || github.event.inputs.dry_run != 'true'
+    if: github.event_name == 'push' || (github.event.inputs.dry_run != 'true' && github.event.inputs.skip_validation != 'true')
     runs-on: ubuntu-latest
 
     permissions:
