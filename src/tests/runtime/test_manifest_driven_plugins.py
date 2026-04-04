@@ -15,8 +15,10 @@ from capabilities.plugin_read import PluginRead
 from runtime.app.paths import AppPaths
 from runtime.manifest import load_plugin_manifest
 from runtime.persistence import SettingsRegistry
+from runtime.plugins.plugin_lifecycle import NoOpPluginLifecycle, resolve_plugin_lifecycle
 from runtime.runtime import Runtime
 from runtime_schema import EventBus, EventType
+from scripts.build_plugin import build_plugin
 
 
 def _write_manifest(
@@ -484,3 +486,187 @@ def test_runtime_rejects_missing_plugin_icon_file(tmp_path: Path, capsys: pytest
         if plugins_parent in sys.path:
             sys.path.remove(plugins_parent)
         _clear_test_modules()
+
+
+def test_runtime_loads_packaged_plugin_distribution(tmp_path: Path) -> None:
+    """Runtime can discover and activate a compiled plugin package."""
+    _clear_test_modules()
+
+    source_root = tmp_path / "src"
+    plugins_source = source_root / "plugins"
+    packaged_plugins_dir = tmp_path / "dist_plugins"
+    config_dir = tmp_path / "config"
+    data_dir = tmp_path / "data"
+
+    plugins_source.mkdir(parents=True, exist_ok=True)
+    (plugins_source / "__init__.py").write_text("", encoding="utf-8")
+
+    _write_manifest(plugins_source / "tinyui", "tinyui", "host")
+    (plugins_source / "tinyui" / "plugin.py").write_text("def activate(ctx):\n    return None\n", encoding="utf-8")
+
+    packaged_source = plugins_source / "compiled_plugin"
+    _write_manifest(packaged_source, "compiled_plugin", "plugin", icon="assets/logo.png")
+    with (packaged_source / "manifest.toml").open("a", encoding="utf-8") as manifest_file:
+        manifest_file.write(
+            "\n".join(
+                [
+                    "",
+                    "[[window]]",
+                    'id = "compiled_plugin.main"',
+                    'title = "Compiled plugin"',
+                    'surface = "qml/surface.qml"',
+                    "",
+                ]
+            )
+        )
+    (packaged_source / "plugin.py").write_text(
+        "\n".join(
+            [
+                "ACTIVATE_CALLS = 0",
+                "",
+                "def activate(ctx):",
+                "    global ACTIVATE_CALLS",
+                "    ACTIVATE_CALLS += 1",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (packaged_source / "qml").mkdir()
+    (packaged_source / "qml" / "surface.qml").write_text("import QtQuick\nItem {}", encoding="utf-8")
+    (packaged_source / "assets").mkdir()
+    (packaged_source / "assets" / "logo.png").write_bytes(b"png")
+
+    build_plugin(packaged_source, packaged_plugins_dir, clean=True, create_zip=False)
+
+    paths = AppPaths(
+        app_root=tmp_path,
+        config_dir=config_dir,
+        host_dir=plugins_source / "tinyui",
+        plugins_dir=packaged_plugins_dir,
+        data_dir=data_dir,
+        source_root=source_root,
+        frozen_root=None,
+    )
+    config_dir.mkdir(parents=True, exist_ok=True)
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    runtime = Runtime(EventBus())
+    runtime.paths = paths
+    runtime.settings = SettingsRegistry(config_dir)
+
+    try:
+        runtime._do_boot()
+
+        assert "compiled_plugin" in runtime.plugin_ids()
+        assert runtime.active_plugin == "compiled_plugin"
+        assert runtime.get_plugin_state("compiled_plugin").name.lower() == "active"
+
+        plugin_read = PluginRead(runtime)
+        plugin_entry = next(plugin for plugin in plugin_read.items() if plugin["id"] == "compiled_plugin")
+        assert plugin_entry["iconUrl"].endswith("/plugins/compiled_plugin/assets/logo.png")
+        assert plugin_entry["iconUrl"].startswith("file:///")
+
+        compiled_module = importlib.import_module("plugins.compiled_plugin.plugin")
+        assert compiled_module.ACTIVATE_CALLS == 1
+
+        compiled_surface = runtime.window_for("compiled_plugin.main")
+        assert compiled_surface is not None
+        assert compiled_surface.surface is not None
+        assert "_compiled_plugins" in str(compiled_surface.surface)
+    finally:
+        for import_root in list(sys.path):
+            if "_compiled_plugins" in import_root:
+                sys.path.remove(import_root)
+        plugins_parent = str(plugins_source.parent)
+        if plugins_parent in sys.path:
+            sys.path.remove(plugins_parent)
+        _clear_test_modules()
+
+
+def test_runtime_tolerates_manifest_only_packaged_connector(tmp_path: Path) -> None:
+    """Packaged manifest-only connectors should not break runtime boot."""
+    _clear_test_modules()
+
+    source_root = tmp_path / "src"
+    plugins_source = source_root / "plugins"
+    packaged_plugins_dir = tmp_path / "dist_plugins"
+    config_dir = tmp_path / "config"
+    data_dir = tmp_path / "data"
+
+    plugins_source.mkdir(parents=True, exist_ok=True)
+    (plugins_source / "__init__.py").write_text("", encoding="utf-8")
+
+    _write_manifest(plugins_source / "tinyui", "tinyui", "host")
+    (plugins_source / "tinyui" / "plugin.py").write_text("def activate(ctx):\n    return None\n", encoding="utf-8")
+
+    packaged_connector = plugins_source / "dummy_connector"
+    _write_manifest(packaged_connector, "dummy_connector", "connector")
+
+    packaged_plugin = plugins_source / "dumb_plugin"
+    _write_manifest(packaged_plugin, "dumb_plugin", "plugin")
+    with (packaged_plugin / "manifest.toml").open("a", encoding="utf-8") as manifest_file:
+        manifest_file.write(
+            "\n".join(
+                [
+                    "",
+                    "[[tab]]",
+                    'id = "dumb_plugin.widgets"',
+                    'label = "Dumb"',
+                    'target = "tinyui.main"',
+                    'surface = "app_widgets/qml/surface.qml"',
+                    "",
+                ]
+            )
+        )
+    (packaged_plugin / "app_widgets" / "qml").mkdir(parents=True)
+    (packaged_plugin / "app_widgets" / "qml" / "surface.qml").write_text(
+        "import QtQuick\nItem {}",
+        encoding="utf-8",
+    )
+
+    build_plugin(packaged_connector, packaged_plugins_dir, clean=True, create_zip=False)
+    build_plugin(packaged_plugin, packaged_plugins_dir, clean=True, create_zip=False)
+
+    paths = AppPaths(
+        app_root=tmp_path,
+        config_dir=config_dir,
+        host_dir=plugins_source / "tinyui",
+        plugins_dir=packaged_plugins_dir,
+        data_dir=data_dir,
+        source_root=source_root,
+        frozen_root=None,
+    )
+    config_dir.mkdir(parents=True, exist_ok=True)
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    runtime = Runtime(EventBus())
+    runtime.paths = paths
+    runtime.settings = SettingsRegistry(config_dir)
+
+    try:
+        runtime._do_boot()
+
+        assert "dummy_connector" in runtime.plugin_ids()
+        assert "dumb_plugin" in runtime.plugin_ids()
+        assert runtime.active_plugin == "dumb_plugin"
+        assert runtime.window_for("tinyui.main") is not None
+    finally:
+        for import_root in list(sys.path):
+            if "_compiled_plugins" in import_root:
+                sys.path.remove(import_root)
+        plugins_parent = str(plugins_source.parent)
+        if plugins_parent in sys.path:
+            sys.path.remove(plugins_parent)
+        _clear_test_modules()
+
+
+def test_resolve_plugin_lifecycle_tolerates_missing_parent_package(tmp_path: Path) -> None:
+    """Lifecycle detection should fall back cleanly when plugins.<id> cannot be imported."""
+    lifecycle = resolve_plugin_lifecycle(
+        plugin_id="missing_pkg_plugin",
+        plugin_type="plugin",
+        plugin_root=tmp_path / "missing_pkg_plugin",
+    )
+
+    assert isinstance(lifecycle, NoOpPluginLifecycle)

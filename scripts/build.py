@@ -11,6 +11,8 @@ import sys
 import time
 from pathlib import Path
 
+from build_plugin import build_plugin as build_compiled_plugin
+
 ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "dist"
 BUILD = ROOT / "build"
@@ -93,17 +95,17 @@ def _copy_user_dir(name: str, src: Path) -> None:
         dst.mkdir(parents=True, exist_ok=True)
 
 
-def _copy_external_plugins() -> None:
-    """Copy external source plugins into the top-level product plugin directory."""
+def _build_external_plugins() -> None:
+    """Build external plugins into packaged distribution directories."""
     source_plugins = ROOT / "src" / "plugins"
     plugins_dst = APP_DIR / "plugins"
     if plugins_dst.exists():
         shutil.rmtree(plugins_dst)
     plugins_dst.mkdir(parents=True, exist_ok=True)
     for plugin_dir in sorted(source_plugins.iterdir()):
-        if not plugin_dir.is_dir() or plugin_dir.name == "tinyui":
+        if not plugin_dir.is_dir() or plugin_dir.name in {"tinyui", "__pycache__"}:
             continue
-        shutil.copytree(plugin_dir, plugins_dst / plugin_dir.name, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        build_compiled_plugin(plugin_dir, plugins_dst, clean=True, create_zip=False)
 
 
 def _ensure_user_dir(name: str) -> None:
@@ -163,7 +165,7 @@ def build(*, skip_clean: bool) -> int:
 
     for name, src in USER_DIRS.items():
         _copy_user_dir(name, src)
-    _copy_external_plugins()
+    _build_external_plugins()
     _ensure_user_dir("data")
     _print_structure()
     return 0

@@ -23,11 +23,11 @@ def _parse_menu_items(entries: list[dict]) -> list[MenuItem | MenuSeparator]:
     return result
 
 
-def load_plugin_manifest(path: Path) -> PluginManifest:
+def load_plugin_manifest(path: Path, *, resource_root: Path | None = None) -> PluginManifest:
     with path.open("rb") as f:
         data = tomllib.load(f)
 
-    manifest_dir = path.parent
+    manifest_dir = resource_root if resource_root is not None else path.parent
     plugin   = data.get("plugin", {})
     plugin_id = plugin.get("id", manifest_dir.name)
     windows  = [_parse_window(w, manifest_dir) for w in data.get("window", [])]

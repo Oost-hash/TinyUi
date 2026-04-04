@@ -31,6 +31,8 @@ def test_build_plugin_uses_manifest_toml_and_freezes_runtime(tmp_path: Path) -> 
     (plugin_dir / "plugin.py").write_text("def activate(ctx):\n    return None\n", encoding="utf-8")
     (plugin_dir / "qml").mkdir()
     (plugin_dir / "qml" / "surface.qml").write_text("import QtQuick\nItem {}", encoding="utf-8")
+    (plugin_dir / "assets").mkdir()
+    (plugin_dir / "assets" / "logo.png").write_bytes(b"png")
     (plugin_dir / "config" / "defaults").mkdir(parents=True)
     (plugin_dir / "config" / "defaults" / "example.json").write_text("{}", encoding="utf-8")
 
@@ -51,6 +53,7 @@ def test_build_plugin_uses_manifest_toml_and_freezes_runtime(tmp_path: Path) -> 
         names = set(archive.namelist())
     assert "plugins/example_plugin/plugin.pyc" in names
     assert "plugins/example_plugin/qml/surface.qml" in names
+    assert "plugins/example_plugin/assets/logo.png" in names
     assert "plugins/example_plugin/manifest.toml" not in names
 
     zip_path = output_dir / "example_plugin-1.2.3.zip"

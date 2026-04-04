@@ -18,6 +18,7 @@ from runtime_schema import (
 from runtime.manifest import load_plugin_manifest
 from runtime.persistence import SettingsRegistry, SettingsSpec
 from runtime.plugins.contracts import PluginContext
+from runtime.plugins.packaged_plugin import resolve_packaged_plugin
 from runtime.plugins.plugin_lifecycle import resolve_plugin_lifecycle
 from runtime.plugins.plugin_state import PluginStateMachine
 from runtime_schema.plugin import PluginState
@@ -26,6 +27,8 @@ from runtime_schema.plugin import PluginState
 class Runtime:
     def __init__(self, event_bus: EventBus) -> None:
         self._plugins: dict[str, PluginManifest] = {}
+        self._plugin_roots: dict[str, Path] = {}
+        self._plugin_import_roots: set[str] = set()
         self.paths: AppPaths | None = None
         self.settings: SettingsRegistry | None = None
         self._plugin_states: dict[str, PluginStateMachine] = {}
@@ -78,25 +81,40 @@ class Runtime:
         paths = self._require_paths()
         if plugin_id == "tinyui":
             manifest_path = paths.host_dir / "manifest.toml"
+            resource_root = paths.host_dir
+            self._plugin_import_roots.add(str(paths.host_dir.parent.parent))
         else:
-            manifest_path = paths.plugins_dir / plugin_id / "manifest.toml"
+            plugin_dir = paths.plugins_dir / plugin_id
+            raw_manifest_path = plugin_dir / "manifest.toml"
+            if raw_manifest_path.exists():
+                manifest_path = raw_manifest_path
+                resource_root = plugin_dir
+                self._plugin_import_roots.add(str(plugin_dir.parent.parent))
+            else:
+                packaged = resolve_packaged_plugin(plugin_dir, paths)
+                if packaged is None:
+                    return
+                manifest_path = packaged.manifest_path
+                resource_root = packaged.plugin_root
+                if packaged.import_root is not None:
+                    self._plugin_import_roots.add(str(packaged.import_root))
         if not manifest_path.exists():
             return
-        self._plugins[plugin_id] = load_plugin_manifest(manifest_path)
+        self._plugins[plugin_id] = load_plugin_manifest(manifest_path, resource_root=resource_root)
+        self._plugin_roots[plugin_id] = resource_root
 
     def _discover_plugins(self) -> None:
         paths = self._require_paths()
         for folder in sorted(paths.plugins_dir.iterdir()):
             if not folder.is_dir() or folder.name == "tinyui":
                 continue
-            if (folder / "manifest.toml").exists():
+            if (folder / "manifest.toml").exists() or (folder / "_internal" / "manifest.toml").exists():
                 self._load_plugin(folder.name)
 
     def _plugin_root(self, plugin_id: str) -> Path:
-        paths = self._require_paths()
         if plugin_id == "tinyui":
-            return paths.host_dir
-        return paths.plugins_dir / plugin_id
+            return self._require_paths().host_dir
+        return self._plugin_roots[plugin_id]
 
     def _plugin_icon_url(self, plugin_id: str) -> str:
         manifest = self._plugins.get(plugin_id)
@@ -242,7 +260,7 @@ class Runtime:
         return resolve_plugin_lifecycle(
             plugin_id=plugin_id,
             plugin_type=manifest.plugin_type,
-            plugins_dir=self._require_paths().plugins_dir,
+            plugin_root=self._plugin_root(plugin_id),
         )
 
     def _provider_id_for(self, plugin_id: str) -> str:
@@ -408,8 +426,10 @@ class Runtime:
         paths = self._require_paths()
         settings = self._require_settings()
         plugins_parent = str(paths.plugins_dir.parent)
-        if plugins_parent not in sys.path:
-            sys.path.insert(0, plugins_parent)
+        import_roots = [plugins_parent, *sorted(self._plugin_import_roots)]
+        for import_root in reversed(import_roots):
+            if import_root not in sys.path:
+                sys.path.insert(0, import_root)
 
         for plugin_id, manifest in self._plugins.items():
             if manifest.plugin_type == "plugin":  # Only UI plugins, not host or connectors

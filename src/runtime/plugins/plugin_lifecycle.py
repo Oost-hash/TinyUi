@@ -60,12 +60,17 @@ class PythonModulePluginLifecycle:
 def resolve_plugin_lifecycle(
     plugin_id: str,
     plugin_type: str,
-    plugins_dir: Path,
+    plugin_root: Path,
 ) -> PluginLifecycle:
     """Resolve the lifecycle adapter for a plugin."""
-    module_path = plugins_dir / plugin_id / "plugin.py"
+    module_path = plugin_root / "plugin.py"
+    module_pyc = plugin_root / "plugin.pyc"
     module_name = f"plugins.{plugin_id}.plugin"
-    has_module = module_path.exists() or importlib.util.find_spec(module_name) is not None
-    if plugin_type == "plugin" and not has_module:
+    try:
+        spec_exists = importlib.util.find_spec(module_name) is not None
+    except ModuleNotFoundError:
+        spec_exists = False
+    has_module = module_path.exists() or module_pyc.exists() or spec_exists
+    if not has_module:
         return NoOpPluginLifecycle(plugin_id)
     return PythonModulePluginLifecycle(plugin_id)
