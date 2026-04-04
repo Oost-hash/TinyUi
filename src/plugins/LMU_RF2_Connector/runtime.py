@@ -26,7 +26,7 @@ from __future__ import annotations
 from numbers import Real
 from typing import Protocol, cast
 
-from runtime.providers.contracts import InspectionSnapshot
+from runtime.connectors.contracts import ConnectorInspectionSnapshot
 from .contracts.source import ConnectorSource
 from .contracts.telemetry import TelemetryReader
 from .sources.lmu import LMULiveSource
@@ -228,19 +228,19 @@ class ConnectorRuntime(TelemetryReader):
         mock = self._mock_source()
         mock.configure(mock.min_val, mock.max_val, value)
 
-    def inspect_snapshot(self) -> InspectionSnapshot:
+    def inspect_snapshot(self) -> ConnectorInspectionSnapshot:
         return [
-            ("provider.family", self.family_name),
-            ("provider.mode", self.mode()),
-            ("provider.active_game", self.active_game()),
-            ("provider.active_source", self.active_source()),
-            ("provider.available_sources", _render_join(self.source_names())),
-            ("provider.supports_demo", _render_bool(self.supports_demo_mode())),
-            ("provider.demo_owner_count", _render_int(self.demo_owner_count())),
-            ("provider.source_request_count", _render_int(self.source_request_count())),
-            ("provider.demo_min", _render_float(self.demo_min())),
-            ("provider.demo_max", _render_float(self.demo_max())),
-            ("provider.demo_speed", _render_float(self.demo_speed())),
+            ("connector.family", self.family_name),
+            ("connector.mode", self.mode()),
+            ("connector.active_game", self.active_game()),
+            ("connector.active_source", self.active_source()),
+            ("connector.available_sources", _render_join(self.source_names())),
+            ("connector.supports_demo", _render_bool(self.supports_demo_mode())),
+            ("connector.demo_owner_count", _render_int(self.demo_owner_count())),
+            ("connector.source_request_count", _render_int(self.source_request_count())),
+            ("connector.demo_min", _render_float(self.demo_min())),
+            ("connector.demo_max", _render_float(self.demo_max())),
+            ("connector.demo_speed", _render_float(self.demo_speed())),
             ("state.active", _render_bool(self.state.active())),
             ("state.paused", _render_bool(self.state.paused())),
             ("state.version", str(self.state.version())),
@@ -407,13 +407,13 @@ class ConnectorRuntime(TelemetryReader):
         return cast(ConfigurableMockSource, source)
 
 
-def create_provider(*sources: ConnectorSource) -> ConnectorRuntime:
+def create_connector_service(*sources: ConnectorSource) -> ConnectorRuntime:
     return ConnectorRuntime(*sources)
 
 
-def create_lmu_provider() -> ConnectorRuntime:
-    return create_provider(LMULiveSource())
+def create_lmu_connector_service() -> ConnectorRuntime:
+    return create_connector_service(LMULiveSource())
 
 
-def create_lmu_rf2_provider() -> ConnectorRuntime:
-    return create_provider(LMULiveSource(), RF2LiveSource())
+def create_lmu_rf2_connector_service() -> ConnectorRuntime:
+    return create_connector_service(LMULiveSource(), RF2LiveSource())

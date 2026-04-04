@@ -92,5 +92,5 @@ class PluginManifest:
     plugin_menu: list[MenuItem | MenuSeparator] = field(default_factory=list)
     menu_label:  str | None = None
     connector_provides: list[str] = field(default_factory=list)
-    provider_module: str | None = None
-    provider_class: str | None = None
+    connector_service_module: str | None = None
+    connector_service_class: str | None = None

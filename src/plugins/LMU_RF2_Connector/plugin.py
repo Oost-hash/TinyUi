@@ -19,15 +19,15 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Provider plugin entrypoint for the consolidated LMU/rF2 connector family."""
+"""Connector service entrypoint for the consolidated LMU/rF2 connector family."""
 
 from __future__ import annotations
 
-from .runtime import create_lmu_rf2_provider
+from .runtime import create_lmu_rf2_connector_service
 
 
 class LMURF2Connector:
-    """Host-side provider entrypoint for the new connector family."""
+    """Host-side connector service entrypoint for the new connector family."""
 
     def __new__(cls):
-        return create_lmu_rf2_provider()
+        return create_lmu_rf2_connector_service()

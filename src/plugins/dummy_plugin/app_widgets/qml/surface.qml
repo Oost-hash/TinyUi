@@ -30,36 +30,36 @@ Rectangle {
     readonly property var hostWindow: Window.window
     readonly property var connectorRead: hostWindow && hostWindow.connectorRead ? hostWindow.connectorRead : null
     readonly property var connectorActions: hostWindow && hostWindow.connectorActions ? hostWindow.connectorActions : null
-    readonly property string providerId: "LMU_RF2_Connector"
-    property var providerRows: []
+    readonly property string connectorId: "LMU_RF2_Connector"
+    property var connectorRows: []
 
-    function refreshProviderRows() {
+    function refreshConnectorRows() {
         if (!connectorRead || !connectorActions) {
-            root.providerRows = []
+            root.connectorRows = []
             return
         }
-        root.connectorActions.updateProvider(root.providerId)
-        root.providerRows = root.connectorRead.inspectionRows(root.providerId)
+        root.connectorActions.updateConnector(root.connectorId)
+        root.connectorRows = root.connectorRead.inspectionRows(root.connectorId)
     }
 
     Component.onCompleted: {
         if (connectorRead && connectorActions) {
-            connectorActions.requestSource(providerId, "dummy_plugin.widgets", "mock")
-            refreshProviderRows()
+            connectorActions.requestSource(connectorId, "dummy_plugin.widgets", "mock")
+            refreshConnectorRows()
         }
     }
 
     Component.onDestruction: {
         if (connectorActions) {
-            connectorActions.releaseSource(providerId, "dummy_plugin.widgets")
+            connectorActions.releaseSource(connectorId, "dummy_plugin.widgets")
         }
     }
 
     Connections {
         target: root.connectorRead
-        function onProviderDataChanged(changedProviderId) {
-            if (changedProviderId === root.providerId) {
-                root.providerRows = root.connectorRead.inspectionRows(root.providerId)
+        function onConnectorDataChanged(changedConnectorId) {
+            if (changedConnectorId === root.connectorId) {
+                root.connectorRows = root.connectorRead.inspectionRows(root.connectorId)
             }
         }
     }
@@ -68,7 +68,7 @@ Rectangle {
         interval: 1000
         running: root.connectorRead !== null && root.connectorActions !== null
         repeat: true
-        onTriggered: root.refreshProviderRows()
+        onTriggered: root.refreshConnectorRows()
     }
 
     Column {
@@ -83,31 +83,31 @@ Rectangle {
         }
 
         Text {
-            text: root.providerRows.length > 0
+            text: root.connectorRows.length > 0
                 ? "Telemetry from LMU_RF2_Connector (mock source)"
-                : "Provider not active"
+                : "Connector not active"
             color: "#c8ccd4"
             font.pixelSize: 12
         }
 
         Repeater {
-            model: root.providerRows
+            model: root.connectorRows
 
             delegate: Row {
-                id: providerRowDelegate
+                id: connectorRowDelegate
                 required property var modelData
                 spacing: 12
-                visible: String(providerRowDelegate.modelData.key).indexOf("provider.") === 0
-                    || String(providerRowDelegate.modelData.key).indexOf("tyre.") === 0
+                visible: String(connectorRowDelegate.modelData.key).indexOf("connector.") === 0
+                    || String(connectorRowDelegate.modelData.key).indexOf("tyre.") === 0
 
                 Text {
-                    text: providerRowDelegate.modelData.key
+                    text: connectorRowDelegate.modelData.key
                     color: "#878a98"
                     font.pixelSize: 12
                 }
 
                 Text {
-                    text: providerRowDelegate.modelData.value
+                    text: connectorRowDelegate.modelData.value
                     color: "#ffffff"
                     font.pixelSize: 12
                 }

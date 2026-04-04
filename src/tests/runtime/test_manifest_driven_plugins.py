@@ -29,8 +29,8 @@ def _write_manifest(
     icon: str | None = None,
     requires: list[str] | None = None,
     connector_provides: list[str] | None = None,
-    provider_module: str | None = None,
-    provider_class: str | None = None,
+    connector_service_module: str | None = None,
+    connector_service_class: str | None = None,
 ) -> None:
     plugin_dir.mkdir(parents=True, exist_ok=True)
     (plugin_dir / "__init__.py").write_text("", encoding="utf-8")
@@ -67,12 +67,12 @@ def _write_manifest(
                 "",
             ]
         )
-    if provider_module and provider_class:
+    if connector_service_module and connector_service_class:
         lines.extend(
             [
-                "[provider]",
-                f'module = "{provider_module}"',
-                f'class = "{provider_class}"',
+                "[connector_service]",
+                f'module = "{connector_service_module}"',
+                f'class = "{connector_service_class}"',
                 "",
             ]
         )
@@ -97,6 +97,11 @@ def _clear_test_modules() -> None:
     ]:
         sys.modules.pop(name, None)
     importlib.invalidate_caches()
+
+
+def _boot_and_apply_initial_runtime_state(runtime: Runtime) -> None:
+    runtime._boot_runtime()
+    runtime._apply_initial_runtime_state()
 
 
 @pytest.fixture
@@ -158,7 +163,7 @@ def manifest_plugin_runtime(tmp_path: Path):
     runtime.settings = SettingsRegistry(config_dir)
 
     try:
-        runtime._do_boot()
+        _boot_and_apply_initial_runtime_state(runtime)
         yield runtime, bus
     finally:
         plugins_parent = str(plugins_dir.parent)
@@ -192,9 +197,16 @@ def test_manifest_only_plugin_can_be_reactivated_after_switch(manifest_plugin_ru
     assert dummy_module.DEACTIVATE_CALLS == 1
 
 
+def test_boot_activates_host_before_runtime_is_used(manifest_plugin_runtime) -> None:
+    """The host plugin stays active after boot as part of the runtime baseline."""
+    runtime, _ = manifest_plugin_runtime
+
+    assert runtime.get_plugin_state("tinyui").name.lower() == "active"
+
+
 @pytest.fixture
-def provider_runtime(tmp_path: Path):
-    """Create a runtime with a connector-backed provider and two plugins."""
+def connector_service_runtime(tmp_path: Path):
+    """Create a runtime with a connector-backed service and two plugins."""
     _clear_test_modules()
 
     source_root = tmp_path / "src"
@@ -225,8 +237,8 @@ def provider_runtime(tmp_path: Path):
         "telemetry_connector",
         "connector",
         connector_provides=["telemetry.tyre.v1"],
-        provider_module="plugins.telemetry_connector.plugin",
-        provider_class="TelemetryConnector",
+        connector_service_module="plugins.telemetry_connector.plugin",
+        connector_service_class="TelemetryConnector",
     )
     (plugins_dir / "telemetry_connector" / "plugin.py").write_text(
         "\n".join(
@@ -261,8 +273,8 @@ def provider_runtime(tmp_path: Path):
                 "",
                 "    def inspect_snapshot(self):",
                 "        return [",
-                "            ('provider.mode', 'demo' if self._opened else 'inactive'),",
-                "            ('provider.active_source', self._active_source),",
+                "            ('connector.mode', 'demo' if self._opened else 'inactive'),",
+                "            ('connector.active_source', self._active_source),",
                 "            ('tyre.compound_f', 'Soft'),",
                 "            ('tyre.compound_r', 'Soft'),",
                 "        ]",
@@ -296,7 +308,7 @@ def provider_runtime(tmp_path: Path):
     runtime.settings = SettingsRegistry(config_dir)
 
     try:
-        runtime._do_boot()
+        _boot_and_apply_initial_runtime_state(runtime)
         yield runtime, bus
     finally:
         plugins_parent = str(plugins_dir.parent)
@@ -305,29 +317,54 @@ def provider_runtime(tmp_path: Path):
         _clear_test_modules()
 
 
-def test_connector_provider_tracks_active_plugin_dependencies(provider_runtime) -> None:
-    """Providers register only while their connector is required by the active plugin."""
-    runtime, bus = provider_runtime
+def test_connector_service_tracks_active_plugin_dependencies(connector_service_runtime) -> None:
+    """Connector services register only while their connector is required by the active plugin."""
+    runtime, bus = connector_service_runtime
 
     registered: list[str] = []
     unregistered: list[str] = []
-    bus.on(EventType.PROVIDER_REGISTERED, lambda e: registered.append(e.data.provider_id))
-    bus.on(EventType.PROVIDER_UNREGISTERED, lambda e: unregistered.append(e.data.provider_id))
+    bus.on(EventType.CONNECTOR_SERVICE_REGISTERED, lambda e: registered.append(e.data.connector_id))
+    bus.on(EventType.CONNECTOR_SERVICE_UNREGISTERED, lambda e: unregistered.append(e.data.connector_id))
 
     assert runtime.active_plugin == "a_plain_plugin"
     assert runtime.get_plugin_state("telemetry_connector").name.lower() == "disabled"
-    assert runtime.providers.has("telemetry_connector") is False
+    assert runtime.connector_services.has("telemetry_connector") is False
 
     assert runtime.set_active_plugin("b_consumer_plugin") is True
     assert runtime.get_plugin_state("telemetry_connector").name.lower() == "active"
-    assert runtime.providers.has("telemetry_connector") is True
-    assert runtime.providers.inspect("telemetry_connector")[0][1] == "demo"
+    assert runtime.connector_services.has("telemetry_connector") is True
+    assert runtime.connector_services.inspect("telemetry_connector")[0][1] == "demo"
 
     assert runtime.set_active_plugin("a_plain_plugin") is True
     assert runtime.get_plugin_state("telemetry_connector").name.lower() == "disabled"
-    assert runtime.providers.has("telemetry_connector") is False
+    assert runtime.connector_services.has("telemetry_connector") is False
     assert registered == ["telemetry_connector"]
     assert unregistered == ["telemetry_connector"]
+
+
+def test_runtime_rejects_host_and_connector_as_active_plugin(connector_service_runtime) -> None:
+    """Only regular UI plugins can become the active plugin."""
+    runtime, _ = connector_service_runtime
+
+    assert runtime.active_plugin == "a_plain_plugin"
+    assert runtime.set_active_plugin("tinyui") is False
+    assert runtime.set_active_plugin("telemetry_connector") is False
+    assert runtime.active_plugin == "a_plain_plugin"
+
+
+def test_direct_connector_enable_disable_uses_same_service_lifecycle(connector_service_runtime) -> None:
+    """Direct lifecycle writes should still drive connector service registration safely."""
+    runtime, _ = connector_service_runtime
+
+    assert runtime.connector_services.has("telemetry_connector") is False
+
+    assert runtime.enable_plugin("telemetry_connector") is True
+    assert runtime.get_plugin_state("telemetry_connector").name.lower() == "active"
+    assert runtime.connector_services.has("telemetry_connector") is True
+
+    assert runtime.disable_plugin("telemetry_connector") is True
+    assert runtime.get_plugin_state("telemetry_connector").name.lower() == "disabled"
+    assert runtime.connector_services.has("telemetry_connector") is False
 
 
 def test_manifest_parses_plugin_icon_field(tmp_path: Path) -> None:
@@ -376,7 +413,7 @@ def test_runtime_projects_plugin_icon_url_for_valid_plugin_asset(tmp_path: Path)
     runtime.settings = SettingsRegistry(config_dir)
 
     try:
-        runtime._do_boot()
+        _boot_and_apply_initial_runtime_state(runtime)
 
         plugin_read = PluginRead(runtime)
         plugin_entry = next(plugin for plugin in plugin_read.items() if plugin["id"] == "dummy_plugin")
@@ -424,7 +461,7 @@ def test_runtime_rejects_plugin_icon_outside_plugin_root(tmp_path: Path, capsys:
     runtime.settings = SettingsRegistry(config_dir)
 
     try:
-        runtime._do_boot()
+        _boot_and_apply_initial_runtime_state(runtime)
         plugin_read = PluginRead(runtime)
         plugin_entry = next(plugin for plugin in plugin_read.items() if plugin["id"] == "dummy_plugin")
         captured = capsys.readouterr()
@@ -473,7 +510,7 @@ def test_runtime_rejects_missing_plugin_icon_file(tmp_path: Path, capsys: pytest
     runtime.settings = SettingsRegistry(config_dir)
 
     try:
-        runtime._do_boot()
+        _boot_and_apply_initial_runtime_state(runtime)
         plugin_read = PluginRead(runtime)
         plugin_entry = next(plugin for plugin in plugin_read.items() if plugin["id"] == "dummy_plugin")
         captured = capsys.readouterr()
@@ -556,7 +593,7 @@ def test_runtime_loads_packaged_plugin_distribution(tmp_path: Path) -> None:
     runtime.settings = SettingsRegistry(config_dir)
 
     try:
-        runtime._do_boot()
+        _boot_and_apply_initial_runtime_state(runtime)
 
         assert "compiled_plugin" in runtime.plugin_ids()
         assert runtime.active_plugin == "compiled_plugin"
@@ -645,7 +682,7 @@ def test_runtime_tolerates_manifest_only_packaged_connector(tmp_path: Path) -> N
     runtime.settings = SettingsRegistry(config_dir)
 
     try:
-        runtime._do_boot()
+        _boot_and_apply_initial_runtime_state(runtime)
 
         assert "dummy_connector" in runtime.plugin_ids()
         assert "dumb_plugin" in runtime.plugin_ids()

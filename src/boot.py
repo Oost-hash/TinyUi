@@ -57,8 +57,8 @@ def create_shared_capabilities(event_bus: EventBus, runtime: Runtime) -> SharedC
         plugin_selection=PluginSelectionApi(event_bus),
         plugin_selection_actions=PluginSelectionActions(event_bus),
         tabs=TabsApi(event_bus),
-        connector_read=ConnectorRead(event_bus, runtime.providers),
-        connector_actions=ConnectorActions(runtime.providers),
+        connector_read=ConnectorRead(event_bus, runtime.connector_services),
+        connector_actions=ConnectorActions(runtime.connector_services),
     )
 
 
@@ -107,61 +107,55 @@ def build_window_capability_properties(
     return properties
 
 
-def main() -> int:
-    # Create Qt application first
-    app = create_application()
-    engine = create_engine()
-    
-    # Create shared event bus — the only thing boot knows about
-    event_bus = EventBus()
-    
-    # Create runtime — subscribes to events internally
-    runtime = Runtime(event_bus)
-    
-    # Create theme and actions
-    theme_name = "dark"  # Will be read from settings after boot
-    theme = Theme(theme_name)
-    actions = AppActions()
-    
-    # Create capability read/write models for QML
-    shared_capabilities = create_shared_capabilities(event_bus, runtime)
-    
-    # Emit boot init event — triggers initialization in all components
+def emit_boot_init(event_bus: EventBus) -> None:
+    """Emit the boot init event that prepares runtime state."""
     event_bus.emit_typed(EventType.BOOT_INIT, BootInitData(
         config_dir="",  # Runtime detects these via AppPaths
         plugins_dir="",
         data_dir="",
     ))
 
-    runtime_capabilities = create_runtime_capabilities(runtime, event_bus)
-    
-    # Get main window (now available after BOOT_INIT)
+
+def emit_boot_ready(event_bus: EventBus, *, main_window_id: str) -> None:
+    """Emit the boot ready event once the main window is known."""
+    event_bus.emit_typed(EventType.BOOT_READY, BootReadyData(main_window_id=main_window_id))
+
+
+def resolve_plugin_panel(engine, runtime: Runtime) -> tuple[str, object | None]:
+    """Resolve the optional plugin panel component exposed to host windows."""
+    assert runtime.paths is not None
+    plugin_panel_path = runtime.paths.host_dir / "app_pluginsPanel" / "qml" / "surface.qml"
+    if not plugin_panel_path.exists():
+        return "", None
+    plugin_panel_url = QUrl.fromLocalFile(str(plugin_panel_path))
+    return str(plugin_panel_path), QQmlComponent(engine, plugin_panel_url)
+
+
+def open_main_window(
+    *,
+    app,
+    engine,
+    actions: AppActions,
+    theme: Theme,
+    runtime: Runtime,
+    shared_capabilities: SharedCapabilities,
+    runtime_capabilities: RuntimeCapabilities,
+):
+    """Open the main host window with its boot-time capability bag."""
     main_manifest = runtime.main_window()
     if main_manifest is None:
         print("No main window found", file=sys.stderr)
-        return 1
+        return None, None
 
-    # Emit boot ready
-    event_bus.emit_typed(EventType.BOOT_READY, BootReadyData(
-        main_window_id=main_manifest.id,
-    ))
-    
-    # Open main window
-    plugin_panel_component = None
-    assert runtime.paths is not None
-    plugin_panel_path = runtime.paths.host_dir / "app_pluginsPanel" / "qml" / "surface.qml"
-    if plugin_panel_path.exists():
-        plugin_panel_url = QUrl.fromLocalFile(str(plugin_panel_path))
-        plugin_panel_component = QQmlComponent(engine, plugin_panel_url)
-
+    plugin_panel_url, plugin_panel_component = resolve_plugin_panel(engine, runtime)
     main_window_properties = build_window_capability_properties(
         main_manifest,
         shared_capabilities,
         runtime_capabilities,
-        plugin_panel_url=str(plugin_panel_path) if plugin_panel_component else "",
+        plugin_panel_url=plugin_panel_url,
         plugin_panel_component=plugin_panel_component,
     )
-    main_handle = open_window(
+    handle = open_window(
         main_manifest,
         engine=engine,
         app=app,
@@ -169,40 +163,81 @@ def main() -> int:
         theme=theme,
         **main_window_properties,
     )
+    return main_manifest, handle
 
-    # When the main window is destroyed, terminate the whole application
-    # even if auxiliary dialogs are still open.
+
+def register_window_actions(
+    *,
+    app,
+    engine,
+    actions: AppActions,
+    theme: Theme,
+    runtime: Runtime,
+    shared_capabilities: SharedCapabilities,
+    runtime_capabilities: RuntimeCapabilities,
+    main_manifest,
+    main_handle,
+) -> None:
+    """Register open and close actions after the main window exists."""
     main_handle.qml_window.destroyed.connect(app.quit)
-    
-    # Enable UI features
     main_handle.qml_window.setProperty("showStatusBar", True)
     main_handle.qml_window.setProperty("showTabBar", True)
-    
-    # Register dialog handlers
+
     open_handles = []
-    
-    def make_open_handler(window_id: str, requires: list[str]):
+
+    def make_open_handler(window_id: str):
         def handler():
             manifest = runtime.window_for(window_id)
-            if manifest:
-                kwargs = build_window_capability_properties(
-                    manifest,
-                    shared_capabilities,
-                    runtime_capabilities,
-                )
-                h = open_window(manifest, engine=engine, app=app, actions=actions, theme=theme, **kwargs)
-                open_handles.append(h)
+            if manifest is None:
+                return
+            kwargs = build_window_capability_properties(
+                manifest,
+                shared_capabilities,
+                runtime_capabilities,
+            )
+            open_handles.append(open_window(manifest, engine=engine, app=app, actions=actions, theme=theme, **kwargs))
         return handler
-    
-    for w in runtime.all_windows():
-        if w.id != main_manifest.id:
-            actions.register(f"open:{w.id}", make_open_handler(w.id, w.requires))
-    
-    def close_main_window() -> None:
-        main_handle.qml_window.close()
 
-    actions.register("close", close_main_window)
-    
+    for window in runtime.all_windows():
+        if window.id != main_manifest.id:
+            actions.register(f"open:{window.id}", make_open_handler(window.id))
+
+    actions.register("close", lambda: main_handle.qml_window.close())
+
+
+def main() -> int:
+    app = create_application()
+    engine = create_engine()
+    event_bus = EventBus()
+    runtime = Runtime(event_bus)
+    theme = Theme("dark")
+    actions = AppActions()
+    shared_capabilities = create_shared_capabilities(event_bus, runtime)
+    emit_boot_init(event_bus)
+    runtime_capabilities = create_runtime_capabilities(runtime, event_bus)
+    main_manifest, main_handle = open_main_window(
+        app=app,
+        engine=engine,
+        actions=actions,
+        theme=theme,
+        runtime=runtime,
+        shared_capabilities=shared_capabilities,
+        runtime_capabilities=runtime_capabilities,
+    )
+    if main_manifest is None:
+        return 1
+    emit_boot_ready(event_bus, main_window_id=main_manifest.id)
+    register_window_actions(
+        app=app,
+        engine=engine,
+        actions=actions,
+        theme=theme,
+        runtime=runtime,
+        shared_capabilities=shared_capabilities,
+        runtime_capabilities=runtime_capabilities,
+        main_manifest=main_manifest,
+        main_handle=main_handle,
+    )
     return app.exec()
 
 

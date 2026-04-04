@@ -4,35 +4,35 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject, Signal, Slot
 
-from runtime.providers.provider_registry import ProviderRegistry
+from runtime.connectors.service_registry import ConnectorServiceRegistry
 
 
 class ConnectorActions(QObject):
-    """Expose provider-side operational actions to QML consumers."""
+    """Expose connector service operational actions to QML consumers."""
 
-    providerDataChanged = Signal(str)
+    connectorDataChanged = Signal(str)
 
-    def __init__(self, providers: ProviderRegistry, parent: QObject | None = None) -> None:
+    def __init__(self, connector_services: ConnectorServiceRegistry, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._providers = providers
+        self._connector_services = connector_services
 
     @Slot(str, str, str, result=bool)
-    def requestSource(self, provider_id: str, owner: str, source_name: str) -> bool:
-        result = self._providers.request_source(provider_id, owner, source_name)
+    def requestSource(self, connector_id: str, owner: str, source_name: str) -> bool:
+        result = self._connector_services.request_source(connector_id, owner, source_name)
         if result:
-            self.providerDataChanged.emit(provider_id)
+            self.connectorDataChanged.emit(connector_id)
         return result
 
     @Slot(str, str, result=bool)
-    def releaseSource(self, provider_id: str, owner: str) -> bool:
-        result = self._providers.release_source(provider_id, owner)
+    def releaseSource(self, connector_id: str, owner: str) -> bool:
+        result = self._connector_services.release_source(connector_id, owner)
         if result:
-            self.providerDataChanged.emit(provider_id)
+            self.connectorDataChanged.emit(connector_id)
         return result
 
     @Slot(str, result=bool)
-    def updateProvider(self, provider_id: str) -> bool:
-        result = self._providers.update(provider_id)
+    def updateConnector(self, connector_id: str) -> bool:
+        result = self._connector_services.update(connector_id)
         if result:
-            self.providerDataChanged.emit(provider_id)
+            self.connectorDataChanged.emit(connector_id)
         return result

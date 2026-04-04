@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from runtime.persistence import ScopedSettings
-    from runtime.providers.contracts import ProviderAccess
+    from runtime.connectors.contracts import ConnectorServiceAccess
 
 
 @dataclass
@@ -16,4 +16,4 @@ class PluginContext:
 
     plugin_id: str
     settings: ScopedSettings
-    providers: "ProviderAccess"
+    connector_services: "ConnectorServiceAccess"
