@@ -401,7 +401,7 @@ Item {
         Loader {
             anchors.fill: parent
             sourceComponent: {
-                if (root.hostWindow && root.hostWindow.tabModel && root.hostWindow.tabModel.length > 0) {
+                if (root.showTabBar && root.hostWindow && root.hostWindow.tabModel && root.hostWindow.tabModel.length > 0) {
                     return tabContentComponent
                 }
                 return root.hostWindow ? root.hostWindow.surfaceComponent : null

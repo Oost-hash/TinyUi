@@ -1,4 +1,4 @@
-"""Menu API for QML-facing host and plugin menu contributions."""
+"""Menu capability for QML-facing host and plugin menu contributions."""
 
 from __future__ import annotations
 

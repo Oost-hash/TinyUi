@@ -53,7 +53,7 @@ class AppManifest:
     title:    str
     surface:  Path | None = None
     chrome:   ChromePolicy = field(default_factory=ChromePolicy)
-    requires: list[str] = field(default_factory=list)  # capabilities: "inspector", ...
+    requires: list[str] = field(default_factory=list)  # capability injection hints for boot/wiring
     menu:     list[MenuItem | MenuSeparator] = field(default_factory=list)
     statusbar: list[StatusbarItemDecl] = field(default_factory=list)
 
@@ -65,36 +65,6 @@ class SettingDecl:
     default: Any
     type:    str                       # "bool" | "str" | "int" | "float" | "choice"
     choices: list[str] = field(default_factory=list)
-
-
-@dataclass(frozen=True)
-class PluginInfo:
-    plugin_id:     str
-    plugin_type:   str
-    version:       str
-    author:        str
-    description:   str
-    icon_url:      str
-    requires:      list[str]
-    windows:       list[str]
-    setting_count: int
-    state:         str = "disabled"        # PluginState name
-    state_history: list[dict] = field(default_factory=list)
-    error_message: str | None = None
-
-
-@dataclass(frozen=True)
-class SettingInfo:
-    namespace:     str
-    key:           str
-    type:          str
-    current_value: str
-
-
-@dataclass(frozen=True)
-class DevToolsData:
-    plugins:  list[PluginInfo]
-    settings: list[SettingInfo]
 
 
 @dataclass(frozen=True)

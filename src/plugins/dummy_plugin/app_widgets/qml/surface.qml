@@ -28,44 +28,45 @@ Rectangle {
     color: "transparent"
 
     readonly property var hostWindow: Window.window
-    readonly property var connectorApi: hostWindow && hostWindow.connectorApi ? hostWindow.connectorApi : null
+    readonly property var connectorRead: hostWindow && hostWindow.connectorRead ? hostWindow.connectorRead : null
+    readonly property var connectorActions: hostWindow && hostWindow.connectorActions ? hostWindow.connectorActions : null
     readonly property string providerId: "LMU_RF2_Connector"
     property var providerRows: []
 
     function refreshProviderRows() {
-        if (!connectorApi) {
+        if (!connectorRead || !connectorActions) {
             root.providerRows = []
             return
         }
-        root.connectorApi.updateProvider(root.providerId)
-        root.providerRows = root.connectorApi.inspectionRows(root.providerId)
+        root.connectorActions.updateProvider(root.providerId)
+        root.providerRows = root.connectorRead.inspectionRows(root.providerId)
     }
 
     Component.onCompleted: {
-        if (connectorApi) {
-            connectorApi.requestSource(providerId, "dummy_plugin.widgets", "mock")
+        if (connectorRead && connectorActions) {
+            connectorActions.requestSource(providerId, "dummy_plugin.widgets", "mock")
             refreshProviderRows()
         }
     }
 
     Component.onDestruction: {
-        if (connectorApi) {
-            connectorApi.releaseSource(providerId, "dummy_plugin.widgets")
+        if (connectorActions) {
+            connectorActions.releaseSource(providerId, "dummy_plugin.widgets")
         }
     }
 
     Connections {
-        target: root.connectorApi
+        target: root.connectorRead
         function onProviderDataChanged(changedProviderId) {
             if (changedProviderId === root.providerId) {
-                root.providerRows = root.connectorApi.inspectionRows(root.providerId)
+                root.providerRows = root.connectorRead.inspectionRows(root.providerId)
             }
         }
     }
 
     Timer {
         interval: 1000
-        running: root.connectorApi !== null
+        running: root.connectorRead !== null && root.connectorActions !== null
         repeat: true
         onTriggered: root.refreshProviderRows()
     }

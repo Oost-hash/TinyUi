@@ -5,10 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from app_schema.manifest import (
-    AppManifest, PluginManifest, MenuItem as MenuItemDecl, MenuSeparator as MenuSeparatorDecl,
-    DevToolsData, PluginInfo, SettingInfo,
-)
+from app_schema.manifest import AppManifest, PluginManifest, MenuItem as MenuItemDecl, MenuSeparator as MenuSeparatorDecl
 from runtime.app_paths import AppPaths
 from runtime.provider_loader import load_provider
 from runtime.provider_registry import ProviderRegistry
@@ -130,6 +127,15 @@ class Runtime:
             return
         self._invalid_plugin_icons.add(plugin_id)
         print(f"[runtime] Ignoring invalid plugin icon for '{plugin_id}': {reason}", file=sys.stderr)
+
+    def plugin_ids(self) -> list[str]:
+        return list(self._plugins.keys())
+
+    def plugin_manifest(self, plugin_id: str) -> PluginManifest | None:
+        return self._plugins.get(plugin_id)
+
+    def plugin_icon_url(self, plugin_id: str) -> str:
+        return self._plugin_icon_url(plugin_id)
 
     # ── Settings registration ─────────────────────────────────────────────
 
@@ -523,45 +529,6 @@ class Runtime:
         )
 
     # ── Manifest queries ──────────────────────────────────────────────────
-
-    def devtools_data(self) -> DevToolsData:
-        settings = self._require_settings()
-        plugins = [
-            PluginInfo(
-                plugin_id=plugin_id,
-                plugin_type=manifest.plugin_type,
-                version=manifest.version,
-                author=manifest.author,
-                description=manifest.description,
-                icon_url=self._plugin_icon_url(plugin_id),
-                requires=manifest.requires,
-                windows=[w.id for w in manifest.windows],
-                setting_count=len(manifest.settings),
-                state=self._plugin_states.get(plugin_id, PluginStateMachine(plugin_id)).state_name,
-                state_history=[
-                    {
-                        "from": t.from_state.name.lower(),
-                        "to": t.to_state.name.lower(),
-                        "time": t.timestamp,
-                        "reason": t.reason,
-                    }
-                    for t in self._plugin_states.get(plugin_id, PluginStateMachine(plugin_id)).history
-                ],
-                error_message=self._plugin_states.get(plugin_id, PluginStateMachine(plugin_id)).error_message,
-            )
-            for plugin_id, manifest in self._plugins.items()
-        ]
-        settings = [
-            SettingInfo(
-                namespace=namespace,
-                key=spec.key,
-                type=spec.type,
-                current_value=str(settings.get(namespace, spec.key) if settings.get(namespace, spec.key) is not None else spec.default),
-            )
-            for namespace, specs in settings.by_namespace().items()
-            for spec in specs
-        ]
-        return DevToolsData(plugins=plugins, settings=settings)
 
     def all_windows(self) -> list[AppManifest]:
         return [w for pm in self._plugins.values() for w in pm.windows]

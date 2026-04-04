@@ -16,8 +16,13 @@ Window {
     property var pluginSelection: null
     property var pluginSelectionActions: null
     property var pluginState: null
+    property var pluginStateWrite: null
+    property var pluginRead: null
+    property var settingsRead: null
+    property var settingsWrite: null
     property var tabs: null
-    property var connectorApi: null
+    property var connectorRead: null
+    property var connectorActions: null
     property string windowTitle: ""
     property var menuItems: []
     property var pluginMenuItems: []
@@ -29,7 +34,6 @@ Window {
     property var statusItems: []
     property string statusActiveLabel: ""
     property string activePluginId: ""
-    property var inspector: null
     property var tabModel: []
     property var chromePolicy: ({
         showMenuButton: true,

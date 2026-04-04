@@ -1,4 +1,4 @@
-"""Tabs API for QML-facing main window tab projection."""
+"""Tabs capability for QML-facing main window tab projection."""
 
 from __future__ import annotations
 
@@ -48,7 +48,6 @@ class TabsApi(QObject):
 
     @Property(list, notify=tabModelChanged)
     def tabModel(self) -> list[dict]:
-        """Tab model for QML: host tabs plus tabs for the active plugin."""
         return [
             tab
             for tab in self._all_tabs

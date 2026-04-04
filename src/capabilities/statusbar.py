@@ -1,4 +1,4 @@
-"""Statusbar API for QML-facing statusbar contributions."""
+"""Statusbar capability for QML-facing statusbar contributions."""
 
 from __future__ import annotations
 

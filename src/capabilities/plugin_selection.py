@@ -1,4 +1,4 @@
-"""Plugin selection API for active plugin context and selection actions."""
+"""Plugin selection capability for active plugin context and selection actions."""
 
 from __future__ import annotations
 
@@ -28,7 +28,6 @@ class PluginSelectionApi(QObject):
 
     @Property(str, notify=activePluginChanged)
     def activePlugin(self) -> str:
-        """Currently active UI plugin."""
         return self._active_plugin
 
 
@@ -41,7 +40,6 @@ class PluginSelectionActions(QObject):
 
     @Slot(str, result=bool)
     def setActivePlugin(self, plugin_id: str) -> bool:
-        """Request activation of the given UI plugin."""
         self._event_bus.emit_typed(
             EventType.UI_PLUGIN_SELECTED,
             UIPluginSelectedData(plugin_id=plugin_id),

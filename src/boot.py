@@ -5,16 +5,20 @@ from __future__ import annotations
 import sys
 
 from app_api.api.app_actions import AppActions
-from app_api.api.connector_api import ConnectorApi
-from app_api.api.menu import MenuApi
-from app_api.api.plugin_selection import PluginSelectionActions, PluginSelectionApi
-from app_api.api.plugin_state import PluginStateReadModel
-from app_api.api.statusbar import StatusbarApi
-from app_api.api.tabs import TabsApi
-from app_api.inspector import RuntimeInspector
 from app_api.qt import create_application, create_engine
 from app_api.theme import Theme
 from app_api.window import open_window
+from capabilities.connector_actions import ConnectorActions
+from capabilities.connector_read import ConnectorRead
+from capabilities.menu import MenuApi
+from capabilities.plugin_read import PluginRead
+from capabilities.plugin_selection import PluginSelectionActions, PluginSelectionApi
+from capabilities.plugin_state_read import PluginStateRead
+from capabilities.plugin_state_write import PluginStateWrite
+from capabilities.settings_read import SettingsRead
+from capabilities.settings_write import SettingsWrite
+from capabilities.statusbar import StatusbarApi
+from capabilities.tabs import TabsApi
 from PySide6.QtCore import QUrl
 from PySide6.QtQml import QQmlComponent
 from runtime.runtime import Runtime
@@ -45,13 +49,9 @@ def main() -> int:
     statusbar = StatusbarApi(event_bus)
     plugin_selection = PluginSelectionApi(event_bus)
     plugin_selection_actions = PluginSelectionActions(event_bus)
-    plugin_state = PluginStateReadModel(event_bus)
     tabs = TabsApi(event_bus)
-    connector_api = ConnectorApi(event_bus, runtime.providers)
-    
-    # Inspector for devtools
-    from app_schema.manifest import DevToolsData
-    inspector = RuntimeInspector(DevToolsData(plugins=[], settings=[]))
+    connector_read = ConnectorRead(event_bus, runtime.providers)
+    connector_actions = ConnectorActions(runtime.providers)
     
     # Emit boot init event — triggers initialization in all components
     event_bus.emit_typed(EventType.BOOT_INIT, BootInitData(
@@ -59,6 +59,12 @@ def main() -> int:
         plugins_dir="",
         data_dir="",
     ))
+
+    plugin_read = PluginRead(runtime)
+    plugin_state = PluginStateRead(runtime, event_bus)
+    plugin_state_write = PluginStateWrite(runtime)
+    settings_read = SettingsRead(runtime)
+    settings_write = SettingsWrite(runtime, settings_read)
     
     # Get main window (now available after BOOT_INIT)
     main_manifest = runtime.main_window()
@@ -66,13 +72,7 @@ def main() -> int:
         print("No main window found", file=sys.stderr)
         return 1
     
-    # Update inspector with runtime data
-    inspector.update_data(runtime.devtools_data())
     assert runtime.paths is not None
-
-    # Keep inspector in sync when plugin states change (devtool stays live)
-    event_bus.on(EventType.PLUGIN_STATE_CHANGED, lambda _: inspector.update_data(runtime.devtools_data()))
-    event_bus.on(EventType.PLUGIN_ACTIVATED, lambda _: inspector.update_data(runtime.devtools_data()))
     
     # Emit boot ready
     event_bus.emit_typed(EventType.BOOT_READY, BootReadyData(
@@ -92,14 +92,18 @@ def main() -> int:
         app=app, 
         actions=actions, 
         theme=theme,
-        inspector=inspector,
         menus=menus,
         statusbar=statusbar,
         pluginSelection=plugin_selection,
         pluginSelectionActions=plugin_selection_actions,
         pluginState=plugin_state,
+        pluginStateWrite=plugin_state_write,
+        pluginRead=plugin_read,
+        settingsRead=settings_read,
+        settingsWrite=settings_write,
         tabs=tabs,
-        connectorApi=connector_api,
+        connectorRead=connector_read,
+        connectorActions=connector_actions,
         pluginPanelUrl=str(plugin_panel_path) if plugin_panel_component else "",
         pluginPanelComponent=plugin_panel_component,
     )
@@ -120,9 +124,18 @@ def main() -> int:
             manifest = runtime.window_for(window_id)
             if manifest:
                 kwargs = {}
-                if "inspector" in requires:
-                    kwargs["inspector"] = inspector
-                kwargs["connectorApi"] = connector_api
+                kwargs["menus"] = menus
+                kwargs["statusbar"] = statusbar
+                kwargs["pluginSelection"] = plugin_selection
+                kwargs["pluginSelectionActions"] = plugin_selection_actions
+                kwargs["pluginState"] = plugin_state
+                kwargs["pluginStateWrite"] = plugin_state_write
+                kwargs["pluginRead"] = plugin_read
+                kwargs["settingsRead"] = settings_read
+                kwargs["settingsWrite"] = settings_write
+                kwargs["tabs"] = tabs
+                kwargs["connectorRead"] = connector_read
+                kwargs["connectorActions"] = connector_actions
                 h = open_window(manifest, engine=engine, app=app, actions=actions, theme=theme, **kwargs)
                 open_handles.append(h)
         return handler

@@ -11,7 +11,7 @@ import pytest
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from app_api.inspector import RuntimeInspector
+from capabilities.plugin_read import PluginRead
 from runtime.app_paths import AppPaths
 from runtime.manifest import load_plugin_manifest
 from runtime.persistence import SettingsRegistry
@@ -339,7 +339,7 @@ def test_manifest_parses_plugin_icon_field(tmp_path: Path) -> None:
 
 
 def test_runtime_projects_plugin_icon_url_for_valid_plugin_asset(tmp_path: Path) -> None:
-    """Runtime resolves plugin-owned icons and projects them into inspector data."""
+    """PluginRead exposes resolved plugin-owned icon URLs."""
     _clear_test_modules()
 
     source_root = tmp_path / "src"
@@ -376,19 +376,10 @@ def test_runtime_projects_plugin_icon_url_for_valid_plugin_asset(tmp_path: Path)
     try:
         runtime._do_boot()
 
-        plugin_info = next(info for info in runtime.devtools_data().plugins if info.plugin_id == "dummy_plugin")
-        inspector = RuntimeInspector(runtime.devtools_data())
-        plugin_list = inspector.pluginList
-        plugin_entry = next(
-            plugin
-            for group in plugin_list
-            if group["type"] == "plugin"
-            for plugin in group["plugins"]
-            if plugin["id"] == "dummy_plugin"
-        )
+        plugin_read = PluginRead(runtime)
+        plugin_entry = next(plugin for plugin in plugin_read.items() if plugin["id"] == "dummy_plugin")
 
-        assert plugin_info.icon_url.endswith("/plugins/dummy_plugin/assets/logo.png")
-        assert plugin_entry["iconUrl"] == plugin_info.icon_url
+        assert plugin_entry["iconUrl"].endswith("/plugins/dummy_plugin/assets/logo.png")
         assert plugin_entry["iconUrl"].startswith("file:///")
     finally:
         plugins_parent = str(plugins_dir.parent)
@@ -432,10 +423,11 @@ def test_runtime_rejects_plugin_icon_outside_plugin_root(tmp_path: Path, capsys:
 
     try:
         runtime._do_boot()
-        plugin_info = next(info for info in runtime.devtools_data().plugins if info.plugin_id == "dummy_plugin")
+        plugin_read = PluginRead(runtime)
+        plugin_entry = next(plugin for plugin in plugin_read.items() if plugin["id"] == "dummy_plugin")
         captured = capsys.readouterr()
 
-        assert plugin_info.icon_url == ""
+        assert plugin_entry["iconUrl"] == ""
         assert "Ignoring invalid plugin icon" in captured.err
         assert "resolved outside plugin root" in captured.err
     finally:
@@ -480,10 +472,11 @@ def test_runtime_rejects_missing_plugin_icon_file(tmp_path: Path, capsys: pytest
 
     try:
         runtime._do_boot()
-        plugin_info = next(info for info in runtime.devtools_data().plugins if info.plugin_id == "dummy_plugin")
+        plugin_read = PluginRead(runtime)
+        plugin_entry = next(plugin for plugin in plugin_read.items() if plugin["id"] == "dummy_plugin")
         captured = capsys.readouterr()
 
-        assert plugin_info.icon_url == ""
+        assert plugin_entry["iconUrl"] == ""
         assert "Ignoring invalid plugin icon" in captured.err
         assert "file not found" in captured.err
     finally:

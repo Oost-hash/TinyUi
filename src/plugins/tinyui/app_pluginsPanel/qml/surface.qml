@@ -28,8 +28,9 @@ Rectangle {
     id: root
 
     property var hostWindow: Window.window
-    property var inspector: hostWindow && hostWindow.inspector ? hostWindow.inspector : null
+    property var pluginRead: hostWindow && hostWindow.pluginRead ? hostWindow.pluginRead : null
     property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
+    property var pluginGroups: []
     
     property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
     property var selectedPlugin: null
@@ -49,15 +50,46 @@ Rectangle {
             root.pluginStates = {}
             root.pluginStates = temp
         }
+        function onStateDataChanged() {
+            if (!root.hostWindow || !root.hostWindow.pluginState)
+                return
+            root.pluginStates = root.hostWindow.pluginState.states
+        }
+    }
+
+    Connections {
+        target: root.pluginRead
+        function onPluginsChanged() {
+            root.pluginGroups = root.buildPluginGroups()
+        }
+    }
+
+    function buildPluginGroups() : var {
+        var groups = [
+            { "type": "host", "label": "Host", "plugins": [] },
+            { "type": "plugin", "label": "Plugins", "plugins": [] },
+            { "type": "connector", "label": "Connectors", "plugins": [] }
+        ]
+        var plugins = pluginRead ? pluginRead.plugins : []
+        for (var i = 0; i < plugins.length; i++) {
+            var plugin = plugins[i]
+            for (var j = 0; j < groups.length; j++) {
+                if (groups[j].type === plugin.type) {
+                    groups[j].plugins.push(plugin)
+                    break
+                }
+            }
+        }
+        return groups
     }
 
     // Check if a connector is used by the active plugin
     function isConnectorUsed(connectorId: string) : bool {
-        if (!hostWindow || !hostWindow.activePluginId || !inspector) return false
+        if (!hostWindow || !hostWindow.activePluginId || !pluginRead) return false
         
         // Find the active plugin
-        for (var i = 0; i < inspector.pluginList.length; i++) {
-            var group = inspector.pluginList[i]
+        for (var i = 0; i < pluginGroups.length; i++) {
+            var group = pluginGroups[i]
             for (var j = 0; j < group.plugins.length; j++) {
                 var plugin = group.plugins[j]
                 if (plugin.id === hostWindow.activePluginId) {
@@ -72,10 +104,10 @@ Rectangle {
     }
 
     function isConnectorPending(connectorId: string) : bool {
-        if (!root.pluginToActivate || !inspector) return false
+        if (!root.pluginToActivate || !pluginRead) return false
 
-        for (var i = 0; i < inspector.pluginList.length; i++) {
-            var group = inspector.pluginList[i]
+        for (var i = 0; i < pluginGroups.length; i++) {
+            var group = pluginGroups[i]
             for (var j = 0; j < group.plugins.length; j++) {
                 var plugin = group.plugins[j]
                 if (plugin.id === root.pluginToActivate) {
@@ -98,10 +130,14 @@ Rectangle {
 
     // Select active plugin when panel opens
     Component.onCompleted: {
-        if (hostWindow && hostWindow.activePluginId && inspector) {
+        if (hostWindow && hostWindow.pluginState) {
+            root.pluginStates = hostWindow.pluginState.states
+        }
+        root.pluginGroups = root.buildPluginGroups()
+        if (hostWindow && hostWindow.activePluginId && pluginRead) {
             // Find the active plugin in the list
-            for (var i = 0; i < inspector.pluginList.length; i++) {
-                var group = inspector.pluginList[i]
+            for (var i = 0; i < pluginGroups.length; i++) {
+                var group = pluginGroups[i]
                 for (var j = 0; j < group.plugins.length; j++) {
                     if (group.plugins[j].id === hostWindow.activePluginId) {
                         selectedPlugin = group.plugins[j]
@@ -391,7 +427,7 @@ Rectangle {
                 anchors.bottom: pendingActivationFooter.visible ? pendingActivationFooter.top : parent.bottom
                 clip: true
                 spacing: 0
-                model: root.inspector ? root.inspector.pluginList : []
+                model: root.pluginGroups
 
                 delegate: Column {
                     id: pluginGroupDelegate

@@ -39,13 +39,11 @@ surface = "app_settings/qml/surface.qml"
 id       = "devtools.main"
 title    = "DevTools"
 surface  = "app_devtools/qml/surface.qml"
-requires = ["inspector"]
 
 [[window]]
 id          = "pluginsPanel.main"
 title       = "Plugins"
 surface     = "app_pluginsPanel/qml/surface.qml"
-requires    = ["inspector"]
 
 [[setting]]
 key     = "theme"
