@@ -19,21 +19,4 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Dumb connector - provides dumb_data capability."""
-
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from runtime.plugins.contracts import PluginContext
-
-
-def activate(ctx: PluginContext) -> None:
-    """Activate the connector."""
-    print(f"[dumb_connector] activated")
-
-
-def deactivate(ctx: PluginContext) -> None:
-    """Deactivate the connector."""
-    print(f"[dumb_connector] deactivated")
+"""Demo overlay plugin package."""

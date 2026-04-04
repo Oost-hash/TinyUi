@@ -7,6 +7,7 @@ from pathlib import Path
 
 from app_schema.manifest import (
     AppManifest, ChromePolicy,
+    OverlayDecl, OverlayWidgetDecl,
     MenuItem, MenuSeparator,
     SettingDecl, StatusbarItemDecl,
     TabDecl, PluginManifest,
@@ -38,6 +39,7 @@ def load_plugin_manifest(path: Path, *, resource_root: Path | None = None) -> Pl
         plugin_menu.extend(_parse_menu_items(pm.get("items", [])))
     connector = data.get("connector", {})
     connector_service = data.get("connector_service", {})
+    overlay = _parse_overlay(data, plugin)
 
     manifest = PluginManifest(
         plugin_id=plugin_id,
@@ -55,6 +57,7 @@ def load_plugin_manifest(path: Path, *, resource_root: Path | None = None) -> Pl
         connector_provides=list(connector.get("provides", [])),
         connector_service_module=connector_service.get("module"),
         connector_service_class=connector_service.get("class"),
+        overlay=overlay,
     )
     _validate_plugin_manifest(manifest)
     return manifest
@@ -63,6 +66,16 @@ def load_plugin_manifest(path: Path, *, resource_root: Path | None = None) -> Pl
 def _validate_plugin_manifest(manifest: PluginManifest) -> None:
     if manifest.plugin_type == "host" and not manifest.windows:
         raise ValueError(f"Host plugin must declare at least one window (plugin: {manifest.plugin_id})")
+    if manifest.plugin_type == "overlay":
+        if manifest.windows or manifest.tabs or manifest.plugin_menu:
+            raise ValueError(
+                f"Overlay plugin cannot declare windows, tabs, or plugin menus (plugin: {manifest.plugin_id})"
+            )
+        if manifest.overlay is None or not manifest.overlay.widgets:
+            raise ValueError(f"Overlay plugin must declare at least one widget (plugin: {manifest.plugin_id})")
+        for widget in manifest.overlay.widgets:
+            if not widget.widget:
+                raise ValueError(f"Overlay widget must declare a widget type (plugin: {manifest.plugin_id}, widget: {widget.id})")
 
 
 def _parse_window(entry: dict, manifest_dir: Path) -> AppManifest:
@@ -118,4 +131,25 @@ def _parse_tab(entry: dict, manifest_dir: Path, plugin_id: str) -> TabDecl:
         target=entry["target"],
         surface=(manifest_dir / entry["surface"]).resolve(),
         plugin_id=plugin_id,
+    )
+
+
+def _parse_overlay(data: dict, plugin: dict) -> OverlayDecl | None:
+    widget_entries = data.get("widget", [])
+    connectors = list(plugin.get("overlay_connectors", data.get("overlay_connectors", [])))
+    modules = list(plugin.get("overlay_modules", data.get("overlay_modules", [])))
+    if not widget_entries and not connectors and not modules:
+        return None
+    return OverlayDecl(
+        connectors=connectors,
+        modules=modules,
+        widgets=[
+            OverlayWidgetDecl(
+                id=entry["id"],
+                widget=entry["widget"],
+                label=entry.get("label", ""),
+                bindings=dict(entry.get("bindings", {})),
+            )
+            for entry in widget_entries
+        ],
     )

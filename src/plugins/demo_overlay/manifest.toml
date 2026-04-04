@@ -1,0 +1,20 @@
+[plugin]
+id = "demo_overlay"
+type = "overlay"
+version = "1.0.0"
+author = "TinyUi"
+description = "A demo overlay plugin used to prove the widget_api and overlay flow."
+icon = "assets/logo.png"
+requires = ["LMU_RF2_Connector"]
+
+[[widget]]
+id = "session_time_left"
+widget = "textWidget"
+label = "Time Left"
+bindings = { source = "session.time_left" }
+
+[[widget]]
+id = "track_name"
+widget = "textWidget"
+label = "Track"
+bindings = { source = "track.name" }

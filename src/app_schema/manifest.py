@@ -78,9 +78,28 @@ class TabDecl:
 
 
 @dataclass(frozen=True)
+class OverlayWidgetDecl:
+    """Overlay widget declaration from manifest."""
+
+    id: str
+    widget: str
+    label: str = ""
+    bindings: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class OverlayDecl:
+    """Overlay-specific manifest declarations."""
+
+    connectors: list[str] = field(default_factory=list)
+    modules: list[str] = field(default_factory=list)
+    widgets: list[OverlayWidgetDecl] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class PluginManifest:
     plugin_id:   str
-    plugin_type: str                 # "host" | "plugin" | "connector"
+    plugin_type: str                 # "host" | "plugin" | "connector" | "overlay"
     version:     str
     author:      str
     description: str
@@ -94,3 +113,4 @@ class PluginManifest:
     connector_provides: list[str] = field(default_factory=list)
     connector_service_module: str | None = None
     connector_service_class: str | None = None
+    overlay: OverlayDecl | None = None

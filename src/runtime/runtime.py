@@ -25,6 +25,7 @@ from runtime.plugins.contracts import PluginContext
 from runtime.plugins.packaged_plugin import resolve_packaged_plugin
 from runtime.plugins.plugin_lifecycle import resolve_plugin_lifecycle
 from runtime.plugins.plugin_state import PluginStateMachine
+from widget_api import create_default_widget_registry
 
 
 class Runtime:
@@ -38,6 +39,7 @@ class Runtime:
         self._active_plugin: str | None = None  # Currently active UI plugin
         self._invalid_plugin_icons: set[str] = set()
         self.connector_services = ConnectorServiceRegistry()
+        self.widget_registry = create_default_widget_registry()
         self.events = event_bus  # Use shared event bus
         self._subscribe_to_events()
 
@@ -103,8 +105,64 @@ class Runtime:
                     self._plugin_import_roots.add(str(packaged.import_root))
         if not manifest_path.exists():
             return
-        self._plugins[plugin_id] = load_plugin_manifest(manifest_path, resource_root=resource_root)
+        manifest = load_plugin_manifest(manifest_path, resource_root=resource_root)
+        self._validate_manifest_extensions(manifest)
+        self._plugins[plugin_id] = manifest
         self._plugin_roots[plugin_id] = resource_root
+
+    def _validate_manifest_extensions(self, manifest: PluginManifest) -> None:
+        """Validate typed manifest extensions that live outside the generic parser core."""
+        if manifest.overlay is None:
+            return
+        unknown_widgets = [
+            widget.widget
+            for widget in manifest.overlay.widgets
+            if not self.widget_registry.has(widget.widget)
+        ]
+        if unknown_widgets:
+            rendered = ", ".join(sorted(set(unknown_widgets)))
+            raise ValueError(
+                f"Overlay plugin '{manifest.plugin_id}' references unknown widgets: {rendered}"
+            )
+        for widget in manifest.overlay.widgets:
+            definition = self.widget_registry.get(widget.widget)
+            assert definition is not None
+            missing_bindings = [
+                binding
+                for binding in definition.required_bindings
+                if binding not in widget.bindings
+            ]
+            if missing_bindings:
+                rendered = ", ".join(missing_bindings)
+                raise ValueError(
+                    f"Overlay plugin '{manifest.plugin_id}' widget '{widget.id}' is missing bindings: {rendered}"
+                )
+
+    def _validate_overlay_binding_sources(self, plugin_id: str) -> None:
+        """Validate that overlay bindings can be resolved from active connector services."""
+        manifest = self._plugins[plugin_id]
+        if manifest.overlay is None:
+            return
+
+        required_connectors = sorted(required_connector_ids(self._plugins, plugin_id))
+        available_binding_keys: set[str] = set()
+        for connector_id in required_connectors:
+            self.connector_services.update(connector_id)
+            available_binding_keys.update(key for key, _ in self.connector_services.inspect(connector_id))
+
+        missing_keys = sorted(
+            {
+                binding_value
+                for widget in manifest.overlay.widgets
+                for binding_value in widget.bindings.values()
+                if binding_value not in available_binding_keys
+            }
+        )
+        if missing_keys:
+            rendered = ", ".join(missing_keys)
+            raise ValueError(
+                f"Overlay plugin '{plugin_id}' references unavailable binding keys: {rendered}"
+            )
 
     def _discover_plugins(self) -> None:
         paths = self._require_paths()
@@ -406,6 +464,8 @@ class Runtime:
             return
 
         try:
+            if self._plugins[plugin_id].plugin_type == "overlay":
+                self._validate_overlay_binding_sources(plugin_id)
             self._plugin_lifecycle(plugin_id).activate(self._plugin_context(plugin_id))
             sm.transition(PluginState.ACTIVE, "Activation successful")
             self._emit_plugin_state_changed(plugin_id, "loading", "active")
@@ -430,7 +490,7 @@ class Runtime:
             (
                 plugin_id
                 for plugin_id, manifest in self._plugins.items()
-                if manifest.plugin_type == "plugin" and settings.get(plugin_id, "enabled") is not False
+                if manifest.plugin_type in {"plugin", "overlay"} and settings.get(plugin_id, "enabled") is not False
             ),
             None,
         ), reason="boot")
@@ -441,12 +501,12 @@ class Runtime:
         return self._active_plugin
 
     def set_active_plugin(self, plugin_id: str) -> bool:
-        """Set the active plugin. Returns False if plugin is host or connector."""
+        """Set the active UI component. Returns False for non-UI plugin types."""
         if plugin_id not in self._plugins:
             return False
         manifest = self._plugins[plugin_id]
-        if manifest.plugin_type != "plugin":
-            return False  # Host and connectors cannot be active plugin
+        if manifest.plugin_type not in {"plugin", "overlay"}:
+            return False  # Host and connectors cannot be active UI component
         if self._active_plugin == plugin_id:
             return True
         self._reconcile_active_plugin(
