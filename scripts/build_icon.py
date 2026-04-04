@@ -14,7 +14,7 @@ from PySide6.QtGui import QImage, QPainter
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QApplication
 
-ASSET_DIR = Path(__file__).resolve().parent.parent / "src" / "app_assets" / "logo"
+ASSET_DIR = Path(__file__).resolve().parent.parent / "src" / "assets" / "logo"
 SVG_PATH = ASSET_DIR / "logo.svg"
 PNG_PATH = ASSET_DIR / "logo.png"
 ICO_PATH = ASSET_DIR / "logo.ico"

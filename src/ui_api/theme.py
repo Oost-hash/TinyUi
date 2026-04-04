@@ -45,7 +45,7 @@ def _theme_path(name: str) -> Path:
         external = app_root / "themes" / theme_file
         if external.exists():
             return external
-    return Path(__file__).resolve().parent.parent / "app_assets" / "themes" / theme_file
+    return Path(__file__).resolve().parent.parent / "assets" / "themes" / theme_file
 
 
 def _load_toml(name: str) -> dict:

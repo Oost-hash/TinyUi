@@ -24,7 +24,7 @@ EXE_NAME = "TinyUi.exe" if IS_WINDOWS else "TinyUi"
 
 USER_DIRS = {
     "config": ROOT / "data" / "config",
-    "themes": ROOT / "src" / "app_assets" / "themes",
+    "themes": ROOT / "src" / "assets" / "themes",
 }
 
 
