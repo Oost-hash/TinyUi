@@ -30,6 +30,10 @@ on:
         description: "Dry run — build only, skip release"
         type: boolean
         default: false
+      skip_validation:
+        description: "Skip validate job for a manual run"
+        type: boolean
+        default: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -39,6 +43,7 @@ permissions:
 
 jobs:
   validate:
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.skip_validation != 'true'
     permissions:
       contents: read
     strategy:
