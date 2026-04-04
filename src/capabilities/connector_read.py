@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import Property, QObject, Signal, Slot
 
-from runtime.provider_registry import ProviderRegistry
+from runtime.providers.provider_registry import ProviderRegistry
 from runtime_schema import EventBus, EventType, ProviderRegisteredData, ProviderUnregisteredData, ProviderUpdatedData
 
 

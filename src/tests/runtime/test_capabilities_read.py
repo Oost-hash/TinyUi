@@ -13,8 +13,8 @@ from capabilities.plugin_state_read import PluginStateRead
 from capabilities.settings_read import SettingsRead
 from capabilities.statusbar import StatusbarApi
 from capabilities.tabs import TabsApi
-from runtime.plugin_state import PluginStateMachine
-from runtime.provider_registry import ProviderRegistry
+from runtime.plugins.plugin_state import PluginStateMachine
+from runtime.providers.provider_registry import ProviderRegistry
 from runtime_schema import (
     EventBus,
     EventType,

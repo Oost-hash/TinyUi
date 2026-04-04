@@ -6,9 +6,9 @@ import sys
 from pathlib import Path
 
 from app_schema.manifest import AppManifest, PluginManifest, MenuItem as MenuItemDecl, MenuSeparator as MenuSeparatorDecl
-from runtime.app_paths import AppPaths
-from runtime.provider_loader import load_provider
-from runtime.provider_registry import ProviderRegistry
+from runtime.app.paths import AppPaths
+from runtime.providers.provider_loader import load_provider
+from runtime.providers.provider_registry import ProviderRegistry
 from runtime_schema import (
     EventBus, EventType, PluginState, PluginStateData,
     PluginActivatedData, PluginErrorData,
@@ -17,9 +17,9 @@ from runtime_schema import (
 )
 from runtime.manifest import load_plugin_manifest
 from runtime.persistence import SettingsRegistry, SettingsSpec
-from runtime.plugin_context import PluginContext
-from runtime.plugin_lifecycle import resolve_plugin_lifecycle
-from runtime.plugin_state import PluginStateMachine
+from runtime.plugins.plugin_context import PluginContext
+from runtime.plugins.plugin_lifecycle import resolve_plugin_lifecycle
+from runtime.plugins.plugin_state import PluginStateMachine
 from runtime_schema.plugin import PluginState
 
 

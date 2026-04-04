@@ -8,7 +8,7 @@ from capabilities.connector_actions import ConnectorActions
 from capabilities.plugin_selection import PluginSelectionActions
 from capabilities.plugin_state_write import PluginStateWrite
 from capabilities.settings_write import SettingsWrite
-from runtime.provider_registry import ProviderRegistry
+from runtime.providers.provider_registry import ProviderRegistry
 from runtime_schema import EventBus, EventType
 
 

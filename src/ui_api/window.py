@@ -10,10 +10,10 @@ from PySide6.QtCore import QObject, QUrl
 from PySide6.QtQml import QQmlComponent, QQmlEngine
 from PySide6.QtQuick import QQuickWindow
 
-from app_api.api.app_actions import AppActions
-from app_api.theme import Theme
+from ui_api.api.app_actions import AppActions
+from ui_api.theme import Theme
 from app_schema.manifest import AppManifest
-from app_api.windowing import attach_windowing
+from ui_api.windowing import attach_windowing
 
 
 _HOSTED_WINDOW_QML = Path(__file__).parent / "qml" / "HostedWindow.qml"

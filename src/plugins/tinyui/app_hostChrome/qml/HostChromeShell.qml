@@ -25,7 +25,7 @@ import QtQuick
 import QtQuick.Window
 import QtQuick.Layouts
 
-import "../../../../app_api/qml" as AppApi
+import "../../../../ui_api/qml" as UiApi
 
 Item {
     id: root
@@ -79,7 +79,7 @@ Item {
     }
 
     // Base chrome — menu button suppressed so HostChromeShell owns it
-    AppApi.AppChromeShell {
+    UiApi.AppChromeShell {
         id: baseChrome
         anchors.fill: parent
         externalMenuButton: true

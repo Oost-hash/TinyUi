@@ -5,10 +5,10 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 
-from app_api.api.app_actions import AppActions
-from app_api.qt import create_application, create_engine
-from app_api.theme import Theme
-from app_api.window import open_window
+from ui_api.api.app_actions import AppActions
+from ui_api.qt import create_application, create_engine
+from ui_api.theme import Theme
+from ui_api.window import open_window
 from capabilities.connector_actions import ConnectorActions
 from capabilities.connector_read import ConnectorRead
 from capabilities.menu import MenuApi
@@ -26,7 +26,7 @@ from runtime.runtime import Runtime
 from runtime_schema import EventBus, EventType, BootInitData, BootReadyData
 
 if sys.platform == "win32":
-    from app_api.windowing import win_window  # noqa: F401  # eager import for Windows QML singletons
+    from ui_api.windowing import win_window  # noqa: F401  # eager import for Windows QML singletons
 
 
 @dataclass(frozen=True)

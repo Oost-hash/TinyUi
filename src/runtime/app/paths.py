@@ -44,7 +44,7 @@ class AppPaths:
                 frozen_root=frozen_root,
             )
         else:
-            source_root = Path(__file__).resolve().parents[1]
+            source_root = Path(__file__).resolve().parents[2]
             repo_root = source_root.parent
             paths = cls(
                 app_root=source_root,

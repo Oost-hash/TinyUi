@@ -32,7 +32,7 @@ Resize is initiated from ResizeHandles.qml via startResize(edge).
 
 from PySide6.QtCore import Qt, Slot
 
-from app_api.windowing.controller_api import WindowControllerApi
+from ui_api.windowing.controller_api import WindowControllerApi
 
 
 class WindowController(WindowControllerApi):

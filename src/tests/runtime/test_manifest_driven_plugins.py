@@ -12,7 +12,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from capabilities.plugin_read import PluginRead
-from runtime.app_paths import AppPaths
+from runtime.app.paths import AppPaths
 from runtime.manifest import load_plugin_manifest
 from runtime.persistence import SettingsRegistry
 from runtime.runtime import Runtime

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import QObject, Signal, Slot
 
-from runtime.provider_registry import ProviderRegistry
+from runtime.providers.provider_registry import ProviderRegistry
 
 
 class ConnectorActions(QObject):

@@ -49,7 +49,7 @@ from PySide6.QtCore import QObject, Slot
 from PySide6.QtGui import QWindow
 from PySide6.QtQml import QmlElement, QmlSingleton
 
-from app_api.windowing.controller_api import WindowControllerApi
+from ui_api.windowing.controller_api import WindowControllerApi
 
 QML_IMPORT_NAME = "TinyUI"
 QML_IMPORT_MAJOR_VERSION = 1

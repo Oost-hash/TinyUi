@@ -9,7 +9,7 @@ from typing import Callable, Protocol, cast
 from PySide6.QtCore import QObject
 from PySide6.QtQuick import QQuickWindow
 
-from app_api.windowing.controller_api import WindowControllerApi
+from ui_api.windowing.controller_api import WindowControllerApi
 
 
 @dataclass(frozen=True)
@@ -28,7 +28,7 @@ def attach_windowing(
     dpr = app.devicePixelRatio()
 
     if sys.platform == "win32":
-        from app_api.windowing.win_window import (
+        from ui_api.windowing.win_window import (
             WindowChromeHelper,
             WindowController,
             apply_dwm_frame,
@@ -58,7 +58,7 @@ def attach_windowing(
         )
 
     if sys.platform.startswith("linux") or sys.platform == "darwin":
-        from app_api.windowing.unix_window import WindowController
+        from ui_api.windowing.unix_window import WindowController
         window_controller_cls = cast(type, WindowController)
 
         controller = window_controller_cls(window)
