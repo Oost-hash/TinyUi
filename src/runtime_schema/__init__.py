@@ -19,10 +19,10 @@ from runtime_schema.plugin import (
     PluginState,
     PluginStateData,
 )
-from runtime_schema.provider import (
-    ProviderRegisteredData,
-    ProviderUnregisteredData,
-    ProviderUpdatedData,
+from runtime_schema.connector_service import (
+    ConnectorServiceRegisteredData,
+    ConnectorServiceUnregisteredData,
+    ConnectorServiceUpdatedData,
 )
 from runtime_schema.settings import SettingsSpec, VALID_SETTING_TYPES
 
@@ -44,10 +44,10 @@ __all__ = [
     "PluginErrorData",
     "PluginState",
     "PluginStateData",
-    # Provider
-    "ProviderRegisteredData",
-    "ProviderUnregisteredData",
-    "ProviderUpdatedData",
+    # Connector service
+    "ConnectorServiceRegisteredData",
+    "ConnectorServiceUnregisteredData",
+    "ConnectorServiceUpdatedData",
     # Settings
     "SettingsSpec",
     "VALID_SETTING_TYPES",

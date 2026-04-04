@@ -17,7 +17,7 @@ provides = [
   "telemetry.inputs.v1",
 ]
 
-[provider]
+[connector_service]
 module = "plugins.LMU_RF2_Connector.plugin"
 class = "LMURF2Connector"
 

@@ -13,9 +13,12 @@ from capabilities.plugin_state_read import PluginStateRead
 from capabilities.settings_read import SettingsRead
 from capabilities.statusbar import StatusbarApi
 from capabilities.tabs import TabsApi
+from runtime.connectors.service_registry import ConnectorServiceRegistry
 from runtime.plugins.plugin_state import PluginStateMachine
-from runtime.providers.provider_registry import ProviderRegistry
 from runtime_schema import (
+    ConnectorServiceRegisteredData,
+    ConnectorServiceUnregisteredData,
+    ConnectorServiceUpdatedData,
     EventBus,
     EventType,
     MenuRegisteredData,
@@ -23,17 +26,14 @@ from runtime_schema import (
     PluginErrorData,
     PluginState,
     PluginStateData,
-    ProviderRegisteredData,
-    ProviderUnregisteredData,
-    ProviderUpdatedData,
     StatusbarRegisteredData,
     TabRegisteredData,
 )
 
 
-class _FakeProvider:
+class _FakeConnectorService:
     def inspect_snapshot(self) -> list[tuple[str, str]]:
-        return [("provider.mode", "demo"), ("provider.active_source", "mock")]
+        return [("connector.mode", "demo"), ("connector.active_source", "mock")]
 
 
 class _FakeSettingsRegistry:
@@ -262,38 +262,38 @@ def test_plugin_state_read_tracks_states_errors_and_history() -> None:
     assert histories["dummy_plugin"][-1]["to"] == "error"
 
 
-def test_connector_read_projects_provider_metadata_and_rows() -> None:
-    """ConnectorRead should expose active providers and snapshot rows."""
+def test_connector_read_projects_service_metadata_and_rows() -> None:
+    """ConnectorRead should expose active connector services and snapshot rows."""
     bus = EventBus()
-    registry = ProviderRegistry()
-    registry.register("telemetry_connector", "telemetry_connector", "Telemetry", _FakeProvider())
+    registry = ConnectorServiceRegistry()
+    registry.register("telemetry_connector", "telemetry_connector", "Telemetry", _FakeConnectorService())
     capability = ConnectorRead(bus, registry)
 
     bus.emit_typed(
-        EventType.PROVIDER_REGISTERED,
-        ProviderRegisteredData(
-            provider_id="telemetry_connector",
+        EventType.CONNECTOR_SERVICE_REGISTERED,
+        ConnectorServiceRegisteredData(
+            connector_id="telemetry_connector",
             plugin_id="telemetry_connector",
             display_name="Telemetry",
         ),
     )
     bus.emit_typed(
-        EventType.PROVIDER_UPDATED,
-        ProviderUpdatedData(provider_id="telemetry_connector", plugin_id="telemetry_connector"),
+        EventType.CONNECTOR_SERVICE_UPDATED,
+        ConnectorServiceUpdatedData(connector_id="telemetry_connector", plugin_id="telemetry_connector"),
     )
 
-    assert cast(list[dict[str, str]], cast(Any, capability).providers) == [
+    assert cast(list[dict[str, str]], cast(Any, capability).services) == [
         {"id": "telemetry_connector", "label": "Telemetry", "pluginId": "telemetry_connector"}
     ]
     assert capability.inspectionRows("telemetry_connector") == [
-        {"key": "provider.mode", "value": "demo"},
-        {"key": "provider.active_source", "value": "mock"},
+        {"key": "connector.mode", "value": "demo"},
+        {"key": "connector.active_source", "value": "mock"},
     ]
 
     bus.emit_typed(
-        EventType.PROVIDER_UNREGISTERED,
-        ProviderUnregisteredData(provider_id="telemetry_connector", plugin_id="telemetry_connector"),
+        EventType.CONNECTOR_SERVICE_UNREGISTERED,
+        ConnectorServiceUnregisteredData(connector_id="telemetry_connector", plugin_id="telemetry_connector"),
     )
     registry.unregister("telemetry_connector")
 
-    assert cast(list[dict[str, str]], cast(Any, capability).providers) == []
+    assert cast(list[dict[str, str]], cast(Any, capability).services) == []

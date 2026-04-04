@@ -137,27 +137,27 @@ Rectangle {
 
     function buildConnectorRows() {
         var rows = []
-        var providers = connectorRead ? connectorRead.providers : []
-        for (var i = 0; i < providers.length; i++) {
-            var provider = providers[i]
+        var services = connectorRead ? connectorRead.services : []
+        for (var i = 0; i < services.length; i++) {
+            var service = services[i]
             rows.push({
                 "rowType": "section",
-                "label": provider.label,
-                "sublabel": provider.id
+                "label": service.label,
+                "sublabel": service.id
             })
             rows.push({
                 "rowType": "row",
                 "key": "plugin",
-                "value": provider.pluginId,
-                "tag": "provider"
+                "value": service.pluginId,
+                "tag": "connector"
             })
-            var inspectionRows = connectorRead ? connectorRead.inspectionRows(provider.id) : []
+            var inspectionRows = connectorRead ? connectorRead.inspectionRows(service.id) : []
             for (var j = 0; j < inspectionRows.length; j++) {
                 rows.push({
                     "rowType": "row",
                     "key": inspectionRows[j].key,
                     "value": inspectionRows[j].value,
-                    "tag": inspectionRows[j].key.indexOf("provider.") === 0 ? "provider" : "snapshot"
+                    "tag": inspectionRows[j].key.indexOf("connector.") === 0 ? "connector" : "snapshot"
                 })
             }
         }
@@ -185,8 +185,8 @@ Rectangle {
 
         Connections {
             target: root.connectorRead
-            function onProvidersChanged() { root.connectorRows = root.buildConnectorRows() }
-            function onProviderDataChanged(providerId) { root.connectorRows = root.buildConnectorRows() }
+            function onServicesChanged() { root.connectorRows = root.buildConnectorRows() }
+            function onConnectorDataChanged(connectorId) { root.connectorRows = root.buildConnectorRows() }
         }
 
         // Tab strip
@@ -296,9 +296,9 @@ Rectangle {
         onTriggered: {
             if (!root.connectorRead || !root.connectorActions)
                 return
-            var providers = root.connectorRead.providers
-            for (var i = 0; i < providers.length; i++) {
-                root.connectorActions.updateProvider(providers[i].id)
+            var services = root.connectorRead.services
+            for (var i = 0; i < services.length; i++) {
+                root.connectorActions.updateConnector(services[i].id)
             }
         }
     }

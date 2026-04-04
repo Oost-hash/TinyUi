@@ -17,7 +17,7 @@ def _runtime_stub() -> object:
     return SimpleNamespace(
         paths=object(),
         settings=object(),
-        providers=object(),
+        connector_services=object(),
     )
 
 

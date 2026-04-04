@@ -37,7 +37,7 @@ def load_plugin_manifest(path: Path, *, resource_root: Path | None = None) -> Pl
     for pm in data.get("plugin_menu", []):
         plugin_menu.extend(_parse_menu_items(pm.get("items", [])))
     connector = data.get("connector", {})
-    provider = data.get("provider", {})
+    connector_service = data.get("connector_service", {})
 
     manifest = PluginManifest(
         plugin_id=plugin_id,
@@ -53,8 +53,8 @@ def load_plugin_manifest(path: Path, *, resource_root: Path | None = None) -> Pl
         plugin_menu=plugin_menu,
         menu_label=plugin.get("menu"),
         connector_provides=list(connector.get("provides", [])),
-        provider_module=provider.get("module"),
-        provider_class=provider.get("class"),
+        connector_service_module=connector_service.get("module"),
+        connector_service_class=connector_service.get("class"),
     )
     _validate_plugin_manifest(manifest)
     return manifest

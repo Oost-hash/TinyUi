@@ -23,14 +23,14 @@
 
 from .runtime import (
     ConnectorRuntime,
-    create_lmu_provider,
-    create_lmu_rf2_provider,
-    create_provider,
+    create_connector_service,
+    create_lmu_connector_service,
+    create_lmu_rf2_connector_service,
 )
 
 __all__ = [
     "ConnectorRuntime",
-    "create_provider",
-    "create_lmu_provider",
-    "create_lmu_rf2_provider",
+    "create_connector_service",
+    "create_lmu_connector_service",
+    "create_lmu_rf2_connector_service",
 ]

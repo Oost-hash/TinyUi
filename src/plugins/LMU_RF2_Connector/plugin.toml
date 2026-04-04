@@ -1,6 +1,6 @@
 name = "LMU_RF2_Connector"
 display_name = "LMU / RF2 Connector"
-type = "plugin.provider"
+type = "plugin.connector"
 version = "0.1.0"
 
 exports = [
@@ -14,6 +14,6 @@ exports = [
   "telemetry.inputs.v1"
 ]
 
-[provider]
+[connector_service]
 module = "plugins.LMU_RF2_Connector.plugin"
 class  = "LMURF2Connector"
