@@ -88,6 +88,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag_name: ${{ steps.meta.outputs.tag_name }}
+      release_version: ${{ steps.meta.outputs.release_version }}
       windows_zip: ${{ steps.meta.outputs.windows_zip }}
       linux_zip: ${{ steps.meta.outputs.linux_zip }}
 
@@ -141,6 +142,7 @@ jobs:
           fi
 
           echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
+          echo "release_version=${tag_name#v}" >> $GITHUB_OUTPUT
           echo "windows_zip=TinyUi-${tag_name}-windows.zip" >> $GITHUB_OUTPUT
           echo "linux_zip=TinyUi-${tag_name}-linux.zip" >> $GITHUB_OUTPUT
 
@@ -177,6 +179,12 @@ jobs:
         with:
           python-version: "3.12"
           cache: "pip"
+
+      - name: Inject release version into build metadata
+        env:
+          RELEASE_VERSION: ${{ needs.release_meta.outputs.release_version }}
+        run: |
+          python -c "from pathlib import Path; import os, re; version = os.environ['RELEASE_VERSION']; files = [Path('pyproject.toml'), Path('src/plugins/tinyui/manifest.toml')]; patterns = [(re.compile(r'^(version\\s*=\\s*\")[^\"]+(\")', re.MULTILINE), r'\\g<1>' + version + r'\\2')]; [path.write_text(pattern.sub(repl, path.read_text(encoding='utf-8')), encoding='utf-8') for path in files for pattern, repl in patterns]"
 
       - name: Install dependencies
         run: |
