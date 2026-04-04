@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from dataclasses import dataclass
 
 from app_api.api.app_actions import AppActions
 from app_api.qt import create_application, create_engine
@@ -28,6 +29,84 @@ if sys.platform == "win32":
     from app_api.windowing import win_window  # noqa: F401  # eager import for Windows QML singletons
 
 
+@dataclass(frozen=True)
+class SharedCapabilities:
+    menus: object
+    statusbar: object
+    plugin_selection: object
+    plugin_selection_actions: object
+    tabs: object
+    connector_read: object
+    connector_actions: object
+
+
+@dataclass(frozen=True)
+class RuntimeCapabilities:
+    plugin_read: object
+    plugin_state: object
+    plugin_state_write: object
+    settings_read: object
+    settings_write: object
+
+
+def create_shared_capabilities(event_bus: EventBus, runtime: Runtime) -> SharedCapabilities:
+    """Create capabilities that can exist before runtime boot completes."""
+    return SharedCapabilities(
+        menus=MenuApi(event_bus),
+        statusbar=StatusbarApi(event_bus),
+        plugin_selection=PluginSelectionApi(event_bus),
+        plugin_selection_actions=PluginSelectionActions(event_bus),
+        tabs=TabsApi(event_bus),
+        connector_read=ConnectorRead(event_bus, runtime.providers),
+        connector_actions=ConnectorActions(runtime.providers),
+    )
+
+
+def create_runtime_capabilities(runtime: Runtime, event_bus: EventBus) -> RuntimeCapabilities:
+    """Create capabilities that require booted runtime state."""
+    assert runtime.paths is not None, "Runtime capabilities require BOOT_INIT first"
+    assert runtime.settings is not None, "Runtime capabilities require BOOT_INIT first"
+
+    settings_read = SettingsRead(runtime)
+    return RuntimeCapabilities(
+        plugin_read=PluginRead(runtime),
+        plugin_state=PluginStateRead(runtime, event_bus),
+        plugin_state_write=PluginStateWrite(runtime),
+        settings_read=settings_read,
+        settings_write=SettingsWrite(runtime, settings_read),
+    )
+
+
+def build_window_capability_properties(
+    manifest,
+    shared: SharedCapabilities,
+    runtime_caps: RuntimeCapabilities,
+    *,
+    plugin_panel_url: str = "",
+    plugin_panel_component: object | None = None,
+) -> dict[str, object]:
+    """Build the capability property bag for a window."""
+    properties: dict[str, object] = {
+        "menus": shared.menus,
+        "statusbar": shared.statusbar,
+        "pluginSelection": shared.plugin_selection,
+        "pluginSelectionActions": shared.plugin_selection_actions,
+        "pluginState": runtime_caps.plugin_state,
+        "pluginStateWrite": runtime_caps.plugin_state_write,
+        "pluginRead": runtime_caps.plugin_read,
+        "settingsRead": runtime_caps.settings_read,
+        "settingsWrite": runtime_caps.settings_write,
+        "connectorRead": shared.connector_read,
+        "connectorActions": shared.connector_actions,
+    }
+    if manifest.chrome.show_tab_bar:
+        properties["tabs"] = shared.tabs
+    if plugin_panel_url or plugin_panel_component is not None:
+        properties["pluginPanelUrl"] = plugin_panel_url
+        properties["pluginPanelComponent"] = plugin_panel_component
+    return properties
+
+
 def main() -> int:
     # Create Qt application first
     app = create_application()
@@ -45,13 +124,7 @@ def main() -> int:
     actions = AppActions()
     
     # Create capability read/write models for QML
-    menus = MenuApi(event_bus)
-    statusbar = StatusbarApi(event_bus)
-    plugin_selection = PluginSelectionApi(event_bus)
-    plugin_selection_actions = PluginSelectionActions(event_bus)
-    tabs = TabsApi(event_bus)
-    connector_read = ConnectorRead(event_bus, runtime.providers)
-    connector_actions = ConnectorActions(runtime.providers)
+    shared_capabilities = create_shared_capabilities(event_bus, runtime)
     
     # Emit boot init event — triggers initialization in all components
     event_bus.emit_typed(EventType.BOOT_INIT, BootInitData(
@@ -60,11 +133,7 @@ def main() -> int:
         data_dir="",
     ))
 
-    plugin_read = PluginRead(runtime)
-    plugin_state = PluginStateRead(runtime, event_bus)
-    plugin_state_write = PluginStateWrite(runtime)
-    settings_read = SettingsRead(runtime)
-    settings_write = SettingsWrite(runtime, settings_read)
+    runtime_capabilities = create_runtime_capabilities(runtime, event_bus)
     
     # Get main window (now available after BOOT_INIT)
     main_manifest = runtime.main_window()
@@ -86,26 +155,20 @@ def main() -> int:
         plugin_panel_url = QUrl.fromLocalFile(str(plugin_panel_path))
         plugin_panel_component = QQmlComponent(engine, plugin_panel_url)
 
+    main_window_properties = build_window_capability_properties(
+        main_manifest,
+        shared_capabilities,
+        runtime_capabilities,
+        plugin_panel_url=str(plugin_panel_path) if plugin_panel_component else "",
+        plugin_panel_component=plugin_panel_component,
+    )
     main_handle = open_window(
-        main_manifest, 
-        engine=engine, 
-        app=app, 
-        actions=actions, 
+        main_manifest,
+        engine=engine,
+        app=app,
+        actions=actions,
         theme=theme,
-        menus=menus,
-        statusbar=statusbar,
-        pluginSelection=plugin_selection,
-        pluginSelectionActions=plugin_selection_actions,
-        pluginState=plugin_state,
-        pluginStateWrite=plugin_state_write,
-        pluginRead=plugin_read,
-        settingsRead=settings_read,
-        settingsWrite=settings_write,
-        tabs=tabs,
-        connectorRead=connector_read,
-        connectorActions=connector_actions,
-        pluginPanelUrl=str(plugin_panel_path) if plugin_panel_component else "",
-        pluginPanelComponent=plugin_panel_component,
+        **main_window_properties,
     )
 
     # When the main window is destroyed, terminate the whole application
@@ -123,19 +186,11 @@ def main() -> int:
         def handler():
             manifest = runtime.window_for(window_id)
             if manifest:
-                kwargs = {}
-                kwargs["menus"] = menus
-                kwargs["statusbar"] = statusbar
-                kwargs["pluginSelection"] = plugin_selection
-                kwargs["pluginSelectionActions"] = plugin_selection_actions
-                kwargs["pluginState"] = plugin_state
-                kwargs["pluginStateWrite"] = plugin_state_write
-                kwargs["pluginRead"] = plugin_read
-                kwargs["settingsRead"] = settings_read
-                kwargs["settingsWrite"] = settings_write
-                kwargs["tabs"] = tabs
-                kwargs["connectorRead"] = connector_read
-                kwargs["connectorActions"] = connector_actions
+                kwargs = build_window_capability_properties(
+                    manifest,
+                    shared_capabilities,
+                    runtime_capabilities,
+                )
                 h = open_window(manifest, engine=engine, app=app, actions=actions, theme=theme, **kwargs)
                 open_handles.append(h)
         return handler
