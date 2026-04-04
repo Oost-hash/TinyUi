@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from runtime_schema.provider import InspectionSnapshot, ProviderAccess
+from runtime.providers.contracts import InspectionSnapshot, ProviderAccess
 
 
 def _empty_snapshot() -> InspectionSnapshot:

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
-from runtime.plugins.plugin_context import PluginContext
+from runtime.plugins.contracts import PluginContext
 
 
 class PluginLifecycle(Protocol):

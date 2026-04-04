@@ -17,7 +17,7 @@ from runtime_schema import (
 )
 from runtime.manifest import load_plugin_manifest
 from runtime.persistence import SettingsRegistry, SettingsSpec
-from runtime.plugins.plugin_context import PluginContext
+from runtime.plugins.contracts import PluginContext
 from runtime.plugins.plugin_lifecycle import resolve_plugin_lifecycle
 from runtime.plugins.plugin_state import PluginStateMachine
 from runtime_schema.plugin import PluginState

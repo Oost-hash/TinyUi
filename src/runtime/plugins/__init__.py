@@ -1,6 +1,6 @@
 """Plugin runtime helpers and lifecycle primitives."""
 
-from runtime.plugins.plugin_context import PluginContext
+from runtime.plugins.contracts import PluginContext
 from runtime.plugins.plugin_lifecycle import (
     NoOpPluginLifecycle,
     PluginLifecycle,
