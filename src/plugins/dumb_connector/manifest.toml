@@ -1,9 +1,0 @@
-[plugin]
-id          = "dumb_connector"
-type        = "connector"
-version     = "0.1.0"
-author      = "Test"
-description = "A dumb connector for testing plugin dependencies"
-
-[connector]
-provides = ["dumb_data"]
