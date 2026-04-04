@@ -33,11 +33,11 @@ class AppPaths:
         if getattr(sys, "frozen", False):
             app_root = Path(sys.executable).resolve().parent
             meipass = getattr(sys, "_MEIPASS", None)
-            frozen_root = Path(meipass).resolve() if isinstance(meipass, str) else app_root / "libs"
+            frozen_root = Path(meipass).resolve() if isinstance(meipass, str) else app_root / "tinyui"
             paths = cls(
                 app_root=app_root,
                 config_dir=app_root / "config",
-                host_dir=app_root / "tinyui",
+                host_dir=frozen_root / "plugins" / "tinyui",
                 plugins_dir=app_root / "plugins",
                 data_dir=app_root / "data",
                 source_root=None,

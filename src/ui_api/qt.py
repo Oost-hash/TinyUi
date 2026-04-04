@@ -11,7 +11,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtQml import QQmlEngine
 
 _QML_IMPORT_PATH = Path(__file__).parent.parent  # src/
-_APP_ICON_PATH = _QML_IMPORT_PATH / "assets" / "logo" / "logo.png"
+_APP_ICON_PATH = _QML_IMPORT_PATH / "plugins" / "tinyui" / "assets" / "images" / "logo" / "logo.png"
 _APP_USER_MODEL_ID = "OostHash.TinyUi"
 
 

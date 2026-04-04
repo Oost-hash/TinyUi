@@ -56,11 +56,11 @@ Item {
     // When true, the menu button and dropdown are suppressed so an external chrome can own them
     property bool externalMenuButton: false
 
-    readonly property url menuIconSource: Qt.resolvedUrl("../../assets/ui/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
-    readonly property url minimizeIconSource: Qt.resolvedUrl("../../assets/ui/window-minimize.svg")
-    readonly property url maximizeIconSource: Qt.resolvedUrl("../../assets/ui/window-maximize.svg")
-    readonly property url restoreIconSource: Qt.resolvedUrl("../../assets/ui/window-restore.svg")
-    readonly property url closeIconSource: Qt.resolvedUrl("../../assets/ui/window-close.svg")
+    readonly property url menuIconSource: Qt.resolvedUrl("../../plugins/tinyui/assets/images/ui/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
+    readonly property url minimizeIconSource: Qt.resolvedUrl("../../plugins/tinyui/assets/images/ui/window-minimize.svg")
+    readonly property url maximizeIconSource: Qt.resolvedUrl("../../plugins/tinyui/assets/images/ui/window-maximize.svg")
+    readonly property url restoreIconSource: Qt.resolvedUrl("../../plugins/tinyui/assets/images/ui/window-restore.svg")
+    readonly property url closeIconSource: Qt.resolvedUrl("../../plugins/tinyui/assets/images/ui/window-close.svg")
     
     // Export menu button width for external chrome to position adjacent buttons (0 when suppressed)
     readonly property real menuButtonWidth: root.externalMenuButton ? 0 : menuButton.width

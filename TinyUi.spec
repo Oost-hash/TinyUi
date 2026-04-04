@@ -26,13 +26,12 @@ def collect_non_python_files(source: Path, target_prefix: str) -> list[tuple[str
 
 
 datas = [
-    *collect_non_python_files(SRC / "app_api" / "qml", "app_api/qml"),
-    *collect_non_python_files(SRC / "app_assets", "app_assets"),
-    *collect_non_python_files(SRC / "plugins", "plugins"),
+    *collect_non_python_files(SRC / "ui_api" / "qml", "ui_api/qml"),
+    *collect_non_python_files(SRC / "plugins" / "tinyui", "plugins/tinyui"),
 ]
 
 hiddenimports = [
-    *collect_submodules("plugins"),
+    "plugins.tinyui.plugin",
 ]
 
 a = Analysis(
@@ -55,13 +54,13 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name="TinyUi",
-    icon=str(SRC / "app_assets" / "logo" / "logo.ico"),
+    icon=str(ROOT / "assets" / "images" / "logo" / "logo.ico"),
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     console=False,
-    contents_directory="libs",
+    contents_directory="tinyui",
 )
 
 coll = COLLECT(

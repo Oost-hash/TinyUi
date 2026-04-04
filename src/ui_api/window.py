@@ -24,7 +24,6 @@ class WindowHandle:
     qml_window: QQuickWindow
     keepalive: tuple[object, ...]
 
-
 def open_window(
     manifest: AppManifest,
     *,

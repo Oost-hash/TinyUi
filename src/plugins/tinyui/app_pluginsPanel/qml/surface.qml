@@ -300,7 +300,7 @@ Rectangle {
                         Image {
                             width: 18
                             height: 18
-                            source: "../../../../assets/ui/cog.svg"
+                            source: "../../assets/images/ui/cog.svg"
                             sourceSize.width: 18
                             sourceSize.height: 18
                             fillMode: Image.PreserveAspectFit
@@ -616,7 +616,7 @@ Rectangle {
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: 14
                                     height: 14
-                                    source: "../../../../assets/ui/cog.svg"
+                                    source: "../../assets/images/ui/cog.svg"
                                     sourceSize.width: 14
                                     sourceSize.height: 14
                                     fillMode: Image.PreserveAspectFit

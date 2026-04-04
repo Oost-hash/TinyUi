@@ -32,8 +32,8 @@ def _validate_layout(dist_dir: Path) -> Path:
     _require_path(dist_dir, "distribution directory")
     exe_path = _exe_path(dist_dir)
     _require_path(exe_path, "executable")
-    _require_path(dist_dir / "libs", "libs directory")
-    _require_path(dist_dir / "tinyui" / "manifest.toml", "promoted host manifest")
+    _require_path(dist_dir / "tinyui", "internal bundle directory")
+    _require_path(dist_dir / "tinyui" / "plugins" / "tinyui" / "manifest.toml", "bundled host manifest")
     _require_path(dist_dir / "plugins", "external plugins directory")
     _require_path(dist_dir / "themes", "themes directory")
     _require_path(dist_dir / "config", "config directory")
@@ -50,6 +50,25 @@ def _smoke_env() -> dict[str, str]:
         env.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
         env.setdefault("XDG_RUNTIME_DIR", tempfile.gettempdir())
     return env
+
+
+def _emit_relevant_output(stdout: str, stderr: str) -> None:
+    """Print likely-meaningful packaged diagnostics without flooding the smoke output."""
+    combined = "\n".join(part.strip() for part in (stdout, stderr) if part.strip())
+    if not combined:
+        return
+    interesting_markers = (
+        "[tinyui][qml]",
+        "[tinyui][boot]",
+        "QQmlComponent",
+        "ReferenceError",
+        "TypeError",
+        "Failed to load",
+        "Cannot assign",
+        "file:///",
+    )
+    if any(marker in combined for marker in interesting_markers):
+        print(combined)
 
 
 def main() -> int:
@@ -70,12 +89,11 @@ def main() -> int:
         time.sleep(args.timeout)
         if proc.poll() not in (None, 0):
             stdout, stderr = proc.communicate(timeout=5)
-            output = "\n".join(part.strip() for part in (stdout, stderr) if part.strip())
-            if output:
-                print(output)
+            _emit_relevant_output(stdout, stderr)
             return proc.returncode or 1
         proc.terminate()
-        proc.wait(timeout=10)
+        stdout, stderr = proc.communicate(timeout=10)
+        _emit_relevant_output(stdout, stderr)
         return 0
     finally:
         if proc.poll() is None:

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass
+import sys
 
 from ui_api.api.app_actions import AppActions
 from ui_api.qt import create_application, create_engine
@@ -140,9 +140,7 @@ def main() -> int:
     if main_manifest is None:
         print("No main window found", file=sys.stderr)
         return 1
-    
-    assert runtime.paths is not None
-    
+
     # Emit boot ready
     event_bus.emit_typed(EventType.BOOT_READY, BootReadyData(
         main_window_id=main_manifest.id,
@@ -150,6 +148,7 @@ def main() -> int:
     
     # Open main window
     plugin_panel_component = None
+    assert runtime.paths is not None
     plugin_panel_path = runtime.paths.host_dir / "app_pluginsPanel" / "qml" / "surface.qml"
     if plugin_panel_path.exists():
         plugin_panel_url = QUrl.fromLocalFile(str(plugin_panel_path))

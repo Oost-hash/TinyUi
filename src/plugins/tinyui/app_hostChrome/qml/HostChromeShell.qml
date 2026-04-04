@@ -49,7 +49,7 @@ Item {
     property string pendingPluginActivation: ""
     property var pluginStates: ({})
 
-    readonly property url menuIconSource: Qt.resolvedUrl("../../../../assets/ui/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
+    readonly property url menuIconSource: Qt.resolvedUrl("../../assets/images/ui/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
 
     function pluginStatusColor(pluginId: string) : color {
         if (!pluginId || pluginId === "")

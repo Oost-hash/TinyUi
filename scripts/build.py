@@ -17,14 +17,14 @@ BUILD = ROOT / "build"
 SPEC = ROOT / "TinyUi.spec"
 EGG_INFO = ROOT / "src" / "TinyUi.egg-info"
 APP_DIR = DIST / "TinyUi"
-BUILD_ICON_SCRIPT = ROOT / "scripts" / "build_icon.py"
+BUILD_ASSETS_SCRIPT = ROOT / "scripts" / "build_assets.py"
 
 IS_WINDOWS = platform.system() == "Windows"
 EXE_NAME = "TinyUi.exe" if IS_WINDOWS else "TinyUi"
 
 USER_DIRS = {
     "config": ROOT / "data" / "config",
-    "themes": ROOT / "src" / "assets" / "themes",
+    "themes": ROOT / "assets" / "themes",
 }
 
 
@@ -93,26 +93,17 @@ def _copy_user_dir(name: str, src: Path) -> None:
         dst.mkdir(parents=True, exist_ok=True)
 
 
-def _promote_internal_host() -> None:
-    """Move the bundled TinyUi host package into its own top-level directory."""
-    bundled_host = APP_DIR / "libs" / "plugins" / "tinyui"
-    host_dst = APP_DIR / "tinyui"
-    if not bundled_host.exists():
-        raise RuntimeError(f"Bundled host package not found: {bundled_host}")
-    if host_dst.exists():
-        shutil.rmtree(host_dst)
-    shutil.move(str(bundled_host), str(host_dst))
-
-
-def _promote_external_plugins() -> None:
-    """Move bundled external plugins into their top-level product directory."""
-    bundled_plugins = APP_DIR / "libs" / "plugins"
+def _copy_external_plugins() -> None:
+    """Copy external source plugins into the top-level product plugin directory."""
+    source_plugins = ROOT / "src" / "plugins"
     plugins_dst = APP_DIR / "plugins"
-    if not bundled_plugins.exists():
-        raise RuntimeError(f"Bundled plugins directory not found: {bundled_plugins}")
     if plugins_dst.exists():
         shutil.rmtree(plugins_dst)
-    shutil.move(str(bundled_plugins), str(plugins_dst))
+    plugins_dst.mkdir(parents=True, exist_ok=True)
+    for plugin_dir in sorted(source_plugins.iterdir()):
+        if not plugin_dir.is_dir() or plugin_dir.name == "tinyui":
+            continue
+        shutil.copytree(plugin_dir, plugins_dst / plugin_dir.name, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
 
 
 def _ensure_user_dir(name: str) -> None:
@@ -134,11 +125,11 @@ def _pyinstaller_cmd() -> list[str]:
     ]
 
 
-def _build_app_icon() -> None:
-    """Ensure the logo PNG/ICO exist before packaging."""
-    result = subprocess.run([sys.executable, str(BUILD_ICON_SCRIPT)], cwd=ROOT)
+def _build_assets() -> None:
+    """Prepare generated and synced assets before packaging."""
+    result = subprocess.run([sys.executable, str(BUILD_ASSETS_SCRIPT)], cwd=ROOT)
     if result.returncode != 0:
-        raise RuntimeError(f"Icon build failed with code {result.returncode}")
+        raise RuntimeError(f"Asset build failed with code {result.returncode}")
 
 
 def _print_structure() -> None:
@@ -149,14 +140,13 @@ def _print_structure() -> None:
     print("  +-- config/")
     print("  +-- data/")
     print("  +-- themes/")
-    print("  +-- libs/")
     print("  +-- tinyui/")
     print("  +-- plugins/")
 
 
 def build(*, skip_clean: bool) -> int:
     _clean_source_bytecode()
-    _build_app_icon()
+    _build_assets()
 
     if not skip_clean:
         clean()
@@ -173,8 +163,7 @@ def build(*, skip_clean: bool) -> int:
 
     for name, src in USER_DIRS.items():
         _copy_user_dir(name, src)
-    _promote_internal_host()
-    _promote_external_plugins()
+    _copy_external_plugins()
     _ensure_user_dir("data")
     _print_structure()
     return 0
