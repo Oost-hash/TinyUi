@@ -28,6 +28,8 @@ class EventType(Enum):
     CONNECTOR_SERVICE_REGISTERED = auto()
     CONNECTOR_SERVICE_UNREGISTERED = auto()
     CONNECTOR_SERVICE_UPDATED = auto()
+    # Widget runtime lifecycle events
+    WIDGET_RUNTIME_UPDATED = auto()
     # UI registration events - emitted by runtime, consumed by UI layer
     MENU_REGISTERED = auto()
     STATUSBAR_REGISTERED = auto()
@@ -95,6 +97,13 @@ class TabRegisteredData:
     target: str = ""
     surface: str = ""  # file path as string
     plugin_id: str = ""
+
+
+@dataclass(frozen=True)
+class WidgetRuntimeUpdatedData:
+    """Data for widget runtime refresh events."""
+
+    reason: str = "poll"
 
 
 # Callback type

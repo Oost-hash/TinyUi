@@ -78,6 +78,14 @@ class TabDecl:
 
 
 @dataclass(frozen=True)
+class ConnectorGameDecl:
+    """Connector game support declaration from manifest."""
+
+    id: str
+    detect_names: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class OverlayWidgetDecl:
     """Overlay widget declaration from manifest."""
 
@@ -111,6 +119,7 @@ class PluginManifest:
     plugin_menu: list[MenuItem | MenuSeparator] = field(default_factory=list)
     menu_label:  str | None = None
     connector_provides: list[str] = field(default_factory=list)
+    connector_games: list[ConnectorGameDecl] = field(default_factory=list)
     connector_service_module: str | None = None
     connector_service_class: str | None = None
     overlay: OverlayDecl | None = None

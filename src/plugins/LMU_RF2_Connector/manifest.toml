@@ -17,6 +17,14 @@ provides = [
   "telemetry.inputs.v1",
 ]
 
+[[connector.game]]
+id = "lmu"
+detect_names = ["Le Mans Ultimate"]
+
+[[connector.game]]
+id = "rf2"
+detect_names = ["rFactor2", "rFactor2 Mod Mode", "rFactor2 Dedicated"]
+
 [connector_service]
 module = "plugins.LMU_RF2_Connector.plugin"
 class = "LMURF2Connector"

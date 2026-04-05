@@ -7,6 +7,7 @@ from pathlib import Path
 
 from app_schema.manifest import (
     AppManifest, ChromePolicy,
+    ConnectorGameDecl,
     OverlayDecl, OverlayWidgetDecl,
     MenuItem, MenuSeparator,
     SettingDecl, StatusbarItemDecl,
@@ -55,6 +56,7 @@ def load_plugin_manifest(path: Path, *, resource_root: Path | None = None) -> Pl
         plugin_menu=plugin_menu,
         menu_label=plugin.get("menu"),
         connector_provides=list(connector.get("provides", [])),
+        connector_games=_parse_connector_games(connector),
         connector_service_module=connector_service.get("module"),
         connector_service_class=connector_service.get("class"),
         overlay=overlay,
@@ -153,3 +155,14 @@ def _parse_overlay(data: dict, plugin: dict) -> OverlayDecl | None:
             for entry in widget_entries
         ],
     )
+
+
+def _parse_connector_games(connector: dict) -> list[ConnectorGameDecl]:
+    game_entries = connector.get("game", [])
+    return [
+        ConnectorGameDecl(
+            id=entry["id"],
+            detect_names=list(entry.get("detect_names", [])),
+        )
+        for entry in game_entries
+    ]

@@ -25,6 +25,7 @@ from runtime.plugins.contracts import PluginContext
 from runtime.plugins.packaged_plugin import resolve_packaged_plugin
 from runtime.plugins.plugin_lifecycle import resolve_plugin_lifecycle
 from runtime.plugins.plugin_state import PluginStateMachine
+from runtime.widgets import WidgetRuntimeRecord, project_overlay_widget_records
 from widget_api import create_default_widget_registry
 
 
@@ -215,6 +216,24 @@ class Runtime:
 
     def plugin_icon_url(self, plugin_id: str) -> str:
         return self._plugin_icon_url(plugin_id)
+
+    def overlay_widget_records(self, plugin_id: str) -> list[WidgetRuntimeRecord]:
+        """Return runtime-owned widget records for one overlay plugin."""
+        return project_overlay_widget_records(
+            self._plugins,
+            self.connector_services,
+            plugin_id=plugin_id,
+            active_plugin=self._active_plugin,
+        )
+
+    def active_overlay_widget_records(self) -> list[WidgetRuntimeRecord]:
+        """Return widget records for the currently active overlay."""
+        if self._active_plugin is None:
+            return []
+        manifest = self._plugins.get(self._active_plugin)
+        if manifest is None or manifest.plugin_type != "overlay":
+            return []
+        return self.overlay_widget_records(self._active_plugin)
 
     # ── Settings registration ─────────────────────────────────────────────
 

@@ -11,6 +11,7 @@ from runtime_schema.events import (
     StatusbarRegisteredData,
     TabRegisteredData,
     UIPluginSelectedData,
+    WidgetRuntimeUpdatedData,
 )
 from runtime_schema.plugin import (
     PluginActivatedData,
@@ -38,6 +39,7 @@ __all__ = [
     "StatusbarRegisteredData",
     "TabRegisteredData",
     "UIPluginSelectedData",
+    "WidgetRuntimeUpdatedData",
     # Plugin
     "PluginActivatedData",
     "PluginDeactivatedData",
