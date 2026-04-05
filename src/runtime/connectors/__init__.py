@@ -8,6 +8,7 @@ from runtime.connectors.policy import (
 )
 from runtime.connectors.service_loader import load_connector_service
 from runtime.connectors.service_registry import ConnectorServiceRegistry, RegisteredConnectorService
+from runtime.connectors.startup import startup_connectors, get_connectors_result, ConnectorsStartupResult
 
 __all__ = [
     "ConnectorInspectionSnapshot",
@@ -18,4 +19,6 @@ __all__ = [
     "register_connector_service",
     "required_connector_ids",
     "unregister_connector_service",
+    "startup_connectors",
+    "get_connectors_result",
 ]
