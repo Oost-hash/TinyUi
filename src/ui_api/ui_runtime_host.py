@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
-from runtime_schema import EventBus, EventType
+from runtime_schema import EventBus, EventType, StartupResult, startup_ok
 
 
 class WindowRuntimeLike(Protocol):
@@ -55,3 +55,11 @@ class WindowHostController:
             qml_window = handle.qml_window
             if hasattr(qml_window, "close"):
                 qml_window.close()
+
+
+def start_window_host(event_bus: EventBus) -> tuple[WindowHostController, StartupResult]:
+    """Start the ui_api host bridge for runtime-owned windows."""
+
+    controller = WindowHostController(event_bus)
+    controller.attach()
+    return controller, startup_ok()

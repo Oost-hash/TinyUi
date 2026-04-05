@@ -28,6 +28,7 @@ from runtime_schema.connector_service import (
     ConnectorServiceUpdatedData,
 )
 from runtime_schema.settings import SettingsSpec, VALID_SETTING_TYPES
+from runtime_schema.startup import StartupResult, StartupStep, run_startup_pipeline, startup_error, startup_ok
 
 __all__ = [
     # Events
@@ -57,4 +58,10 @@ __all__ = [
     # Settings
     "SettingsSpec",
     "VALID_SETTING_TYPES",
+    # Startup
+    "StartupResult",
+    "StartupStep",
+    "run_startup_pipeline",
+    "startup_error",
+    "startup_ok",
 ]

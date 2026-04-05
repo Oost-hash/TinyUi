@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol, Sequence
 
-from runtime_schema import EventBus, EventType
+from runtime_schema import EventBus, EventType, StartupResult, startup_error, startup_ok
 from runtime.widgets import WidgetRuntimePoller, WidgetRuntimeRecord
 from widget_api.window_host import WidgetWindowHost
 
@@ -61,3 +61,12 @@ def create_widget_window_host(app, event_bus: EventBus, runtime: WidgetRuntimeLi
     app.setProperty("_widgetWindowHostController", controller)
     app.setProperty("_widgetRuntimePoller", poller)
     return host
+
+
+def start_widget_host(app, event_bus: EventBus, runtime: WidgetRuntimeLike) -> tuple[WidgetWindowHost | None, StartupResult]:
+    """Start the widget_api host bridge for runtime-owned widget records."""
+
+    try:
+        return create_widget_window_host(app, event_bus, runtime), startup_ok()
+    except Exception as exc:
+        return None, startup_error(f"widget_api startup failed: {exc}")

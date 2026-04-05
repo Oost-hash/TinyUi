@@ -9,11 +9,15 @@ import pytest
 
 import boot
 from app_schema.ui import AppManifest, ChromePolicy
+from capabilities import window_capabilities
+from capabilities.window_capabilities import RuntimeCapabilities, SharedCapabilities
 from runtime.runtime import Runtime
+from runtime_schema import StartupResult, StartupStep, run_startup_pipeline
 from runtime.widgets import WidgetRuntimeRecord, WidgetRuntimeStatus
 from runtime_schema import EventBus, EventType, WidgetRuntimeUpdatedData
-from ui_api.ui_runtime_host import WindowHostController, attach_main_window_shutdown, attach_window_runtime_tracking
-from widget_api.runtime_host import create_widget_window_host
+from ui_api.startup import open_main_runtime_window, register_runtime_window_actions
+from ui_api.ui_runtime_host import WindowHostController, attach_main_window_shutdown, attach_window_runtime_tracking, start_window_host
+from widget_api.runtime_host import create_widget_window_host, start_widget_host
 
 
 def _runtime_stub() -> object:
@@ -26,8 +30,8 @@ def _runtime_stub() -> object:
     )
 
 
-def _shared_capabilities() -> boot.SharedCapabilities:
-    return boot.SharedCapabilities(
+def _shared_capabilities() -> SharedCapabilities:
+    return SharedCapabilities(
         menus=object(),
         statusbar=object(),
         plugin_selection=object(),
@@ -38,8 +42,8 @@ def _shared_capabilities() -> boot.SharedCapabilities:
     )
 
 
-def _runtime_capabilities() -> boot.RuntimeCapabilities:
-    return boot.RuntimeCapabilities(
+def _runtime_capabilities() -> RuntimeCapabilities:
+    return RuntimeCapabilities(
         plugin_read=object(),
         plugin_state=object(),
         plugin_state_write=object(),
@@ -58,15 +62,30 @@ def test_create_runtime_capabilities_requires_booted_runtime() -> None:
         boot.create_runtime_capabilities(runtime, runtime.events)
 
 
+def test_run_startup_pipeline_stops_at_first_error() -> None:
+    """The startup coordinator should stop when one startup step fails."""
+
+    calls: list[str] = []
+
+    result = run_startup_pipeline([
+        StartupStep("first", lambda: calls.append("first") or StartupResult(ok=True, error_message="")),
+        StartupStep("second", lambda: calls.append("second") or StartupResult(ok=False, error_message="broken")),
+        StartupStep("third", lambda: calls.append("third") or StartupResult(ok=True, error_message="")),
+    ])
+
+    assert calls == ["first", "second"]
+    assert result == StartupResult(ok=False, error_message="broken")
+
+
 def test_create_runtime_capabilities_wires_settings_write_to_settings_read(monkeypatch) -> None:
     """SettingsWrite should be connected to the SettingsRead instance it refreshes."""
     runtime = cast(Runtime, _runtime_stub())
     event_bus = EventBus()
     created: dict[str, object] = {}
 
-    monkeypatch.setattr(boot, "PluginRead", lambda runtime: "plugin_read")
-    monkeypatch.setattr(boot, "PluginStateRead", lambda runtime, event_bus: "plugin_state")
-    monkeypatch.setattr(boot, "PluginStateWrite", lambda runtime: "plugin_state_write")
+    monkeypatch.setattr(window_capabilities, "PluginRead", lambda runtime: "plugin_read")
+    monkeypatch.setattr(window_capabilities, "PluginStateRead", lambda runtime, event_bus: "plugin_state")
+    monkeypatch.setattr(window_capabilities, "PluginStateWrite", lambda runtime: "plugin_state_write")
 
     def _fake_settings_read(runtime):
         created["settings_read_runtime"] = runtime
@@ -77,9 +96,9 @@ def test_create_runtime_capabilities_wires_settings_write_to_settings_read(monke
         created["settings_write_read"] = settings_read
         return "settings_write"
 
-    monkeypatch.setattr(boot, "SettingsRead", _fake_settings_read)
-    monkeypatch.setattr(boot, "SettingsWrite", _fake_settings_write)
-    monkeypatch.setattr(boot, "WidgetRead", lambda runtime, event_bus: "widget_read")
+    monkeypatch.setattr(window_capabilities, "SettingsRead", _fake_settings_read)
+    monkeypatch.setattr(window_capabilities, "SettingsWrite", _fake_settings_write)
+    monkeypatch.setattr(window_capabilities, "WidgetRead", lambda runtime, event_bus: "widget_read")
 
     capabilities = boot.create_runtime_capabilities(runtime, event_bus)
 
@@ -190,6 +209,28 @@ def test_create_widget_window_host_syncs_current_runtime_records(monkeypatch) ->
     assert "_widgetRuntimePoller" in app.properties
 
 
+def test_start_widget_host_returns_ok_result(monkeypatch) -> None:
+    """Widget host startup should return a typed success result."""
+
+    class _FakeApp:
+        def __init__(self) -> None:
+            self.aboutToQuit = SimpleNamespace(connect=lambda _callback: None)
+            self.properties: dict[str, object] = {}
+
+        def setProperty(self, key: str, value: object) -> None:
+            self.properties[key] = value
+
+    class _RuntimeStub:
+        def active_overlay_widget_records(self):
+            return []
+
+    monkeypatch.setattr("widget_api.runtime_host.WidgetWindowHost", lambda: SimpleNamespace(sync_records=lambda _records: None, close_all=lambda: None))
+
+    _host, result = start_widget_host(_FakeApp(), EventBus(), _RuntimeStub())
+
+    assert result == StartupResult(ok=True, error_message="")
+
+
 def test_widget_window_host_resyncs_on_runtime_events(monkeypatch) -> None:
     """Relevant runtime events should trigger another host sync."""
 
@@ -244,8 +285,8 @@ def test_widget_window_host_resyncs_on_runtime_events(monkeypatch) -> None:
     assert sync_calls == [records, records]
 
 
-def test_open_main_window_marks_runtime_window_open(monkeypatch) -> None:
-    """Opening the main window should write opening and open state back to runtime."""
+def test_open_main_runtime_window_marks_runtime_window_open(monkeypatch) -> None:
+    """Opening the main runtime window should write opening and open state back to runtime."""
 
     runtime_calls: list[tuple[str, str]] = []
 
@@ -263,10 +304,10 @@ def test_open_main_window_marks_runtime_window_open(monkeypatch) -> None:
         def mark_window_open(self, window_id: str) -> None:
             runtime_calls.append(("open", window_id))
 
-    monkeypatch.setattr(boot, "resolve_plugin_panel", lambda engine, runtime: ("", None))
-    monkeypatch.setattr(boot, "open_window", lambda *args, **kwargs: SimpleNamespace(qml_window=SimpleNamespace()))
+    monkeypatch.setattr("ui_api.startup.resolve_plugin_panel", lambda engine, runtime: ("", None))
+    monkeypatch.setattr("ui_api.startup.open_window", lambda *args, **kwargs: SimpleNamespace(qml_window=SimpleNamespace()))
 
-    manifest, _handle = boot.open_main_window(
+    manifest, _handle, result = open_main_runtime_window(
         app=object(),
         engine=object(),
         actions=cast(Any, object()),
@@ -274,13 +315,15 @@ def test_open_main_window_marks_runtime_window_open(monkeypatch) -> None:
         runtime=cast(Runtime, _RuntimeStub()),
         shared_capabilities=_shared_capabilities(),
         runtime_capabilities=_runtime_capabilities(),
+        build_window_capability_properties=boot.build_window_capability_properties,
     )
 
     assert manifest is not None
+    assert result == StartupResult(ok=True, error_message="")
     assert runtime_calls == [("opening", "tinyui.main"), ("open", "tinyui.main")]
 
 
-def test_register_window_actions_marks_main_window_closing(monkeypatch) -> None:
+def test_register_runtime_window_actions_marks_main_window_closing(monkeypatch) -> None:
     """The close action should request runtime shutdown before closing the main window."""
 
     close_calls: list[tuple[str, str]] = []
@@ -340,7 +383,7 @@ def test_register_window_actions_marks_main_window_closing(monkeypatch) -> None:
     actions = _ActionsStub()
     window_host_controller = SimpleNamespace(track=lambda *_args: None)
 
-    boot.register_window_actions(
+    result = register_runtime_window_actions(
         app=_AppStub(),
         engine=object(),
         actions=cast(Any, actions),
@@ -351,10 +394,12 @@ def test_register_window_actions_marks_main_window_closing(monkeypatch) -> None:
         main_manifest=AppManifest(id="tinyui.main", title="TinyUI"),
         main_handle=main_handle,
         window_host_controller=cast(Any, window_host_controller),
+        build_window_capability_properties=boot.build_window_capability_properties,
     )
 
     cast(Callable[[], None], registered["close"])()
 
+    assert result == StartupResult(ok=True, error_message="")
     assert close_calls == [("shutdown", "main_window_close"), ("qt", "tinyui.main")]
 
 
@@ -427,6 +472,15 @@ def test_main_window_shutdown_starts_when_main_window_hides() -> None:
     window.visibleChanged.emit(False)
 
     assert calls == [("shutdown", "main_window_hidden")]
+
+
+def test_start_window_host_returns_ok_result() -> None:
+    """Window host startup should return a typed success result."""
+
+    _controller, result = start_window_host(EventBus())
+
+    assert isinstance(_controller, WindowHostController)
+    assert result == StartupResult(ok=True, error_message="")
 
 
 def test_window_host_controller_closes_tracked_windows_on_shutdown() -> None:
