@@ -1,18 +1,30 @@
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 import re
+import sys
 
 from PySide6.QtCore import QUrl
 from PySide6.QtQml import QQmlComponent
 from PySide6.QtQuick import QQuickWindow
 
 from runtime.app.paths import AppPaths
+from runtime.connectors import register_connector_service
 from runtime.persistence import SettingsRegistry
 from runtime.runtime import Runtime
 from runtime_schema import EventBus
+from runtime.widgets import WidgetRuntimeRecord, WidgetRuntimeStatus
 from ui_api.qt import create_engine
 from widget_api.preview import build_text_widget_preview_items, create_preview_window, project_overlay_preview_items
+from widget_api.window_host import WidgetWindowHost
+
+
+def _clear_preview_test_modules() -> None:
+    for name in list(sys.modules):
+        if name == "plugins" or name.startswith("plugins."):
+            sys.modules.pop(name, None)
+    importlib.invalidate_caches()
 
 
 def test_text_widget_component_loads(qtbot) -> None:
@@ -47,6 +59,7 @@ def test_widget_preview_host_window_loads(qtbot) -> None:
 
 
 def test_project_overlay_preview_items_reads_connector_snapshot(tmp_path: Path) -> None:
+    _clear_preview_test_modules()
     source_root = tmp_path / "src"
     plugins_dir = source_root / "plugins"
     config_dir = tmp_path / "config"
@@ -169,6 +182,15 @@ def test_project_overlay_preview_items_reads_connector_snapshot(tmp_path: Path) 
     runtime.settings = SettingsRegistry(config_dir)
     runtime._boot_runtime()
     runtime._apply_initial_runtime_state()
+    if str(source_root) not in sys.path:
+        sys.path.insert(0, str(source_root))
+    importlib.invalidate_caches()
+    register_connector_service(
+        plugins=runtime._plugins,
+        connector_services=runtime.connector_services,
+        events=runtime.events,
+        plugin_id="preview_connector",
+    )
 
     items = project_overlay_preview_items(runtime, plugin_id="demo_overlay")
     updated_items = project_overlay_preview_items(runtime, plugin_id="demo_overlay")
@@ -187,3 +209,48 @@ def test_project_overlay_preview_items_reads_connector_snapshot(tmp_path: Path) 
 def _extract_seconds(value: str) -> float | None:
     match = re.search(r"(\d+(?:\.\d+)?)", value)
     return float(match.group(1)) if match else None
+
+
+def test_widget_window_host_opens_window_for_ready_record(qtbot) -> None:
+    host = WidgetWindowHost()
+
+    host.sync_records(
+        [
+            WidgetRuntimeRecord(
+                overlay_id="demo_overlay",
+                widget_id="session_time_left",
+                widget_type="textWidget",
+                label="Time Left",
+                source="session.time_left",
+                status=WidgetRuntimeStatus.READY,
+                connector_ids=("LMU_RF2_Connector",),
+            )
+        ]
+    )
+
+    windows = host.windows()
+    assert len(windows) == 1
+    assert isinstance(windows[0], QQuickWindow)
+    assert windows[0].property("widgetData")["widgetId"] == "session_time_left"
+    host.close_all()
+
+
+def test_widget_window_host_ignores_non_renderable_records(qtbot) -> None:
+    host = WidgetWindowHost()
+
+    host.sync_records(
+        [
+            WidgetRuntimeRecord(
+                overlay_id="demo_overlay",
+                widget_id="session_time_left",
+                widget_type="textWidget",
+                label="Time Left",
+                source="session.time_left",
+                status=WidgetRuntimeStatus.WAITING_FOR_CONNECTOR,
+                connector_ids=("LMU_RF2_Connector",),
+            )
+        ]
+    )
+
+    assert host.windows() == ()
+    host.close_all()

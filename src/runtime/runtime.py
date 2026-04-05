@@ -5,7 +5,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from app_schema.manifest import AppManifest, PluginManifest, MenuItem as MenuItemDecl, MenuSeparator as MenuSeparatorDecl
+from app_schema.plugin import PluginManifest
+from app_schema.ui import AppManifest, MenuItem as MenuItemDecl, MenuSeparator as MenuSeparatorDecl, StatusbarItemDecl
 from runtime.app.paths import AppPaths
 from runtime.connectors import (
     ConnectorServiceRegistry,
@@ -18,6 +19,8 @@ from runtime_schema import (
     EventBus, EventType, PluginState, PluginStateData,
     PluginActivatedData, PluginErrorData,
     MenuRegisteredData, StatusbarRegisteredData, TabRegisteredData,
+    RuntimeShutdownData,
+    WindowRuntimeUpdatedData,
 )
 from runtime.manifest import load_plugin_manifest
 from runtime.persistence import SettingsRegistry, SettingsSpec
@@ -25,6 +28,8 @@ from runtime.plugins.contracts import PluginContext
 from runtime.plugins.packaged_plugin import resolve_packaged_plugin
 from runtime.plugins.plugin_lifecycle import resolve_plugin_lifecycle
 from runtime.plugins.plugin_state import PluginStateMachine
+from runtime.ui import WindowRuntimeRecord, WindowRuntimeStatus, project_window_records
+from runtime.widgets import WidgetRuntimeRecord, project_overlay_widget_records
 from widget_api import create_default_widget_registry
 
 
@@ -38,6 +43,9 @@ class Runtime:
         self._plugin_states: dict[str, PluginStateMachine] = {}
         self._active_plugin: str | None = None  # Currently active UI plugin
         self._invalid_plugin_icons: set[str] = set()
+        self._window_states: dict[str, WindowRuntimeStatus] = {}
+        self._window_errors: dict[str, str] = {}
+        self._shutdown_requested = False
         self.connector_services = ConnectorServiceRegistry()
         self.widget_registry = create_default_widget_registry()
         self.events = event_bus  # Use shared event bus
@@ -216,6 +224,87 @@ class Runtime:
     def plugin_icon_url(self, plugin_id: str) -> str:
         return self._plugin_icon_url(plugin_id)
 
+    def overlay_widget_records(self, plugin_id: str) -> list[WidgetRuntimeRecord]:
+        """Return runtime-owned widget records for one overlay plugin."""
+        return project_overlay_widget_records(
+            self._plugins,
+            self.connector_services,
+            plugin_id=plugin_id,
+            active_plugin=self._active_plugin,
+        )
+
+    def active_overlay_widget_records(self) -> list[WidgetRuntimeRecord]:
+        """Return widget records for the currently active overlay."""
+        if self._shutdown_requested:
+            return []
+        if self._active_plugin is None:
+            return []
+        manifest = self._plugins.get(self._active_plugin)
+        if manifest is None or manifest.plugin_type != "overlay":
+            return []
+        return self.overlay_widget_records(self._active_plugin)
+
+    def window_records(self) -> list[WindowRuntimeRecord]:
+        """Return runtime-owned records for manifest-declared application windows."""
+
+        return project_window_records(
+            self._plugins,
+            window_states=self._window_states,
+            window_errors=self._window_errors,
+        )
+
+    def window_record(self, window_id: str) -> WindowRuntimeRecord | None:
+        """Return one runtime-owned window record by id."""
+
+        return next((record for record in self.window_records() if record.window_id == window_id), None)
+
+    def mark_window_opening(self, window_id: str) -> None:
+        """Record that a window handoff to ui_api has started."""
+
+        self._set_window_status(window_id, WindowRuntimeStatus.OPENING, reason="opening")
+
+    def mark_window_open(self, window_id: str) -> None:
+        """Record that a window is open."""
+
+        self._set_window_status(window_id, WindowRuntimeStatus.OPEN, reason="open")
+
+    def mark_window_hidden(self, window_id: str) -> None:
+        """Record that a window remains hosted but hidden."""
+
+        self._set_window_status(window_id, WindowRuntimeStatus.HIDDEN, reason="hidden")
+
+    def mark_window_closing(self, window_id: str) -> None:
+        """Record that a window is in the shutdown or close handoff."""
+
+        self._set_window_status(window_id, WindowRuntimeStatus.CLOSING, reason="closing")
+
+    def mark_window_closed(self, window_id: str) -> None:
+        """Record that a window has been closed."""
+
+        self._set_window_status(window_id, WindowRuntimeStatus.CLOSED, reason="closed")
+
+    def mark_window_error(self, window_id: str, message: str) -> None:
+        """Record that a window failed to open or close correctly."""
+
+        self._window_errors[window_id] = message
+        self._set_window_status(window_id, WindowRuntimeStatus.ERROR, reason="error")
+
+    def begin_shutdown(self, reason: str = "app_quit") -> None:
+        """Project shutdown intent onto all currently hosted windows."""
+        if self._shutdown_requested:
+            return
+        self._shutdown_requested = True
+        self.events.emit_typed(EventType.RUNTIME_SHUTDOWN, RuntimeShutdownData(reason=reason))
+        for record in self.window_records():
+            if record.status in {WindowRuntimeStatus.OPEN, WindowRuntimeStatus.OPENING, WindowRuntimeStatus.HIDDEN}:
+                self.mark_window_closing(record.window_id)
+
+    def _set_window_status(self, window_id: str, status: WindowRuntimeStatus, *, reason: str) -> None:
+        self._window_states[window_id] = status
+        if status != WindowRuntimeStatus.ERROR:
+            self._window_errors.pop(window_id, None)
+        self.events.emit_typed(EventType.WINDOW_RUNTIME_UPDATED, WindowRuntimeUpdatedData(reason=reason))
+
     # ── Settings registration ─────────────────────────────────────────────
 
     def _register_settings(self) -> None:
@@ -247,7 +336,8 @@ class Runtime:
         """Register menus from manifests - emit events for UI layer."""
         for plugin_manifest in self._plugins.values():
             source = plugin_manifest.plugin_type
-            for window in plugin_manifest.windows:
+            windows = [] if plugin_manifest.ui is None else plugin_manifest.ui.windows
+            for window in windows:
                 for item in window.menu:
                     if isinstance(item, MenuSeparatorDecl):
                         self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
@@ -262,9 +352,9 @@ class Runtime:
                             action=item.action,
                             source=source,
                         ))
-            if plugin_manifest.menu_label and plugin_manifest.plugin_menu:
+            if plugin_manifest.ui and plugin_manifest.ui.menu_label and plugin_manifest.ui.plugin_menu:
                 window_id = f"plugin:{plugin_manifest.plugin_id}"
-                for item in plugin_manifest.plugin_menu:
+                for item in plugin_manifest.ui.plugin_menu:
                     if isinstance(item, MenuSeparatorDecl):
                         self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
                             window_id=window_id,
@@ -283,10 +373,10 @@ class Runtime:
 
     def _register_statusbar(self) -> None:
         """Register statusbar items from manifests - emit events for UI layer."""
-        from app_schema.manifest import StatusbarItemDecl
         for plugin_manifest in self._plugins.values():
             source = plugin_manifest.plugin_type
-            for window in plugin_manifest.windows:
+            windows = [] if plugin_manifest.ui is None else plugin_manifest.ui.windows
+            for window in windows:
                 for item in window.statusbar:
                     self.events.emit_typed(EventType.STATUSBAR_REGISTERED, StatusbarRegisteredData(
                         window_id=window.id,
@@ -303,7 +393,8 @@ class Runtime:
     def _register_tabs(self) -> None:
         """Register tabs from manifests - emit events for UI layer."""
         for plugin_manifest in self._plugins.values():
-            for tab in plugin_manifest.tabs:
+            tabs = [] if plugin_manifest.ui is None else plugin_manifest.ui.tabs
+            for tab in tabs:
                 self.events.emit_typed(EventType.TAB_REGISTERED, TabRegisteredData(
                     window_id=tab.target,
                     id=tab.id,
@@ -553,7 +644,7 @@ class Runtime:
     # ── Manifest queries ──────────────────────────────────────────────────
 
     def all_windows(self) -> list[AppManifest]:
-        return [w for pm in self._plugins.values() for w in pm.windows]
+        return [w for pm in self._plugins.values() for w in ([] if pm.ui is None else pm.ui.windows)]
 
     def main_window(self) -> AppManifest | None:
         return main_window_for(self._plugins)

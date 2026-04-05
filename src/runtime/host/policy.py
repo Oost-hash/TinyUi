@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from app_schema.manifest import AppManifest, PluginManifest
+from app_schema.plugin import PluginManifest
+from app_schema.ui import AppManifest
 
 
 def active_host_ids(plugins: dict[str, PluginManifest]) -> set[str]:
@@ -17,6 +18,6 @@ def active_host_ids(plugins: dict[str, PluginManifest]) -> set[str]:
 def main_window_for(plugins: dict[str, PluginManifest]) -> AppManifest | None:
     """Return the primary host window when available."""
     for manifest in plugins.values():
-        if manifest.plugin_type == "host" and manifest.windows:
-            return manifest.windows[0]
+        if manifest.plugin_type == "host" and manifest.ui and manifest.ui.windows:
+            return manifest.ui.windows[0]
     return None

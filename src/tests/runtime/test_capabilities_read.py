@@ -13,8 +13,12 @@ from capabilities.plugin_state_read import PluginStateRead
 from capabilities.settings_read import SettingsRead
 from capabilities.statusbar import StatusbarApi
 from capabilities.tabs import TabsApi
+from capabilities.window_read import WindowRead
+from capabilities.widget_read import WidgetRead
+from runtime.ui import WindowRuntimeRecord, WindowRuntimeStatus as WindowStatus
 from runtime.connectors.service_registry import ConnectorServiceRegistry
 from runtime.plugins.plugin_state import PluginStateMachine
+from runtime.widgets import WidgetRuntimeRecord, WidgetRuntimeStatus
 from runtime_schema import (
     ConnectorServiceRegisteredData,
     ConnectorServiceUnregisteredData,
@@ -28,6 +32,9 @@ from runtime_schema import (
     PluginStateData,
     StatusbarRegisteredData,
     TabRegisteredData,
+    RuntimeShutdownData,
+    WindowRuntimeUpdatedData,
+    WidgetRuntimeUpdatedData,
 )
 
 
@@ -66,7 +73,7 @@ class _FakeRuntimeForRead:
                 author="Oost-hash",
                 description="Host",
                 requires=[],
-                windows=[SimpleNamespace(id="tinyui.main")],
+                ui=SimpleNamespace(windows=[SimpleNamespace(id="tinyui.main")]),
                 settings=[],
             ),
             "dummy_plugin": SimpleNamespace(
@@ -75,7 +82,7 @@ class _FakeRuntimeForRead:
                 author="Test",
                 description="Dummy",
                 requires=["telemetry_connector"],
-                windows=[SimpleNamespace(id="dummy.main")],
+                ui=SimpleNamespace(windows=[SimpleNamespace(id="dummy.main")]),
                 settings=[object(), object()],
             ),
         }
@@ -90,6 +97,27 @@ class _FakeRuntimeForRead:
         self._state_machines["dummy_plugin"].transition(PluginState.ENABLING, "boot")
         self._state_machines["dummy_plugin"].transition(PluginState.LOADING, "boot")
         self._state_machines["dummy_plugin"].transition(PluginState.ACTIVE, "boot")
+        self._widget_records = [
+            WidgetRuntimeRecord(
+                overlay_id="demo_overlay",
+                widget_id="session_time_left",
+                widget_type="textWidget",
+                label="Session Time Left",
+                source="session.time_left",
+                status=WidgetRuntimeStatus.WAITING_FOR_GAME,
+                connector_ids=("LMU_RF2_Connector",),
+            )
+        ]
+        self._window_records = [
+            WindowRuntimeRecord(
+                window_id="tinyui.main",
+                plugin_id="tinyui",
+                window_role="main",
+                status=WindowStatus.OPEN,
+                visible=True,
+                surface="C:/tinyui/surface.qml",
+            )
+        ]
 
     def plugin_ids(self) -> list[str]:
         return list(self._plugin_manifests.keys())
@@ -102,6 +130,12 @@ class _FakeRuntimeForRead:
 
     def get_plugin_state_machine(self, plugin_id: str):
         return self._state_machines.get(plugin_id)
+
+    def active_overlay_widget_records(self) -> list[WidgetRuntimeRecord]:
+        return list(self._widget_records)
+
+    def window_records(self) -> list[WindowRuntimeRecord]:
+        return list(self._window_records)
 
 
 def test_plugin_read_projects_runtime_metadata() -> None:
@@ -297,3 +331,140 @@ def test_connector_read_projects_service_metadata_and_rows() -> None:
     registry.unregister("telemetry_connector")
 
     assert cast(list[dict[str, str]], cast(Any, capability).services) == []
+
+
+def test_widget_read_projects_runtime_widget_records() -> None:
+    """WidgetRead should expose active widget runtime records to QML consumers."""
+    runtime = _FakeRuntimeForRead()
+    bus = EventBus()
+    capability = WidgetRead(cast(Any, runtime), bus)
+
+    widgets = capability.items()
+
+    assert widgets == [
+        {
+            "overlayId": "demo_overlay",
+            "widgetId": "session_time_left",
+            "widgetType": "textWidget",
+            "label": "Session Time Left",
+            "source": "session.time_left",
+            "status": "waiting_for_game",
+            "connectorIds": ["LMU_RF2_Connector"],
+            "errorMessage": "",
+        }
+    ]
+
+
+def test_widget_read_refreshes_on_runtime_events() -> None:
+    """WidgetRead should rebuild its rows when runtime events change widget state."""
+    runtime = _FakeRuntimeForRead()
+    bus = EventBus()
+    capability = WidgetRead(cast(Any, runtime), bus)
+
+    runtime._widget_records = [
+        WidgetRuntimeRecord(
+            overlay_id="demo_overlay",
+            widget_id="session_time_left",
+            widget_type="textWidget",
+            label="Session Time Left",
+            source="session.time_left",
+            status=WidgetRuntimeStatus.READY,
+            connector_ids=("LMU_RF2_Connector",),
+        )
+    ]
+    bus.emit_typed(
+        EventType.CONNECTOR_SERVICE_UPDATED,
+        ConnectorServiceUpdatedData(connector_id="LMU_RF2_Connector", plugin_id="LMU_RF2_Connector"),
+    )
+
+    widgets = capability.items()
+
+    assert widgets[0]["status"] == "ready"
+
+
+def test_widget_read_refreshes_on_widget_runtime_poll_event() -> None:
+    """WidgetRead should refresh when the widget runtime poller publishes an update."""
+    runtime = _FakeRuntimeForRead()
+    bus = EventBus()
+    capability = WidgetRead(cast(Any, runtime), bus)
+
+    runtime._widget_records = [
+        WidgetRuntimeRecord(
+            overlay_id="demo_overlay",
+            widget_id="session_time_left",
+            widget_type="textWidget",
+            label="Session Time Left",
+            source="session.time_left",
+            status=WidgetRuntimeStatus.READY,
+            connector_ids=("LMU_RF2_Connector",),
+        )
+    ]
+    bus.emit_typed(
+        EventType.WIDGET_RUNTIME_UPDATED,
+        WidgetRuntimeUpdatedData(reason="game_detection_poll"),
+    )
+
+    widgets = capability.items()
+
+    assert widgets[0]["status"] == "ready"
+
+
+def test_widget_read_clears_rows_on_runtime_shutdown() -> None:
+    """WidgetRead should clear active widget rows when runtime shutdown starts."""
+    runtime = _FakeRuntimeForRead()
+    bus = EventBus()
+    capability = WidgetRead(cast(Any, runtime), bus)
+
+    runtime._widget_records = []
+    bus.emit_typed(
+        EventType.RUNTIME_SHUTDOWN,
+        RuntimeShutdownData(reason="app_quit"),
+    )
+
+    assert capability.items() == []
+
+
+def test_window_read_projects_runtime_window_records() -> None:
+    """WindowRead should expose runtime-owned window records to QML consumers."""
+    runtime = _FakeRuntimeForRead()
+    bus = EventBus()
+    capability = WindowRead(cast(Any, runtime), bus)
+
+    assert capability.items() == [
+        {
+            "windowId": "tinyui.main",
+            "pluginId": "tinyui",
+            "windowRole": "main",
+            "status": "open",
+            "visible": True,
+            "surface": "C:/tinyui/surface.qml",
+            "errorMessage": "",
+        }
+    ]
+
+
+def test_window_read_refreshes_on_window_runtime_event() -> None:
+    """WindowRead should rebuild rows when window runtime events fire."""
+    runtime = _FakeRuntimeForRead()
+    bus = EventBus()
+    capability = WindowRead(cast(Any, runtime), bus)
+
+    runtime._window_records = [
+        WindowRuntimeRecord(
+            window_id="tinyui.main",
+            plugin_id="tinyui",
+            window_role="main",
+            status=WindowStatus.CLOSING,
+            visible=False,
+            surface="C:/tinyui/surface.qml",
+        )
+    ]
+    bus.emit_typed(
+        EventType.WINDOW_RUNTIME_UPDATED,
+        WindowRuntimeUpdatedData(reason="shutdown"),
+    )
+
+    items = capability.items()
+
+    assert items[0]["status"] == "closing"
+    assert items[0]["visible"] is False

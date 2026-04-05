@@ -12,7 +12,7 @@ from PySide6.QtQuick import QQuickWindow
 
 from ui_api.api.app_actions import AppActions
 from ui_api.theme import Theme
-from app_schema.manifest import AppManifest
+from app_schema.ui import AppManifest
 from ui_api.windowing import attach_windowing
 
 
