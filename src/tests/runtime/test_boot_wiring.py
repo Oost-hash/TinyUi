@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any, Callable, cast
 
 import pytest
 
@@ -12,6 +12,8 @@ from app_schema.ui import AppManifest, ChromePolicy
 from runtime.runtime import Runtime
 from runtime.widgets import WidgetRuntimeRecord, WidgetRuntimeStatus
 from runtime_schema import EventBus, EventType, WidgetRuntimeUpdatedData
+from ui_api.ui_runtime_host import WindowHostController, attach_main_window_shutdown, attach_window_runtime_tracking
+from widget_api.runtime_host import create_widget_window_host
 
 
 def _runtime_stub() -> object:
@@ -19,6 +21,7 @@ def _runtime_stub() -> object:
         paths=object(),
         settings=object(),
         connector_services=object(),
+        window_records=lambda: [],
         active_overlay_widget_records=lambda: [],
     )
 
@@ -42,6 +45,7 @@ def _runtime_capabilities() -> boot.RuntimeCapabilities:
         plugin_state_write=object(),
         settings_read=object(),
         settings_write=object(),
+        window_read=object(),
         widget_read=object(),
     )
 
@@ -105,6 +109,7 @@ def test_build_window_capability_properties_omits_tabs_for_non_tab_windows() -> 
 
     assert "tabs" not in properties
     assert "pluginRead" in properties
+    assert "windowRead" in properties
     assert "widgetRead" in properties
     assert "connectorRead" in properties
 
@@ -174,9 +179,9 @@ def test_create_widget_window_host_syncs_current_runtime_records(monkeypatch) ->
     app = _FakeApp()
     event_bus = EventBus()
 
-    monkeypatch.setattr(boot, "WidgetWindowHost", _FakeHost)
+    monkeypatch.setattr("widget_api.runtime_host.WidgetWindowHost", _FakeHost)
 
-    host = boot.create_widget_window_host(app, event_bus, runtime)
+    host = create_widget_window_host(app, event_bus, runtime)
 
     assert host is created["host"]
     assert created["records"] is records
@@ -228,12 +233,220 @@ def test_widget_window_host_resyncs_on_runtime_events(monkeypatch) -> None:
     app = _FakeApp()
     runtime = _RuntimeStub()
 
-    monkeypatch.setattr(boot, "WidgetWindowHost", _FakeHost)
+    monkeypatch.setattr("widget_api.runtime_host.WidgetWindowHost", _FakeHost)
 
-    boot.create_widget_window_host(app, event_bus, runtime)
+    create_widget_window_host(app, event_bus, runtime)
     event_bus.emit_typed(
         EventType.WIDGET_RUNTIME_UPDATED,
         WidgetRuntimeUpdatedData(reason="test"),
     )
 
     assert sync_calls == [records, records]
+
+
+def test_open_main_window_marks_runtime_window_open(monkeypatch) -> None:
+    """Opening the main window should write opening and open state back to runtime."""
+
+    runtime_calls: list[tuple[str, str]] = []
+
+    class _RuntimeStub:
+        paths = object()
+        settings = object()
+        connector_services = object()
+
+        def main_window(self):
+            return AppManifest(id="tinyui.main", title="TinyUI", surface=None)
+
+        def mark_window_opening(self, window_id: str) -> None:
+            runtime_calls.append(("opening", window_id))
+
+        def mark_window_open(self, window_id: str) -> None:
+            runtime_calls.append(("open", window_id))
+
+    monkeypatch.setattr(boot, "resolve_plugin_panel", lambda engine, runtime: ("", None))
+    monkeypatch.setattr(boot, "open_window", lambda *args, **kwargs: SimpleNamespace(qml_window=SimpleNamespace()))
+
+    manifest, _handle = boot.open_main_window(
+        app=object(),
+        engine=object(),
+        actions=cast(Any, object()),
+        theme=cast(Any, object()),
+        runtime=cast(Runtime, _RuntimeStub()),
+        shared_capabilities=_shared_capabilities(),
+        runtime_capabilities=_runtime_capabilities(),
+    )
+
+    assert manifest is not None
+    assert runtime_calls == [("opening", "tinyui.main"), ("open", "tinyui.main")]
+
+
+def test_register_window_actions_marks_main_window_closing(monkeypatch) -> None:
+    """The close action should request runtime shutdown before closing the main window."""
+
+    close_calls: list[tuple[str, str]] = []
+    registered: dict[str, object] = {}
+
+    class _DestroyedSignal:
+        def connect(self, _callback) -> None:
+            return None
+
+    class _WindowStub:
+        def __init__(self) -> None:
+            self.destroyed = _DestroyedSignal()
+
+        def setProperty(self, *_args) -> None:
+            return None
+
+        def close(self) -> None:
+            close_calls.append(("qt", "tinyui.main"))
+
+    class _RuntimeStub:
+        def window_for(self, _window_id: str):
+            return None
+
+        def all_windows(self):
+            return []
+
+        def mark_window_closing(self, window_id: str) -> None:
+            close_calls.append(("closing", window_id))
+
+        def mark_window_closed(self, _window_id: str) -> None:
+            return None
+
+        def mark_window_opening(self, _window_id: str) -> None:
+            return None
+
+        def mark_window_open(self, _window_id: str) -> None:
+            return None
+
+        def mark_window_error(self, _window_id: str, _message: str) -> None:
+            return None
+
+        def window_records(self):
+            return []
+
+        def begin_shutdown(self, reason: str = "app_quit") -> None:
+            close_calls.append(("shutdown", reason))
+
+    class _ActionsStub:
+        def register(self, action: str, callback) -> None:
+            registered[action] = callback
+
+    class _AppStub:
+        def quit(self) -> None:
+            return None
+
+    main_handle = SimpleNamespace(qml_window=_WindowStub())
+    actions = _ActionsStub()
+    window_host_controller = SimpleNamespace(track=lambda *_args: None)
+
+    boot.register_window_actions(
+        app=_AppStub(),
+        engine=object(),
+        actions=cast(Any, actions),
+        theme=cast(Any, object()),
+        runtime=cast(Runtime, _RuntimeStub()),
+        shared_capabilities=_shared_capabilities(),
+        runtime_capabilities=_runtime_capabilities(),
+        main_manifest=AppManifest(id="tinyui.main", title="TinyUI"),
+        main_handle=main_handle,
+        window_host_controller=cast(Any, window_host_controller),
+    )
+
+    cast(Callable[[], None], registered["close"])()
+
+    assert close_calls == [("shutdown", "main_window_close"), ("qt", "tinyui.main")]
+
+
+def test_window_runtime_tracking_marks_closed_when_window_hides() -> None:
+    """A window becoming invisible should update runtime state to closed."""
+
+    calls: list[tuple[str, str]] = []
+
+    class _Signal:
+        def __init__(self) -> None:
+            self._callbacks: list[Callable[..., None]] = []
+
+        def connect(self, callback) -> None:
+            self._callbacks.append(callback)
+
+        def emit(self, *args) -> None:
+            for callback in self._callbacks:
+                callback(*args)
+
+    class _WindowStub:
+        def __init__(self) -> None:
+            self.destroyed = _Signal()
+            self.visibleChanged = _Signal()
+
+    class _RuntimeStub:
+        def mark_window_open(self, window_id: str) -> None:
+            calls.append(("open", window_id))
+
+        def mark_window_closed(self, window_id: str) -> None:
+            calls.append(("closed", window_id))
+
+    window = _WindowStub()
+    runtime = _RuntimeStub()
+
+    attach_window_runtime_tracking(cast(Any, runtime), "dummy.dialog", window)
+    window.visibleChanged.emit(False)
+
+    assert calls == [("closed", "dummy.dialog")]
+
+
+def test_main_window_shutdown_starts_when_main_window_hides() -> None:
+    """Hiding the main window via the native close affordance should request shutdown."""
+
+    calls: list[tuple[str, str]] = []
+
+    class _Signal:
+        def __init__(self) -> None:
+            self._callbacks: list[Callable[..., None]] = []
+
+        def connect(self, callback) -> None:
+            self._callbacks.append(callback)
+
+        def emit(self, *args) -> None:
+            for callback in self._callbacks:
+                callback(*args)
+
+    class _WindowStub:
+        def __init__(self) -> None:
+            self.destroyed = _Signal()
+            self.visibleChanged = _Signal()
+
+    class _RuntimeStub:
+        def begin_shutdown(self, reason: str = "app_quit") -> None:
+            calls.append(("shutdown", reason))
+
+    window = _WindowStub()
+    runtime = _RuntimeStub()
+
+    attach_main_window_shutdown(cast(Any, runtime), window)
+    window.visibleChanged.emit(False)
+
+    assert calls == [("shutdown", "main_window_hidden")]
+
+
+def test_window_host_controller_closes_tracked_windows_on_shutdown() -> None:
+    """Runtime shutdown should close all tracked application windows."""
+
+    closed: list[str] = []
+
+    class _WindowStub:
+        def __init__(self, window_id: str) -> None:
+            self.window_id = window_id
+
+        def close(self) -> None:
+            closed.append(self.window_id)
+
+    event_bus = EventBus()
+    controller = WindowHostController(event_bus)
+    controller.attach()
+    controller.track("tinyui.main", SimpleNamespace(qml_window=_WindowStub("tinyui.main")))
+    controller.track("dummy.dialog", SimpleNamespace(qml_window=_WindowStub("dummy.dialog")))
+
+    event_bus.emit_typed(EventType.RUNTIME_SHUTDOWN, None)
+
+    assert closed == ["tinyui.main", "dummy.dialog"]

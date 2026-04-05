@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import sys
-from typing import Protocol, Sequence
+from typing import Any, Protocol, Sequence
 
+from app_schema.ui import AppManifest
 from ui_api.api.app_actions import AppActions
 from ui_api.qt import create_application, create_engine
 from ui_api.theme import Theme
+from ui_api.ui_runtime_host import WindowHostController, attach_main_window_shutdown, attach_window_runtime_tracking
 from ui_api.window import open_window
-from widget_api import WidgetWindowHost
+from widget_api import create_widget_window_host
 from capabilities.connector_actions import ConnectorActions
 from capabilities.connector_read import ConnectorRead
 from capabilities.menu import MenuApi
@@ -22,12 +24,14 @@ from capabilities.settings_read import SettingsRead
 from capabilities.settings_write import SettingsWrite
 from capabilities.statusbar import StatusbarApi
 from capabilities.tabs import TabsApi
+from capabilities.window_read import WindowRead
 from capabilities.widget_read import WidgetRead
 from PySide6.QtCore import QUrl
 from PySide6.QtQml import QQmlComponent
 from runtime.runtime import Runtime
-from runtime.widgets import WidgetRuntimePoller, WidgetRuntimeRecord
-from runtime_schema import EventBus, EventType, BootInitData, BootReadyData, WidgetRuntimeUpdatedData
+from runtime.ui import WindowRuntimeRecord
+from runtime.widgets import WidgetRuntimeRecord
+from runtime_schema import EventBus, EventType, BootInitData, BootReadyData
 
 if sys.platform == "win32":
     from ui_api.windowing import win_window  # noqa: F401  # eager import for Windows QML singletons
@@ -51,42 +55,20 @@ class RuntimeCapabilities:
     plugin_state_write: object
     settings_read: object
     settings_write: object
+    window_read: object
     widget_read: object
 
 
-class _WidgetRuntimeLike(Protocol):
-    def active_overlay_widget_records(self) -> Sequence[WidgetRuntimeRecord]: ...
-
-
-class _WidgetWindowHostController:
-    """Keep the widget window host synchronized with runtime changes."""
-
-    def __init__(self, event_bus: EventBus, runtime: _WidgetRuntimeLike, host: WidgetWindowHost) -> None:
-        self._event_bus = event_bus
-        self._runtime = runtime
-        self._host = host
-
-    def attach(self) -> None:
-        """Subscribe to the runtime events that can change active widget records."""
-
-        for event_type in (
-            EventType.PLUGIN_STATE_CHANGED,
-            EventType.PLUGIN_ERROR,
-            EventType.UI_PLUGIN_SELECTED,
-            EventType.CONNECTOR_SERVICE_REGISTERED,
-            EventType.CONNECTOR_SERVICE_UNREGISTERED,
-            EventType.CONNECTOR_SERVICE_UPDATED,
-            EventType.WIDGET_RUNTIME_UPDATED,
-        ):
-            self._event_bus.on(event_type, self._on_runtime_change)
-
-    def sync(self) -> None:
-        """Refresh hosted windows from current runtime widget records."""
-
-        self._host.sync_records(self._runtime.active_overlay_widget_records())
-
-    def _on_runtime_change(self, _event) -> None:
-        self.sync()
+class _WindowRuntimeLike(Protocol):
+    def window_for(self, window_id: str) -> AppManifest | None: ...
+    def all_windows(self) -> Sequence[AppManifest]: ...
+    def window_records(self) -> Sequence[WindowRuntimeRecord]: ...
+    def mark_window_opening(self, window_id: str) -> None: ...
+    def mark_window_open(self, window_id: str) -> None: ...
+    def mark_window_closing(self, window_id: str) -> None: ...
+    def mark_window_closed(self, window_id: str) -> None: ...
+    def mark_window_error(self, window_id: str, message: str) -> None: ...
+    def begin_shutdown(self, reason: str = "app_quit") -> None: ...
 
 
 def create_shared_capabilities(event_bus: EventBus, runtime: Runtime) -> SharedCapabilities:
@@ -114,6 +96,7 @@ def create_runtime_capabilities(runtime: Runtime, event_bus: EventBus) -> Runtim
         plugin_state_write=PluginStateWrite(runtime),
         settings_read=settings_read,
         settings_write=SettingsWrite(runtime, settings_read),
+        window_read=WindowRead(runtime, event_bus),
         widget_read=WidgetRead(runtime, event_bus),
     )
 
@@ -137,6 +120,7 @@ def build_window_capability_properties(
         "pluginRead": runtime_caps.plugin_read,
         "settingsRead": runtime_caps.settings_read,
         "settingsWrite": runtime_caps.settings_write,
+        "windowRead": runtime_caps.window_read,
         "widgetRead": runtime_caps.widget_read,
         "connectorRead": shared.connector_read,
         "connectorActions": shared.connector_actions,
@@ -197,14 +181,22 @@ def open_main_window(
         plugin_panel_url=plugin_panel_url,
         plugin_panel_component=plugin_panel_component,
     )
-    handle = open_window(
-        main_manifest,
-        engine=engine,
-        app=app,
-        actions=actions,
-        theme=theme,
-        **main_window_properties,
-    )
+    runtime.mark_window_opening(main_manifest.id)
+    try:
+        handle = open_window(
+            main_manifest,
+            engine=engine,
+            app=app,
+            actions=actions,
+            theme=theme,
+            **main_window_properties,
+        )
+    except Exception as exc:
+        runtime.mark_window_error(main_manifest.id, str(exc))
+        raise
+    runtime.mark_window_open(main_manifest.id)
+    attach_window_runtime_tracking(runtime, main_manifest.id, handle.qml_window)
+    attach_main_window_shutdown(runtime, handle.qml_window)
     return main_manifest, handle
 
 
@@ -214,16 +206,18 @@ def register_window_actions(
     engine,
     actions: AppActions,
     theme: Theme,
-    runtime: Runtime,
+    runtime: _WindowRuntimeLike,
     shared_capabilities: SharedCapabilities,
     runtime_capabilities: RuntimeCapabilities,
     main_manifest,
     main_handle,
+    window_host_controller: WindowHostController,
 ) -> None:
     """Register open and close actions after the main window exists."""
     main_handle.qml_window.destroyed.connect(app.quit)
     main_handle.qml_window.setProperty("showStatusBar", True)
     main_handle.qml_window.setProperty("showTabBar", True)
+    window_host_controller.track(main_manifest.id, main_handle)
 
     open_handles = []
 
@@ -237,30 +231,27 @@ def register_window_actions(
                 shared_capabilities,
                 runtime_capabilities,
             )
-            open_handles.append(open_window(manifest, engine=engine, app=app, actions=actions, theme=theme, **kwargs))
+            runtime.mark_window_opening(window_id)
+            try:
+                handle = open_window(manifest, engine=engine, app=app, actions=actions, theme=theme, **kwargs)
+            except Exception as exc:
+                runtime.mark_window_error(window_id, str(exc))
+                raise
+            runtime.mark_window_open(window_id)
+            attach_window_runtime_tracking(runtime, window_id, handle.qml_window)
+            window_host_controller.track(window_id, handle)
+            open_handles.append(handle)
         return handler
 
     for window in runtime.all_windows():
         if window.id != main_manifest.id:
             actions.register(f"open:{window.id}", make_open_handler(window.id))
 
-    actions.register("close", lambda: main_handle.qml_window.close())
+    def _close_main() -> None:
+        runtime.begin_shutdown("main_window_close")
+        main_handle.qml_window.close()
 
-
-def create_widget_window_host(app, event_bus: EventBus, runtime: _WidgetRuntimeLike) -> WidgetWindowHost:
-    """Create the widget window host and keep it synchronized with runtime records."""
-
-    host = WidgetWindowHost()
-    controller = _WidgetWindowHostController(event_bus, runtime, host)
-    poller = WidgetRuntimePoller(event_bus)
-    controller.sync()
-    controller.attach()
-    poller.start()
-    app.aboutToQuit.connect(host.close_all)
-    app.aboutToQuit.connect(poller.stop)
-    app.setProperty("_widgetWindowHostController", controller)
-    app.setProperty("_widgetRuntimePoller", poller)
-    return host
+    actions.register("close", _close_main)
 
 
 def main() -> int:
@@ -284,7 +275,10 @@ def main() -> int:
     )
     if main_manifest is None:
         return 1
-    widget_window_host = create_widget_window_host(app, event_bus, runtime)
+    create_widget_window_host(app, event_bus, runtime)
+    window_host_controller = WindowHostController(event_bus)
+    window_host_controller.attach()
+    app.aboutToQuit.connect(runtime.begin_shutdown)
     emit_boot_ready(event_bus, main_window_id=main_manifest.id)
     register_window_actions(
         app=app,
@@ -296,7 +290,9 @@ def main() -> int:
         runtime_capabilities=runtime_capabilities,
         main_manifest=main_manifest,
         main_handle=main_handle,
+        window_host_controller=window_host_controller,
     )
+    app.setProperty("_windowHostController", window_host_controller)
     return app.exec()
 
 
