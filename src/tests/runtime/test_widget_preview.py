@@ -11,9 +11,9 @@ from PySide6.QtQuick import QQuickWindow
 
 from runtime.app.paths import AppPaths
 from runtime.connectors import register_connector_service
-from runtime.persistence import SettingsRegistry
 from runtime.runtime import Runtime
 from runtime_schema import EventBus
+from tests.conftest import create_test_runtime_with_paths
 from runtime.widgets import WidgetRuntimeRecord, WidgetRuntimeStatus
 from ui_api.qt import create_engine
 from widget_api.preview import build_text_widget_preview_items, create_preview_window, project_overlay_preview_items
@@ -177,9 +177,7 @@ def test_project_overlay_preview_items_reads_connector_snapshot(tmp_path: Path) 
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime = Runtime(EventBus())
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
     runtime._boot_runtime()
     runtime._apply_initial_runtime_state()
     if str(source_root) not in sys.path:

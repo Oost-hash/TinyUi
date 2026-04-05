@@ -19,16 +19,11 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Canonical runtime capabilities exposed to UI consumers."""
+"""Events domain — runtime event bus and communication."""
 
-from capabilities.config_set_read import ConfigSetRead
-from capabilities.config_set_write import ConfigSetWrite
-from capabilities.widget_config_read import WidgetConfigRead
-from capabilities.widget_config_write import WidgetConfigWrite
+from runtime.events.startup import startup_events, get_events_result
 
 __all__ = [
-    "ConfigSetRead",
-    "ConfigSetWrite",
-    "WidgetConfigRead",
-    "WidgetConfigWrite",
+    "startup_events",
+    "get_events_result",
 ]

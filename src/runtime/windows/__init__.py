@@ -19,16 +19,18 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Canonical runtime capabilities exposed to UI consumers."""
+"""Window runtime domain — manages window state and lifecycle."""
 
-from capabilities.config_set_read import ConfigSetRead
-from capabilities.config_set_write import ConfigSetWrite
-from capabilities.widget_config_read import WidgetConfigRead
-from capabilities.widget_config_write import WidgetConfigWrite
+from runtime.windows.runtime import WindowRuntime
+from runtime.windows.startup import (
+    WindowRuntimeStartupResult,
+    get_window_runtime_result,
+    startup_window_runtime,
+)
 
 __all__ = [
-    "ConfigSetRead",
-    "ConfigSetWrite",
-    "WidgetConfigRead",
-    "WidgetConfigWrite",
+    "WindowRuntime",
+    "WindowRuntimeStartupResult",
+    "get_window_runtime_result",
+    "startup_window_runtime",
 ]

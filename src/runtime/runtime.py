@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import cast
 
 from app_schema.plugin import PluginManifest
 from app_schema.ui import AppManifest, MenuItem as MenuItemDecl, MenuSeparator as MenuSeparatorDecl, StatusbarItemDecl
@@ -23,7 +24,10 @@ from runtime_schema import (
     WindowRuntimeUpdatedData,
 )
 from runtime.manifest import load_plugin_manifest
-from runtime.persistence import SettingsRegistry, SettingsSpec
+from runtime.persistence import SettingsRegistry, WidgetConfigStore, ConfigSetManager
+from runtime.connectors import ConnectorServiceRegistry
+from runtime_schema import SettingsSpec
+from widget_api import WidgetRegistry
 from runtime.plugins.contracts import PluginContext
 from runtime.plugins.packaged_plugin import resolve_packaged_plugin
 from runtime.plugins.plugin_lifecycle import resolve_plugin_lifecycle
@@ -34,20 +38,38 @@ from widget_api import create_default_widget_registry
 
 
 class Runtime:
-    def __init__(self, event_bus: EventBus) -> None:
+    def __init__(
+        self,
+        event_bus: EventBus,
+        settings: SettingsRegistry,
+        widget_store: WidgetConfigStore,
+        config_manager: ConfigSetManager,
+        connector_registry: ConnectorServiceRegistry | None = None,
+        widget_registry: WidgetRegistry | None = None,
+        plugin_discovery: object | None = None,
+        plugin_lifecycle: object | None = None,
+        window_runtime: object | None = None,
+    ) -> None:
         self._plugins: dict[str, PluginManifest] = {}
         self._plugin_roots: dict[str, Path] = {}
         self._plugin_import_roots: set[str] = set()
         self.paths: AppPaths | None = None
-        self.settings: SettingsRegistry | None = None
+        self.settings: SettingsRegistry = settings
+        self.widget_store: WidgetConfigStore = widget_store
+        self.config_manager: ConfigSetManager = config_manager
         self._plugin_states: dict[str, PluginStateMachine] = {}
         self._active_plugin: str | None = None  # Currently active UI plugin
         self._invalid_plugin_icons: set[str] = set()
+        self._shutdown_requested = False
+        self.connector_services: ConnectorServiceRegistry = connector_registry or ConnectorServiceRegistry()
+        self.widget_registry: WidgetRegistry = widget_registry or create_default_widget_registry()
+        # New domain components (optional during migration)
+        self.plugin_discovery = plugin_discovery
+        self.plugin_lifecycle = plugin_lifecycle
+        self.window_runtime = window_runtime
+        # Fallback window state tracking (used when window_runtime is None)
         self._window_states: dict[str, WindowRuntimeStatus] = {}
         self._window_errors: dict[str, str] = {}
-        self._shutdown_requested = False
-        self.connector_services = ConnectorServiceRegistry()
-        self.widget_registry = create_default_widget_registry()
         self.events = event_bus  # Use shared event bus
         self._subscribe_to_events()
 
@@ -72,7 +94,6 @@ class Runtime:
         """Handle boot initialization."""
         # AppPaths.detect() handles both frozen and source modes
         self.paths = AppPaths.detect()
-        self.settings = SettingsRegistry(self.paths.config_dir)
         self._boot_runtime()
         self._apply_initial_runtime_state()
     
@@ -246,7 +267,9 @@ class Runtime:
 
     def window_records(self) -> list[WindowRuntimeRecord]:
         """Return runtime-owned records for manifest-declared application windows."""
-
+        if self.window_runtime is not None:
+            from runtime.windows.runtime import WindowRuntime
+            return cast(WindowRuntime, self.window_runtime).project_records(self._plugins)
         return project_window_records(
             self._plugins,
             window_states=self._window_states,
@@ -255,39 +278,57 @@ class Runtime:
 
     def window_record(self, window_id: str) -> WindowRuntimeRecord | None:
         """Return one runtime-owned window record by id."""
-
         return next((record for record in self.window_records() if record.window_id == window_id), None)
 
-    def mark_window_opening(self, window_id: str) -> None:
+    def mark_window_opening(self, window_id: str, plugin_id: str = "") -> None:
         """Record that a window handoff to ui_api has started."""
+        if self.window_runtime is not None:
+            from runtime.windows.runtime import WindowRuntime
+            # WindowRuntime.mark_opening takes role, not plugin_id
+            cast(WindowRuntime, self.window_runtime).mark_opening(window_id, "")
+        else:
+            self._set_window_status(window_id, WindowRuntimeStatus.OPENING, reason="opening")
 
-        self._set_window_status(window_id, WindowRuntimeStatus.OPENING, reason="opening")
-
-    def mark_window_open(self, window_id: str) -> None:
+    def mark_window_open(self, window_id: str, plugin_id: str = "") -> None:
         """Record that a window is open."""
-
-        self._set_window_status(window_id, WindowRuntimeStatus.OPEN, reason="open")
+        if self.window_runtime is not None:
+            from runtime.windows.runtime import WindowRuntime
+            cast(WindowRuntime, self.window_runtime).mark_open(window_id)
+        else:
+            self._set_window_status(window_id, WindowRuntimeStatus.OPEN, reason="open")
 
     def mark_window_hidden(self, window_id: str) -> None:
         """Record that a window remains hosted but hidden."""
-
-        self._set_window_status(window_id, WindowRuntimeStatus.HIDDEN, reason="hidden")
+        if self.window_runtime is not None:
+            from runtime.windows.runtime import WindowRuntime
+            cast(WindowRuntime, self.window_runtime).mark_hidden(window_id)
+        else:
+            self._set_window_status(window_id, WindowRuntimeStatus.HIDDEN, reason="hidden")
 
     def mark_window_closing(self, window_id: str) -> None:
         """Record that a window is in the shutdown or close handoff."""
-
-        self._set_window_status(window_id, WindowRuntimeStatus.CLOSING, reason="closing")
+        if self.window_runtime is not None:
+            from runtime.windows.runtime import WindowRuntime
+            cast(WindowRuntime, self.window_runtime).mark_closing(window_id)
+        else:
+            self._set_window_status(window_id, WindowRuntimeStatus.CLOSING, reason="closing")
 
     def mark_window_closed(self, window_id: str) -> None:
         """Record that a window has been closed."""
-
-        self._set_window_status(window_id, WindowRuntimeStatus.CLOSED, reason="closed")
+        if self.window_runtime is not None:
+            from runtime.windows.runtime import WindowRuntime
+            cast(WindowRuntime, self.window_runtime).mark_closed(window_id)
+        else:
+            self._set_window_status(window_id, WindowRuntimeStatus.CLOSED, reason="closed")
 
     def mark_window_error(self, window_id: str, message: str) -> None:
         """Record that a window failed to open or close correctly."""
-
-        self._window_errors[window_id] = message
-        self._set_window_status(window_id, WindowRuntimeStatus.ERROR, reason="error")
+        if self.window_runtime is not None:
+            from runtime.windows.runtime import WindowRuntime
+            cast(WindowRuntime, self.window_runtime).mark_error(window_id, message)
+        else:
+            self._window_errors[window_id] = message
+            self._set_window_status(window_id, WindowRuntimeStatus.ERROR, reason="error")
 
     def begin_shutdown(self, reason: str = "app_quit") -> None:
         """Project shutdown intent onto all currently hosted windows."""

@@ -19,16 +19,32 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Canonical runtime capabilities exposed to UI consumers."""
+"""Persistence domain — manages configuration, settings, and widget state."""
 
-from capabilities.config_set_read import ConfigSetRead
-from capabilities.config_set_write import ConfigSetWrite
-from capabilities.widget_config_read import WidgetConfigRead
-from capabilities.widget_config_write import WidgetConfigWrite
+from runtime.persistence.paths import ConfigResolver
+from runtime.persistence.config_set import ConfigSet, ConfigSetManager
+from runtime.persistence.registry import SettingsRegistry, ScopedSettings
+from runtime.persistence.widget_config import (
+    WidgetInstanceConfig,
+    WidgetConfigStore,
+)
+from runtime.persistence.startup import (
+    PersistenceStartupResult,
+    startup_persistence,
+    get_persistence_result,
+)
 
 __all__ = [
-    "ConfigSetRead",
-    "ConfigSetWrite",
-    "WidgetConfigRead",
-    "WidgetConfigWrite",
+    # Core classes
+    "ConfigResolver",
+    "ConfigSet",
+    "ConfigSetManager",
+    "SettingsRegistry",
+    "ScopedSettings",
+    "WidgetInstanceConfig",
+    "WidgetConfigStore",
+    # Startup
+    "PersistenceStartupResult",
+    "startup_persistence",
+    "get_persistence_result",
 ]
