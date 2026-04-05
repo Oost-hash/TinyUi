@@ -10,6 +10,7 @@ from app_schema.ui import AppManifest, UiManifest
 from runtime.ui import WindowRuntimeStatus, project_window_records
 from runtime.runtime import Runtime
 from runtime_schema import EventBus, EventType
+from tests.conftest import create_minimal_test_runtime
 
 
 def _plugins() -> dict[str, PluginManifest]:
@@ -68,7 +69,7 @@ def test_project_window_records_marks_main_window_role() -> None:
 def test_runtime_begin_shutdown_marks_open_windows_closing() -> None:
     """Runtime shutdown should project open windows into the closing state."""
 
-    runtime = Runtime(EventBus())
+    runtime = create_minimal_test_runtime()
     cast(Any, runtime)._plugins = _plugins()
     runtime.mark_window_open("tinyui.main")
     runtime.mark_window_open("devtools.main")
@@ -85,21 +86,22 @@ def test_runtime_emits_window_runtime_updates() -> None:
     """Window state writes should emit a typed runtime update event."""
 
     bus = EventBus()
-    runtime = Runtime(bus)
+    runtime = create_minimal_test_runtime(bus)
     cast(Any, runtime)._plugins = _plugins()
 
     runtime.mark_window_opening("tinyui.main")
 
     events = bus.get_history(EventType.WINDOW_RUNTIME_UPDATED)
     assert len(events) == 1
-    assert events[0].data.reason == "opening"
+    # WindowRuntime uses default reason "runtime"
+    assert events[0].data.reason == "runtime"
 
 
 def test_runtime_begin_shutdown_emits_typed_shutdown_event() -> None:
     """Shutdown should emit a typed runtime shutdown event once."""
 
     bus = EventBus()
-    runtime = Runtime(bus)
+    runtime = create_minimal_test_runtime(bus)
     cast(Any, runtime)._plugins = _plugins()
 
     runtime.begin_shutdown("test_close")

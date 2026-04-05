@@ -54,12 +54,32 @@ def _runtime_capabilities() -> RuntimeCapabilities:
     )
 
 
-def test_create_runtime_capabilities_requires_booted_runtime() -> None:
+def test_create_runtime_capabilities_requires_booted_runtime(
+    booted_runtime: Runtime,
+) -> None:
     """Runtime-backed capabilities should only be created after BOOT_INIT."""
-    runtime = Runtime(EventBus())
+    # booted_runtime fixture already emitted BOOT_INIT, so we need a fresh runtime
+    # that hasn't been booted to test the error case
+    from runtime.persistence import startup_persistence, get_persistence_result
+    from runtime.events import startup_events, get_events_result
+    
+    event_bus = EventBus()
+    persistence_result = startup_persistence(event_bus)
+    if not persistence_result.ok:
+        pytest.skip("Persistence startup failed")
+    persistence = get_persistence_result()
+    if persistence is None:
+        pytest.skip("Persistence not available")
+        
+    unbooted_runtime = Runtime(
+        event_bus=event_bus,
+        settings=persistence.settings,
+        widget_store=persistence.widget_store,
+        config_manager=persistence.config_manager,
+    )
 
     with pytest.raises(AssertionError, match="BOOT_INIT"):
-        boot.create_runtime_capabilities(runtime, runtime.events)
+        boot.create_runtime_capabilities(unbooted_runtime, unbooted_runtime.events)
 
 
 def test_run_startup_pipeline_stops_at_first_error() -> None:

@@ -16,11 +16,11 @@ from capabilities.plugin_read import PluginRead
 from app_schema.ui import MenuItem
 from runtime.app.paths import AppPaths
 from runtime.manifest import load_plugin_manifest
-from runtime.persistence import SettingsRegistry
 from runtime.plugins.plugin_lifecycle import NoOpPluginLifecycle, resolve_plugin_lifecycle
 from runtime.runtime import Runtime
 from runtime_schema import EventBus, EventType
 from scripts.build_plugin import build_plugin
+from tests.conftest import create_test_runtime_with_paths
 
 
 def _write_manifest(
@@ -159,10 +159,8 @@ def manifest_plugin_runtime(tmp_path: Path):
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    bus = EventBus()
-    runtime = Runtime(bus)
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
+    bus = runtime.events
 
     try:
         _boot_and_apply_initial_runtime_state(runtime)
@@ -304,10 +302,8 @@ def connector_service_runtime(tmp_path: Path):
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    bus = EventBus()
-    runtime = Runtime(bus)
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
+    bus = runtime.events
 
     try:
         _boot_and_apply_initial_runtime_state(runtime)
@@ -480,9 +476,7 @@ def test_runtime_projects_plugin_icon_url_for_valid_plugin_asset(tmp_path: Path)
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime = Runtime(EventBus())
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
 
     try:
         _boot_and_apply_initial_runtime_state(runtime)
@@ -528,9 +522,7 @@ def test_runtime_rejects_plugin_icon_outside_plugin_root(tmp_path: Path, capsys:
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime = Runtime(EventBus())
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
 
     try:
         _boot_and_apply_initial_runtime_state(runtime)
@@ -577,9 +569,7 @@ def test_runtime_rejects_missing_plugin_icon_file(tmp_path: Path, capsys: pytest
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime = Runtime(EventBus())
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
 
     try:
         _boot_and_apply_initial_runtime_state(runtime)
@@ -660,9 +650,7 @@ def test_runtime_loads_packaged_plugin_distribution(tmp_path: Path) -> None:
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime = Runtime(EventBus())
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
 
     try:
         _boot_and_apply_initial_runtime_state(runtime)
@@ -753,9 +741,7 @@ def test_runtime_tolerates_manifest_only_packaged_connector(tmp_path: Path) -> N
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime = Runtime(EventBus())
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
 
     try:
         _boot_and_apply_initial_runtime_state(runtime)

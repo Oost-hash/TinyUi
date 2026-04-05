@@ -9,9 +9,9 @@ import pytest
 from runtime.app.paths import AppPaths
 from runtime.connectors import register_connector_service
 from runtime.manifest import load_plugin_manifest
-from runtime.persistence import SettingsRegistry
 from runtime.runtime import Runtime
 from runtime_schema import EventBus
+from tests.conftest import create_test_runtime_with_paths
 from runtime.widgets import WidgetRuntimeStatus, detect_active_game_id
 from widget_api import create_default_widget_registry
 
@@ -224,9 +224,7 @@ def test_runtime_boot_can_select_overlay_as_active_ui_plugin(tmp_path: Path) -> 
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime = Runtime(EventBus())
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
 
     runtime._boot_runtime()
     runtime._apply_initial_runtime_state()
@@ -300,9 +298,7 @@ def test_runtime_rejects_overlay_with_unknown_widget(tmp_path: Path) -> None:
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime = Runtime(EventBus())
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
 
     with pytest.raises(ValueError, match="unknown widgets"):
         runtime._boot_runtime()
@@ -371,9 +367,7 @@ def test_runtime_rejects_overlay_widget_without_required_binding(tmp_path: Path)
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime = Runtime(EventBus())
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
 
     with pytest.raises(ValueError, match="missing bindings"):
         runtime._boot_runtime()
@@ -482,9 +476,7 @@ def test_runtime_marks_overlay_error_when_binding_key_is_not_supplied(tmp_path: 
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime = Runtime(EventBus())
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
 
     runtime._boot_runtime()
     runtime._apply_initial_runtime_state()
@@ -597,9 +589,7 @@ def test_runtime_projects_ready_widget_records_for_active_overlay(tmp_path: Path
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime = Runtime(EventBus())
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
     runtime._boot_runtime()
     runtime._apply_initial_runtime_state()
 
@@ -694,9 +684,7 @@ def test_runtime_projects_idle_widget_records_for_inactive_overlay(tmp_path: Pat
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime = Runtime(EventBus())
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
     runtime._boot_runtime()
     runtime._apply_initial_runtime_state()
     runtime.set_active_plugin("ui_plugin")
@@ -811,9 +799,7 @@ def test_runtime_projects_waiting_for_connector_records(tmp_path: Path) -> None:
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime = Runtime(EventBus())
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
     runtime._boot_runtime()
     runtime._active_plugin = "demo_overlay"
 
@@ -926,9 +912,7 @@ def test_runtime_projects_error_widget_records_when_source_is_unavailable(tmp_pa
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime = Runtime(EventBus())
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
     runtime._boot_runtime()
     runtime._ensure_plugin_import_roots()
     register_connector_service(
@@ -1056,9 +1040,7 @@ def test_runtime_projects_waiting_for_game_when_supported_game_is_not_running(tm
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    runtime = Runtime(EventBus())
-    runtime.paths = paths
-    runtime.settings = SettingsRegistry(config_dir)
+    runtime = create_test_runtime_with_paths(paths)
     runtime._boot_runtime()
     runtime._ensure_plugin_import_roots()
     register_connector_service(
