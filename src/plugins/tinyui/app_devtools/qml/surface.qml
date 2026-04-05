@@ -31,18 +31,20 @@ Rectangle {
     property var pluginRead: hostWindow && hostWindow.pluginRead ? hostWindow.pluginRead : null
     property var pluginState: hostWindow && hostWindow.pluginState ? hostWindow.pluginState : null
     property var settingsRead: hostWindow && hostWindow.settingsRead ? hostWindow.settingsRead : null
+    property var widgetRead: hostWindow && hostWindow.widgetRead ? hostWindow.widgetRead : null
     property var connectorRead: hostWindow && hostWindow.connectorRead ? hostWindow.connectorRead : null
     property var connectorActions: hostWindow && hostWindow.connectorActions ? hostWindow.connectorActions : null
     property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     property var pluginRows: []
     property var settingRows: []
+    property var widgetRows: []
     property var connectorRows: []
 
     anchors.fill: parent
     color: theme ? theme.surface : "#17181c"
 
     property int currentTab: 0
-    readonly property var tabs: ["Plugins", "Settings", "Connectors"]
+    readonly property var tabs: ["Plugins", "Settings", "Widgets", "Connectors"]
 
     function rebuildRows() {
         var plugins = pluginRead ? pluginRead.plugins : []
@@ -132,7 +134,60 @@ Rectangle {
 
         root.pluginRows = pluginItems
         root.settingRows = settingsItems
+        root.widgetRows = root.buildWidgetRows()
         root.connectorRows = root.buildConnectorRows()
+    }
+
+    function buildWidgetRows() {
+        var rows = []
+        var widgets = widgetRead ? widgetRead.widgets : []
+        for (var i = 0; i < widgets.length; i++) {
+            var widget = widgets[i]
+            rows.push({
+                "rowType": "section",
+                "label": widget.label,
+                "sublabel": widget.widgetId
+            })
+            rows.push({
+                "rowType": "row",
+                "key": "overlay",
+                "value": widget.overlayId,
+                "tag": "overlay"
+            })
+            rows.push({
+                "rowType": "row",
+                "key": "type",
+                "value": widget.widgetType,
+                "tag": "widget"
+            })
+            rows.push({
+                "rowType": "row",
+                "key": "status",
+                "value": widget.status,
+                "tag": "status"
+            })
+            rows.push({
+                "rowType": "row",
+                "key": "source",
+                "value": widget.source,
+                "tag": "source"
+            })
+            rows.push({
+                "rowType": "row",
+                "key": "connectors",
+                "value": widget.connectorIds.length ? widget.connectorIds.join(", ") : "none",
+                "tag": "connector"
+            })
+            if (widget.errorMessage !== "") {
+                rows.push({
+                    "rowType": "row",
+                    "key": "error",
+                    "value": widget.errorMessage,
+                    "tag": "error"
+                })
+            }
+        }
+        return rows
     }
 
     function buildConnectorRows() {
@@ -181,6 +236,11 @@ Rectangle {
         Connections {
             target: root.settingsRead
             function onSettingsChanged() { root.rebuildRows() }
+        }
+
+        Connections {
+            target: root.widgetRead
+            function onWidgetsChanged() { root.widgetRows = root.buildWidgetRows() }
         }
 
         Connections {
@@ -277,8 +337,20 @@ Rectangle {
         }
 
         SchemaList {
-            id: connectorsTab
+            id: widgetsTab
             visible: root.currentTab === 2
+            width: parent.width
+            height: parent.height - 32
+            theme: root.theme
+            model: root.widgetRows
+            keyLabel: "property"
+            valueLabel: "value"
+            emptyText: "No widget records active."
+        }
+
+        SchemaList {
+            id: connectorsTab
+            visible: root.currentTab === 3
             width: parent.width
             height: parent.height - 32
             theme: root.theme
