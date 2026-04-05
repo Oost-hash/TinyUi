@@ -68,6 +68,7 @@ Rectangle {
         var groups = [
             { "type": "host", "label": "Host", "plugins": [] },
             { "type": "plugin", "label": "Plugins", "plugins": [] },
+            { "type": "overlay", "label": "Overlays", "plugins": [] },
             { "type": "connector", "label": "Connectors", "plugins": [] }
         ]
         var plugins = pluginRead ? pluginRead.plugins : []
@@ -478,7 +479,8 @@ Rectangle {
                                 pluginRowDelegate.modelData.type === "connector"
                                 && root.isConnectorPending(pluginRowDelegate.modelData.id)
                             readonly property bool isOutgoingActivation:
-                                pluginRowDelegate.modelData.type === "plugin"
+                                (pluginRowDelegate.modelData.type === "plugin"
+                                    || pluginRowDelegate.modelData.type === "overlay")
                                 && root.isOutgoingPlugin(pluginRowDelegate.modelData.id)
 
                             width: parent.width
@@ -521,114 +523,121 @@ Rectangle {
                                 opacity: 0.4
                             }
 
-                            Row {
+                            Item {
                                 anchors.fill: parent
-                                leftPadding: 16
-                                rightPadding: 12
-                                spacing: 8
+                                anchors.leftMargin: 16
+                                anchors.rightMargin: 12
 
-                                // Status indicator dot based on plugin state and selection
-                                Rectangle {
+                                Row {
+                                    anchors.left: parent.left
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: 8
-                                    height: 8
-                                    radius: 4
-                                    color: {
-                                        // Pending activation takes precedence until the panel closes
-                                        if (pluginRowDelegate.isOutgoingActivation) return root.theme ? root.theme.warningAlt : "#B05CFF"
-                                        if (pluginRowDelegate.isPendingActivation || pluginRowDelegate.isPendingConnector) return root.theme ? root.theme.warning : "#ff9800"
-                                        
-                                        // Then check live state from pluginStates, fallback to modelData
-                                        var liveState = root.pluginStates[pluginRowDelegate.modelData.id]
-                                        var state = liveState || pluginRowDelegate.modelData.state || "disabled"
-                                        if (state === "active") return root.theme ? root.theme.success : "#4caf50"
-                                        if (state === "enabling" || state === "loading") return root.theme ? root.theme.warning : "#ff9800"
-                                        if (state === "error") return root.theme ? root.theme.danger : "#f44336"
-                                        if (state === "unloading") return root.theme ? root.theme.warningAlt : "#B05CFF"
-                                        return root.theme ? root.theme.danger : "#f44336"  // disabled
-                                    }
-                                    
-                                    // Pulse animation for loading states
-                                    SequentialAnimation on opacity {
-                                        running: {
-                                            var liveS = root.pluginStates[pluginRowDelegate.modelData.id]
-                                            var s = liveS || pluginRowDelegate.modelData.state || "disabled"
-                                            return s === "enabling" || s === "loading" || s === "unloading"
-                                        }
-                                        loops: Animation.Infinite
-                                        NumberAnimation { from: 1.0; to: 0.3; duration: 500 }
-                                        NumberAnimation { from: 0.3; to: 1.0; duration: 500 }
-                                    }
-                                }
+                                    spacing: 8
 
-                                // Plugin name (bold)
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: pluginRowDelegate.modelData.id
-                                    color: root.theme ? root.theme.text : "#ffffff"
-                                    font.pixelSize: root.theme ? root.theme.fontSizeBase : 13
-                                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
-                                    font.weight: Font.DemiBold
-                                }
-
-                                // Version
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    visible: pluginRowDelegate.modelData.version !== ""
-                                    text: pluginRowDelegate.modelData.version
-                                    color: root.theme ? root.theme.textMuted : "#878a98"
-                                    font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
-                                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
-                                }
-
-                                Item { width: parent.width - 200 }  // Spacer that pushes right items to edge
-
-                                // Toggle switch (not for host)
-                                Rectangle {
-                                    visible: pluginRowDelegate.modelData.type !== "host"
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 28
-                                    height: 16
-                                    radius: 8
-                                    color: root.theme ? root.theme.accent : "#4a9eff"
-
-                                    // White disk/knob
+                                    // Status indicator dot based on plugin state and selection
                                     Rectangle {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        x: parent.width - width - 2  // Right side = ON
-                                        width: 12
-                                        height: 12
-                                        radius: 6
-                                        color: "#FFFFFF"
+                                        width: 8
+                                        height: 8
+                                        radius: 4
+                                        color: {
+                                            // Pending activation takes precedence until the panel closes
+                                            if (pluginRowDelegate.isOutgoingActivation) return root.theme ? root.theme.warningAlt : "#B05CFF"
+                                            if (pluginRowDelegate.isPendingActivation || pluginRowDelegate.isPendingConnector) return root.theme ? root.theme.warning : "#ff9800"
+
+                                            // Then check live state from pluginStates, fallback to modelData
+                                            var liveState = root.pluginStates[pluginRowDelegate.modelData.id]
+                                            var state = liveState || pluginRowDelegate.modelData.state || "disabled"
+                                            if (state === "active") return root.theme ? root.theme.success : "#4caf50"
+                                            if (state === "enabling" || state === "loading") return root.theme ? root.theme.warning : "#ff9800"
+                                            if (state === "error") return root.theme ? root.theme.danger : "#f44336"
+                                            if (state === "unloading") return root.theme ? root.theme.warningAlt : "#B05CFF"
+                                            return root.theme ? root.theme.danger : "#f44336"  // disabled
+                                        }
+
+                                        // Pulse animation for loading states
+                                        SequentialAnimation on opacity {
+                                            running: {
+                                                var liveS = root.pluginStates[pluginRowDelegate.modelData.id]
+                                                var s = liveS || pluginRowDelegate.modelData.state || "disabled"
+                                                return s === "enabling" || s === "loading" || s === "unloading"
+                                            }
+                                            loops: Animation.Infinite
+                                            NumberAnimation { from: 1.0; to: 0.3; duration: 500 }
+                                            NumberAnimation { from: 0.3; to: 1.0; duration: 500 }
+                                        }
                                     }
 
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            console.log("Toggle:", pluginRowDelegate.modelData.id)
-                                        }
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: pluginRowDelegate.modelData.id
+                                        color: root.theme ? root.theme.text : "#ffffff"
+                                        font.pixelSize: root.theme ? root.theme.fontSizeBase : 13
+                                        font.family: root.theme ? root.theme.fontFamily : "sans-serif"
+                                        font.weight: Font.DemiBold
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        visible: pluginRowDelegate.modelData.version !== ""
+                                        text: pluginRowDelegate.modelData.version
+                                        color: root.theme ? root.theme.textMuted : "#878a98"
+                                        font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                                        font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                                     }
                                 }
 
-                                // Settings icon (SVG) - white icon via opacity
-                                Image {
+                                Row {
+                                    anchors.right: parent.right
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: 14
-                                    height: 14
-                                    source: "../../assets/images/ui/cog.svg"
-                                    sourceSize.width: 14
-                                    sourceSize.height: 14
-                                    fillMode: Image.PreserveAspectFit
-                                    opacity: cogMouse.containsMouse ? 1.0 : 0.6
-                                    Behavior on opacity { NumberAnimation { duration: 80 } }
+                                    spacing: 8
 
-                                    MouseArea {
-                                        id: cogMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            console.log("Settings:", pluginRowDelegate.modelData.id)
+                                    // Toggle switch (not for host)
+                                    Rectangle {
+                                        visible: pluginRowDelegate.modelData.type !== "host"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 28
+                                        height: 16
+                                        radius: 8
+                                        color: root.theme ? root.theme.accent : "#4a9eff"
+
+                                        // White disk/knob
+                                        Rectangle {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            x: parent.width - width - 2  // Right side = ON
+                                            width: 12
+                                            height: 12
+                                            radius: 6
+                                            color: "#FFFFFF"
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            onClicked: {
+                                                console.log("Toggle:", pluginRowDelegate.modelData.id)
+                                            }
+                                        }
+                                    }
+
+                                    // Settings icon (SVG) - white icon via opacity
+                                    Image {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 14
+                                        height: 14
+                                        source: "../../assets/images/ui/cog.svg"
+                                        sourceSize.width: 14
+                                        sourceSize.height: 14
+                                        fillMode: Image.PreserveAspectFit
+                                        opacity: cogMouse.containsMouse ? 1.0 : 0.6
+                                        Behavior on opacity { NumberAnimation { duration: 80 } }
+
+                                        MouseArea {
+                                            id: cogMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            onClicked: {
+                                                console.log("Settings:", pluginRowDelegate.modelData.id)
+                                            }
                                         }
                                     }
                                 }
@@ -639,7 +648,8 @@ Rectangle {
                                 anchors.rightMargin: 80  // Don't trigger when clicking toggle/settings
                                 onClicked: {
                                     root.selectedPlugin = pluginRowDelegate.modelData
-                                    if (pluginRowDelegate.modelData.type === "plugin") {
+                                    if (pluginRowDelegate.modelData.type === "plugin"
+                                            || pluginRowDelegate.modelData.type === "overlay") {
                                         root.pluginToActivate = pluginRowDelegate.modelData.id !== root.hostWindow.activePluginId
                                             ? pluginRowDelegate.modelData.id
                                             : ""

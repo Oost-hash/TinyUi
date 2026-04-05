@@ -85,10 +85,20 @@ class _FakeRuntimeForRead:
                 ui=SimpleNamespace(windows=[SimpleNamespace(id="dummy.main")]),
                 settings=[object(), object()],
             ),
+            "demo_overlay": SimpleNamespace(
+                plugin_type="overlay",
+                version="1.0.0",
+                author="TinyUi",
+                description="Demo overlay",
+                requires=["LMU_RF2_Connector"],
+                ui=None,
+                settings=[],
+            ),
         }
         self._icon_urls = {
             "tinyui": "file:///host/logo.png",
             "dummy_plugin": "file:///plugins/dummy/logo.png",
+            "demo_overlay": "file:///plugins/demo_overlay/assets/logo.png",
         }
         self._state_machines = {
             "dummy_plugin": PluginStateMachine("dummy_plugin"),
@@ -144,11 +154,13 @@ def test_plugin_read_projects_runtime_metadata() -> None:
 
     items = capability.items()
 
-    assert [item["id"] for item in items] == ["tinyui", "dummy_plugin"]
+    assert [item["id"] for item in items] == ["tinyui", "dummy_plugin", "demo_overlay"]
     assert items[1]["requires"] == ["telemetry_connector"]
     assert items[1]["windowCount"] == 1
     assert items[1]["settingCount"] == 2
     assert items[1]["iconUrl"] == "file:///plugins/dummy/logo.png"
+    assert items[2]["type"] == "overlay"
+    assert items[2]["requires"] == ["LMU_RF2_Connector"]
 
 
 def test_settings_read_projects_namespace_and_current_values() -> None:
