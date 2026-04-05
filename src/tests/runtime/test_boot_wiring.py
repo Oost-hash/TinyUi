@@ -8,7 +8,7 @@ from typing import Any, cast
 import pytest
 
 import boot
-from app_schema.manifest import AppManifest, ChromePolicy
+from app_schema.ui import AppManifest, ChromePolicy
 from runtime.runtime import Runtime
 from runtime.widgets import WidgetRuntimeRecord, WidgetRuntimeStatus
 from runtime_schema import EventBus, EventType, WidgetRuntimeUpdatedData

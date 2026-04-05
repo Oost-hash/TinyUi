@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import sys
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -12,6 +13,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from capabilities.plugin_read import PluginRead
+from app_schema.ui import MenuItem
 from runtime.app.paths import AppPaths
 from runtime.manifest import load_plugin_manifest
 from runtime.persistence import SettingsRegistry
@@ -377,6 +379,76 @@ def test_manifest_parses_plugin_icon_field(tmp_path: Path) -> None:
     assert manifest.icon == "assets/logo.png"
 
 
+def test_manifest_parses_typed_connector_manifest(tmp_path: Path) -> None:
+    """Connector manifest data should land in a typed connector section, not loose root fields."""
+    plugin_dir = tmp_path / "typed_connector"
+    _write_manifest(
+        plugin_dir,
+        "typed_connector",
+        "connector",
+        connector_provides=["telemetry.tyre.v1"],
+        connector_service_module="plugins.typed_connector.plugin",
+        connector_service_class="TypedConnector",
+    )
+    with (plugin_dir / "manifest.toml").open("a", encoding="utf-8") as manifest_file:
+        manifest_file.write(
+            "\n".join(
+                [
+                    "",
+                    "[[connector.game]]",
+                    'id = "lmu"',
+                    'detect_names = ["Le Mans Ultimate"]',
+                    "",
+                ]
+            )
+        )
+
+    manifest = load_plugin_manifest(plugin_dir / "manifest.toml")
+
+    assert manifest.connector is not None
+    assert manifest.connector.provides == ["telemetry.tyre.v1"]
+    assert manifest.connector.service is not None
+    assert manifest.connector.service.module == "plugins.typed_connector.plugin"
+    assert manifest.connector.service.class_name == "TypedConnector"
+    assert [game.id for game in manifest.connector.games] == ["lmu"]
+
+
+def test_manifest_parses_typed_ui_manifest(tmp_path: Path) -> None:
+    """UI manifest data should land in a typed ui section, not loose root fields."""
+    plugin_dir = tmp_path / "typed_ui_plugin"
+    _write_manifest(plugin_dir, "typed_ui_plugin", "plugin")
+    with (plugin_dir / "manifest.toml").open("a", encoding="utf-8") as manifest_file:
+        manifest_file.write(
+            "\n".join(
+                [
+                    "",
+                    "[[window]]",
+                    'id = "typed_ui_plugin.main"',
+                    'title = "Typed UI"',
+                    'surface = "qml/surface.qml"',
+                    "",
+                    "[[tab]]",
+                    'id = "typed_ui_plugin.widgets"',
+                    'label = "Typed UI"',
+                    'target = "tinyui.main"',
+                    'surface = "qml/tab.qml"',
+                    "",
+                    "[[plugin_menu]]",
+                    "items = [{ label = \"Refresh\", action = \"refresh\" }]",
+                    "",
+                ]
+            )
+        )
+
+    manifest = load_plugin_manifest(plugin_dir / "manifest.toml")
+
+    assert manifest.ui is not None
+    assert [window.id for window in manifest.ui.windows] == ["typed_ui_plugin.main"]
+    assert [tab.id for tab in manifest.ui.tabs] == ["typed_ui_plugin.widgets"]
+    first_item = cast(MenuItem, manifest.ui.plugin_menu[0])
+    assert first_item.label == "Refresh"
+
+
 def test_runtime_projects_plugin_icon_url_for_valid_plugin_asset(tmp_path: Path) -> None:
     """PluginRead exposes resolved plugin-owned icon URLs."""
     _clear_test_modules()
@@ -611,6 +683,10 @@ def test_runtime_loads_packaged_plugin_distribution(tmp_path: Path) -> None:
         assert compiled_surface is not None
         assert compiled_surface.surface is not None
         assert "_compiled_plugins" in str(compiled_surface.surface)
+        manifest = runtime.plugin_manifest("compiled_plugin")
+        assert manifest is not None
+        assert manifest.ui is not None
+        assert manifest.ui.windows[0].id == "compiled_plugin.main"
     finally:
         for import_root in list(sys.path):
             if "_compiled_plugins" in import_root:

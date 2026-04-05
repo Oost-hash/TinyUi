@@ -6,7 +6,7 @@ from collections.abc import Iterable, Sequence
 
 import psutil
 
-from app_schema.manifest import ConnectorGameDecl
+from app_schema.connector import ConnectorGameDecl
 
 
 def detect_active_game_id(

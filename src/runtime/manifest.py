@@ -5,13 +5,18 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
-from app_schema.manifest import (
-    AppManifest, ChromePolicy,
-    ConnectorGameDecl,
-    OverlayDecl, OverlayWidgetDecl,
-    MenuItem, MenuSeparator,
-    SettingDecl, StatusbarItemDecl,
-    TabDecl, PluginManifest,
+from app_schema.connector import ConnectorGameDecl, ConnectorManifest, ConnectorServiceDecl
+from app_schema.overlay import OverlayManifest, OverlayWidgetDecl
+from app_schema.plugin import PluginManifest
+from app_schema.ui import (
+    AppManifest,
+    ChromePolicy,
+    MenuItem,
+    MenuSeparator,
+    SettingDecl,
+    StatusbarItemDecl,
+    TabDecl,
+    UiManifest,
 )
 
 
@@ -38,9 +43,14 @@ def load_plugin_manifest(path: Path, *, resource_root: Path | None = None) -> Pl
     plugin_menu = []
     for pm in data.get("plugin_menu", []):
         plugin_menu.extend(_parse_menu_items(pm.get("items", [])))
-    connector = data.get("connector", {})
-    connector_service = data.get("connector_service", {})
-    overlay = _parse_overlay(data, plugin)
+    ui_manifest = _parse_ui_manifest(
+        windows=windows,
+        tabs=tabs,
+        plugin_menu=plugin_menu,
+        menu_label=plugin.get("menu"),
+    )
+    connector_manifest = _parse_connector_manifest(data)
+    overlay_manifest = _parse_overlay_manifest(data, plugin)
 
     manifest = PluginManifest(
         plugin_id=plugin_id,
@@ -50,26 +60,23 @@ def load_plugin_manifest(path: Path, *, resource_root: Path | None = None) -> Pl
         description=plugin.get("description", ""),
         icon=plugin.get("icon", ""),
         requires=list(plugin.get("requires", [])),
-        windows=windows,
         settings=settings,
-        tabs=tabs,
-        plugin_menu=plugin_menu,
-        menu_label=plugin.get("menu"),
-        connector_provides=list(connector.get("provides", [])),
-        connector_games=_parse_connector_games(connector),
-        connector_service_module=connector_service.get("module"),
-        connector_service_class=connector_service.get("class"),
-        overlay=overlay,
+        ui=ui_manifest,
+        connector=connector_manifest,
+        overlay=overlay_manifest,
     )
     _validate_plugin_manifest(manifest)
     return manifest
 
 
 def _validate_plugin_manifest(manifest: PluginManifest) -> None:
-    if manifest.plugin_type == "host" and not manifest.windows:
+    windows = [] if manifest.ui is None else manifest.ui.windows
+    tabs = [] if manifest.ui is None else manifest.ui.tabs
+    plugin_menu = [] if manifest.ui is None else manifest.ui.plugin_menu
+    if manifest.plugin_type == "host" and not windows:
         raise ValueError(f"Host plugin must declare at least one window (plugin: {manifest.plugin_id})")
     if manifest.plugin_type == "overlay":
-        if manifest.windows or manifest.tabs or manifest.plugin_menu:
+        if windows or tabs or plugin_menu:
             raise ValueError(
                 f"Overlay plugin cannot declare windows, tabs, or plugin menus (plugin: {manifest.plugin_id})"
             )
@@ -136,13 +143,30 @@ def _parse_tab(entry: dict, manifest_dir: Path, plugin_id: str) -> TabDecl:
     )
 
 
-def _parse_overlay(data: dict, plugin: dict) -> OverlayDecl | None:
+def _parse_ui_manifest(
+    *,
+    windows: list[AppManifest],
+    tabs: list[TabDecl],
+    plugin_menu: list[MenuItem | MenuSeparator],
+    menu_label: str | None,
+) -> UiManifest | None:
+    if not windows and not tabs and not plugin_menu and menu_label is None:
+        return None
+    return UiManifest(
+        windows=windows,
+        tabs=tabs,
+        plugin_menu=plugin_menu,
+        menu_label=menu_label,
+    )
+
+
+def _parse_overlay_manifest(data: dict, plugin: dict) -> OverlayManifest | None:
     widget_entries = data.get("widget", [])
     connectors = list(plugin.get("overlay_connectors", data.get("overlay_connectors", [])))
     modules = list(plugin.get("overlay_modules", data.get("overlay_modules", [])))
     if not widget_entries and not connectors and not modules:
         return None
-    return OverlayDecl(
+    return OverlayManifest(
         connectors=connectors,
         modules=modules,
         widgets=[
@@ -157,6 +181,21 @@ def _parse_overlay(data: dict, plugin: dict) -> OverlayDecl | None:
     )
 
 
+def _parse_connector_manifest(data: dict) -> ConnectorManifest | None:
+    connector = data.get("connector", {})
+    connector_service = data.get("connector_service", {})
+    provides = list(connector.get("provides", []))
+    games = _parse_connector_games(connector)
+    service = _parse_connector_service(connector_service)
+    if not provides and not games and service is None:
+        return None
+    return ConnectorManifest(
+        provides=provides,
+        games=games,
+        service=service,
+    )
+
+
 def _parse_connector_games(connector: dict) -> list[ConnectorGameDecl]:
     game_entries = connector.get("game", [])
     return [
@@ -166,3 +205,11 @@ def _parse_connector_games(connector: dict) -> list[ConnectorGameDecl]:
         )
         for entry in game_entries
     ]
+
+
+def _parse_connector_service(connector_service: dict) -> ConnectorServiceDecl | None:
+    module = connector_service.get("module")
+    class_name = connector_service.get("class")
+    if not module or not class_name:
+        return None
+    return ConnectorServiceDecl(module=module, class_name=class_name)

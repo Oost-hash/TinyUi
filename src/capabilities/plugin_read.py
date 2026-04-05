@@ -23,6 +23,7 @@ class PluginRead(QObject):
             manifest = self._runtime.plugin_manifest(plugin_id)
             if manifest is None:
                 continue
+            windows = [] if manifest.ui is None else manifest.ui.windows
             plugins.append(
                 {
                     "id": plugin_id,
@@ -32,8 +33,8 @@ class PluginRead(QObject):
                     "description": manifest.description,
                     "iconUrl": self._runtime.plugin_icon_url(plugin_id),
                     "requires": list(manifest.requires),
-                    "windows": [window.id for window in manifest.windows],
-                    "windowCount": len(manifest.windows),
+                    "windows": [window.id for window in windows],
+                    "windowCount": len(windows),
                     "settingCount": len(manifest.settings),
                 }
             )

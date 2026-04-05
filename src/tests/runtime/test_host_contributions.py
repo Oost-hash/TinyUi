@@ -60,5 +60,6 @@ def test_host_first_window_is_the_main_window(tmp_path: Path) -> None:
     manifest = load_plugin_manifest(plugin_dir / "manifest.toml")
 
     assert manifest.plugin_type == "host"
-    assert manifest.windows[0].id == "tinyui.main"
-    assert manifest.windows[1].id == "settings.main"
+    assert manifest.ui is not None
+    assert manifest.ui.windows[0].id == "tinyui.main"
+    assert manifest.ui.windows[1].id == "settings.main"

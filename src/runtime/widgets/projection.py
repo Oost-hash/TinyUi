@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app_schema.manifest import PluginManifest
+from app_schema.plugin import PluginManifest
 from runtime.connectors import ConnectorServiceRegistry, required_connector_ids
 from runtime.widgets.contracts import WidgetRuntimeRecord, WidgetRuntimeStatus
 from runtime.widgets.game_detection import detect_active_game_id
@@ -91,10 +91,11 @@ def _waiting_for_game(
 ) -> bool:
     for connector_id in connector_ids:
         manifest = plugins.get(connector_id)
-        if manifest is None or not manifest.connector_games:
+        connector = manifest.connector if manifest is not None else None
+        if connector is None or not connector.games:
             continue
         if not connector_services.has(connector_id):
             return True
-        if detect_active_game_id(manifest.connector_games) is None:
+        if detect_active_game_id(connector.games) is None:
             return True
     return False

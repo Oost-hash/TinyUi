@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app_schema.manifest import PluginManifest
+from app_schema.plugin import PluginManifest
 from runtime.connectors.service_loader import load_connector_service
 from runtime.connectors.service_registry import ConnectorServiceRegistry
 from runtime_schema import (
@@ -36,14 +36,15 @@ def register_connector_service(
 ) -> None:
     """Instantiate and register a connector-backed service when needed."""
     manifest = plugins[plugin_id]
+    connector = manifest.connector
     if (
-        not manifest.connector_service_module
-        or not manifest.connector_service_class
+        connector is None
+        or connector.service is None
         or connector_services.has(plugin_id)
     ):
         return
 
-    service = load_connector_service(manifest.connector_service_module, manifest.connector_service_class)
+    service = load_connector_service(connector.service.module, connector.service.class_name)
     if hasattr(service, "supports_source") and service.supports_source("mock") and hasattr(service, "request_source"):
         service.request_source("__runtime__", "mock")
     if hasattr(service, "open"):

@@ -99,9 +99,10 @@ def test_manifest_parses_connector_games_with_detect_names(tmp_path: Path) -> No
 
     manifest = load_plugin_manifest(plugin_dir / "manifest.toml")
 
-    assert [game.id for game in manifest.connector_games] == ["lmu", "rf2"]
-    assert manifest.connector_games[0].detect_names == ["Le Mans Ultimate"]
-    assert manifest.connector_games[1].detect_names == ["rFactor2", "rFactor2 Mod Mode", "rFactor2 Dedicated"]
+    assert manifest.connector is not None
+    assert [game.id for game in manifest.connector.games] == ["lmu", "rf2"]
+    assert manifest.connector.games[0].detect_names == ["Le Mans Ultimate"]
+    assert manifest.connector.games[1].detect_names == ["rFactor2", "rFactor2 Mod Mode", "rFactor2 Dedicated"]
 
 
 def test_detect_active_game_id_matches_process_names_with_or_without_exe() -> None:
@@ -109,10 +110,11 @@ def test_detect_active_game_id_matches_process_names_with_or_without_exe() -> No
         Path(__file__).resolve().parents[2] / "plugins" / "LMU_RF2_Connector" / "manifest.toml"
     )
 
-    assert detect_active_game_id(manifest.connector_games, process_names=["Le Mans Ultimate.exe"]) == "lmu"
-    assert detect_active_game_id(manifest.connector_games, process_names=["rFactor2"]) == "rf2"
-    assert detect_active_game_id(manifest.connector_games, process_names=["rFactor2 Dedicated.exe"]) == "rf2"
-    assert detect_active_game_id(manifest.connector_games, process_names=["not-a-game.exe"]) is None
+    assert manifest.connector is not None
+    assert detect_active_game_id(manifest.connector.games, process_names=["Le Mans Ultimate.exe"]) == "lmu"
+    assert detect_active_game_id(manifest.connector.games, process_names=["rFactor2"]) == "rf2"
+    assert detect_active_game_id(manifest.connector.games, process_names=["rFactor2 Dedicated.exe"]) == "rf2"
+    assert detect_active_game_id(manifest.connector.games, process_names=["not-a-game.exe"]) is None
 
 
 def test_runtime_boot_can_select_overlay_as_active_ui_plugin(tmp_path: Path) -> None:

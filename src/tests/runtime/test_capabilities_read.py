@@ -69,7 +69,7 @@ class _FakeRuntimeForRead:
                 author="Oost-hash",
                 description="Host",
                 requires=[],
-                windows=[SimpleNamespace(id="tinyui.main")],
+                ui=SimpleNamespace(windows=[SimpleNamespace(id="tinyui.main")]),
                 settings=[],
             ),
             "dummy_plugin": SimpleNamespace(
@@ -78,7 +78,7 @@ class _FakeRuntimeForRead:
                 author="Test",
                 description="Dummy",
                 requires=["telemetry_connector"],
-                windows=[SimpleNamespace(id="dummy.main")],
+                ui=SimpleNamespace(windows=[SimpleNamespace(id="dummy.main")]),
                 settings=[object(), object()],
             ),
         }

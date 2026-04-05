@@ -5,7 +5,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from app_schema.manifest import AppManifest, PluginManifest, MenuItem as MenuItemDecl, MenuSeparator as MenuSeparatorDecl
+from app_schema.plugin import PluginManifest
+from app_schema.ui import AppManifest, MenuItem as MenuItemDecl, MenuSeparator as MenuSeparatorDecl, StatusbarItemDecl
 from runtime.app.paths import AppPaths
 from runtime.connectors import (
     ConnectorServiceRegistry,
@@ -266,7 +267,8 @@ class Runtime:
         """Register menus from manifests - emit events for UI layer."""
         for plugin_manifest in self._plugins.values():
             source = plugin_manifest.plugin_type
-            for window in plugin_manifest.windows:
+            windows = [] if plugin_manifest.ui is None else plugin_manifest.ui.windows
+            for window in windows:
                 for item in window.menu:
                     if isinstance(item, MenuSeparatorDecl):
                         self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
@@ -281,9 +283,9 @@ class Runtime:
                             action=item.action,
                             source=source,
                         ))
-            if plugin_manifest.menu_label and plugin_manifest.plugin_menu:
+            if plugin_manifest.ui and plugin_manifest.ui.menu_label and plugin_manifest.ui.plugin_menu:
                 window_id = f"plugin:{plugin_manifest.plugin_id}"
-                for item in plugin_manifest.plugin_menu:
+                for item in plugin_manifest.ui.plugin_menu:
                     if isinstance(item, MenuSeparatorDecl):
                         self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
                             window_id=window_id,
@@ -302,10 +304,10 @@ class Runtime:
 
     def _register_statusbar(self) -> None:
         """Register statusbar items from manifests - emit events for UI layer."""
-        from app_schema.manifest import StatusbarItemDecl
         for plugin_manifest in self._plugins.values():
             source = plugin_manifest.plugin_type
-            for window in plugin_manifest.windows:
+            windows = [] if plugin_manifest.ui is None else plugin_manifest.ui.windows
+            for window in windows:
                 for item in window.statusbar:
                     self.events.emit_typed(EventType.STATUSBAR_REGISTERED, StatusbarRegisteredData(
                         window_id=window.id,
@@ -322,7 +324,8 @@ class Runtime:
     def _register_tabs(self) -> None:
         """Register tabs from manifests - emit events for UI layer."""
         for plugin_manifest in self._plugins.values():
-            for tab in plugin_manifest.tabs:
+            tabs = [] if plugin_manifest.ui is None else plugin_manifest.ui.tabs
+            for tab in tabs:
                 self.events.emit_typed(EventType.TAB_REGISTERED, TabRegisteredData(
                     window_id=tab.target,
                     id=tab.id,
@@ -572,7 +575,7 @@ class Runtime:
     # ── Manifest queries ──────────────────────────────────────────────────
 
     def all_windows(self) -> list[AppManifest]:
-        return [w for pm in self._plugins.values() for w in pm.windows]
+        return [w for pm in self._plugins.values() for w in ([] if pm.ui is None else pm.ui.windows)]
 
     def main_window(self) -> AppManifest | None:
         return main_window_for(self._plugins)
