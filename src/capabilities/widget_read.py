@@ -28,6 +28,7 @@ class WidgetRead(QObject):
             EventType.CONNECTOR_SERVICE_REGISTERED,
             EventType.CONNECTOR_SERVICE_UNREGISTERED,
             EventType.CONNECTOR_SERVICE_UPDATED,
+            EventType.RUNTIME_SHUTDOWN,
             EventType.WIDGET_RUNTIME_UPDATED,
         ):
             self._event_bus.on(event_type, self._on_runtime_changed, replay_history=True)

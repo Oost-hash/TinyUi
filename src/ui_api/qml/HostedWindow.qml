@@ -20,6 +20,7 @@ Window {
     property var pluginRead: null
     property var settingsRead: null
     property var settingsWrite: null
+    property var windowRead: null
     property var widgetRead: null
     property var tabs: null
     property var connectorRead: null

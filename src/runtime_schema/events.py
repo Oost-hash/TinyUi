@@ -28,6 +28,7 @@ class EventType(Enum):
     CONNECTOR_SERVICE_REGISTERED = auto()
     CONNECTOR_SERVICE_UNREGISTERED = auto()
     CONNECTOR_SERVICE_UPDATED = auto()
+    WINDOW_RUNTIME_UPDATED = auto()
     # Widget runtime lifecycle events
     WIDGET_RUNTIME_UPDATED = auto()
     # UI registration events - emitted by runtime, consumed by UI layer
@@ -63,6 +64,13 @@ class BootInitData:
 class BootReadyData:
     """Data for boot.ready event - system is ready for UI."""
     main_window_id: str = ""
+
+
+@dataclass(frozen=True)
+class RuntimeShutdownData:
+    """Data for runtime shutdown requests."""
+
+    reason: str = "app_quit"
 
 
 @dataclass(frozen=True)
@@ -104,6 +112,13 @@ class WidgetRuntimeUpdatedData:
     """Data for widget runtime refresh events."""
 
     reason: str = "poll"
+
+
+@dataclass(frozen=True)
+class WindowRuntimeUpdatedData:
+    """Data for window runtime refresh events."""
+
+    reason: str = "runtime"
 
 
 # Callback type

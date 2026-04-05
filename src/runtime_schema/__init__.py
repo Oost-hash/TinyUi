@@ -8,9 +8,11 @@ from runtime_schema.events import (
     EventCallback,
     EventType,
     MenuRegisteredData,
+    RuntimeShutdownData,
     StatusbarRegisteredData,
     TabRegisteredData,
     UIPluginSelectedData,
+    WindowRuntimeUpdatedData,
     WidgetRuntimeUpdatedData,
 )
 from runtime_schema.plugin import (
@@ -36,9 +38,11 @@ __all__ = [
     "EventCallback",
     "EventType",
     "MenuRegisteredData",
+    "RuntimeShutdownData",
     "StatusbarRegisteredData",
     "TabRegisteredData",
     "UIPluginSelectedData",
+    "WindowRuntimeUpdatedData",
     "WidgetRuntimeUpdatedData",
     # Plugin
     "PluginActivatedData",

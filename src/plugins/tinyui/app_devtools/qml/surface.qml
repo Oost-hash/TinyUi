@@ -31,12 +31,14 @@ Rectangle {
     property var pluginRead: hostWindow && hostWindow.pluginRead ? hostWindow.pluginRead : null
     property var pluginState: hostWindow && hostWindow.pluginState ? hostWindow.pluginState : null
     property var settingsRead: hostWindow && hostWindow.settingsRead ? hostWindow.settingsRead : null
+    property var windowRead: hostWindow && hostWindow.windowRead ? hostWindow.windowRead : null
     property var widgetRead: hostWindow && hostWindow.widgetRead ? hostWindow.widgetRead : null
     property var connectorRead: hostWindow && hostWindow.connectorRead ? hostWindow.connectorRead : null
     property var connectorActions: hostWindow && hostWindow.connectorActions ? hostWindow.connectorActions : null
     property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     property var pluginRows: []
     property var settingRows: []
+    property var windowRows: []
     property var widgetRows: []
     property var connectorRows: []
 
@@ -44,7 +46,7 @@ Rectangle {
     color: theme ? theme.surface : "#17181c"
 
     property int currentTab: 0
-    readonly property var tabs: ["Plugins", "Settings", "Widgets", "Connectors"]
+    readonly property var tabs: ["Plugins", "Settings", "Windows", "Widgets", "Connectors"]
 
     function rebuildRows() {
         var plugins = pluginRead ? pluginRead.plugins : []
@@ -134,8 +136,55 @@ Rectangle {
 
         root.pluginRows = pluginItems
         root.settingRows = settingsItems
+        root.windowRows = root.buildWindowRows()
         root.widgetRows = root.buildWidgetRows()
         root.connectorRows = root.buildConnectorRows()
+    }
+
+    function buildWindowRows() {
+        var rows = []
+        var windows = windowRead ? windowRead.windows : []
+        for (var i = 0; i < windows.length; i++) {
+            var window = windows[i]
+            rows.push({
+                "rowType": "section",
+                "label": window.windowId,
+                "sublabel": window.windowRole
+            })
+            rows.push({
+                "rowType": "row",
+                "key": "plugin",
+                "value": window.pluginId,
+                "tag": "plugin"
+            })
+            rows.push({
+                "rowType": "row",
+                "key": "status",
+                "value": window.status,
+                "tag": "status"
+            })
+            rows.push({
+                "rowType": "row",
+                "key": "visible",
+                "value": window.visible ? "true" : "false",
+                "tag": "visibility"
+            })
+            rows.push({
+                "rowType": "row",
+                "key": "surface",
+                "value": window.surface === "" ? "none" : window.surface,
+                "tag": "surface"
+            })
+            if (window.errorMessage !== "") {
+                rows.push({
+                    "rowType": "row",
+                    "key": "error",
+                    "value": window.errorMessage,
+                    "tag": "error"
+                })
+            }
+        }
+        return rows
     }
 
     function buildWidgetRows() {
@@ -239,6 +288,11 @@ Rectangle {
         }
 
         Connections {
+            target: root.windowRead
+            function onWindowsChanged() { root.windowRows = root.buildWindowRows() }
+        }
+
+        Connections {
             target: root.widgetRead
             function onWidgetsChanged() { root.widgetRows = root.buildWidgetRows() }
         }
@@ -337,8 +391,20 @@ Rectangle {
         }
 
         SchemaList {
-            id: widgetsTab
+            id: windowsTab
             visible: root.currentTab === 2
+            width: parent.width
+            height: parent.height - 32
+            theme: root.theme
+            model: root.windowRows
+            keyLabel: "property"
+            valueLabel: "value"
+            emptyText: "No runtime windows registered."
+        }
+
+        SchemaList {
+            id: widgetsTab
+            visible: root.currentTab === 3
             width: parent.width
             height: parent.height - 32
             theme: root.theme
@@ -350,7 +416,7 @@ Rectangle {
 
         SchemaList {
             id: connectorsTab
-            visible: root.currentTab === 3
+            visible: root.currentTab === 4
             width: parent.width
             height: parent.height - 32
             theme: root.theme
