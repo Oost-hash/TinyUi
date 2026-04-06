@@ -210,7 +210,8 @@ def _extract_seconds(value: str) -> float | None:
 
 
 def test_widget_window_host_opens_window_for_ready_record(qtbot) -> None:
-    host = WidgetWindowHost()
+    from types import SimpleNamespace
+    host = WidgetWindowHost(SimpleNamespace(get_widget=lambda *_args: None))
 
     host.sync_records(
         [
@@ -233,8 +234,9 @@ def test_widget_window_host_opens_window_for_ready_record(qtbot) -> None:
     host.close_all()
 
 
-def test_widget_window_host_ignores_non_renderable_records(qtbot) -> None:
-    host = WidgetWindowHost()
+def test_widget_window_host_opens_window_for_waiting_connector_record(qtbot) -> None:
+    from types import SimpleNamespace
+    host = WidgetWindowHost(SimpleNamespace(get_widget=lambda *_args: None))
 
     host.sync_records(
         [
@@ -250,5 +252,8 @@ def test_widget_window_host_ignores_non_renderable_records(qtbot) -> None:
         ]
     )
 
-    assert host.windows() == ()
+    windows = host.windows()
+    assert len(windows) == 1
+    assert isinstance(windows[0], QQuickWindow)
+    assert windows[0].property("widgetData")["displayText"] == "Waiting for connector"
     host.close_all()
