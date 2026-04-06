@@ -64,9 +64,6 @@ class Runtime:
         config_manager: ConfigSetManager,
         connector_registry: ConnectorServiceRegistry | None = None,
         widget_registry: WidgetRegistry | None = None,
-        plugin_discovery: object | None = None,
-        plugin_lifecycle: object | None = None,
-        window_runtime: object | None = None,
     ) -> None:
         self.paths: AppPaths | None = None
         self.settings: SettingsRegistry = settings
@@ -76,6 +73,7 @@ class Runtime:
         self.connector_services: ConnectorServiceRegistry = connector_registry or ConnectorServiceRegistry()
         self.widget_registry: WidgetRegistry = widget_registry or create_default_widget_registry()
         self.events = event_bus
+        # Capability registry
         # Capability registry
         self._capabilities: dict[str, RuntimeCapability] = {}
         self._qml_capabilities: dict[str, QObject] = {}
@@ -97,14 +95,6 @@ class Runtime:
 
     def _register_default_capabilities(self) -> None:
         """Register default runtime capabilities."""
-        from runtime.capabilities.widget_visibility import WidgetVisibilityCapability
-        from runtime.capabilities.window_state import WindowStateCapability
-        from runtime.capabilities.plugin_icon import PluginIconCapability
-        from runtime.capabilities.boot_registration import BootRegistrationCapability
-        from runtime.capabilities.plugin_lifecycle import PluginLifecycleCapability
-        from runtime.capabilities.plugin_discovery import PluginDiscoveryCapability
-        from runtime.capabilities.widget_management import WidgetManagementCapability
-
         self.register(PluginDiscoveryCapability())  # Must be first - other capabilities depend on it
         self.register(WidgetVisibilityCapability())
         self.register(WindowStateCapability())
