@@ -33,16 +33,26 @@ from runtime.host import main_window_for
 from runtime_schema import (
     EventBus, EventType, PluginState, PluginStateData,
     RuntimeShutdownData,
-    WindowRuntimeUpdatedData,
 )
 from runtime.persistence import SettingsRegistry, WidgetConfigStore, ConfigSetManager
 
 from widget_api import WidgetRegistry, create_default_widget_registry
 from runtime.plugins.plugin_state import PluginStateMachine
-from runtime.ui import WindowRuntimeRecord, WindowRuntimeStatus, project_window_records
+from runtime.ui import WindowRuntimeRecord, WindowRuntimeStatus
 from runtime.widgets import WidgetRuntimeRecord
+from runtime.capabilities._base import RuntimeCapability
+
+# Capability imports for type overloads
+from runtime.capabilities.boot_registration import BootRegistrationCapability
+from runtime.capabilities.plugin_discovery import PluginDiscoveryCapability
+from runtime.capabilities.plugin_icon import PluginIconCapability
+from runtime.capabilities.plugin_lifecycle import PluginLifecycleCapability
+from runtime.capabilities.widget_management import WidgetManagementCapability
+from runtime.capabilities.widget_visibility import WidgetVisibilityCapability
+from runtime.capabilities.window_state import WindowStateCapability
 
 from PySide6.QtCore import QObject
+from typing import overload, Literal
 
 
 class Runtime:
@@ -62,18 +72,12 @@ class Runtime:
         self.settings: SettingsRegistry = settings
         self.widget_store: WidgetConfigStore = widget_store
         self.config_manager: ConfigSetManager = config_manager
-
-
         self._shutdown_requested = False
         self.connector_services: ConnectorServiceRegistry = connector_registry or ConnectorServiceRegistry()
         self.widget_registry: WidgetRegistry = widget_registry or create_default_widget_registry()
-        # New domain components (optional during migration)
-        self.plugin_discovery = plugin_discovery
-        self.plugin_lifecycle = plugin_lifecycle
-        self.window_runtime = window_runtime
-        self.events = event_bus  # Use shared event bus
+        self.events = event_bus
         # Capability registry
-        self._capabilities: dict[str, object] = {}
+        self._capabilities: dict[str, RuntimeCapability] = {}
         self._qml_capabilities: dict[str, QObject] = {}
         self._register_default_capabilities()
         self._subscribe_to_events()
@@ -109,7 +113,7 @@ class Runtime:
         self.register(PluginLifecycleCapability())
         self.register(WidgetManagementCapability())
 
-    def register(self, capability: object) -> None:
+    def register(self, capability: RuntimeCapability) -> None:
         """Register a capability with the runtime.
 
         Args:
@@ -121,18 +125,34 @@ class Runtime:
         if qml_iface is not None:
             self._qml_capabilities[capability.name] = qml_iface
 
-    def capability(self, name: str) -> object:
-        """Get a registered capability by name.
+    # === Capability overloads (auto-generated) ===
 
-        Args:
-            name: The capability name.
+    @overload
+    def capability(self, name: Literal["boot_registration"]) -> BootRegistrationCapability: ...
 
-        Returns:
-            The capability instance.
+    @overload
+    def capability(self, name: Literal["plugin_discovery"]) -> PluginDiscoveryCapability: ...
 
-        Raises:
-            KeyError: If capability not found.
-        """
+    @overload
+    def capability(self, name: Literal["plugin_icon"]) -> PluginIconCapability: ...
+
+    @overload
+    def capability(self, name: Literal["plugin_lifecycle"]) -> PluginLifecycleCapability: ...
+
+    @overload
+    def capability(self, name: Literal["widget_management"]) -> WidgetManagementCapability: ...
+
+    @overload
+    def capability(self, name: Literal["widget_visibility"]) -> WidgetVisibilityCapability: ...
+
+    @overload
+    def capability(self, name: Literal["window_state"]) -> WindowStateCapability: ...
+
+    @overload
+    def capability(self, name: str) -> RuntimeCapability: ...
+
+    def capability(self, name: str) -> RuntimeCapability:
+        """Get a registered capability by name."""
         if name not in self._capabilities:
             raise KeyError(f"Capability '{name}' not found")
         return self._capabilities[name]
@@ -144,7 +164,7 @@ class Runtime:
             Dictionary mapping capability names to QML interfaces.
         """
         return dict(self._qml_capabilities)
-    
+
     def _on_ui_plugin_selected(self, event) -> None:
         """Handle user plugin selection — activate the chosen plugin."""
         self.set_active_plugin(event.data.plugin_id)
@@ -157,7 +177,7 @@ class Runtime:
         # Load persisted settings after registration (done by BootRegistrationCapability)
         self.settings.load_persisted()
         self._apply_initial_runtime_state()
-    
+
     def _boot_runtime(self) -> None:
         """Boot runtime data, discovery, and registrations without activation policy."""
         discovery = self.capability("plugin_discovery")
@@ -244,8 +264,6 @@ class Runtime:
         for record in self.window_records():
             if record.status in {WindowRuntimeStatus.OPEN, WindowRuntimeStatus.OPENING, WindowRuntimeStatus.HIDDEN}:
                 self.mark_window_closing(record.window_id)
-
-    # ── Settings registration ─────────────────────────────────────────────
 
     # ── Plugin activation ─────────────────────────────────────────────────
 

@@ -25,6 +25,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
+from PySide6.QtCore import QObject
+
 if TYPE_CHECKING:
     from runtime.runtime import Runtime
 
@@ -52,7 +54,7 @@ class RuntimeCapability(Protocol):
         """
         ...
 
-    def qml_interface(self) -> object | None:
+    def qml_interface(self) -> QObject | None:
         """Return QML-exposed interface, if any.
 
         This object will be injected into HostedWindow as a property
