@@ -39,10 +39,34 @@ Rectangle {
     readonly property var widgetConfigRead: hostWindow?.widgetConfigRead ?? null
     readonly property var widgetConfigWrite: hostWindow?.widgetConfigWrite ?? null
     readonly property var widgetPreview: hostWindow?.widgetPreview ?? null
-
+    
     // State
     property string selectedWidgetId: ""
+    property string selectedOverlayId: ""
     property string previewLeaseId: ""
+    
+    // Helper to get enabled state for a widget
+    function isWidgetEnabled(widgetId) {
+        if (!widgetConfigRead) return false
+        var config = widgetConfigRead.getWidget(widgetId)
+        return config ? config.enabled : false
+    }
+    
+    // Update overlay ID when widget is selected
+    onSelectedWidgetIdChanged: {
+        if (!selectedWidgetId || !widgetRead) {
+            selectedOverlayId = ""
+            return
+        }
+        // Find the widget in the model to get its overlayId
+        var widgets = widgetRead.widgets
+        for (var i = 0; i < widgets.length; i++) {
+            if (widgets[i].widgetId === selectedWidgetId) {
+                selectedOverlayId = widgets[i].overlayId ?? ""
+                break
+            }
+        }
+    }
 
     // Sync preview when selection changes
     onSelectedWidgetIdChanged: {
@@ -124,10 +148,12 @@ Rectangle {
                 id: widgetItem
                 required property var modelData
                 required property int index
+                
+                readonly property string widgetId: modelData.widgetId ?? ""
 
                 width: widgetList.width
                 height: 40
-                color: widgetTab.selectedWidgetId === modelData.widget_id
+                color: widgetTab.selectedWidgetId === widgetId
                     ? "#2d333f"
                     : (hoverArea.containsMouse ? "#2a2d35" : "transparent")
 
@@ -138,7 +164,7 @@ Rectangle {
                     width: 2
                     height: parent.height
                     color: "#4fc1e9"
-                    visible: widgetTab.selectedWidgetId === modelData.widget_id
+                    visible: widgetTab.selectedWidgetId === widgetId
                 }
 
                 // Widget name
@@ -146,7 +172,7 @@ Rectangle {
                     anchors.left: parent.left
                     anchors.leftMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
-                    text: modelData.widget_id
+                    text: widgetItem.widgetId
                     color: "#ffffff"
                     font.pixelSize: 13
                 }
@@ -157,14 +183,14 @@ Rectangle {
                     anchors.right: parent.right
                     anchors.rightMargin: 8
                     anchors.verticalCenter: parent.verticalCenter
-                    checked: modelData.enabled ?? false
-                    enabled: widgetTab.widgetConfigWrite !== null
+                    checked: widgetTab.isWidgetEnabled(widgetItem.widgetId)
+                    enabled: widgetTab.widgetConfigWrite !== null && modelData.overlayId !== undefined
 
                     onClicked: {
-                        if (widgetTab.widgetConfigWrite) {
-                            widgetTab.widgetConfigWrite.set_enabled(
-                                modelData.plugin_id,
-                                modelData.widget_id,
+                        if (widgetTab.widgetConfigWrite && modelData.overlayId !== undefined) {
+                            widgetTab.widgetConfigWrite.setWidgetEnabled(
+                                modelData.overlayId,
+                                widgetItem.widgetId,
                                 !checked
                             )
                         }
@@ -177,7 +203,7 @@ Rectangle {
                     anchors.fill: parent
                     hoverEnabled: true
                     onClicked: {
-                        widgetTab.selectedWidgetId = modelData.widget_id
+                        widgetTab.selectedWidgetId = widgetItem.widgetId
                     }
                 }
             }
@@ -220,7 +246,7 @@ Rectangle {
 
                 Text {
                     anchors.centerIn: parent
-                    text: "Preview: " + widgetTab.selectedWidgetId
+                    text: widgetTab.selectedWidgetId ? "Preview: " + widgetTab.selectedWidgetId : "Select a widget"
                     color: "#8b92a8"
                     font.pixelSize: 14
                 }
@@ -240,12 +266,12 @@ Rectangle {
                     Label { text: "X:"; color: "#ffffff" }
                     SpinBox {
                         id: posX
-                        value: widgetTab.widgetConfigRead?.get_config(
-                            widgetTab.selectedWidgetId
-                        )?.x ?? 0
+                        value: widgetTab.widgetConfigRead?.getWidget(widgetTab.selectedWidgetId)?.position?.x ?? 0
+                        enabled: widgetTab.selectedOverlayId !== ""
                         onValueModified: {
-                            if (widgetTab.widgetConfigWrite) {
-                                widgetTab.widgetConfigWrite.set_position(
+                            if (widgetTab.widgetConfigWrite && widgetTab.selectedOverlayId !== "") {
+                                widgetTab.widgetConfigWrite.setWidgetPosition(
+                                    widgetTab.selectedOverlayId,
                                     widgetTab.selectedWidgetId,
                                     value,
                                     posY.value
@@ -257,12 +283,12 @@ Rectangle {
                     Label { text: "Y:"; color: "#ffffff" }
                     SpinBox {
                         id: posY
-                        value: widgetTab.widgetConfigRead?.get_config(
-                            widgetTab.selectedWidgetId
-                        )?.y ?? 0
+                        value: widgetTab.widgetConfigRead?.getWidget(widgetTab.selectedWidgetId)?.position?.y ?? 0
+                        enabled: widgetTab.selectedOverlayId !== ""
                         onValueModified: {
-                            if (widgetTab.widgetConfigWrite) {
-                                widgetTab.widgetConfigWrite.set_position(
+                            if (widgetTab.widgetConfigWrite && widgetTab.selectedOverlayId !== "") {
+                                widgetTab.widgetConfigWrite.setWidgetPosition(
+                                    widgetTab.selectedOverlayId,
                                     widgetTab.selectedWidgetId,
                                     posX.value,
                                     value
@@ -273,50 +299,12 @@ Rectangle {
                 }
             }
 
-            // Size controls
-            GroupBox {
-                Layout.fillWidth: true
-                title: "Size"
-
-                RowLayout {
-                    anchors.fill: parent
-                    spacing: 16
-
-                    Label { text: "W:"; color: "#ffffff" }
-                    SpinBox {
-                        id: sizeW
-                        value: widgetTab.widgetConfigRead?.get_config(
-                            widgetTab.selectedWidgetId
-                        )?.width ?? 200
-                        onValueModified: {
-                            if (widgetTab.widgetConfigWrite) {
-                                widgetTab.widgetConfigWrite.set_size(
-                                    widgetTab.selectedWidgetId,
-                                    value,
-                                    sizeH.value
-                                )
-                            }
-                        }
-                    }
-
-                    Label { text: "H:"; color: "#ffffff" }
-                    SpinBox {
-                        id: sizeH
-                        value: widgetTab.widgetConfigRead?.get_config(
-                            widgetTab.selectedWidgetId
-                        )?.height ?? 100
-                        onValueModified: {
-                            if (widgetTab.widgetConfigWrite) {
-                                widgetTab.widgetConfigWrite.set_size(
-                                    widgetTab.selectedWidgetId,
-                                    sizeW.value,
-                                    value
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+            // Size controls (not yet implemented in backend)
+            // GroupBox {
+            //     Layout.fillWidth: true
+            //     title: "Size"
+            //     ...
+            // }
 
             // Spacer
             Item { Layout.fillHeight: true }
