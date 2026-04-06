@@ -184,7 +184,7 @@ def test_project_overlay_preview_items_reads_connector_snapshot(tmp_path: Path) 
         sys.path.insert(0, str(source_root))
     importlib.invalidate_caches()
     register_connector_service(
-        plugins=runtime._plugins,
+        plugins=runtime.capability("plugin_discovery").all_plugins(),
         connector_services=runtime.connector_services,
         events=runtime.events,
         plugin_id="preview_connector",
