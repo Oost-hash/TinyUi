@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import cast
 
 from app_schema.plugin import PluginManifest
-from app_schema.ui import AppManifest, MenuItem as MenuItemDecl, MenuSeparator as MenuSeparatorDecl, StatusbarItemDecl
+from app_schema.ui import AppManifest
 from runtime.app.paths import AppPaths
 from runtime.connectors import (
     ConnectorServiceRegistry,
@@ -40,14 +40,14 @@ from runtime.host import active_host_ids, main_window_for
 from runtime_schema import (
     EventBus, EventType, PluginState, PluginStateData,
     PluginActivatedData, PluginErrorData,
-    MenuRegisteredData, StatusbarRegisteredData, TabRegisteredData,
+
     RuntimeShutdownData,
     WindowRuntimeUpdatedData,
 )
 from runtime.manifest import load_plugin_manifest
 from runtime.persistence import SettingsRegistry, WidgetConfigStore, ConfigSetManager
 from runtime.connectors import ConnectorServiceRegistry
-from runtime_schema import SettingsSpec
+
 from widget_api import WidgetRegistry
 from runtime.plugins.contracts import PluginContext
 from runtime.plugins.packaged_plugin import resolve_packaged_plugin
@@ -114,10 +114,12 @@ class Runtime:
         from runtime.capabilities.widget_visibility import WidgetVisibilityCapability
         from runtime.capabilities.window_state import WindowStateCapability
         from runtime.capabilities.plugin_icon import PluginIconCapability
+        from runtime.capabilities.boot_registration import BootRegistrationCapability
 
         self.register(WidgetVisibilityCapability())
         self.register(WindowStateCapability())
         self.register(PluginIconCapability())
+        self.register(BootRegistrationCapability())
 
     def register(self, capability: object) -> None:
         """Register a capability with the runtime.
@@ -164,19 +166,17 @@ class Runtime:
         # AppPaths.detect() handles both frozen and source modes
         self.paths = AppPaths.detect()
         self._boot_runtime()
+        # Load persisted settings after registration (done by BootRegistrationCapability)
+        self.settings.load_persisted()
         self._apply_initial_runtime_state()
     
     def _boot_runtime(self) -> None:
         """Boot runtime data, discovery, and registrations without activation policy."""
-        settings = self._require_settings()
         self._load_plugin("tinyui")
         self._discover_plugins()
         self._init_plugin_states()
-        self._register_settings()
-        settings.load_persisted()
-        self._register_menus()
-        self._register_statusbar()
-        self._register_tabs()
+        # Settings, menus, statusbar, tabs registration is now handled by
+        # BootRegistrationCapability in response to BOOT_INIT event
 
     # ── Plugin loading ────────────────────────────────────────────────────
 
@@ -352,103 +352,6 @@ class Runtime:
                 self.mark_window_closing(record.window_id)
 
     # ── Settings registration ─────────────────────────────────────────────
-
-    def _register_settings(self) -> None:
-        settings = self._require_settings()
-        paths = self._require_paths()
-        for plugin_id, plugin_manifest in self._plugins.items():
-            declared_keys = {s.key for s in plugin_manifest.settings}
-            if "enabled" not in declared_keys:
-                settings.register(plugin_id, SettingsSpec(
-                    key="enabled",
-                    label="Enable plugin",
-                    default=True,
-                    type="bool",
-                ))
-            for decl in plugin_manifest.settings:
-                settings.register(plugin_id, SettingsSpec(
-                    key=decl.key,
-                    label=decl.label,
-                    default=decl.default,
-                    type=decl.type,
-                    choices=list(decl.choices),
-                ))
-            # create namespace dir so persistence.save() only writes the file
-            (paths.config_dir / plugin_id).mkdir(exist_ok=True)
-
-    # ── Menu registration ─────────────────────────────────────────────────
-
-    def _register_menus(self) -> None:
-        """Register menus from manifests - emit events for UI layer."""
-        for plugin_manifest in self._plugins.values():
-            source = plugin_manifest.plugin_type
-            windows = [] if plugin_manifest.ui is None else plugin_manifest.ui.windows
-            for window in windows:
-                for item in window.menu:
-                    if isinstance(item, MenuSeparatorDecl):
-                        self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
-                            window_id=window.id,
-                            separator=True,
-                            source=source,
-                        ))
-                    else:
-                        self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
-                            window_id=window.id,
-                            label=item.label,
-                            action=item.action,
-                            source=source,
-                        ))
-            if plugin_manifest.ui and plugin_manifest.ui.menu_label and plugin_manifest.ui.plugin_menu:
-                window_id = f"plugin:{plugin_manifest.plugin_id}"
-                for item in plugin_manifest.ui.plugin_menu:
-                    if isinstance(item, MenuSeparatorDecl):
-                        self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
-                            window_id=window_id,
-                            separator=True,
-                            source="plugin",
-                        ))
-                    else:
-                        self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
-                            window_id=window_id,
-                            label=item.label,
-                            action=item.action,
-                            source="plugin",
-                        ))
-
-    # ── Statusbar registration ────────────────────────────────────────────
-
-    def _register_statusbar(self) -> None:
-        """Register statusbar items from manifests - emit events for UI layer."""
-        for plugin_manifest in self._plugins.values():
-            source = plugin_manifest.plugin_type
-            windows = [] if plugin_manifest.ui is None else plugin_manifest.ui.windows
-            for window in windows:
-                for item in window.statusbar:
-                    self.events.emit_typed(EventType.STATUSBAR_REGISTERED, StatusbarRegisteredData(
-                        window_id=window.id,
-                        icon=item.icon,
-                        text=item.text,
-                        tooltip=item.tooltip,
-                        action=item.action,
-                        side=item.side,
-                        source=source,
-                    ))
-
-    # ── Tab registration ──────────────────────────────────────────────────
-
-    def _register_tabs(self) -> None:
-        """Register tabs from manifests - emit events for UI layer."""
-        for plugin_manifest in self._plugins.values():
-            tabs = [] if plugin_manifest.ui is None else plugin_manifest.ui.tabs
-            for tab in tabs:
-                self.events.emit_typed(EventType.TAB_REGISTERED, TabRegisteredData(
-                    window_id=tab.target,
-                    id=tab.id,
-                    label=tab.label,
-                    target=tab.target,
-                    surface=str(tab.surface),
-                    plugin_id=tab.plugin_id,
-                ))
 
     # ── Plugin activation ─────────────────────────────────────────────────
 
