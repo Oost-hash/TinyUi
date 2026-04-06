@@ -585,6 +585,14 @@ class Runtime:
                 enabling_reason="Boot enabling" if is_boot_selection else "User enabled",
                 loading_reason="Boot loading" if is_boot_selection else "Loading module",
             )
+            self._seed_widget_config(active_plugin)
+
+    def _seed_widget_config(self, plugin_id: str) -> None:
+        """Seed widget config defaults when an overlay becomes active."""
+        manifest = self._plugins.get(plugin_id)
+        if manifest is None or manifest.overlay is None:
+            return
+        self.widget_store.ensure_defaults(plugin_id, manifest.overlay.widgets)
 
     def _ensure_plugin_import_roots(self) -> None:
         """Ensure plugin packages are importable before lifecycle activation."""
