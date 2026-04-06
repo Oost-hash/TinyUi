@@ -40,7 +40,7 @@ from runtime.persistence import SettingsRegistry, WidgetConfigStore, ConfigSetMa
 from widget_api import WidgetRegistry, create_default_widget_registry
 from runtime.plugins.plugin_state import PluginStateMachine
 from runtime.ui import WindowRuntimeRecord, WindowRuntimeStatus, project_window_records
-from runtime.widgets import WidgetRuntimeRecord, project_overlay_widget_records
+from runtime.widgets import WidgetRuntimeRecord
 
 from PySide6.QtCore import QObject
 
@@ -99,6 +99,7 @@ class Runtime:
         from runtime.capabilities.boot_registration import BootRegistrationCapability
         from runtime.capabilities.plugin_lifecycle import PluginLifecycleCapability
         from runtime.capabilities.plugin_discovery import PluginDiscoveryCapability
+        from runtime.capabilities.widget_management import WidgetManagementCapability
 
         self.register(PluginDiscoveryCapability())  # Must be first - other capabilities depend on it
         self.register(WidgetVisibilityCapability())
@@ -106,6 +107,7 @@ class Runtime:
         self.register(PluginIconCapability())
         self.register(BootRegistrationCapability())
         self.register(PluginLifecycleCapability())
+        self.register(WidgetManagementCapability())
 
     def register(self, capability: object) -> None:
         """Register a capability with the runtime.
@@ -193,29 +195,11 @@ class Runtime:
 
     def overlay_widget_records(self, plugin_id: str) -> list[WidgetRuntimeRecord]:
         """Return runtime-owned widget records for one overlay plugin."""
-        widget_visibility = self.capability("widget_visibility")
-        discovery = self.capability("plugin_discovery")
-        return project_overlay_widget_records(
-            discovery.all_plugins(),
-            self.connector_services,
-            plugin_id=plugin_id,
-            active_plugin=self.active_plugin,
-            global_visible=widget_visibility.globalVisible,
-            widget_store=self.widget_store,
-        )
+        return self.capability("widget_management").overlay_widget_records(plugin_id)
 
     def active_overlay_widget_records(self) -> list[WidgetRuntimeRecord]:
         """Return widget records for the currently active overlay."""
-        if self._shutdown_requested:
-            return []
-        active = self.active_plugin
-        if active is None:
-            return []
-        discovery = self.capability("plugin_discovery")
-        manifest = discovery.plugin_manifest(active)
-        if manifest is None or manifest.plugin_type != "overlay":
-            return []
-        return self.overlay_widget_records(active)
+        return self.capability("widget_management").active_overlay_widget_records()
 
     def window_records(self) -> list[WindowRuntimeRecord]:
         """Return runtime-owned records for manifest-declared application windows."""
