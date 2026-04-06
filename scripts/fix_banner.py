@@ -3,12 +3,15 @@
 
 Usage:
     python scripts/fix_banner.py [FILES...]
+    python scripts/fix_banner.py --all
 
 If no files are given, processes all staged .py and .qml files (for pre-commit use).
+Use --all to process all source files regardless of git status.
 Exits 1 when any file was changed so the commit is retried with the fix.
 Backups are saved to .banner_backups/ before any changes.
 """
 
+import argparse
 import shutil
 import subprocess
 import sys
@@ -56,7 +59,7 @@ _EXT_CONFIG: dict[str, tuple[str, str]] = {
 }
 
 # Directories that contain our own source (relative to repo root)
-SRC_DIRS = ("src/tinyqt_main", "src/tinycore", "src/plugins")
+SRC_DIRS = ("src/runtime", "src/runtime_schema", "src/app_schema", "src/ui_api", "src/widget_api", "src/capabilities", "src/plugins")
 
 # Fingerprints: if any of these appear in the first 30 lines, it's a banner.
 _FINGERPRINTS = [
@@ -111,7 +114,10 @@ def _backup(path: Path) -> None:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_path = BACKUP_DIR / stamp / path
     backup_path.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(path, backup_path)
+    try:
+        shutil.copy2(path, backup_path)
+    except (PermissionError, OSError) as e:
+        print(f"  warning: could not backup {path}: {e}")
 
 
 def fix_file(path: Path) -> bool:
@@ -164,9 +170,29 @@ def get_staged_files() -> list[Path]:
     ]
 
 
+def get_all_src_files(repo_root: Path) -> list[Path]:
+    """Get all .py and .qml files in source directories."""
+    files = []
+    for src_dir in SRC_DIRS:
+        dir_path = repo_root / src_dir
+        if dir_path.exists():
+            for ext in _EXT_CONFIG:
+                files.extend(dir_path.rglob(f"*{ext}"))
+    return [f for f in files if _is_src_file(f)]
+
+
 def main() -> int:
-    if len(sys.argv) > 1:
-        files = [Path(f) for f in sys.argv[1:] if Path(f).suffix in _EXT_CONFIG]
+    parser = argparse.ArgumentParser(description="Fix or insert the canonical TinyUI license banner.")
+    parser.add_argument("files", nargs="*", help="Specific files to process")
+    parser.add_argument("--all", action="store_true", help="Process all source files (not just staged)")
+    args = parser.parse_args()
+
+    repo_root = Path(__file__).resolve().parents[1]
+
+    if args.files:
+        files = [Path(f) for f in args.files if Path(f).suffix in _EXT_CONFIG]
+    elif args.all:
+        files = get_all_src_files(repo_root)
     else:
         files = get_staged_files()
 
@@ -178,7 +204,7 @@ def main() -> int:
 
     if changed:
         print(f"  backups in: {BACKUP_DIR.resolve()}")
-        if len(sys.argv) <= 1:
+        if not args.files:  # Only auto-add if not given explicit files
             subprocess.run(["git", "add"] + [str(p) for p in changed])
         print(f"  {len(changed)} file(s) fixed")
         return 1
