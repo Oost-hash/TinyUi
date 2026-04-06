@@ -316,12 +316,13 @@ class Runtime:
 
     def overlay_widget_records(self, plugin_id: str) -> list[WidgetRuntimeRecord]:
         """Return runtime-owned widget records for one overlay plugin."""
+        widget_visibility = self.capability("widget_visibility")
         return project_overlay_widget_records(
             self._plugins,
             self.connector_services,
             plugin_id=plugin_id,
             active_plugin=self._active_plugin,
-            global_visible=self._global_widgets_visible,
+            global_visible=widget_visibility.globalVisible,
             widget_store=self.widget_store,
         )
 

@@ -52,8 +52,6 @@ def _runtime_capabilities() -> RuntimeCapabilities:
         settings_write=object(),
         window_read=object(),
         widget_read=object(),
-        widget_visibility_read=object(),
-        widget_visibility_write=object(),
     )
 
 
@@ -143,10 +141,12 @@ def test_build_window_capability_properties_omits_tabs_for_non_tab_windows() -> 
         chrome=ChromePolicy(show_tab_bar=False),
     )
 
+    runtime = SimpleNamespace(qml_capabilities=lambda: {})
     properties = boot.build_window_capability_properties(
         manifest,
         _shared_capabilities(),
         _runtime_capabilities(),
+        runtime,
     )
 
     assert "tabs" not in properties
@@ -165,10 +165,12 @@ def test_build_window_capability_properties_includes_tabs_for_tab_windows() -> N
         chrome=ChromePolicy(show_tab_bar=True),
     )
 
+    runtime = SimpleNamespace(qml_capabilities=lambda: {})
     properties = boot.build_window_capability_properties(
         manifest,
         shared,
         _runtime_capabilities(),
+        runtime,
     )
 
     assert properties["tabs"] is shared.tabs
@@ -333,6 +335,9 @@ def test_open_main_runtime_window_marks_runtime_window_open(monkeypatch) -> None
         def mark_window_open(self, window_id: str) -> None:
             runtime_calls.append(("open", window_id))
 
+        def qml_capabilities(self):
+            return {}
+
     monkeypatch.setattr("ui_api.startup.resolve_plugin_panel", lambda engine, runtime: ("", None))
     monkeypatch.setattr("ui_api.startup.open_window", lambda *args, **kwargs: SimpleNamespace(qml_window=SimpleNamespace()))
 
@@ -399,6 +404,9 @@ def test_register_runtime_window_actions_marks_main_window_closing(monkeypatch) 
 
         def begin_shutdown(self, reason: str = "app_quit") -> None:
             close_calls.append(("shutdown", reason))
+
+        def qml_capabilities(self):
+            return {}
 
     class _ActionsStub:
         def register(self, action: str, callback) -> None:
