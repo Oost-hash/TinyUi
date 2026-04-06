@@ -18,6 +18,11 @@ menu = [
     { label = "Close", action = "close" },
 ]
 
+[[window.statusbar]]
+text = "Widgets"
+side = "left"
+action = "widget_visibility.toggle"
+
 [window.chrome]
 show_menu_button     = true
 show_tab_bar         = true

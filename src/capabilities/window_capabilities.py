@@ -37,6 +37,8 @@ from capabilities.settings_write import SettingsWrite
 from capabilities.statusbar import StatusbarApi
 from capabilities.tabs import TabsApi
 from capabilities.widget_read import WidgetRead
+from capabilities.widget_visibility_read import WidgetVisibilityRead
+from capabilities.widget_visibility_write import WidgetVisibilityWrite
 from capabilities.window_read import WindowRead
 from runtime.runtime import Runtime
 from runtime_schema import EventBus
@@ -66,6 +68,8 @@ class RuntimeCapabilities:
     settings_write: object
     window_read: object
     widget_read: object
+    widget_visibility_read: object
+    widget_visibility_write: object
 
 
 def create_shared_capabilities(event_bus: EventBus, runtime: Runtime) -> SharedCapabilities:
@@ -97,6 +101,8 @@ def create_runtime_capabilities(runtime: Runtime, event_bus: EventBus) -> Runtim
         settings_write=SettingsWrite(runtime, settings_read),
         window_read=WindowRead(runtime, event_bus),
         widget_read=WidgetRead(runtime, event_bus),
+        widget_visibility_read=WidgetVisibilityRead(runtime, event_bus),
+        widget_visibility_write=WidgetVisibilityWrite(runtime, event_bus),
     )
 
 
@@ -122,6 +128,8 @@ def build_window_capability_properties(
         "settingsWrite": runtime_caps.settings_write,
         "windowRead": runtime_caps.window_read,
         "widgetRead": runtime_caps.widget_read,
+        "widgetVisibilityRead": runtime_caps.widget_visibility_read,
+        "widgetVisibilityWrite": runtime_caps.widget_visibility_write,
         "connectorRead": shared.connector_read,
         "connectorActions": shared.connector_actions,
     }

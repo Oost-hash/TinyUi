@@ -48,6 +48,7 @@ Item {
     property bool menuOpen: false
     property string pendingPluginActivation: ""
     property var pluginStates: ({})
+    property bool widgetsVisible: hostWindow && hostWindow.widgetVisibilityRead ? hostWindow.widgetVisibilityRead.globalVisible : true
 
     readonly property url menuIconSource: Qt.resolvedUrl("../../assets/images/ui/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
 
@@ -75,6 +76,13 @@ Item {
             var temp = root.pluginStates
             root.pluginStates = {}
             root.pluginStates = temp
+        }
+    }
+
+    Connections {
+        target: root.hostWindow && root.hostWindow.widgetVisibilityRead ? root.hostWindow.widgetVisibilityRead : null
+        function onGlobalVisibleChanged() {
+            root.widgetsVisible = root.hostWindow.widgetVisibilityRead.globalVisible
         }
     }
 
@@ -397,8 +405,23 @@ Item {
                     Text {
                         id: statusItemLabel
                         anchors.centerIn: parent
-                        text: typeof statusItemDelegate.modelData === "string" ? statusItemDelegate.modelData : ""
-                        color: root.theme ? root.theme.textMuted : "#c8ccd4"
+                        text: {
+                            if (typeof statusItemDelegate.modelData === "string") {
+                                return statusItemDelegate.modelData
+                            } else if (statusItemDelegate.modelData && statusItemDelegate.modelData.text) {
+                                return statusItemDelegate.modelData.text
+                            }
+                            return ""
+                        }
+                        color: {
+                            // Widget visibility toggle gets special coloring
+                            if (statusItemDelegate.modelData && statusItemDelegate.modelData.action === "widget_visibility.toggle") {
+                                return root.widgetsVisible 
+                                    ? (root.theme ? root.theme.success : "#4caf50")
+                                    : (root.theme ? root.theme.textMuted : "#878a98")
+                            }
+                            return root.theme ? root.theme.textMuted : "#c8ccd4"
+                        }
                         font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
                     }
 
@@ -406,6 +429,15 @@ Item {
                         id: itemMouse
                         anchors.fill: parent
                         hoverEnabled: true
+                        onClicked: {
+                            var action = statusItemDelegate.modelData.action
+                            if (action === "widget_visibility.toggle") {
+                                var currentlyVisible = root.hostWindow.widgetVisibilityRead.globalVisible
+                                root.hostWindow.widgetVisibilityWrite.setGlobalVisible(!currentlyVisible)
+                            } else if (action && root.appActions) {
+                                root.appActions.trigger(action)
+                            }
+                        }
                     }
                 }
             }

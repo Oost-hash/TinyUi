@@ -224,6 +224,7 @@ def _load_widgets_from_dir(widgets_dir: Path) -> list[OverlayWidgetDecl]:
         raw_pos = defaults_data.get("position", [0, 0])
         defaults = WidgetDefaults(
             enabled=defaults_data.get("enabled", True),
+            visible=defaults_data.get("visible", True),
             position=(int(raw_pos[0]), int(raw_pos[1])) if len(raw_pos) >= 2 else (0, 0),
         )
         decls.append(OverlayWidgetDecl(

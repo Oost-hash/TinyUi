@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from app_schema.plugin import PluginManifest
 from runtime.connectors import ConnectorServiceRegistry, required_connector_ids
+from runtime.persistence import WidgetConfigStore
 from runtime.widgets.contracts import WidgetRuntimeRecord, WidgetRuntimeStatus
 from runtime.widgets.game_detection import detect_active_game_id
 
@@ -35,6 +36,8 @@ def project_overlay_widget_records(
     *,
     plugin_id: str,
     active_plugin: str | None,
+    global_visible: bool = True,
+    widget_store: WidgetConfigStore | None = None,
 ) -> list[WidgetRuntimeRecord]:
     """Project overlay widget declarations into runtime-owned records."""
 
@@ -47,6 +50,14 @@ def project_overlay_widget_records(
     records: list[WidgetRuntimeRecord] = []
     for widget in manifest.overlay.widgets:
         source = widget.bindings.get("source", "")
+        
+        # Check per-widget enabled from config store
+        widget_enabled = True
+        if widget_store is not None:
+            config = widget_store.get_widget(plugin_id, widget.id)
+            if config is not None:
+                widget_enabled = config.enabled
+        
         status = _widget_status(
             plugins=plugins,
             active_plugin=active_plugin,
@@ -55,6 +66,8 @@ def project_overlay_widget_records(
             connector_services=connector_services,
             source=source,
             available_sources=available_sources,
+            global_visible=global_visible,
+            widget_enabled=widget_enabled,
         )
         records.append(
             WidgetRuntimeRecord(
@@ -93,9 +106,13 @@ def _widget_status(
     connector_services: ConnectorServiceRegistry,
     source: str,
     available_sources: set[str],
+    global_visible: bool = True,
+    widget_enabled: bool = True,
 ) -> WidgetRuntimeStatus:
     if active_plugin != overlay_id:
         return WidgetRuntimeStatus.IDLE
+    if not global_visible or not widget_enabled:
+        return WidgetRuntimeStatus.HIDDEN
     if any(not connector_services.has(connector_id) for connector_id in connector_ids):
         return WidgetRuntimeStatus.WAITING_FOR_CONNECTOR
     if _waiting_for_game(plugins, connector_services, connector_ids):
