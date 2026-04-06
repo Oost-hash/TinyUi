@@ -82,6 +82,7 @@ class Runtime:
         self._active_plugin: str | None = None  # Currently active UI plugin
         self._invalid_plugin_icons: set[str] = set()
         self._shutdown_requested = False
+        self._global_widgets_visible: bool = True
         self.connector_services: ConnectorServiceRegistry = connector_registry or ConnectorServiceRegistry()
         self.widget_registry: WidgetRegistry = widget_registry or create_default_widget_registry()
         # New domain components (optional during migration)
@@ -273,6 +274,8 @@ class Runtime:
             self.connector_services,
             plugin_id=plugin_id,
             active_plugin=self._active_plugin,
+            global_visible=self._global_widgets_visible,
+            widget_store=self.widget_store,
         )
 
     def active_overlay_widget_records(self) -> list[WidgetRuntimeRecord]:
@@ -675,6 +678,25 @@ class Runtime:
             reason="user_selection",
         )
         return True
+
+    # ── Global widget visibility ──────────────────────────────────────────
+
+    def set_global_widgets_visible(self, visible: bool) -> None:
+        """Set global visibility for all widgets."""
+        self._global_widgets_visible = visible
+        self._emit_widget_visibility_changed()
+
+    def is_global_widgets_visible(self) -> bool:
+        """Get global widget visibility state."""
+        return self._global_widgets_visible
+
+    def _emit_widget_visibility_changed(self) -> None:
+        """Emit event when widget visibility changes."""
+        from runtime_schema import WidgetRuntimeUpdatedData
+        self.events.emit_typed(
+            EventType.WIDGET_RUNTIME_UPDATED,
+            WidgetRuntimeUpdatedData(reason="visibility_changed")
+        )
 
     # ── Plugin state management ───────────────────────────────────────────
 

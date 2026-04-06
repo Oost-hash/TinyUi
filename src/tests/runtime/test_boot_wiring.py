@@ -52,6 +52,8 @@ def _runtime_capabilities() -> RuntimeCapabilities:
         settings_write=object(),
         window_read=object(),
         widget_read=object(),
+        widget_visibility_read=object(),
+        widget_visibility_write=object(),
     )
 
 

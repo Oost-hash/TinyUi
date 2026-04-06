@@ -397,7 +397,14 @@ Item {
                     Text {
                         id: statusItemLabel
                         anchors.centerIn: parent
-                        text: typeof statusItemDelegate.modelData === "string" ? statusItemDelegate.modelData : ""
+                        text: {
+                            if (typeof statusItemDelegate.modelData === "string") {
+                                return statusItemDelegate.modelData
+                            } else if (statusItemDelegate.modelData && statusItemDelegate.modelData.text) {
+                                return statusItemDelegate.modelData.text
+                            }
+                            return ""
+                        }
                         color: root.theme ? root.theme.textMuted : "#c8ccd4"
                         font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
                     }
@@ -406,6 +413,15 @@ Item {
                         id: itemMouse
                         anchors.fill: parent
                         hoverEnabled: true
+                        onClicked: {
+                            var action = statusItemDelegate.modelData.action
+                            if (action === "widget_visibility.toggle") {
+                                var currentlyVisible = root.hostWindow.widgetVisibilityRead.globalVisible
+                                root.hostWindow.widgetVisibilityWrite.setGlobalVisible(!currentlyVisible)
+                            } else if (action && root.appActions) {
+                                root.appActions.trigger(action)
+                            }
+                        }
                     }
                 }
             }

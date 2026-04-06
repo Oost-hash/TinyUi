@@ -31,6 +31,7 @@ class WidgetDefaults:
     """Declarative default values for a widget instance, authored by the plugin."""
 
     enabled: bool = True
+    visible: bool = True
     position: tuple[int, int] = (0, 0)
 
 
