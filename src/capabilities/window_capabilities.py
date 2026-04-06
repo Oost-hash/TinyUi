@@ -101,7 +101,7 @@ def create_runtime_capabilities(runtime: Runtime, event_bus: EventBus) -> Runtim
         settings_write=SettingsWrite(runtime, settings_read),
         window_read=WindowRead(runtime, event_bus),
         widget_read=WidgetRead(runtime, event_bus),
-        widget_visibility_read=WidgetVisibilityRead(runtime),
+        widget_visibility_read=WidgetVisibilityRead(runtime, event_bus),
         widget_visibility_write=WidgetVisibilityWrite(runtime, event_bus),
     )
 

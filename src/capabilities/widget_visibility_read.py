@@ -26,6 +26,7 @@ from __future__ import annotations
 from PySide6.QtCore import QObject, Property, Signal, Slot
 
 from runtime.runtime import Runtime
+from runtime_schema import EventBus, EventType
 
 
 class WidgetVisibilityRead(QObject):
@@ -36,10 +37,21 @@ class WidgetVisibilityRead(QObject):
     def __init__(
         self,
         runtime: Runtime,
+        event_bus: EventBus,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._runtime = runtime
+        self._event_bus = event_bus
+        self._subscribe()
+
+    def _subscribe(self) -> None:
+        """Subscribe to widget runtime events to emit change signals."""
+        self._event_bus.on(EventType.WIDGET_RUNTIME_UPDATED, self._on_widget_event)
+
+    def _on_widget_event(self, _event) -> None:
+        """Emit change signal when widget visibility may have changed."""
+        self.globalVisibleChanged.emit()
 
     @Property(bool, notify=globalVisibleChanged)
     def globalVisible(self) -> bool:
