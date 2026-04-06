@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from app_schema.overlay import OverlayWidgetDecl
 from runtime.persistence.paths import ConfigResolver
 
 
@@ -153,11 +154,39 @@ class WidgetConfigStore:
         x: int,
         y: int,
     ) -> bool:
-        """Set position for a specific widget."""
+        """Set position for a specific widget. Creates the record if it does not exist."""
         configs = self.load_for_overlay(overlay_id)
         for config in configs:
             if config.widget_id == widget_id:
                 config.position = (x, y)
                 self.save_for_overlay(overlay_id, configs)
                 return True
-        return False
+        # Upsert: no existing record — create one with the given position.
+        configs.append(WidgetInstanceConfig(widget_id=widget_id, position=(x, y)))
+        self.save_for_overlay(overlay_id, configs)
+        return True
+
+    def ensure_defaults(
+        self,
+        overlay_id: str,
+        widget_decls: list[OverlayWidgetDecl],
+    ) -> None:
+        """Ensure a config record exists for every declared widget.
+
+        Called at overlay activation. Reads declared defaults from each widget
+        declaration and creates records for any widget_id not yet in the store.
+        Existing records are never overwritten.
+        """
+        configs = self.load_for_overlay(overlay_id)
+        existing_ids = {c.widget_id for c in configs}
+        added = False
+        for decl in widget_decls:
+            if decl.id not in existing_ids:
+                configs.append(WidgetInstanceConfig(
+                    widget_id=decl.id,
+                    enabled=decl.defaults.enabled,
+                    position=decl.defaults.position,
+                ))
+                added = True
+        if added:
+            self.save_for_overlay(overlay_id, configs)
