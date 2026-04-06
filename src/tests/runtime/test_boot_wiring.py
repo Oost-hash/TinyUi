@@ -40,6 +40,7 @@ def _shared_capabilities() -> SharedCapabilities:
         tabs=object(),
         connector_read=object(),
         connector_actions=object(),
+        widget_preview=object(),
     )
 
 
@@ -52,6 +53,8 @@ def _runtime_capabilities() -> RuntimeCapabilities:
         settings_write=object(),
         window_read=object(),
         widget_read=object(),
+        widget_config_read=object(),
+        widget_config_write=object(),
     )
 
 

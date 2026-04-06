@@ -36,6 +36,9 @@ from capabilities.settings_read import SettingsRead
 from capabilities.settings_write import SettingsWrite
 from capabilities.statusbar import StatusbarApi
 from capabilities.tabs import TabsApi
+from capabilities.widget_config_read import WidgetConfigRead
+from capabilities.widget_config_write import WidgetConfigWrite
+from capabilities.widget_preview import WidgetPreviewCapability
 from capabilities.widget_read import WidgetRead
 from capabilities.window_read import WindowRead
 from runtime.runtime import Runtime
@@ -53,6 +56,7 @@ class SharedCapabilities:
     tabs: object
     connector_read: object
     connector_actions: object
+    widget_preview: object
 
 
 @dataclass(frozen=True)
@@ -66,6 +70,8 @@ class RuntimeCapabilities:
     settings_write: object
     window_read: object
     widget_read: object
+    widget_config_read: object
+    widget_config_write: object
 
 
 def create_shared_capabilities(event_bus: EventBus, runtime: Runtime) -> SharedCapabilities:
@@ -79,6 +85,7 @@ def create_shared_capabilities(event_bus: EventBus, runtime: Runtime) -> SharedC
         tabs=TabsApi(event_bus),
         connector_read=ConnectorRead(event_bus, runtime.connector_services),
         connector_actions=ConnectorActions(runtime.connector_services),
+        widget_preview=WidgetPreviewCapability(),
     )
 
 
@@ -89,6 +96,7 @@ def create_runtime_capabilities(runtime: Runtime, event_bus: EventBus) -> Runtim
     assert runtime.settings is not None, "Runtime capabilities require BOOT_INIT first"
 
     settings_read = SettingsRead(runtime)
+    widget_config_read = WidgetConfigRead(runtime.widget_store)
     return RuntimeCapabilities(
         plugin_read=PluginRead(runtime),
         plugin_state=PluginStateRead(runtime, event_bus),
@@ -97,6 +105,8 @@ def create_runtime_capabilities(runtime: Runtime, event_bus: EventBus) -> Runtim
         settings_write=SettingsWrite(runtime, settings_read),
         window_read=WindowRead(runtime, event_bus),
         widget_read=WidgetRead(runtime, event_bus),
+        widget_config_read=widget_config_read,
+        widget_config_write=WidgetConfigWrite(runtime.widget_store, widget_config_read),
     )
 
 
@@ -123,6 +133,9 @@ def build_window_capability_properties(
         "settingsWrite": runtime_caps.settings_write,
         "windowRead": runtime_caps.window_read,
         "widgetRead": runtime_caps.widget_read,
+        "widgetConfigRead": runtime_caps.widget_config_read,
+        "widgetConfigWrite": runtime_caps.widget_config_write,
+        "widgetPreview": shared.widget_preview,
         "connectorRead": shared.connector_read,
         "connectorActions": shared.connector_actions,
     }
