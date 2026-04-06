@@ -801,7 +801,7 @@ def test_runtime_projects_waiting_for_connector_records(tmp_path: Path) -> None:
 
     runtime = create_test_runtime_with_paths(paths)
     runtime._boot_runtime()
-    runtime._active_plugin = "demo_overlay"
+    runtime.capability("plugin_lifecycle").set_active_for_test("demo_overlay")
 
     records = runtime.overlay_widget_records("demo_overlay")
 
@@ -916,12 +916,12 @@ def test_runtime_projects_error_widget_records_when_source_is_unavailable(tmp_pa
     runtime._boot_runtime()
     runtime._ensure_plugin_import_roots()
     register_connector_service(
-        plugins=runtime._plugins,
+        plugins=runtime.capability("plugin_discovery").all_plugins(),
         connector_services=runtime.connector_services,
         events=runtime.events,
         plugin_id="record_connector",
     )
-    runtime._active_plugin = "demo_overlay"
+    runtime.capability("plugin_lifecycle").set_active_for_test("demo_overlay")
 
     records = runtime.overlay_widget_records("demo_overlay")
 
@@ -1044,12 +1044,12 @@ def test_runtime_projects_waiting_for_game_when_supported_game_is_not_running(tm
     runtime._boot_runtime()
     runtime._ensure_plugin_import_roots()
     register_connector_service(
-        plugins=runtime._plugins,
+        plugins=runtime.capability("plugin_discovery").all_plugins(),
         connector_services=runtime.connector_services,
         events=runtime.events,
         plugin_id="game_connector",
     )
-    runtime._active_plugin = "demo_overlay"
+    runtime.capability("plugin_lifecycle").set_active_for_test("demo_overlay")
     monkeypatch.setattr(
         "runtime.widgets.projection.detect_active_game_id",
         lambda connector_games: None,

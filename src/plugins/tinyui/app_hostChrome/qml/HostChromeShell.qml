@@ -48,7 +48,7 @@ Item {
     property bool menuOpen: false
     property string pendingPluginActivation: ""
     property var pluginStates: ({})
-    property bool widgetsVisible: hostWindow && hostWindow.widgetVisibilityRead ? hostWindow.widgetVisibilityRead.globalVisible : true
+    property bool widgetsVisible: hostWindow && hostWindow.widget_visibility ? hostWindow.widget_visibility.globalVisible : true
 
     readonly property url menuIconSource: Qt.resolvedUrl("../../assets/images/ui/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
 
@@ -80,9 +80,9 @@ Item {
     }
 
     Connections {
-        target: root.hostWindow && root.hostWindow.widgetVisibilityRead ? root.hostWindow.widgetVisibilityRead : null
+        target: root.hostWindow && root.hostWindow.widget_visibility ? root.hostWindow.widget_visibility : null
         function onGlobalVisibleChanged() {
-            root.widgetsVisible = root.hostWindow.widgetVisibilityRead.globalVisible
+            root.widgetsVisible = root.hostWindow.widget_visibility.globalVisible
         }
     }
 
@@ -432,8 +432,8 @@ Item {
                         onClicked: {
                             var action = statusItemDelegate.modelData.action
                             if (action === "widget_visibility.toggle") {
-                                var currentlyVisible = root.hostWindow.widgetVisibilityRead.globalVisible
-                                root.hostWindow.widgetVisibilityWrite.setGlobalVisible(!currentlyVisible)
+                                var currentlyVisible = root.hostWindow.widget_visibility.globalVisible
+                                root.hostWindow.widget_visibility.setGlobalVisible(!currentlyVisible)
                             } else if (action && root.appActions) {
                                 root.appActions.trigger(action)
                             }

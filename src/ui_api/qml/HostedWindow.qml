@@ -43,8 +43,7 @@ Window {
     property var settingsWrite: null
     property var windowRead: null
     property var widgetRead: null
-    property var widgetVisibilityRead: null
-    property var widgetVisibilityWrite: null
+    property var widget_visibility: null
     property var tabs: null
     property var connectorRead: null
     property var connectorActions: null

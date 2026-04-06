@@ -77,7 +77,7 @@ def project_overlay_preview_items(
     if manifest is None or manifest.overlay is None:
         raise ValueError(f"Overlay manifest '{plugin_id}' is unavailable")
 
-    candidate_connector_ids = [connector_id] if connector_id else sorted(required_connector_ids(runtime._plugins, plugin_id))
+    candidate_connector_ids = [connector_id] if connector_id else sorted(required_connector_ids(runtime.capability("plugin_discovery").all_plugins(), plugin_id))
     snapshot_map: dict[str, str] = {}
     resolved_connector_id: str | None = None
     for candidate in candidate_connector_ids:

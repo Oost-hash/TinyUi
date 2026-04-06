@@ -86,6 +86,7 @@ def open_main_runtime_window(
         main_manifest,
         shared_capabilities,
         runtime_capabilities,
+        runtime,
         plugin_panel_url=plugin_panel_url,
         plugin_panel_component=plugin_panel_component,
     )
@@ -140,6 +141,7 @@ def register_runtime_window_actions(
                 manifest,
                 shared_capabilities,
                 runtime_capabilities,
+                runtime,
             )
             runtime.mark_window_opening(window_id)
             try:

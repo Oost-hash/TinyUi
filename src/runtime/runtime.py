@@ -23,39 +23,36 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
-from typing import cast
 
 from app_schema.plugin import PluginManifest
-from app_schema.ui import AppManifest, MenuItem as MenuItemDecl, MenuSeparator as MenuSeparatorDecl, StatusbarItemDecl
+from app_schema.ui import AppManifest
 from runtime.app.paths import AppPaths
-from runtime.connectors import (
-    ConnectorServiceRegistry,
-    register_connector_service,
-    required_connector_ids,
-    unregister_connector_service,
-)
-from runtime.host import active_host_ids, main_window_for
+from runtime.connectors import ConnectorServiceRegistry
+from runtime.host import main_window_for
 from runtime_schema import (
     EventBus, EventType, PluginState, PluginStateData,
-    PluginActivatedData, PluginErrorData,
-    MenuRegisteredData, StatusbarRegisteredData, TabRegisteredData,
     RuntimeShutdownData,
-    WindowRuntimeUpdatedData,
 )
-from runtime.manifest import load_plugin_manifest
 from runtime.persistence import SettingsRegistry, WidgetConfigStore, ConfigSetManager
-from runtime.connectors import ConnectorServiceRegistry
-from runtime_schema import SettingsSpec
-from widget_api import WidgetRegistry
-from runtime.plugins.contracts import PluginContext
-from runtime.plugins.packaged_plugin import resolve_packaged_plugin
-from runtime.plugins.plugin_lifecycle import resolve_plugin_lifecycle
+
+from widget_api import WidgetRegistry, create_default_widget_registry
 from runtime.plugins.plugin_state import PluginStateMachine
-from runtime.ui import WindowRuntimeRecord, WindowRuntimeStatus, project_window_records
-from runtime.widgets import WidgetRuntimeRecord, project_overlay_widget_records
-from widget_api import create_default_widget_registry
+from runtime.ui import WindowRuntimeRecord, WindowRuntimeStatus
+from runtime.widgets import WidgetRuntimeRecord
+from runtime.capabilities._base import RuntimeCapability
+
+# Capability imports for type overloads
+from runtime.capabilities.boot_registration import BootRegistrationCapability
+from runtime.capabilities.plugin_discovery import PluginDiscoveryCapability
+from runtime.capabilities.plugin_icon import PluginIconCapability
+from runtime.capabilities.plugin_lifecycle import PluginLifecycleCapability
+from runtime.capabilities.widget_management import WidgetManagementCapability
+from runtime.capabilities.widget_visibility import WidgetVisibilityCapability
+from runtime.capabilities.window_state import WindowStateCapability
+
+from PySide6.QtCore import QObject
+from typing import overload, Literal
 
 
 class Runtime:
@@ -67,32 +64,20 @@ class Runtime:
         config_manager: ConfigSetManager,
         connector_registry: ConnectorServiceRegistry | None = None,
         widget_registry: WidgetRegistry | None = None,
-        plugin_discovery: object | None = None,
-        plugin_lifecycle: object | None = None,
-        window_runtime: object | None = None,
     ) -> None:
-        self._plugins: dict[str, PluginManifest] = {}
-        self._plugin_roots: dict[str, Path] = {}
-        self._plugin_import_roots: set[str] = set()
         self.paths: AppPaths | None = None
         self.settings: SettingsRegistry = settings
         self.widget_store: WidgetConfigStore = widget_store
         self.config_manager: ConfigSetManager = config_manager
-        self._plugin_states: dict[str, PluginStateMachine] = {}
-        self._active_plugin: str | None = None  # Currently active UI plugin
-        self._invalid_plugin_icons: set[str] = set()
         self._shutdown_requested = False
-        self._global_widgets_visible: bool = True
         self.connector_services: ConnectorServiceRegistry = connector_registry or ConnectorServiceRegistry()
         self.widget_registry: WidgetRegistry = widget_registry or create_default_widget_registry()
-        # New domain components (optional during migration)
-        self.plugin_discovery = plugin_discovery
-        self.plugin_lifecycle = plugin_lifecycle
-        self.window_runtime = window_runtime
-        # Fallback window state tracking (used when window_runtime is None)
-        self._window_states: dict[str, WindowRuntimeStatus] = {}
-        self._window_errors: dict[str, str] = {}
-        self.events = event_bus  # Use shared event bus
+        self.events = event_bus
+        # Capability registry
+        # Capability registry
+        self._capabilities: dict[str, RuntimeCapability] = {}
+        self._qml_capabilities: dict[str, QObject] = {}
+        self._register_default_capabilities()
         self._subscribe_to_events()
 
     def _require_paths(self) -> AppPaths:
@@ -107,7 +92,69 @@ class Runtime:
         """Subscribe to boot and UI events."""
         self.events.on(EventType.BOOT_INIT, self._on_boot_init)
         self.events.on(EventType.UI_PLUGIN_SELECTED, self._on_ui_plugin_selected)
-    
+
+    def _register_default_capabilities(self) -> None:
+        """Register default runtime capabilities."""
+        self.register(PluginDiscoveryCapability())  # Must be first - other capabilities depend on it
+        self.register(WidgetVisibilityCapability())
+        self.register(WindowStateCapability())
+        self.register(PluginIconCapability())
+        self.register(BootRegistrationCapability())
+        self.register(PluginLifecycleCapability())
+        self.register(WidgetManagementCapability())
+
+    def register(self, capability: RuntimeCapability) -> None:
+        """Register a capability with the runtime.
+
+        Args:
+            capability: Object implementing the RuntimeCapability protocol.
+        """
+        self._capabilities[capability.name] = capability
+        capability.attach(self)
+        qml_iface = capability.qml_interface()
+        if qml_iface is not None:
+            self._qml_capabilities[capability.name] = qml_iface
+
+    # === Capability overloads (auto-generated) ===
+
+    @overload
+    def capability(self, name: Literal["boot_registration"]) -> BootRegistrationCapability: ...
+
+    @overload
+    def capability(self, name: Literal["plugin_discovery"]) -> PluginDiscoveryCapability: ...
+
+    @overload
+    def capability(self, name: Literal["plugin_icon"]) -> PluginIconCapability: ...
+
+    @overload
+    def capability(self, name: Literal["plugin_lifecycle"]) -> PluginLifecycleCapability: ...
+
+    @overload
+    def capability(self, name: Literal["widget_management"]) -> WidgetManagementCapability: ...
+
+    @overload
+    def capability(self, name: Literal["widget_visibility"]) -> WidgetVisibilityCapability: ...
+
+    @overload
+    def capability(self, name: Literal["window_state"]) -> WindowStateCapability: ...
+
+    @overload
+    def capability(self, name: str) -> RuntimeCapability: ...
+
+    def capability(self, name: str) -> RuntimeCapability:
+        """Get a registered capability by name."""
+        if name not in self._capabilities:
+            raise KeyError(f"Capability '{name}' not found")
+        return self._capabilities[name]
+
+    def qml_capabilities(self) -> dict[str, QObject]:
+        """Get all QML-capable interfaces.
+
+        Returns:
+            Dictionary mapping capability names to QML interfaces.
+        """
+        return dict(self._qml_capabilities)
+
     def _on_ui_plugin_selected(self, event) -> None:
         """Handle user plugin selection — activate the chosen plugin."""
         self.set_active_plugin(event.data.plugin_id)
@@ -117,188 +164,58 @@ class Runtime:
         # AppPaths.detect() handles both frozen and source modes
         self.paths = AppPaths.detect()
         self._boot_runtime()
+        # Load persisted settings after registration (done by BootRegistrationCapability)
+        self.settings.load_persisted()
         self._apply_initial_runtime_state()
-    
+
     def _boot_runtime(self) -> None:
         """Boot runtime data, discovery, and registrations without activation policy."""
-        settings = self._require_settings()
-        self._load_plugin("tinyui")
-        self._discover_plugins()
-        self._init_plugin_states()
-        self._register_settings()
-        settings.load_persisted()
-        self._register_menus()
-        self._register_statusbar()
-        self._register_tabs()
+        discovery = self.capability("plugin_discovery")
+        discovery.load_plugin("tinyui")
+        discovery.discover_plugins()
+        # Initialize plugin states via capability
+        self.capability("plugin_lifecycle").initialize_states(discovery.plugin_ids())
+        # Register settings, menus, statusbar, tabs from manifests
+        # (Must happen after plugin discovery so manifests are available)
+        self.capability("boot_registration").register_all()
 
-    # ── Plugin loading ────────────────────────────────────────────────────
-
-    def _load_plugin(self, plugin_id: str) -> None:
-        paths = self._require_paths()
-        if plugin_id == "tinyui":
-            manifest_path = paths.host_dir / "manifest.toml"
-            resource_root = paths.host_dir
-            self._plugin_import_roots.add(str(paths.host_dir.parent.parent))
-        else:
-            plugin_dir = paths.plugins_dir / plugin_id
-            raw_manifest_path = plugin_dir / "manifest.toml"
-            if raw_manifest_path.exists():
-                manifest_path = raw_manifest_path
-                resource_root = plugin_dir
-                self._plugin_import_roots.add(str(plugin_dir.parent.parent))
-            else:
-                packaged = resolve_packaged_plugin(plugin_dir, paths)
-                if packaged is None:
-                    return
-                manifest_path = packaged.manifest_path
-                resource_root = packaged.plugin_root
-                if packaged.import_root is not None:
-                    self._plugin_import_roots.add(str(packaged.import_root))
-        if not manifest_path.exists():
-            return
-        manifest = load_plugin_manifest(manifest_path, resource_root=resource_root)
-        self._validate_manifest_extensions(manifest)
-        self._plugins[plugin_id] = manifest
-        self._plugin_roots[plugin_id] = resource_root
-
-    def _validate_manifest_extensions(self, manifest: PluginManifest) -> None:
-        """Validate typed manifest extensions that live outside the generic parser core."""
-        if manifest.overlay is None:
-            return
-        unknown_widgets = [
-            widget.widget
-            for widget in manifest.overlay.widgets
-            if not self.widget_registry.has(widget.widget)
-        ]
-        if unknown_widgets:
-            rendered = ", ".join(sorted(set(unknown_widgets)))
-            raise ValueError(
-                f"Overlay plugin '{manifest.plugin_id}' references unknown widgets: {rendered}"
-            )
-        for widget in manifest.overlay.widgets:
-            definition = self.widget_registry.get(widget.widget)
-            assert definition is not None
-            missing_bindings = [
-                binding
-                for binding in definition.required_bindings
-                if binding not in widget.bindings
-            ]
-            if missing_bindings:
-                rendered = ", ".join(missing_bindings)
-                raise ValueError(
-                    f"Overlay plugin '{manifest.plugin_id}' widget '{widget.id}' is missing bindings: {rendered}"
-                )
-
-    def _validate_overlay_binding_sources(self, plugin_id: str) -> None:
-        """Validate that overlay bindings can be resolved from active connector services."""
-        manifest = self._plugins[plugin_id]
-        if manifest.overlay is None:
-            return
-
-        required_connectors = sorted(required_connector_ids(self._plugins, plugin_id))
-        available_binding_keys: set[str] = set()
-        for connector_id in required_connectors:
-            self.connector_services.update(connector_id)
-            available_binding_keys.update(key for key, _ in self.connector_services.inspect(connector_id))
-
-        missing_keys = sorted(
-            {
-                binding_value
-                for widget in manifest.overlay.widgets
-                for binding_value in widget.bindings.values()
-                if binding_value not in available_binding_keys
-            }
-        )
-        if missing_keys:
-            rendered = ", ".join(missing_keys)
-            raise ValueError(
-                f"Overlay plugin '{plugin_id}' references unavailable binding keys: {rendered}"
-            )
-
-    def _discover_plugins(self) -> None:
-        paths = self._require_paths()
-        for folder in sorted(paths.plugins_dir.iterdir()):
-            if not folder.is_dir() or folder.name == "tinyui":
-                continue
-            if (folder / "manifest.toml").exists() or (folder / "_internal" / "manifest.toml").exists():
-                self._load_plugin(folder.name)
-
-    def _plugin_root(self, plugin_id: str) -> Path:
-        if plugin_id == "tinyui":
-            return self._require_paths().host_dir
-        return self._plugin_roots[plugin_id]
-
-    def _plugin_icon_url(self, plugin_id: str) -> str:
-        manifest = self._plugins.get(plugin_id)
-        if manifest is None or not manifest.icon:
-            return ""
-
-        plugin_root = self._plugin_root(plugin_id).resolve()
-        icon_path = (plugin_root / manifest.icon).resolve()
-        try:
-            icon_path.relative_to(plugin_root)
-        except ValueError:
-            self._warn_invalid_plugin_icon(
-                plugin_id,
-                f"resolved outside plugin root: {manifest.icon}",
-            )
-            return ""
-        if not icon_path.exists():
-            self._warn_invalid_plugin_icon(
-                plugin_id,
-                f"file not found: {manifest.icon}",
-            )
-            return ""
-        self._invalid_plugin_icons.discard(plugin_id)
-        return icon_path.as_uri()
-
-    def _warn_invalid_plugin_icon(self, plugin_id: str, reason: str) -> None:
-        if plugin_id in self._invalid_plugin_icons:
-            return
-        self._invalid_plugin_icons.add(plugin_id)
-        print(f"[runtime] Ignoring invalid plugin icon for '{plugin_id}': {reason}", file=sys.stderr)
+    # ── Plugin discovery (delegated to capability) ────────────────────────
 
     def plugin_ids(self) -> list[str]:
-        return list(self._plugins.keys())
+        """Get all loaded plugin IDs."""
+        discovery = self.capability("plugin_discovery")
+        return discovery.plugin_ids()
 
     def plugin_manifest(self, plugin_id: str) -> PluginManifest | None:
-        return self._plugins.get(plugin_id)
+        """Get manifest for a loaded plugin."""
+        discovery = self.capability("plugin_discovery")
+        return discovery.plugin_manifest(plugin_id)
+
+    def _plugin_root(self, plugin_id: str) -> Path:
+        """Get resource root for a loaded plugin."""
+        discovery = self.capability("plugin_discovery")
+        root = discovery.plugin_root(plugin_id)
+        if root is None:
+            raise KeyError(f"Plugin '{plugin_id}' not found")
+        return root
 
     def plugin_icon_url(self, plugin_id: str) -> str:
-        return self._plugin_icon_url(plugin_id)
+        """Get icon URL for a plugin."""
+        return self.capability("plugin_icon").get_icon_url(plugin_id)
 
     def overlay_widget_records(self, plugin_id: str) -> list[WidgetRuntimeRecord]:
         """Return runtime-owned widget records for one overlay plugin."""
-        return project_overlay_widget_records(
-            self._plugins,
-            self.connector_services,
-            plugin_id=plugin_id,
-            active_plugin=self._active_plugin,
-            global_visible=self._global_widgets_visible,
-            widget_store=self.widget_store,
-        )
+        return self.capability("widget_management").overlay_widget_records(plugin_id)
 
     def active_overlay_widget_records(self) -> list[WidgetRuntimeRecord]:
         """Return widget records for the currently active overlay."""
-        if self._shutdown_requested:
-            return []
-        if self._active_plugin is None:
-            return []
-        manifest = self._plugins.get(self._active_plugin)
-        if manifest is None or manifest.plugin_type != "overlay":
-            return []
-        return self.overlay_widget_records(self._active_plugin)
+        return self.capability("widget_management").active_overlay_widget_records()
 
     def window_records(self) -> list[WindowRuntimeRecord]:
         """Return runtime-owned records for manifest-declared application windows."""
-        if self.window_runtime is not None:
-            from runtime.windows.runtime import WindowRuntime
-            return cast(WindowRuntime, self.window_runtime).project_records(self._plugins)
-        return project_window_records(
-            self._plugins,
-            window_states=self._window_states,
-            window_errors=self._window_errors,
-        )
+        window_state = self.capability("window_state")
+        discovery = self.capability("plugin_discovery")
+        return window_state.project_records(discovery.all_plugins())
 
     def window_record(self, window_id: str) -> WindowRuntimeRecord | None:
         """Return one runtime-owned window record by id."""
@@ -306,53 +223,27 @@ class Runtime:
 
     def mark_window_opening(self, window_id: str, plugin_id: str = "") -> None:
         """Record that a window handoff to ui_api has started."""
-        if self.window_runtime is not None:
-            from runtime.windows.runtime import WindowRuntime
-            # WindowRuntime.mark_opening takes role, not plugin_id
-            cast(WindowRuntime, self.window_runtime).mark_opening(window_id, "")
-        else:
-            self._set_window_status(window_id, WindowRuntimeStatus.OPENING, reason="opening")
+        self.capability("window_state").mark_opening(window_id)
 
     def mark_window_open(self, window_id: str, plugin_id: str = "") -> None:
         """Record that a window is open."""
-        if self.window_runtime is not None:
-            from runtime.windows.runtime import WindowRuntime
-            cast(WindowRuntime, self.window_runtime).mark_open(window_id)
-        else:
-            self._set_window_status(window_id, WindowRuntimeStatus.OPEN, reason="open")
+        self.capability("window_state").mark_open(window_id)
 
     def mark_window_hidden(self, window_id: str) -> None:
         """Record that a window remains hosted but hidden."""
-        if self.window_runtime is not None:
-            from runtime.windows.runtime import WindowRuntime
-            cast(WindowRuntime, self.window_runtime).mark_hidden(window_id)
-        else:
-            self._set_window_status(window_id, WindowRuntimeStatus.HIDDEN, reason="hidden")
+        self.capability("window_state").mark_hidden(window_id)
 
     def mark_window_closing(self, window_id: str) -> None:
         """Record that a window is in the shutdown or close handoff."""
-        if self.window_runtime is not None:
-            from runtime.windows.runtime import WindowRuntime
-            cast(WindowRuntime, self.window_runtime).mark_closing(window_id)
-        else:
-            self._set_window_status(window_id, WindowRuntimeStatus.CLOSING, reason="closing")
+        self.capability("window_state").mark_closing(window_id)
 
     def mark_window_closed(self, window_id: str) -> None:
         """Record that a window has been closed."""
-        if self.window_runtime is not None:
-            from runtime.windows.runtime import WindowRuntime
-            cast(WindowRuntime, self.window_runtime).mark_closed(window_id)
-        else:
-            self._set_window_status(window_id, WindowRuntimeStatus.CLOSED, reason="closed")
+        self.capability("window_state").mark_closed(window_id)
 
     def mark_window_error(self, window_id: str, message: str) -> None:
         """Record that a window failed to open or close correctly."""
-        if self.window_runtime is not None:
-            from runtime.windows.runtime import WindowRuntime
-            cast(WindowRuntime, self.window_runtime).mark_error(window_id, message)
-        else:
-            self._window_errors[window_id] = message
-            self._set_window_status(window_id, WindowRuntimeStatus.ERROR, reason="error")
+        self.capability("window_state").mark_error(window_id, message)
 
     def begin_shutdown(self, reason: str = "app_quit") -> None:
         """Project shutdown intent onto all currently hosted windows."""
@@ -364,382 +255,84 @@ class Runtime:
             if record.status in {WindowRuntimeStatus.OPEN, WindowRuntimeStatus.OPENING, WindowRuntimeStatus.HIDDEN}:
                 self.mark_window_closing(record.window_id)
 
-    def _set_window_status(self, window_id: str, status: WindowRuntimeStatus, *, reason: str) -> None:
-        self._window_states[window_id] = status
-        if status != WindowRuntimeStatus.ERROR:
-            self._window_errors.pop(window_id, None)
-        self.events.emit_typed(EventType.WINDOW_RUNTIME_UPDATED, WindowRuntimeUpdatedData(reason=reason))
-
-    # ── Settings registration ─────────────────────────────────────────────
-
-    def _register_settings(self) -> None:
-        settings = self._require_settings()
-        paths = self._require_paths()
-        for plugin_id, plugin_manifest in self._plugins.items():
-            declared_keys = {s.key for s in plugin_manifest.settings}
-            if "enabled" not in declared_keys:
-                settings.register(plugin_id, SettingsSpec(
-                    key="enabled",
-                    label="Enable plugin",
-                    default=True,
-                    type="bool",
-                ))
-            for decl in plugin_manifest.settings:
-                settings.register(plugin_id, SettingsSpec(
-                    key=decl.key,
-                    label=decl.label,
-                    default=decl.default,
-                    type=decl.type,
-                    choices=list(decl.choices),
-                ))
-            # create namespace dir so persistence.save() only writes the file
-            (paths.config_dir / plugin_id).mkdir(exist_ok=True)
-
-    # ── Menu registration ─────────────────────────────────────────────────
-
-    def _register_menus(self) -> None:
-        """Register menus from manifests - emit events for UI layer."""
-        for plugin_manifest in self._plugins.values():
-            source = plugin_manifest.plugin_type
-            windows = [] if plugin_manifest.ui is None else plugin_manifest.ui.windows
-            for window in windows:
-                for item in window.menu:
-                    if isinstance(item, MenuSeparatorDecl):
-                        self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
-                            window_id=window.id,
-                            separator=True,
-                            source=source,
-                        ))
-                    else:
-                        self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
-                            window_id=window.id,
-                            label=item.label,
-                            action=item.action,
-                            source=source,
-                        ))
-            if plugin_manifest.ui and plugin_manifest.ui.menu_label and plugin_manifest.ui.plugin_menu:
-                window_id = f"plugin:{plugin_manifest.plugin_id}"
-                for item in plugin_manifest.ui.plugin_menu:
-                    if isinstance(item, MenuSeparatorDecl):
-                        self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
-                            window_id=window_id,
-                            separator=True,
-                            source="plugin",
-                        ))
-                    else:
-                        self.events.emit_typed(EventType.MENU_REGISTERED, MenuRegisteredData(
-                            window_id=window_id,
-                            label=item.label,
-                            action=item.action,
-                            source="plugin",
-                        ))
-
-    # ── Statusbar registration ────────────────────────────────────────────
-
-    def _register_statusbar(self) -> None:
-        """Register statusbar items from manifests - emit events for UI layer."""
-        for plugin_manifest in self._plugins.values():
-            source = plugin_manifest.plugin_type
-            windows = [] if plugin_manifest.ui is None else plugin_manifest.ui.windows
-            for window in windows:
-                for item in window.statusbar:
-                    self.events.emit_typed(EventType.STATUSBAR_REGISTERED, StatusbarRegisteredData(
-                        window_id=window.id,
-                        icon=item.icon,
-                        text=item.text,
-                        tooltip=item.tooltip,
-                        action=item.action,
-                        side=item.side,
-                        source=source,
-                    ))
-
-    # ── Tab registration ──────────────────────────────────────────────────
-
-    def _register_tabs(self) -> None:
-        """Register tabs from manifests - emit events for UI layer."""
-        for plugin_manifest in self._plugins.values():
-            tabs = [] if plugin_manifest.ui is None else plugin_manifest.ui.tabs
-            for tab in tabs:
-                self.events.emit_typed(EventType.TAB_REGISTERED, TabRegisteredData(
-                    window_id=tab.target,
-                    id=tab.id,
-                    label=tab.label,
-                    target=tab.target,
-                    surface=str(tab.surface),
-                    plugin_id=tab.plugin_id,
-                ))
-
     # ── Plugin activation ─────────────────────────────────────────────────
-
-    def _plugin_lifecycle(self, plugin_id: str):
-        """Resolve lifecycle adapter for the plugin."""
-        manifest = self._plugins[plugin_id]
-        return resolve_plugin_lifecycle(
-            plugin_id=plugin_id,
-            plugin_type=manifest.plugin_type,
-            plugin_root=self._plugin_root(plugin_id),
-        )
-
-    def _active_component_ids(self) -> set[str]:
-        """Return the components currently in the active state."""
-        return {
-            plugin_id
-            for plugin_id, sm in self._plugin_states.items()
-            if sm.state == PluginState.ACTIVE
-        }
-
-    def _transition_component(
-        self,
-        plugin_id: str,
-        target_state: PluginState,
-        *,
-        enabling_reason: str = "",
-        loading_reason: str = "",
-        unloading_reason: str = "",
-        disabled_reason: str = "",
-    ) -> bool:
-        """Transition a component to a desired state."""
-        sm = self._plugin_states.get(plugin_id)
-        if sm is None:
-            return False
-        if target_state == PluginState.ACTIVE:
-            if sm.state == PluginState.ACTIVE:
-                return True
-            if sm.state == PluginState.DISABLED:
-                sm.transition(PluginState.ENABLING, enabling_reason)
-                self._emit_plugin_state_changed(plugin_id, "disabled", "enabling")
-                sm.transition(PluginState.LOADING, loading_reason)
-                self._emit_plugin_state_changed(plugin_id, "enabling", "loading")
-            self._load_and_activate_plugin(plugin_id)
-            if sm.state == PluginState.ACTIVE and self._plugins[plugin_id].plugin_type == "connector":
-                register_connector_service(
-                    plugins=self._plugins,
-                    connector_services=self.connector_services,
-                    events=self.events,
-                    plugin_id=plugin_id,
-                )
-            return sm.state == PluginState.ACTIVE
-
-        if target_state != PluginState.DISABLED:
-            return False
-        if sm.state != PluginState.ACTIVE:
-            return False
-        old_state = sm.state_name
-        sm.transition(PluginState.UNLOADING, unloading_reason)
-        self._emit_plugin_state_changed(plugin_id, old_state, "unloading")
-        if self._plugins[plugin_id].plugin_type == "connector":
-            unregister_connector_service(
-                connector_services=self.connector_services,
-                events=self.events,
-                plugin_id=plugin_id,
-            )
-        self._deactivate_plugin(plugin_id)
-        sm.transition(PluginState.DISABLED, disabled_reason)
-        self._emit_plugin_state_changed(plugin_id, "unloading", "disabled")
-        return True
-
-    def _reconcile_active_plugin(self, active_plugin: str | None, *, reason: str) -> None:
-        """Reconcile runtime state for boot or active-plugin selection."""
-        old_plugin = self._active_plugin
-        old_connectors = required_connector_ids(self._plugins, old_plugin)
-        new_connectors = required_connector_ids(self._plugins, active_plugin)
-        host_ids = active_host_ids(self._plugins)
-
-        if old_plugin and old_plugin != active_plugin:
-            self._transition_component(
-                old_plugin,
-                PluginState.DISABLED,
-                unloading_reason="Switching plugin",
-                disabled_reason="Switched away",
-            )
-
-        for connector_id in sorted((old_connectors - new_connectors) & self._active_component_ids()):
-            self._transition_component(
-                connector_id,
-                PluginState.DISABLED,
-                unloading_reason="Connector no longer required",
-                disabled_reason="Connector released",
-            )
-
-        for plugin_id in sorted(host_ids):
-            if self.get_plugin_state(plugin_id) == PluginState.ACTIVE:
-                continue
-            self._transition_component(
-                plugin_id,
-                PluginState.ACTIVE,
-                enabling_reason="Host enabling",
-                loading_reason="Host loading",
-            )
-
-        for connector_id in sorted(new_connectors - self._active_component_ids()):
-            self._transition_component(
-                connector_id,
-                PluginState.ACTIVE,
-                enabling_reason="Connector enabling",
-                loading_reason="Connector loading",
-            )
-
-        self._active_plugin = active_plugin
-        if active_plugin is not None:
-            is_boot_selection = reason == "boot"
-            self._transition_component(
-                active_plugin,
-                PluginState.ACTIVE,
-                enabling_reason="Boot enabling" if is_boot_selection else "User enabled",
-                loading_reason="Boot loading" if is_boot_selection else "Loading module",
-            )
-            self._seed_widget_config(active_plugin)
-
-    def _seed_widget_config(self, plugin_id: str) -> None:
-        """Seed widget config defaults when an overlay becomes active."""
-        manifest = self._plugins.get(plugin_id)
-        if manifest is None or manifest.overlay is None:
-            return
-        self.widget_store.ensure_defaults(plugin_id, manifest.overlay.widgets)
 
     def _ensure_plugin_import_roots(self) -> None:
         """Ensure plugin packages are importable before lifecycle activation."""
-        paths = self._require_paths()
-        plugins_parent = str(paths.plugins_dir.parent)
-        import_roots = [plugins_parent, *sorted(self._plugin_import_roots)]
-        for import_root in reversed(import_roots):
-            if import_root not in sys.path:
-                sys.path.insert(0, import_root)
-
-    def _plugin_context(self, plugin_id: str) -> PluginContext:
-        """Build the shared lifecycle context for a plugin."""
-        return PluginContext(
-            plugin_id=plugin_id,
-            settings=self._require_settings().scoped(plugin_id),
-            connector_services=self.connector_services,
-        )
-
-    def _emit_plugin_state_changed(self, plugin_id: str, old_state: str, new_state: str) -> None:
-        """Emit the shared plugin state changed event payload."""
-        self.events.emit_typed(
-            EventType.PLUGIN_STATE_CHANGED,
-            PluginStateData(plugin_id=plugin_id, old_state=old_state, new_state=new_state),
-        )
-
-    def _load_and_activate_plugin(self, plugin_id: str) -> None:
-        """Load plugin module and activate it."""
-        sm = self._plugin_states.get(plugin_id)
-        if not sm:
-            return
-
-        try:
-            if self._plugins[plugin_id].plugin_type == "overlay":
-                self._validate_overlay_binding_sources(plugin_id)
-            self._plugin_lifecycle(plugin_id).activate(self._plugin_context(plugin_id))
-            sm.transition(PluginState.ACTIVE, "Activation successful")
-            self._emit_plugin_state_changed(plugin_id, "loading", "active")
-            self.events.emit_typed(EventType.PLUGIN_ACTIVATED, PluginActivatedData(plugin_id=plugin_id))
-        except Exception as e:
-            sm.set_error(str(e))
-            self._emit_plugin_state_changed(plugin_id, "loading", "error")
-            self.events.emit_typed(EventType.PLUGIN_ERROR, PluginErrorData(plugin_id=plugin_id, error_message=str(e)))
-
-    def _deactivate_plugin(self, plugin_id: str) -> None:
-        """Deactivate a plugin."""
-        try:
-            self._plugin_lifecycle(plugin_id).deactivate(self._plugin_context(plugin_id))
-        except Exception:
-            pass  # Ignore deactivation errors
+        discovery = self.capability("plugin_discovery")
+        discovery.ensure_import_roots()
 
     def _apply_initial_runtime_state(self) -> None:
         """Apply the first runtime state after boot has prepared all inputs."""
         self._ensure_plugin_import_roots()
         settings = self._require_settings()
-        self._reconcile_active_plugin(next(
-            (
-                plugin_id
-                for plugin_id, manifest in self._plugins.items()
-                if manifest.plugin_type in {"plugin", "overlay"} and settings.get(plugin_id, "enabled") is not False
-            ),
-            None,
-        ), reason="boot")
+        lifecycle = self.capability("plugin_lifecycle")
+        discovery = self.capability("plugin_discovery")
+        if lifecycle is not None:
+            lifecycle.reconcile_active_plugin(
+                active_plugin=next(
+                (
+                    plugin_id
+                    for plugin_id, manifest in discovery.all_plugins().items()
+                    if manifest.plugin_type in {"plugin", "overlay"} and settings.get(plugin_id, "enabled") is not False
+                ),
+                None,
+            ), reason="boot")
 
     @property
     def active_plugin(self) -> str | None:
         """Get the currently active UI plugin ID."""
-        return self._active_plugin
+        lifecycle = self.capability("plugin_lifecycle")
+        if lifecycle is None:
+            return None
+        return lifecycle.get_active()
 
     def set_active_plugin(self, plugin_id: str) -> bool:
         """Set the active UI component. Returns False for non-UI plugin types."""
-        if plugin_id not in self._plugins:
+        lifecycle = self.capability("plugin_lifecycle")
+        if lifecycle is None:
             return False
-        manifest = self._plugins[plugin_id]
-        if manifest.plugin_type not in {"plugin", "overlay"}:
-            return False  # Host and connectors cannot be active UI component
-        if self._active_plugin == plugin_id:
-            return True
-        self._reconcile_active_plugin(
-            plugin_id,
-            reason="user_selection",
-        )
-        return True
+        return lifecycle.set_active(plugin_id)
 
-    # ── Global widget visibility ──────────────────────────────────────────
-
-    def set_global_widgets_visible(self, visible: bool) -> None:
-        """Set global visibility for all widgets."""
-        self._global_widgets_visible = visible
-        self._emit_widget_visibility_changed()
-
-    def is_global_widgets_visible(self) -> bool:
-        """Get global widget visibility state."""
-        return self._global_widgets_visible
-
-    def _emit_widget_visibility_changed(self) -> None:
-        """Emit event when widget visibility changes."""
-        from runtime_schema import WidgetRuntimeUpdatedData
-        self.events.emit_typed(
-            EventType.WIDGET_RUNTIME_UPDATED,
-            WidgetRuntimeUpdatedData(reason="visibility_changed")
-        )
-
-    # ── Plugin state management ───────────────────────────────────────────
-
-    def _init_plugin_states(self) -> None:
-        """Initialize state machines for all plugins."""
-        for plugin_id in self._plugins:
-            self._plugin_states[plugin_id] = PluginStateMachine(plugin_id)
+    # ── Plugin state management (delegated to capability) ─────────────────
 
     def get_plugin_state(self, plugin_id: str) -> PluginState:
         """Get current state of a plugin."""
-        if plugin_id not in self._plugin_states:
+        lifecycle = self.capability("plugin_lifecycle")
+        if lifecycle is None:
             return PluginState.DISABLED
-        return self._plugin_states[plugin_id].state
+        return lifecycle.get_state(plugin_id)
 
     def get_plugin_state_machine(self, plugin_id: str) -> PluginStateMachine | None:
         """Get state machine for a plugin."""
-        return self._plugin_states.get(plugin_id)
+        lifecycle = self.capability("plugin_lifecycle")
+        if lifecycle is None:
+            return None
+        return lifecycle.get_state_machine(plugin_id)
 
     def enable_plugin(self, plugin_id: str) -> bool:
         """Start enabling a plugin (disabled -> enabling -> loading -> active)."""
-        return self._transition_component(
-            plugin_id,
-            PluginState.ACTIVE,
-            enabling_reason="User enabled",
-            loading_reason="Loading module",
-        )
+        lifecycle = self.capability("plugin_lifecycle")
+        if lifecycle is None:
+            return False
+        return lifecycle.enable(plugin_id)
 
     def disable_plugin(self, plugin_id: str) -> bool:
         """Disable a plugin (active -> unloading -> disabled)."""
-        return self._transition_component(
-            plugin_id,
-            PluginState.DISABLED,
-            unloading_reason="User disabled",
-            disabled_reason="Disabled",
-        )
+        lifecycle = self.capability("plugin_lifecycle")
+        if lifecycle is None:
+            return False
+        return lifecycle.disable(plugin_id)
 
     # ── Manifest queries ──────────────────────────────────────────────────
 
     def all_windows(self) -> list[AppManifest]:
-        return [w for pm in self._plugins.values() for w in ([] if pm.ui is None else pm.ui.windows)]
+        discovery = self.capability("plugin_discovery")
+        return [w for pm in discovery.all_plugins().values() for w in ([] if pm.ui is None else pm.ui.windows)]
 
     def main_window(self) -> AppManifest | None:
-        return main_window_for(self._plugins)
+        discovery = self.capability("plugin_discovery")
+        return main_window_for(discovery.all_plugins())
 
     def window_for(self, window_id: str) -> AppManifest | None:
         return next(

@@ -82,9 +82,6 @@ def booted_runtime() -> Generator:
         config_manager=persistence.config_manager,
         connector_registry=connectors_data.registry if connectors_data else None,
         widget_registry=widget_api_data.registry if widget_api_data else None,
-        plugin_discovery=plugins_data.discovery if plugins_data else None,
-        plugin_lifecycle=plugins_data.lifecycle if plugins_data else None,
-        window_runtime=window_runtime_data.window_runtime if window_runtime_data else None,
     )
 
     # Emit boot init to complete runtime initialization
@@ -147,7 +144,6 @@ def create_test_runtime_with_paths(paths) -> "Runtime":
         config_manager=config_manager,
         connector_registry=connectors_data.registry if connectors_data else None,
         widget_registry=widget_api_data.registry if widget_api_data else None,
-        window_runtime=window_runtime_data.window_runtime if window_runtime_data else None,
     )
     
     # Manually set paths since we bypassed normal boot
@@ -205,5 +201,4 @@ def create_minimal_test_runtime(bus=None):
         config_manager=config_manager,
         connector_registry=connectors_data.registry if connectors_data else None,
         widget_registry=widget_api_data.registry if widget_api_data else None,
-        window_runtime=window_runtime_data.window_runtime if window_runtime_data else None,
     )

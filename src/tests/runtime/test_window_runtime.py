@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, cast
 
 from app_schema.plugin import PluginManifest
 from app_schema.ui import AppManifest, UiManifest
@@ -70,7 +69,7 @@ def test_runtime_begin_shutdown_marks_open_windows_closing() -> None:
     """Runtime shutdown should project open windows into the closing state."""
 
     runtime = create_minimal_test_runtime()
-    cast(Any, runtime)._plugins = _plugins()
+    runtime.capability("plugin_discovery").set_plugins_for_test(_plugins())
     runtime.mark_window_open("tinyui.main")
     runtime.mark_window_open("devtools.main")
 
@@ -87,14 +86,14 @@ def test_runtime_emits_window_runtime_updates() -> None:
 
     bus = EventBus()
     runtime = create_minimal_test_runtime(bus)
-    cast(Any, runtime)._plugins = _plugins()
+    runtime.capability("plugin_discovery").set_plugins_for_test(_plugins())
 
     runtime.mark_window_opening("tinyui.main")
 
     events = bus.get_history(EventType.WINDOW_RUNTIME_UPDATED)
     assert len(events) == 1
-    # WindowRuntime uses default reason "runtime"
-    assert events[0].data.reason == "runtime"
+    # WindowStateCapability passes status as reason
+    assert events[0].data.reason == "opening"
 
 
 def test_runtime_begin_shutdown_emits_typed_shutdown_event() -> None:
@@ -102,7 +101,7 @@ def test_runtime_begin_shutdown_emits_typed_shutdown_event() -> None:
 
     bus = EventBus()
     runtime = create_minimal_test_runtime(bus)
-    cast(Any, runtime)._plugins = _plugins()
+    runtime.capability("plugin_discovery").set_plugins_for_test(_plugins())
 
     runtime.begin_shutdown("test_close")
     runtime.begin_shutdown("second_call_should_be_ignored")

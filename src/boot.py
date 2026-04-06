@@ -181,9 +181,6 @@ def main() -> int:
         config_manager=persistence.config_manager,
         connector_registry=connector_registry,
         widget_registry=widget_registry,
-        plugin_discovery=plugins_data.discovery if plugins_data else None,
-        plugin_lifecycle=plugins_data.lifecycle if plugins_data else None,
-        window_runtime=window_runtime,
     )
     
     # Create shared capabilities BEFORE BOOT_INIT so they receive events
