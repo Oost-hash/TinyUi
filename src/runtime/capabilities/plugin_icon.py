@@ -95,15 +95,9 @@ class PluginIconCapability:
                 return None
             return self._runtime.paths.host_dir
 
-        # Access internal plugin_roots via runtime's plugin_manifest lookup
-        # The plugin root is stored when plugins are loaded
-        manifest = self._runtime.plugin_manifest(plugin_id)
-        if manifest is None:
-            return None
-            
-        # Get the plugin root from runtime's internal storage
-        # We need to access this via a method that runtime should expose
-        return getattr(self._runtime, '_plugin_roots', {}).get(plugin_id)
+        # Get plugin root from discovery capability
+        discovery = self._runtime.capability("plugin_discovery")
+        return discovery.plugin_root(plugin_id)
 
     def _resolve_icon_path(self, plugin_root: Path, icon: str) -> Path | None:
         """Resolve icon path from plugin root and manifest icon value."""

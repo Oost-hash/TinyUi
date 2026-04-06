@@ -32,10 +32,10 @@ from runtime_schema import (
     TabRegisteredData,
     SettingsSpec,
 )
+from app_schema.ui import MenuItem, MenuSeparator
 
 if TYPE_CHECKING:
     from runtime.runtime import Runtime
-    from app_schema.ui import MenuItem, MenuSeparator
 
 
 class BootRegistrationCapability:
@@ -54,16 +54,18 @@ class BootRegistrationCapability:
         return "boot_registration"
 
     def attach(self, runtime: Runtime) -> None:
-        """Attach to runtime — subscribe to BOOT_INIT event."""
+        """Attach to runtime — called on registration."""
         self._runtime = runtime
-        runtime.events.on(EventType.BOOT_INIT, self._on_boot_init)
 
     def qml_interface(self) -> None:
         """No QML interface for this capability."""
         return None
 
-    def _on_boot_init(self, _event) -> None:
-        """Handle boot initialization — register all manifest declarations."""
+    def register_all(self) -> None:
+        """Register all manifest declarations (settings, menus, statusbar, tabs).
+        
+        Must be called after plugin discovery so manifests are available.
+        """
         self._register_settings()
         self._register_menus()
         self._register_statusbar()
@@ -76,7 +78,7 @@ class BootRegistrationCapability:
 
         settings = self._runtime.settings
         paths = self._runtime.paths
-        for plugin_id, plugin_manifest in self._runtime._plugins.items():
+        for plugin_id, plugin_manifest in self._runtime.capability("plugin_discovery").all_plugins().items():
             declared_keys = {s.key for s in plugin_manifest.settings}
             if "enabled" not in declared_keys:
                 settings.register(plugin_id, SettingsSpec(
@@ -103,7 +105,7 @@ class BootRegistrationCapability:
         if self._runtime is None:
             return
 
-        for plugin_manifest in self._runtime._plugins.values():
+        for plugin_manifest in self._runtime.capability("plugin_discovery").all_plugins().values():
             source = plugin_manifest.plugin_type
             windows = [] if plugin_manifest.ui is None else plugin_manifest.ui.windows
             for window in windows:
@@ -141,7 +143,7 @@ class BootRegistrationCapability:
         if self._runtime is None:
             return
 
-        for plugin_manifest in self._runtime._plugins.values():
+        for plugin_manifest in self._runtime.capability("plugin_discovery").all_plugins().values():
             source = plugin_manifest.plugin_type
             windows = [] if plugin_manifest.ui is None else plugin_manifest.ui.windows
             for window in windows:
@@ -164,7 +166,7 @@ class BootRegistrationCapability:
         if self._runtime is None:
             return
 
-        for plugin_manifest in self._runtime._plugins.values():
+        for plugin_manifest in self._runtime.capability("plugin_discovery").all_plugins().values():
             tabs = [] if plugin_manifest.ui is None else plugin_manifest.ui.tabs
             for tab in tabs:
                 self._runtime.events.emit_typed(
