@@ -25,6 +25,7 @@ def _runtime_stub() -> object:
         paths=object(),
         settings=object(),
         connector_services=object(),
+        widget_store=object(),
         window_records=lambda: [],
         active_overlay_widget_records=lambda: [],
     )
@@ -201,7 +202,7 @@ def test_create_widget_window_host_syncs_current_runtime_records(monkeypatch) ->
             self.properties[key] = value
 
     class _FakeHost:
-        def __init__(self) -> None:
+        def __init__(self, widget_store) -> None:
             created["host"] = self
 
         def sync_records(self, runtime_records) -> None:
@@ -211,6 +212,7 @@ def test_create_widget_window_host_syncs_current_runtime_records(monkeypatch) ->
             created["closed"] = True
 
     class _RuntimeStub:
+        widget_store = object()
         def active_overlay_widget_records(self):
             return records
 
@@ -241,10 +243,11 @@ def test_start_widget_host_returns_ok_result(monkeypatch) -> None:
             self.properties[key] = value
 
     class _RuntimeStub:
+        widget_store = object()
         def active_overlay_widget_records(self):
             return []
 
-    monkeypatch.setattr("widget_api.runtime_host.WidgetWindowHost", lambda: SimpleNamespace(sync_records=lambda _records: None, close_all=lambda: None))
+    monkeypatch.setattr("widget_api.runtime_host.WidgetWindowHost", lambda _widget_store: SimpleNamespace(sync_records=lambda _records: None, close_all=lambda: None))
 
     _host, result = start_widget_host(_FakeApp(), EventBus(), _RuntimeStub())
 
@@ -280,6 +283,9 @@ def test_widget_window_host_resyncs_on_runtime_events(monkeypatch) -> None:
             self.properties[key] = value
 
     class _FakeHost:
+        def __init__(self, widget_store) -> None:
+            pass
+
         def sync_records(self, runtime_records) -> None:
             sync_calls.append(runtime_records)
 
@@ -287,6 +293,7 @@ def test_widget_window_host_resyncs_on_runtime_events(monkeypatch) -> None:
             return None
 
     class _RuntimeStub:
+        widget_store = object()
         def active_overlay_widget_records(self):
             return records
 
