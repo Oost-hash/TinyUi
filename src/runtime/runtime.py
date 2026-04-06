@@ -82,7 +82,6 @@ class Runtime:
         self.config_manager: ConfigSetManager = config_manager
         self._plugin_states: dict[str, PluginStateMachine] = {}
         self._active_plugin: str | None = None  # Currently active UI plugin
-        self._invalid_plugin_icons: set[str] = set()
         self._shutdown_requested = False
         self.connector_services: ConnectorServiceRegistry = connector_registry or ConnectorServiceRegistry()
         self.widget_registry: WidgetRegistry = widget_registry or create_default_widget_registry()
@@ -114,9 +113,11 @@ class Runtime:
         """Register default runtime capabilities."""
         from runtime.capabilities.widget_visibility import WidgetVisibilityCapability
         from runtime.capabilities.window_state import WindowStateCapability
+        from runtime.capabilities.plugin_icon import PluginIconCapability
 
         self.register(WidgetVisibilityCapability())
         self.register(WindowStateCapability())
+        self.register(PluginIconCapability())
 
     def register(self, capability: object) -> None:
         """Register a capability with the runtime.
@@ -274,36 +275,6 @@ class Runtime:
             return self._require_paths().host_dir
         return self._plugin_roots[plugin_id]
 
-    def _plugin_icon_url(self, plugin_id: str) -> str:
-        manifest = self._plugins.get(plugin_id)
-        if manifest is None or not manifest.icon:
-            return ""
-
-        plugin_root = self._plugin_root(plugin_id).resolve()
-        icon_path = (plugin_root / manifest.icon).resolve()
-        try:
-            icon_path.relative_to(plugin_root)
-        except ValueError:
-            self._warn_invalid_plugin_icon(
-                plugin_id,
-                f"resolved outside plugin root: {manifest.icon}",
-            )
-            return ""
-        if not icon_path.exists():
-            self._warn_invalid_plugin_icon(
-                plugin_id,
-                f"file not found: {manifest.icon}",
-            )
-            return ""
-        self._invalid_plugin_icons.discard(plugin_id)
-        return icon_path.as_uri()
-
-    def _warn_invalid_plugin_icon(self, plugin_id: str, reason: str) -> None:
-        if plugin_id in self._invalid_plugin_icons:
-            return
-        self._invalid_plugin_icons.add(plugin_id)
-        print(f"[runtime] Ignoring invalid plugin icon for '{plugin_id}': {reason}", file=sys.stderr)
-
     def plugin_ids(self) -> list[str]:
         return list(self._plugins.keys())
 
@@ -311,7 +282,8 @@ class Runtime:
         return self._plugins.get(plugin_id)
 
     def plugin_icon_url(self, plugin_id: str) -> str:
-        return self._plugin_icon_url(plugin_id)
+        """Get icon URL for a plugin."""
+        return self.capability("plugin_icon").get_icon_url(plugin_id)
 
     def overlay_widget_records(self, plugin_id: str) -> list[WidgetRuntimeRecord]:
         """Return runtime-owned widget records for one overlay plugin."""
