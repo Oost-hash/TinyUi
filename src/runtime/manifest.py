@@ -27,7 +27,7 @@ import tomllib
 from pathlib import Path
 
 from app_schema.connector import ConnectorGameDecl, ConnectorManifest, ConnectorServiceDecl
-from app_schema.overlay import OverlayManifest, OverlayWidgetDecl
+from app_schema.overlay import OverlayManifest, OverlayWidgetDecl, WidgetDefaults
 from app_schema.plugin import PluginManifest
 from app_schema.ui import (
     AppManifest,
@@ -71,7 +71,7 @@ def load_plugin_manifest(path: Path, *, resource_root: Path | None = None) -> Pl
         menu_label=plugin.get("menu"),
     )
     connector_manifest = _parse_connector_manifest(data)
-    overlay_manifest = _parse_overlay_manifest(data, plugin)
+    overlay_manifest = _parse_overlay_manifest(data, plugin, manifest_dir)
 
     manifest = PluginManifest(
         plugin_id=plugin_id,
@@ -181,25 +181,59 @@ def _parse_ui_manifest(
     )
 
 
-def _parse_overlay_manifest(data: dict, plugin: dict) -> OverlayManifest | None:
-    widget_entries = data.get("widget", [])
+def _parse_overlay_manifest(data: dict, plugin: dict, manifest_dir: Path) -> OverlayManifest | None:
     connectors = list(plugin.get("overlay_connectors", data.get("overlay_connectors", [])))
     modules = list(plugin.get("overlay_modules", data.get("overlay_modules", [])))
-    if not widget_entries and not connectors and not modules:
-        return None
-    return OverlayManifest(
-        connectors=connectors,
-        modules=modules,
-        widgets=[
+
+    # Prefer a widgets/ directory declared in [overlay] over inline [[widget]] entries.
+    overlay_section = data.get("overlay", {})
+    widgets_dir_name = overlay_section.get("widgets_dir")
+    if widgets_dir_name:
+        widgets = _load_widgets_from_dir(manifest_dir / widgets_dir_name)
+    else:
+        widgets = [
             OverlayWidgetDecl(
                 id=entry["id"],
                 widget=entry["widget"],
                 label=entry.get("label", ""),
                 bindings=dict(entry.get("bindings", {})),
             )
-            for entry in widget_entries
-        ],
+            for entry in data.get("widget", [])
+        ]
+
+    if not widgets and not connectors and not modules:
+        return None
+    return OverlayManifest(
+        connectors=connectors,
+        modules=modules,
+        widgets=widgets,
     )
+
+
+def _load_widgets_from_dir(widgets_dir: Path) -> list[OverlayWidgetDecl]:
+    """Load widget declarations from individual .toml files in a widgets/ directory."""
+    if not widgets_dir.is_dir():
+        return []
+    decls: list[OverlayWidgetDecl] = []
+    for toml_file in sorted(widgets_dir.glob("*.toml")):
+        with toml_file.open("rb") as f:
+            data = tomllib.load(f)
+        widget = data.get("widget", {})
+        bindings = data.get("bindings", {})
+        defaults_data = data.get("defaults", {})
+        raw_pos = defaults_data.get("position", [0, 0])
+        defaults = WidgetDefaults(
+            enabled=defaults_data.get("enabled", True),
+            position=(int(raw_pos[0]), int(raw_pos[1])) if len(raw_pos) >= 2 else (0, 0),
+        )
+        decls.append(OverlayWidgetDecl(
+            id=widget["id"],
+            widget=widget["widget"],
+            label=widget.get("label", ""),
+            bindings=dict(bindings),
+            defaults=defaults,
+        ))
+    return decls
 
 
 def _parse_connector_manifest(data: dict) -> ConnectorManifest | None:

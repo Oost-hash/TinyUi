@@ -26,16 +26,41 @@ Window {
     id: root
 
     property var widgetData: ({})
+    property var widgetConfigWrite: null
+
+    x: widgetData && widgetData.x !== undefined ? widgetData.x : 0
+    y: widgetData && widgetData.y !== undefined ? widgetData.y : 0
 
     width: 180
     height: 72
     visible: widgetData && widgetData.visible !== undefined ? widgetData.visible : true
     color: "transparent"
-    flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
+    flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus
     title: widgetData && widgetData.widgetId ? widgetData.widgetId : "widget"
+    transientParent: null
 
     TextWidget {
         anchors.fill: parent
         widgetData: root.widgetData
+    }
+
+    // Drag the window by clicking anywhere on it — OS handles the move natively.
+    // On release, the new position is written back to the config store.
+    MouseArea {
+        anchors.fill: parent
+        cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+
+        onPressed: root.startSystemMove()
+
+        onReleased: {
+            if (root.widgetConfigWrite && root.widgetData) {
+                root.widgetConfigWrite.setWidgetPosition(
+                    root.widgetData.overlayId,
+                    root.widgetData.widgetId,
+                    root.x,
+                    root.y
+                )
+            }
+        }
     }
 }

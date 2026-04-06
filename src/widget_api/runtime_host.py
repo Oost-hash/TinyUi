@@ -26,6 +26,7 @@ from __future__ import annotations
 from typing import Protocol, Sequence
 
 from runtime_schema import EventBus, EventType, StartupResult, startup_error, startup_ok
+from runtime.persistence import WidgetConfigStore
 from runtime.widgets import WidgetRuntimePoller, WidgetRuntimeRecord
 from widget_api.window_host import WidgetWindowHost
 
@@ -34,6 +35,8 @@ class WidgetRuntimeLike(Protocol):
     """Minimal runtime surface needed by the widget host bridge."""
 
     def active_overlay_widget_records(self) -> Sequence[WidgetRuntimeRecord]: ...
+    @property
+    def widget_store(self) -> WidgetConfigStore: ...
 
 
 class WidgetWindowHostController:
@@ -71,7 +74,7 @@ class WidgetWindowHostController:
 def create_widget_window_host(app, event_bus: EventBus, runtime: WidgetRuntimeLike) -> WidgetWindowHost:
     """Create the widget window host and keep it synchronized with runtime records."""
 
-    host = WidgetWindowHost()
+    host = WidgetWindowHost(runtime.widget_store)
     controller = WidgetWindowHostController(event_bus, runtime, host)
     poller = WidgetRuntimePoller(event_bus)
     controller.sync()

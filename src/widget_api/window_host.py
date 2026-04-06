@@ -31,6 +31,8 @@ from PySide6.QtCore import QUrl
 from PySide6.QtQml import QQmlComponent
 from PySide6.QtQuick import QQuickWindow
 
+from capabilities.widget_config_write import WidgetConfigWrite
+from runtime.persistence import WidgetConfigStore
 from runtime.widgets import WidgetRuntimeRecord, WidgetRuntimeStatus
 from ui_api.qt import create_engine
 
@@ -46,9 +48,16 @@ class _HostedWidgetWindow:
 
 
 class WidgetWindowHost:
-    """Manage frameless widget windows for render-ready runtime records."""
+    """Manage frameless widget windows for render-ready runtime records.
 
-    def __init__(self) -> None:
+    Receives a WidgetConfigStore to read persisted positions and a
+    WidgetConfigWrite capability that is injected into each widget window
+    so QML can write position back after a drag.
+    """
+
+    def __init__(self, widget_store: WidgetConfigStore) -> None:
+        self._widget_store = widget_store
+        self._widget_config_write = WidgetConfigWrite(widget_store)
         self._engine = create_engine()
         self._component = QQmlComponent(
             self._engine,
@@ -62,7 +71,7 @@ class WidgetWindowHost:
         desired = {
             record.widget_id: record
             for record in records
-            if record.status in {WidgetRuntimeStatus.READY, WidgetRuntimeStatus.RENDERING, WidgetRuntimeStatus.HIDDEN}
+            if record.status != WidgetRuntimeStatus.IDLE
         }
 
         for widget_id in tuple(self._windows):
@@ -72,12 +81,13 @@ class WidgetWindowHost:
                 hosted.window.deleteLater()
 
         for widget_id, record in desired.items():
-            widget_data = _widget_data(record)
+            widget_data = self._widget_data(record)
             hosted = self._windows.get(widget_id)
             if hosted is None:
                 obj = self._component.createWithInitialProperties(
                     {
                         "widgetData": widget_data,
+                        "widgetConfigWrite": self._widget_config_write,
                     }
                 )
                 assert obj is not None, self._component.errorString()
@@ -103,19 +113,23 @@ class WidgetWindowHost:
             hosted.window.deleteLater()
         self._windows.clear()
 
-
-def _widget_data(record: WidgetRuntimeRecord) -> dict[str, object]:
-    return {
-        "widgetId": record.widget_id,
-        "label": record.label,
-        "source": record.source,
-        "displayText": _display_text(record),
-        "textColor": "#E0E0E0" if record.status != WidgetRuntimeStatus.ERROR else "#FF7A7A",
-        "backgroundColor": "#CC000000",
-        "visible": record.status != WidgetRuntimeStatus.HIDDEN,
-        "status": record.status.value,
-        "overlayId": record.overlay_id,
-    }
+    def _widget_data(self, record: WidgetRuntimeRecord) -> dict[str, object]:
+        """Build the widgetData dict for QML, including persisted position."""
+        config = self._widget_store.get_widget(record.overlay_id, record.widget_id)
+        x, y = config.position if config else (0, 0)
+        return {
+            "widgetId": record.widget_id,
+            "overlayId": record.overlay_id,
+            "label": record.label,
+            "source": record.source,
+            "displayText": _display_text(record),
+            "textColor": "#E0E0E0" if record.status != WidgetRuntimeStatus.ERROR else "#FF7A7A",
+            "backgroundColor": "#CC000000",
+            "visible": record.status != WidgetRuntimeStatus.HIDDEN,
+            "status": record.status.value,
+            "x": x,
+            "y": y,
+        }
 
 
 def _display_text(record: WidgetRuntimeRecord) -> str:

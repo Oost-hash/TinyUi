@@ -1,0 +1,11 @@
+[widget]
+id = "session_time_left"
+widget = "textWidget"
+label = "Time Left"
+
+[bindings]
+source = "session.time_left"
+
+[defaults]
+enabled = true
+position = [100, 100]
