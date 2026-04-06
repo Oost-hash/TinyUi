@@ -52,24 +52,22 @@ Rectangle {
         return config ? config.enabled : false
     }
     
-    // Update overlay ID when widget is selected
+    // Sync preview and overlay ID when selection changes
     onSelectedWidgetIdChanged: {
+        // Update overlay ID
         if (!selectedWidgetId || !widgetRead) {
             selectedOverlayId = ""
-            return
-        }
-        // Find the widget in the model to get its overlayId
-        var widgets = widgetRead.widgets
-        for (var i = 0; i < widgets.length; i++) {
-            if (widgets[i].widgetId === selectedWidgetId) {
-                selectedOverlayId = widgets[i].overlayId ?? ""
-                break
+        } else {
+            // Find the widget in the model to get its overlayId
+            var widgets = widgetRead.widgets
+            for (var i = 0; i < widgets.length; i++) {
+                if (widgets[i].widgetId === selectedWidgetId) {
+                    selectedOverlayId = widgets[i].overlayId ?? ""
+                    break
+                }
             }
         }
-    }
-
-    // Sync preview when selection changes
-    onSelectedWidgetIdChanged: {
+        
         // Release old preview
         if (previewLeaseId && widgetPreview) {
             widgetPreview.release_preview(previewLeaseId)
