@@ -48,6 +48,7 @@ Item {
     property bool menuOpen: false
     property string pendingPluginActivation: ""
     property var pluginStates: ({})
+    property bool widgetsVisible: hostWindow && hostWindow.widgetVisibilityRead ? hostWindow.widgetVisibilityRead.globalVisible : true
 
     readonly property url menuIconSource: Qt.resolvedUrl("../../assets/images/ui/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
 
@@ -75,6 +76,13 @@ Item {
             var temp = root.pluginStates
             root.pluginStates = {}
             root.pluginStates = temp
+        }
+    }
+
+    Connections {
+        target: root.hostWindow && root.hostWindow.widgetVisibilityRead ? root.hostWindow.widgetVisibilityRead : null
+        function onGlobalVisibleChanged() {
+            root.widgetsVisible = root.hostWindow.widgetVisibilityRead.globalVisible
         }
     }
 
@@ -405,7 +413,15 @@ Item {
                             }
                             return ""
                         }
-                        color: root.theme ? root.theme.textMuted : "#c8ccd4"
+                        color: {
+                            // Widget visibility toggle gets special coloring
+                            if (statusItemDelegate.modelData && statusItemDelegate.modelData.action === "widget_visibility.toggle") {
+                                return root.widgetsVisible 
+                                    ? (root.theme ? root.theme.success : "#4caf50")
+                                    : (root.theme ? root.theme.textMuted : "#878a98")
+                            }
+                            return root.theme ? root.theme.textMuted : "#c8ccd4"
+                        }
                         font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
                     }
 
