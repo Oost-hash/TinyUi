@@ -1,10 +1,11 @@
 [project]
 name = "TinyUi"
-version = "0.4.0"
-requires-python = ">=3.12"
+version = "0.5.0"
+requires-python = ">=3.14"
 dependencies = [
-    "PySide6>=6.8",
-    "psutil>=6.1",
+    "PySide6==6.10.2",
+    "psutil==7.2.2",
+    "toml==0.10.2",
 ]
 
 [project.scripts]
@@ -18,7 +19,7 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["src/tinyqt_main/tests", "src/tinycore/tests"]
+testpaths = ["src/tests"]
 pythonpath = [".", "src"]
 
 [tool.setuptools.packages.find]
@@ -36,7 +37,7 @@ console_level = "INFO"
 
 [tool.basedpyright]
 typeCheckingMode = "standard"
-pythonVersion = "3.12"
+pythonVersion = "3.14"
 include = ["src"]
 exclude = [
     "**/.git",
