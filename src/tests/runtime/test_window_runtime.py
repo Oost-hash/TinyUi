@@ -93,8 +93,8 @@ def test_runtime_emits_window_runtime_updates() -> None:
 
     events = bus.get_history(EventType.WINDOW_RUNTIME_UPDATED)
     assert len(events) == 1
-    # WindowRuntime uses default reason "runtime"
-    assert events[0].data.reason == "runtime"
+    # WindowStateCapability passes status as reason
+    assert events[0].data.reason == "opening"
 
 
 def test_runtime_begin_shutdown_emits_typed_shutdown_event() -> None:

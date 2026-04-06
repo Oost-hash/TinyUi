@@ -90,9 +90,6 @@ class Runtime:
         self.plugin_discovery = plugin_discovery
         self.plugin_lifecycle = plugin_lifecycle
         self.window_runtime = window_runtime
-        # Fallback window state tracking (used when window_runtime is None)
-        self._window_states: dict[str, WindowRuntimeStatus] = {}
-        self._window_errors: dict[str, str] = {}
         self.events = event_bus  # Use shared event bus
         # Capability registry
         self._capabilities: dict[str, object] = {}
@@ -116,8 +113,10 @@ class Runtime:
     def _register_default_capabilities(self) -> None:
         """Register default runtime capabilities."""
         from runtime.capabilities.widget_visibility import WidgetVisibilityCapability
+        from runtime.capabilities.window_state import WindowStateCapability
 
         self.register(WidgetVisibilityCapability())
+        self.register(WindowStateCapability())
 
     def register(self, capability: object) -> None:
         """Register a capability with the runtime.
@@ -339,14 +338,8 @@ class Runtime:
 
     def window_records(self) -> list[WindowRuntimeRecord]:
         """Return runtime-owned records for manifest-declared application windows."""
-        if self.window_runtime is not None:
-            from runtime.windows.runtime import WindowRuntime
-            return cast(WindowRuntime, self.window_runtime).project_records(self._plugins)
-        return project_window_records(
-            self._plugins,
-            window_states=self._window_states,
-            window_errors=self._window_errors,
-        )
+        window_state = self.capability("window_state")
+        return window_state.project_records(self._plugins)
 
     def window_record(self, window_id: str) -> WindowRuntimeRecord | None:
         """Return one runtime-owned window record by id."""
@@ -354,53 +347,27 @@ class Runtime:
 
     def mark_window_opening(self, window_id: str, plugin_id: str = "") -> None:
         """Record that a window handoff to ui_api has started."""
-        if self.window_runtime is not None:
-            from runtime.windows.runtime import WindowRuntime
-            # WindowRuntime.mark_opening takes role, not plugin_id
-            cast(WindowRuntime, self.window_runtime).mark_opening(window_id, "")
-        else:
-            self._set_window_status(window_id, WindowRuntimeStatus.OPENING, reason="opening")
+        self.capability("window_state").mark_opening(window_id)
 
     def mark_window_open(self, window_id: str, plugin_id: str = "") -> None:
         """Record that a window is open."""
-        if self.window_runtime is not None:
-            from runtime.windows.runtime import WindowRuntime
-            cast(WindowRuntime, self.window_runtime).mark_open(window_id)
-        else:
-            self._set_window_status(window_id, WindowRuntimeStatus.OPEN, reason="open")
+        self.capability("window_state").mark_open(window_id)
 
     def mark_window_hidden(self, window_id: str) -> None:
         """Record that a window remains hosted but hidden."""
-        if self.window_runtime is not None:
-            from runtime.windows.runtime import WindowRuntime
-            cast(WindowRuntime, self.window_runtime).mark_hidden(window_id)
-        else:
-            self._set_window_status(window_id, WindowRuntimeStatus.HIDDEN, reason="hidden")
+        self.capability("window_state").mark_hidden(window_id)
 
     def mark_window_closing(self, window_id: str) -> None:
         """Record that a window is in the shutdown or close handoff."""
-        if self.window_runtime is not None:
-            from runtime.windows.runtime import WindowRuntime
-            cast(WindowRuntime, self.window_runtime).mark_closing(window_id)
-        else:
-            self._set_window_status(window_id, WindowRuntimeStatus.CLOSING, reason="closing")
+        self.capability("window_state").mark_closing(window_id)
 
     def mark_window_closed(self, window_id: str) -> None:
         """Record that a window has been closed."""
-        if self.window_runtime is not None:
-            from runtime.windows.runtime import WindowRuntime
-            cast(WindowRuntime, self.window_runtime).mark_closed(window_id)
-        else:
-            self._set_window_status(window_id, WindowRuntimeStatus.CLOSED, reason="closed")
+        self.capability("window_state").mark_closed(window_id)
 
     def mark_window_error(self, window_id: str, message: str) -> None:
         """Record that a window failed to open or close correctly."""
-        if self.window_runtime is not None:
-            from runtime.windows.runtime import WindowRuntime
-            cast(WindowRuntime, self.window_runtime).mark_error(window_id, message)
-        else:
-            self._window_errors[window_id] = message
-            self._set_window_status(window_id, WindowRuntimeStatus.ERROR, reason="error")
+        self.capability("window_state").mark_error(window_id, message)
 
     def begin_shutdown(self, reason: str = "app_quit") -> None:
         """Project shutdown intent onto all currently hosted windows."""
@@ -411,12 +378,6 @@ class Runtime:
         for record in self.window_records():
             if record.status in {WindowRuntimeStatus.OPEN, WindowRuntimeStatus.OPENING, WindowRuntimeStatus.HIDDEN}:
                 self.mark_window_closing(record.window_id)
-
-    def _set_window_status(self, window_id: str, status: WindowRuntimeStatus, *, reason: str) -> None:
-        self._window_states[window_id] = status
-        if status != WindowRuntimeStatus.ERROR:
-            self._window_errors.pop(window_id, None)
-        self.events.emit_typed(EventType.WINDOW_RUNTIME_UPDATED, WindowRuntimeUpdatedData(reason=reason))
 
     # ── Settings registration ─────────────────────────────────────────────
 
