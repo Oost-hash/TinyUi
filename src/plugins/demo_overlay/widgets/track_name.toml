@@ -1,0 +1,11 @@
+[widget]
+id = "track_name"
+widget = "textWidget"
+label = "Track"
+
+[bindings]
+source = "track.name"
+
+[defaults]
+enabled = true
+position = [100, 180]

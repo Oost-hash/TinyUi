@@ -27,6 +27,14 @@ from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
+class WidgetDefaults:
+    """Declarative default values for a widget instance, authored by the plugin."""
+
+    enabled: bool = True
+    position: tuple[int, int] = (0, 0)
+
+
+@dataclass(frozen=True)
 class OverlayWidgetDecl:
     """Overlay widget declaration from manifest."""
 
@@ -34,6 +42,7 @@ class OverlayWidgetDecl:
     widget: str
     label: str = ""
     bindings: dict[str, str] = field(default_factory=dict)
+    defaults: WidgetDefaults = field(default_factory=WidgetDefaults)
 
 
 @dataclass(frozen=True)
