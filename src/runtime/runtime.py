@@ -57,6 +57,8 @@ from runtime.ui import WindowRuntimeRecord, WindowRuntimeStatus, project_window_
 from runtime.widgets import WidgetRuntimeRecord, project_overlay_widget_records
 from widget_api import create_default_widget_registry
 
+from PySide6.QtCore import QObject
+
 
 class Runtime:
     def __init__(
@@ -82,7 +84,6 @@ class Runtime:
         self._active_plugin: str | None = None  # Currently active UI plugin
         self._invalid_plugin_icons: set[str] = set()
         self._shutdown_requested = False
-        self._global_widgets_visible: bool = True
         self.connector_services: ConnectorServiceRegistry = connector_registry or ConnectorServiceRegistry()
         self.widget_registry: WidgetRegistry = widget_registry or create_default_widget_registry()
         # New domain components (optional during migration)
@@ -93,6 +94,10 @@ class Runtime:
         self._window_states: dict[str, WindowRuntimeStatus] = {}
         self._window_errors: dict[str, str] = {}
         self.events = event_bus  # Use shared event bus
+        # Capability registry
+        self._capabilities: dict[str, object] = {}
+        self._qml_capabilities: dict[str, QObject] = {}
+        self._register_default_capabilities()
         self._subscribe_to_events()
 
     def _require_paths(self) -> AppPaths:
@@ -107,6 +112,48 @@ class Runtime:
         """Subscribe to boot and UI events."""
         self.events.on(EventType.BOOT_INIT, self._on_boot_init)
         self.events.on(EventType.UI_PLUGIN_SELECTED, self._on_ui_plugin_selected)
+
+    def _register_default_capabilities(self) -> None:
+        """Register default runtime capabilities."""
+        from runtime.capabilities.widget_visibility import WidgetVisibilityCapability
+
+        self.register(WidgetVisibilityCapability())
+
+    def register(self, capability: object) -> None:
+        """Register a capability with the runtime.
+
+        Args:
+            capability: Object implementing the RuntimeCapability protocol.
+        """
+        self._capabilities[capability.name] = capability
+        capability.attach(self)
+        qml_iface = capability.qml_interface()
+        if qml_iface is not None:
+            self._qml_capabilities[capability.name] = qml_iface
+
+    def capability(self, name: str) -> object:
+        """Get a registered capability by name.
+
+        Args:
+            name: The capability name.
+
+        Returns:
+            The capability instance.
+
+        Raises:
+            KeyError: If capability not found.
+        """
+        if name not in self._capabilities:
+            raise KeyError(f"Capability '{name}' not found")
+        return self._capabilities[name]
+
+    def qml_capabilities(self) -> dict[str, QObject]:
+        """Get all QML-capable interfaces.
+
+        Returns:
+            Dictionary mapping capability names to QML interfaces.
+        """
+        return dict(self._qml_capabilities)
     
     def _on_ui_plugin_selected(self, event) -> None:
         """Handle user plugin selection — activate the chosen plugin."""
@@ -678,25 +725,6 @@ class Runtime:
             reason="user_selection",
         )
         return True
-
-    # ── Global widget visibility ──────────────────────────────────────────
-
-    def set_global_widgets_visible(self, visible: bool) -> None:
-        """Set global visibility for all widgets."""
-        self._global_widgets_visible = visible
-        self._emit_widget_visibility_changed()
-
-    def is_global_widgets_visible(self) -> bool:
-        """Get global widget visibility state."""
-        return self._global_widgets_visible
-
-    def _emit_widget_visibility_changed(self) -> None:
-        """Emit event when widget visibility changes."""
-        from runtime_schema import WidgetRuntimeUpdatedData
-        self.events.emit_typed(
-            EventType.WIDGET_RUNTIME_UPDATED,
-            WidgetRuntimeUpdatedData(reason="visibility_changed")
-        )
 
     # ── Plugin state management ───────────────────────────────────────────
 
