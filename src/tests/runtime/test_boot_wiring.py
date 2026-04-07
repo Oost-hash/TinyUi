@@ -40,7 +40,6 @@ def _shared_capabilities() -> SharedCapabilities:
         tabs=object(),
         connector_read=object(),
         connector_actions=object(),
-        widget_preview=object(),
     )
 
 

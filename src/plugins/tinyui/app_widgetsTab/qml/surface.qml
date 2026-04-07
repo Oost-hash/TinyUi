@@ -38,12 +38,11 @@ Rectangle {
     readonly property var widgetRead: hostWindow?.widgetRead ?? null
     readonly property var widgetConfigRead: hostWindow?.widgetConfigRead ?? null
     readonly property var widgetConfigWrite: hostWindow?.widgetConfigWrite ?? null
-    readonly property var widgetPreview: hostWindow?.widgetPreview ?? null
+    readonly property var widgetVisibility: hostWindow?.widget_visibility ?? null
     
     // State
     property string selectedWidgetId: ""
     property string selectedOverlayId: ""
-    property string previewLeaseId: ""
     
     // Helper to get enabled state for a widget
     function isWidgetEnabled(widgetId) {
@@ -52,7 +51,7 @@ Rectangle {
         return config ? config.enabled : false
     }
     
-    // Sync preview and overlay ID when selection changes
+    // Sync overlay ID and ensure widgets are visible when selection changes
     onSelectedWidgetIdChanged: {
         // Update overlay ID
         if (!selectedWidgetId || !widgetRead) {
@@ -68,21 +67,9 @@ Rectangle {
             }
         }
         
-        // Release old preview
-        if (previewLeaseId && widgetPreview) {
-            widgetPreview.release_preview(previewLeaseId)
-            previewLeaseId = ""
-        }
-        // Request new preview
-        if (selectedWidgetId && widgetPreview) {
-            previewLeaseId = widgetPreview.request_preview(selectedWidgetId)
-        }
-    }
-
-    // Cleanup on destruction
-    Component.onDestruction: {
-        if (previewLeaseId && widgetPreview) {
-            widgetPreview.release_preview(previewLeaseId)
+        // If widgets are hidden and user selects a widget, make them visible
+        if (selectedWidgetId && widgetVisibility && !widgetVisibility.globalVisible) {
+            widgetVisibility.toggle()
         }
     }
 

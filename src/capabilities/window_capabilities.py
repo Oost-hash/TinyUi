@@ -38,7 +38,6 @@ from capabilities.statusbar import StatusbarApi
 from capabilities.tabs import TabsApi
 from capabilities.widget_config_read import WidgetConfigRead
 from capabilities.widget_config_write import WidgetConfigWrite
-from capabilities.widget_preview import WidgetPreviewCapability
 from capabilities.widget_read import WidgetRead
 from capabilities.window_read import WindowRead
 from runtime.runtime import Runtime
@@ -56,7 +55,6 @@ class SharedCapabilities:
     tabs: object
     connector_read: object
     connector_actions: object
-    widget_preview: object
 
 
 @dataclass(frozen=True)
@@ -85,7 +83,6 @@ def create_shared_capabilities(event_bus: EventBus, runtime: Runtime) -> SharedC
         tabs=TabsApi(event_bus),
         connector_read=ConnectorRead(event_bus, runtime.connector_services),
         connector_actions=ConnectorActions(runtime.connector_services),
-        widget_preview=WidgetPreviewCapability(),
     )
 
 
@@ -135,7 +132,6 @@ def build_window_capability_properties(
         "widgetRead": runtime_caps.widget_read,
         "widgetConfigRead": runtime_caps.widget_config_read,
         "widgetConfigWrite": runtime_caps.widget_config_write,
-        "widgetPreview": shared.widget_preview,
         "connectorRead": shared.connector_read,
         "connectorActions": shared.connector_actions,
     }
