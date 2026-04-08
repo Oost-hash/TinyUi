@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, cast
 
+from runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
@@ -114,7 +115,7 @@ def _adapt_qml_property(runtime: RuntimeV2, capability_name: str, capability: ob
     if capability_name == "manifest_read":
         return ManifestQmlAdapter(cast(ManifestRead, capability))
     if capability_name == "widget_records_read":
-        return WidgetRecordsQmlAdapter(cast(WidgetRecordsRead, capability))
+        return WidgetRecordsQmlAdapter(WidgetHostCapability(cast(WidgetRecordsRead, capability)))
     if capability_name == "window_records_read":
         return WindowRecordsQmlAdapter(cast(WindowRecordsRead, capability))
     if capability_name == "widget_visibility_read":

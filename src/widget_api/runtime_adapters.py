@@ -27,8 +27,9 @@ from typing import Any
 
 from PySide6.QtCore import QObject, Slot
 
+from runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
-from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
+from runtimeV2.widgets.contracts import WidgetRecord
 
 
 class WidgetConfigWriteAdapter(QObject):
@@ -63,34 +64,7 @@ class WidgetConfigWriteAdapter(QObject):
         return self._widget_config_write.reset_widget_values(overlay_id, widget_id)
 
 
-def widget_data_for_record(record: WidgetRecord) -> dict[str, Any]:
+def widget_data_for_record(widget_host: WidgetHostCapability, record: WidgetRecord) -> dict[str, Any]:
     """Build the widgetData payload expected by widget QML windows."""
 
-    return {
-        "widgetId": record.widget_id,
-        "overlayId": record.overlay_id,
-        "label": record.label,
-        "source": record.source,
-        "bindings": dict(record.bindings),
-        "values": {} if record.values is None else dict(record.values),
-        "displayText": _display_text(record),
-        "textColor": "#E0E0E0" if record.status != WidgetStatus.ERROR else "#FF7A7A",
-        "backgroundColor": "#CC000000",
-        "visible": record.status != WidgetStatus.HIDDEN,
-        "enabled": record.enabled,
-        "status": record.status.value,
-        "x": record.position[0],
-        "y": record.position[1],
-    }
-
-
-def _display_text(record: WidgetRecord) -> str:
-    if record.status == WidgetStatus.READY:
-        return record.source
-    if record.status == WidgetStatus.WAITING_FOR_CONNECTOR:
-        return "Waiting for connector"
-    if record.status == WidgetStatus.ERROR:
-        return record.error_message or "Widget error"
-    if record.status == WidgetStatus.HIDDEN:
-        return "Hidden"
-    return ""
+    return widget_host.window_data(record)

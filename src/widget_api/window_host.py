@@ -31,6 +31,7 @@ from PySide6.QtCore import QUrl
 from PySide6.QtQml import QQmlComponent
 from PySide6.QtQuick import QQuickWindow
 
+from runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 from ui_api.qt import create_engine
 from widget_api.runtime_adapters import WidgetConfigWriteAdapter, widget_data_for_record
@@ -53,7 +54,8 @@ class WidgetWindowHost:
     through a small adapter so widget windows can persist their own position.
     """
 
-    def __init__(self, widget_config_write) -> None:
+    def __init__(self, widget_host: WidgetHostCapability, widget_config_write) -> None:
+        self._widget_host = widget_host
         self._widget_config_write = WidgetConfigWriteAdapter(widget_config_write)
         self._engine = create_engine()
         self._component = QQmlComponent(
@@ -78,7 +80,7 @@ class WidgetWindowHost:
                 hosted.window.deleteLater()
 
         for record_key, record in desired.items():
-            widget_data = widget_data_for_record(record)
+            widget_data = widget_data_for_record(self._widget_host, record)
             hosted = self._windows.get(record_key)
             if hosted is None:
                 obj = self._component.createWithInitialProperties(

@@ -5,13 +5,16 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Any, cast
 
+from runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.events.capabilities.event_read import EventRead
 from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry
 from runtimeV2.events.startup import EventsStartupResult
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.schemas.startup import StartupResult
+from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
+from runtimeV2.widgets.store import WidgetRecordsStore
 from runtimeV2.widgets.startup import WidgetsStartupResult
 from widget_api.runtime_adapters import widget_data_for_record
 from widget_api.runtime_host import create_widget_window_host, start_widget_host
@@ -52,14 +55,6 @@ class _FakeWidgetConfigWrite:
         return True
 
 
-class _FakeStore:
-    def __init__(self, records: list[WidgetRecord]) -> None:
-        self._records = records
-
-    def all_widget_records(self) -> list[WidgetRecord]:
-        return list(self._records)
-
-
 class _FakePoller:
     def __init__(self) -> None:
         self.refresh_calls = 0
@@ -72,8 +67,10 @@ class _FakePoller:
 class _FakeRuntime:
     def __init__(self, records: list[WidgetRecord], widget_config_write: object) -> None:
         self._bus = EventBus()
+        self._store = WidgetRecordsStore()
+        self._store.set_records(records)
         self._widgets = WidgetsStartupResult(
-            store=cast(Any, _FakeStore(records)),
+            store=self._store,
             records=records,
             poller=cast(Any, _FakePoller()),
             capabilities=cast(Any, object()),
@@ -95,6 +92,8 @@ class _FakeRuntime:
     def capability(self, name: str, _capability_type: type[Any]) -> Any:
         if name == "widget_config_write":
             return self._widget_config_write
+        if name == "widget_records_read":
+            return WidgetRecordsRead(self._store)
         raise KeyError(name)
 
 
@@ -121,7 +120,7 @@ def test_widget_runtime_host_syncs_runtime_v2_widget_records(monkeypatch) -> Non
     created: dict[str, object] = {}
 
     class _FakeHost:
-        def __init__(self, _widget_config_write) -> None:
+        def __init__(self, _widget_host, _widget_config_write) -> None:
             created["host"] = self
 
         def sync_records(self, runtime_records) -> None:
@@ -159,7 +158,7 @@ def test_widget_runtime_host_refreshes_on_connector_events(monkeypatch) -> None:
     sync_calls: list[list[WidgetRecord]] = []
 
     class _FakeHost:
-        def __init__(self, _widget_config_write) -> None:
+        def __init__(self, _widget_host, _widget_config_write) -> None:
             pass
 
         def sync_records(self, runtime_records) -> None:
@@ -188,7 +187,7 @@ def test_start_widget_host_returns_typed_success(monkeypatch) -> None:
     runtime = _FakeRuntime([], _FakeWidgetConfigWrite())
     monkeypatch.setattr(
         "widget_api.runtime_host.WidgetWindowHost",
-        lambda _widget_config_write: SimpleNamespace(sync_records=lambda _records: None, close_all=lambda: None),
+        lambda _widget_host, _widget_config_write: SimpleNamespace(sync_records=lambda _records: None, close_all=lambda: None),
     )
 
     _result, startup_result = start_widget_host(app, cast(Any, runtime))
@@ -212,8 +211,10 @@ def test_widget_data_adapter_uses_runtime_v2_record_shape() -> None:
         position=(12, 34),
         values={"units": "kph"},
     )
+    store = WidgetRecordsStore()
+    store.set_records([record])
 
-    widget_data = widget_data_for_record(record)
+    widget_data = widget_data_for_record(WidgetHostCapability(WidgetRecordsRead(store)), record)
 
     assert widget_data["widgetId"] == "speed"
     assert widget_data["overlayId"] == "demo_overlay"

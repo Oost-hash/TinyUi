@@ -27,6 +27,7 @@ from typing import Any
 
 from PySide6.QtCore import QObject, Property, QUrl, Signal, Slot
 
+from runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
@@ -78,27 +79,15 @@ class WidgetRecordsQmlAdapter(QObject):
 
     widgetsChanged = Signal()
 
-    def __init__(self, widget_records_read: WidgetRecordsRead, parent: QObject | None = None) -> None:
+    def __init__(self, widget_host: WidgetHostCapability, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._widget_records_read = widget_records_read
+        self._widget_host = widget_host
 
     @Property(_QVARIANT_LIST, notify=widgetsChanged)
     def widgets(self) -> list[dict[str, object]]:
         """Return widget records as a QML model."""
 
-        return [
-            {
-                "overlayId": record.overlay_id,
-                "widgetId": record.widget_id,
-                "widgetType": record.widget_type,
-                "label": record.label,
-                "source": record.source,
-                "status": record.status.value,
-                "connectorIds": list(record.connector_ids),
-                "errorMessage": record.error_message,
-            }
-            for record in self._widget_records_read.all_widget_records()
-        ]
+        return self._widget_host.panel_records()
 
 
 class WindowRecordsQmlAdapter(QObject):

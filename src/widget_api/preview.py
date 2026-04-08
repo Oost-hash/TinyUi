@@ -24,18 +24,16 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QTimer, QUrl
 from PySide6.QtQml import QQmlComponent
 from PySide6.QtQuick import QQuickWindow
 
-from runtime.app.paths import AppPaths
-from runtime.connectors.policy import required_connector_ids
-from runtime.persistence import SettingsRegistry
-from runtime.runtime import Runtime
-from runtime_schema import EventBus
 from ui_api.qt import create_engine
+
+if TYPE_CHECKING:
+    from runtime.runtime import Runtime
 
 _QML_DIR = Path(__file__).resolve().parent / "qml"
 
@@ -72,6 +70,7 @@ def project_overlay_preview_items(
     connector_id: str | None = None,
 ) -> list[dict[str, Any]]:
     """Project overlay widget declarations into renderable preview items."""
+    from runtime.connectors.policy import required_connector_ids
 
     manifest = runtime.plugin_manifest(plugin_id)
     if manifest is None or manifest.overlay is None:
@@ -111,10 +110,23 @@ def project_overlay_preview_items(
 
 def create_runtime_for_preview() -> Runtime:
     """Create a runtime booted far enough to drive connector-backed widget previews."""
+    from runtime.app.paths import AppPaths
+    from runtime.persistence.config_set import ConfigSetManager
+    from runtime.persistence.paths import ConfigResolver
+    from runtime.persistence import SettingsRegistry
+    from runtime.persistence.widget_config import WidgetConfigStore
+    from runtime.runtime import Runtime
+    from runtimeV2.events.contracts import EventBus
 
-    runtime = Runtime(EventBus())
+    resolver = ConfigResolver()
+    active_set = ConfigSetManager(resolver).get_active()
+    runtime = Runtime(
+        EventBus(),
+        SettingsRegistry(resolver, active_set.id),
+        WidgetConfigStore(resolver, active_set.id),
+        ConfigSetManager(resolver),
+    )
     runtime.paths = AppPaths.detect()
-    runtime.settings = SettingsRegistry(runtime.paths.config_dir)
     runtime._boot_runtime()
     runtime._apply_initial_runtime_state()
     return runtime
