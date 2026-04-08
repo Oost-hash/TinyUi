@@ -23,14 +23,11 @@
 
 from __future__ import annotations
 
+from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.runtime import RuntimeV2
 
 
 def register_runtime_capabilities(runtime: RuntimeV2) -> None:
-    """Register runtime-owned capabilities.
+    """Register runtime-owned capabilities."""
 
-    Runtime-owned V2 capabilities are not needed yet. Domain-owned
-    capabilities, such as paths, register themselves during domain startup.
-    """
-
-    _ = runtime
+    runtime.register_capability("globals", RuntimeGlobals(runtime))

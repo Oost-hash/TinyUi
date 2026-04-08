@@ -19,22 +19,8 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Global state registration for runtime V2 widgets."""
-
-from __future__ import annotations
+"""Runtime-owned runtime V2 capabilities."""
 
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
-from runtimeV2.runtime import RuntimeV2
 
-
-def register_widget_globals(runtime: RuntimeV2) -> None:
-    """Register widget-owned cross-domain global states."""
-
-    globals_capability = runtime.capability("globals", RuntimeGlobals)
-    globals_capability.register_global(
-        "widget_visibility",
-        owner_domain="widgets",
-        read_capability="widget_visibility_read",
-        write_capability="widget_visibility_write",
-        description="Global widget visibility state.",
-    )
+__all__ = ["RuntimeGlobals"]

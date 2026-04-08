@@ -24,13 +24,15 @@
 from __future__ import annotations
 
 from runtime_schema import EventType
+from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.runtime import RuntimeV2
 
 
 def register_runtime_globals(runtime: RuntimeV2) -> None:
     """Register runtime-owned cross-domain global states."""
 
-    runtime.register_global(
+    globals_capability = runtime.capability("globals", RuntimeGlobals)
+    globals_capability.register_global(
         "shutdown",
         owner_domain="runtime",
         event_type=EventType.RUNTIME_SHUTDOWN,
