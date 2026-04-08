@@ -19,31 +19,38 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Widget records read capability for runtime V2."""
+"""Widget runtime record storage for runtime V2."""
 
 from __future__ import annotations
 
 from runtimeV2.widgets.contracts import WidgetRecord
-from runtimeV2.widgets.store import WidgetRecordsStore
 
 
-class WidgetRecordsRead:
-    """Read projected widget records."""
+class WidgetRecordsStore:
+    """Own the current projected widget runtime records."""
 
-    def __init__(self, store: WidgetRecordsStore) -> None:
-        self._store = store
+    def __init__(self) -> None:
+        self._records: list[WidgetRecord] = []
+
+    def set_records(self, records: list[WidgetRecord]) -> None:
+        """Replace the current widget runtime records."""
+
+        self._records = list(records)
 
     def all_widget_records(self) -> list[WidgetRecord]:
-        """Return all widget records."""
+        """Return all current widget records."""
 
-        return self._store.all_widget_records()
+        return list(self._records)
 
     def records_for_overlay(self, overlay_id: str) -> list[WidgetRecord]:
         """Return records for one overlay."""
 
-        return self._store.records_for_overlay(overlay_id)
+        return [record for record in self._records if record.overlay_id == overlay_id]
 
     def widget_record(self, overlay_id: str, widget_id: str) -> WidgetRecord | None:
         """Return one widget runtime record."""
 
-        return self._store.widget_record(overlay_id, widget_id)
+        for record in self._records:
+            if record.overlay_id == overlay_id and record.widget_id == widget_id:
+                return record
+        return None

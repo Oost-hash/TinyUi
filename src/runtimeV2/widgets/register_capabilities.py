@@ -30,7 +30,7 @@ from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigW
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
-from runtimeV2.widgets.contracts import WidgetRecord
+from runtimeV2.widgets.store import WidgetRecordsStore
 
 
 @dataclass(frozen=True)
@@ -44,14 +44,14 @@ class WidgetCapabilities:
 
 def register_widget_capabilities(
     *,
-    records: list[WidgetRecord],
+    store: WidgetRecordsStore,
     widget_config_read: WidgetConfigRead,
     widget_config_write: WidgetConfigWrite,
 ) -> WidgetCapabilities:
     """Create widgets domain capabilities."""
 
     return WidgetCapabilities(
-        records_read=WidgetRecordsRead(records),
+        records_read=WidgetRecordsRead(store),
         visibility_read=WidgetVisibilityRead(widget_config_read),
         visibility_write=WidgetVisibilityWrite(widget_config_write),
     )

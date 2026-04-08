@@ -46,8 +46,12 @@ class WidgetRecord:
     widget_type: str
     label: str
     source: str
+    bindings: dict[str, str]
     status: WidgetStatus
     connector_ids: tuple[str, ...]
+    enabled: bool = True
+    position: tuple[int, int] = (0, 0)
+    values: dict[str, object] | None = None
     error_message: str = ""
 
 
@@ -56,3 +60,10 @@ class WidgetVisibilityState:
     """Widget visibility read model."""
 
     global_visible: bool
+
+
+@dataclass(frozen=True)
+class WidgetRuntimeUpdatedData:
+    """Data for widget runtime refresh events."""
+
+    widget_count: int

@@ -19,31 +19,19 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Widget records read capability for runtime V2."""
+"""Event registration for runtime V2 widgets."""
 
 from __future__ import annotations
 
-from runtimeV2.widgets.contracts import WidgetRecord
-from runtimeV2.widgets.store import WidgetRecordsStore
+from runtimeV2.events import EventRegistry
+from runtimeV2.events.contracts import EventType
 
 
-class WidgetRecordsRead:
-    """Read projected widget records."""
+def register_widget_events(registry: EventRegistry) -> None:
+    """Register widget runtime events."""
 
-    def __init__(self, store: WidgetRecordsStore) -> None:
-        self._store = store
-
-    def all_widget_records(self) -> list[WidgetRecord]:
-        """Return all widget records."""
-
-        return self._store.all_widget_records()
-
-    def records_for_overlay(self, overlay_id: str) -> list[WidgetRecord]:
-        """Return records for one overlay."""
-
-        return self._store.records_for_overlay(overlay_id)
-
-    def widget_record(self, overlay_id: str, widget_id: str) -> WidgetRecord | None:
-        """Return one widget runtime record."""
-
-        return self._store.widget_record(overlay_id, widget_id)
+    registry.register(
+        EventType.WIDGET_RUNTIME_UPDATED,
+        domain="widgets",
+        description="Widget runtime records were refreshed.",
+    )
