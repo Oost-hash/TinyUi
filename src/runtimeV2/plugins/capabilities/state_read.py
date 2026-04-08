@@ -19,23 +19,21 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Event contract registration for runtime V2 plugins."""
+"""Plugin state read capability for runtime V2."""
 
 from __future__ import annotations
 
-from runtime_schema import EventType
-from runtimeV2.events import EventRegistry
+from runtime_schema import PluginState
+from runtimeV2.plugins.lifecycle import PluginLifecycleStore
 
 
-def register_plugin_events(registry: EventRegistry) -> None:
-    """Register plugin event contracts used by the discovery slice."""
+class PluginStateRead:
+    """Read plugin lifecycle state."""
 
-    registry.register(
-        EventType.PLUGINS_DISCOVERED,
-        domain="plugins",
-        description="Plugin discovery finished and read models are available.",
-    )
-    registry.register(EventType.PLUGIN_STATE_CHANGED, domain="plugins")
-    registry.register(EventType.PLUGIN_ACTIVATED, domain="plugins")
-    registry.register(EventType.PLUGIN_DEACTIVATED, domain="plugins")
-    registry.register(EventType.PLUGIN_ERROR, domain="plugins")
+    def __init__(self, lifecycle: PluginLifecycleStore) -> None:
+        self._lifecycle = lifecycle
+
+    def get_plugin_state(self, plugin_id: str) -> PluginState:
+        """Return one plugin lifecycle state."""
+
+        return self._lifecycle.get_plugin_state(plugin_id)
