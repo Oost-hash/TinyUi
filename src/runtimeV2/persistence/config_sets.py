@@ -24,9 +24,10 @@
 from __future__ import annotations
 
 import json
+import shutil
 from dataclasses import asdict
 
-from runtimeV2.persistence.bootstrap import load_bootstrap
+from runtimeV2.persistence.bootstrap import BootstrapConfig, load_bootstrap, save_bootstrap
 from runtimeV2.persistence.contracts import ConfigSet, PersistencePaths
 
 
@@ -61,6 +62,7 @@ class ConfigSetCatalog:
 
         if self._active_set not in self._sets:
             self._active_set = "default"
+            self._save_bootstrap()
 
     def save(self) -> None:
         """Save the catalog."""
@@ -75,6 +77,15 @@ class ConfigSetCatalog:
             encoding="utf-8",
         )
 
+    def _save_bootstrap(self) -> None:
+        """Persist the active config set selection."""
+
+        bootstrap = BootstrapConfig(
+            config_root=self._paths.config_root,
+            active_set=self._active_set,
+        )
+        save_bootstrap(self._paths.bootstrap_path, bootstrap)
+
     def list_sets(self) -> list[ConfigSet]:
         """Return all config sets."""
 
@@ -84,6 +95,11 @@ class ConfigSetCatalog:
         """Return the active config set."""
 
         return self._sets[self._active_set]
+
+    def active_set_id(self) -> str:
+        """Return the active config set id."""
+
+        return self._active_set
 
     def create_set(self, set_id: str, name: str, description: str = "") -> ConfigSet:
         """Create one config set."""
@@ -97,3 +113,43 @@ class ConfigSetCatalog:
         self._paths.config_set_dir(set_id).mkdir(parents=True, exist_ok=True)
         self.save()
         return config_set
+
+    def set_active(self, set_id: str) -> bool:
+        """Set the active config set."""
+
+        if set_id not in self._sets:
+            return False
+        if self._active_set == set_id:
+            return True
+        self._active_set = set_id
+        self._save_bootstrap()
+        return True
+
+    def delete_set(self, set_id: str) -> bool:
+        """Delete one config set."""
+
+        if set_id == "default" or set_id == self._active_set:
+            return False
+        if set_id not in self._sets:
+            return False
+        config_dir = self._paths.config_set_dir(set_id)
+        if config_dir.exists():
+            shutil.rmtree(config_dir)
+        del self._sets[set_id]
+        self.save()
+        return True
+
+    def rename_set(self, set_id: str, new_name: str) -> bool:
+        """Rename one config set."""
+
+        config_set = self._sets.get(set_id)
+        if config_set is None:
+            return False
+        self._sets[set_id] = ConfigSet(
+            id=config_set.id,
+            name=new_name,
+            description=config_set.description,
+            created_at=config_set.created_at,
+        )
+        self.save()
+        return True

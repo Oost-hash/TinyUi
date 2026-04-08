@@ -43,6 +43,14 @@ class WidgetConfigRead:
 
         return self._store.get_widget(overlay_id, widget_id)
 
+    def widget_values(self, overlay_id: str, widget_id: str) -> dict[str, object]:
+        """Return config values for one widget."""
+
+        config = self._store.get_widget(overlay_id, widget_id)
+        if config is None:
+            return {}
+        return dict(config.values)
+
     def global_widgets_visible(self) -> bool:
         """Return global widget visibility."""
 

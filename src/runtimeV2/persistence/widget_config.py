@@ -95,6 +95,30 @@ class WidgetConfigStore:
         self.save_for_overlay(overlay_id, configs)
         return True
 
+    def set_widget_values(self, overlay_id: str, widget_id: str, values: dict[str, object]) -> bool:
+        """Set widget config values."""
+
+        configs = self.load_for_overlay(overlay_id)
+        for config in configs:
+            if config.widget_id == widget_id:
+                config.values.update(values)
+                self.save_for_overlay(overlay_id, configs)
+                return True
+        configs.append(WidgetInstanceConfig(widget_id=widget_id, values=dict(values)))
+        self.save_for_overlay(overlay_id, configs)
+        return True
+
+    def reset_widget_values(self, overlay_id: str, widget_id: str) -> bool:
+        """Reset widget config values to empty."""
+
+        configs = self.load_for_overlay(overlay_id)
+        for config in configs:
+            if config.widget_id == widget_id:
+                config.values = {}
+                self.save_for_overlay(overlay_id, configs)
+                return True
+        return False
+
     def get_global_visible(self) -> bool:
         """Return the global widget visibility flag."""
 

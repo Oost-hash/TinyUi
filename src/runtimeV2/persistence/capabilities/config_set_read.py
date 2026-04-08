@@ -42,3 +42,8 @@ class ConfigSetRead:
         """Return the active config set."""
 
         return self._catalog.active_set()
+
+    def active_set_id(self) -> str:
+        """Return the active config set id."""
+
+        return self._catalog.active_set_id()

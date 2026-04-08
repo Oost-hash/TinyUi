@@ -42,6 +42,16 @@ class WidgetConfigWrite:
 
         return self._store.set_widget_position(overlay_id, widget_id, x, y)
 
+    def set_widget_values(self, overlay_id: str, widget_id: str, values: dict[str, object]) -> bool:
+        """Set widget config values."""
+
+        return self._store.set_widget_values(overlay_id, widget_id, values)
+
+    def reset_widget_values(self, overlay_id: str, widget_id: str) -> bool:
+        """Reset widget config values."""
+
+        return self._store.reset_widget_values(overlay_id, widget_id)
+
     def set_global_widgets_visible(self, visible: bool) -> None:
         """Set global widget visibility."""
 

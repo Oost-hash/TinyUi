@@ -43,3 +43,14 @@ def load_bootstrap(path: Path) -> BootstrapConfig:
     raw_active_set = data.get("active_set")
     active_set = raw_active_set if isinstance(raw_active_set, str) and raw_active_set else "default"
     return BootstrapConfig(config_root=config_root, active_set=active_set)
+
+
+def save_bootstrap(path: Path, config: BootstrapConfig) -> None:
+    """Save persistence bootstrap data."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [f'active_set = "{config.active_set}"']
+    if config.config_root is not None:
+        config_root = str(config.config_root).replace("\\", "\\\\").replace('"', '\\"')
+        lines.insert(0, f'config_root = "{config_root}"')
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")

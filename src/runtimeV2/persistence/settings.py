@@ -61,6 +61,19 @@ class SettingsStore:
 
         return self._values.get(namespace, {}).get(key)
 
+    def values_by_namespace(self) -> dict[str, dict[str, Any]]:
+        """Return current values by namespace."""
+
+        return {
+            namespace: dict(values)
+            for namespace, values in self._values.items()
+        }
+
+    def namespace_values(self, namespace: str) -> dict[str, Any]:
+        """Return all values for one namespace."""
+
+        return dict(self._values.get(namespace, {}))
+
     def set(self, namespace: str, key: str, value: Any) -> None:
         """Set one setting value."""
 
@@ -75,7 +88,15 @@ class SettingsStore:
             if not path.exists():
                 continue
             values = json.loads(path.read_text(encoding="utf-8"))
-            self._values.setdefault(namespace, {}).update(values)
+            namespace_values = self._values.setdefault(namespace, {})
+            for key, value in values.items():
+                if not self._has_spec(namespace, key):
+                    continue
+                try:
+                    self._validate(namespace, key, value)
+                except (TypeError, ValueError):
+                    continue
+                namespace_values[key] = value
 
     def save(self, namespace: str) -> None:
         """Save one namespace."""
@@ -95,6 +116,9 @@ class SettingsStore:
 
     def _settings_path(self, namespace: str):
         return self._paths.namespace_dir(self._active_set, namespace) / self.SETTINGS_FILE
+
+    def _has_spec(self, namespace: str, key: str) -> bool:
+        return any(item.key == key for item in self._specs.get(namespace, []))
 
     def _validate(self, namespace: str, key: str, value: Any) -> None:
         spec = next((item for item in self._specs.get(namespace, []) if item.key == key), None)

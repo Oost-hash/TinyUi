@@ -43,3 +43,8 @@ class SettingsWrite:
         """Save one namespace."""
 
         self._store.save(namespace)
+
+    def save_all(self) -> None:
+        """Save all namespaces."""
+
+        self._store.save_all()

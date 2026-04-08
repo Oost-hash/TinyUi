@@ -37,3 +37,18 @@ class ConfigSetWrite:
         """Create one config set."""
 
         return self._catalog.create_set(set_id, name, description)
+
+    def set_active(self, set_id: str) -> bool:
+        """Set the active config set."""
+
+        return self._catalog.set_active(set_id)
+
+    def delete_set(self, set_id: str) -> bool:
+        """Delete one config set."""
+
+        return self._catalog.delete_set(set_id)
+
+    def rename_set(self, set_id: str, new_name: str) -> bool:
+        """Rename one config set."""
+
+        return self._catalog.rename_set(set_id, new_name)

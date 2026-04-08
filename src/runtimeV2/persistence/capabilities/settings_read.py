@@ -44,3 +44,13 @@ class SettingsRead:
         """Return specs by namespace."""
 
         return self._store.specs_by_namespace()
+
+    def values_by_namespace(self) -> dict[str, dict[str, Any]]:
+        """Return current values by namespace."""
+
+        return self._store.values_by_namespace()
+
+    def namespace_values(self, namespace: str) -> dict[str, Any]:
+        """Return current values for one namespace."""
+
+        return self._store.namespace_values(namespace)
