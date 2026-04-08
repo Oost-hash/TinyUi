@@ -5,6 +5,11 @@ from __future__ import annotations
 from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
 from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
+from runtimeV2.persistence.capabilities.config_set_read import ConfigSetRead
+from runtimeV2.persistence.capabilities.config_set_write import ConfigSetWrite
+from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
+from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
+from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
@@ -57,6 +62,11 @@ def register_ui_actions_host(registry: SharedRuntimeHostRegistry) -> None:
             window_actions=runtime.capability("window_actions_write", WindowActionsWrite),
             widget_visibility_read=runtime.capability("widget_visibility_read", WidgetVisibilityRead),
             widget_visibility_write=runtime.capability("widget_visibility_write", WidgetVisibilityWrite),
+            plugin_discovery=runtime.capability("plugin_discovery", PluginDiscoveryCapability),
+            plugin_active_write=runtime.capability("plugin_active_write", PluginActiveWrite),
+            config_set_read=runtime.capability("config_set_read", ConfigSetRead),
+            config_set_write=runtime.capability("config_set_write", ConfigSetWrite),
+            settings_write=runtime.capability("settings_write", SettingsWrite),
             shutdown=runtime.capability("shutdown", RuntimeShutdown),
         ),
     )

@@ -432,10 +432,7 @@ Item {
                         hoverEnabled: true
                         onClicked: {
                             var action = statusItemDelegate.modelData.action
-                            if (action === "widgetVisibility.toggle") {
-                                var currentlyVisible = root.hostWindow.widgetVisibility.globalVisible
-                                root.hostWindow.widgetVisibility.setGlobalVisible(!currentlyVisible)
-                            } else if (action && root.appActions) {
+                            if (action && root.appActions) {
                                 root.appActions.trigger(action)
                             }
                         }
@@ -505,8 +502,8 @@ Item {
                 onClicked: {
                     if (!root.hostWindow) return
                     // Activate pending plugin before destroying the panel item
-                    if (root.hostWindow.showPluginPanel && root.pendingPluginActivation !== "" && root.hostWindow.pluginActive) {
-                        root.hostWindow.pluginActive.setActivePlugin(root.pendingPluginActivation)
+                    if (root.hostWindow.showPluginPanel && root.pendingPluginActivation !== "" && root.appActions) {
+                        root.appActions.trigger("plugin.activate:" + root.pendingPluginActivation)
                         root.pendingPluginActivation = ""
                     }
                     if (!root.hostWindow.showPluginPanel) {

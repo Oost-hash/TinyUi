@@ -22,7 +22,7 @@ from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
 from runtimeV2.manifest.registry import ManifestRegistry
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
-from runtimeV2.persistence.contracts import PersistencePaths
+from runtimeV2.persistence.contracts import ConfigSet, PersistencePaths
 from runtimeV2.persistence.widget_config import WidgetConfigStore
 from runtimeV2.schemas.startup import StartupResult
 from runtimeV2.ui.contracts import QmlPropertyPlan, UIChromeModel, UIRenderStatus
@@ -180,6 +180,52 @@ class _FakeUiRuntime:
         self._widget_visibility_read = WidgetVisibilityRead(WidgetConfigRead(widget_store))
         self._widget_visibility_write = WidgetVisibilityWrite(WidgetConfigWrite(widget_store))
         self._widget_visibility_write.set_global_visible(True)
+        self._plugin_active_calls: list[str] = []
+        self._settings_save_all_calls = 0
+        self._active_config_set = "default"
+
+        class _FakePluginDiscovery:
+            def plugin_ids(self) -> list[str]:
+                return ["tinyui", "devtools"]
+
+        class _FakePluginActiveWrite:
+            def __init__(self, calls: list[str]) -> None:
+                self._calls = calls
+
+            def set_active_plugin(self, plugin_id: str) -> bool:
+                self._calls.append(plugin_id)
+                return True
+
+        class _FakeConfigSetRead:
+            def __init__(self, outer: "_FakeUiRuntime") -> None:
+                self._outer = outer
+
+            def list_sets(self) -> list[ConfigSet]:
+                return [
+                    ConfigSet(id="default", name="Default"),
+                    ConfigSet(id="streaming", name="Streaming"),
+                ]
+
+        class _FakeConfigSetWrite:
+            def __init__(self, outer: "_FakeUiRuntime") -> None:
+                self._outer = outer
+
+            def set_active(self, set_id: str) -> bool:
+                self._outer._active_config_set = set_id
+                return True
+
+        class _FakeSettingsWrite:
+            def __init__(self, outer: "_FakeUiRuntime") -> None:
+                self._outer = outer
+
+            def save_all(self) -> None:
+                self._outer._settings_save_all_calls += 1
+
+        self._plugin_discovery = _FakePluginDiscovery()
+        self._plugin_active_write = _FakePluginActiveWrite(self._plugin_active_calls)
+        self._config_set_read = _FakeConfigSetRead(self)
+        self._config_set_write = _FakeConfigSetWrite(self)
+        self._settings_write = _FakeSettingsWrite(self)
 
     def domain_result(self, name: str, _result_type: type[Any]) -> Any:
         if name == "ui":
@@ -203,6 +249,16 @@ class _FakeUiRuntime:
             return self._ui_chrome
         if name == "manifest_ui_read":
             return self._manifest_ui
+        if name == "plugin_discovery":
+            return self._plugin_discovery
+        if name == "plugin_active_write":
+            return self._plugin_active_write
+        if name == "config_set_read":
+            return self._config_set_read
+        if name == "config_set_write":
+            return self._config_set_write
+        if name == "settings_write":
+            return self._settings_write
         if name == "widget_visibility_read":
             return self._widget_visibility_read
         if name == "widget_visibility_write":
@@ -374,6 +430,102 @@ def test_runtime_host_widget_visibility_toggle_uses_runtime_capability(monkeypat
     result.actions.trigger("widgetVisibility.toggle")
 
     assert runtime._widget_visibility_read.global_visible() is False
+
+
+def test_runtime_host_plugin_activate_action_uses_runtime_capability(monkeypatch) -> None:
+    """The ui_api host should activate plugins through runtime-owned actions."""
+
+    app = _FakeApp()
+    runtime = _FakeUiRuntime()
+
+    class _FakeWindow:
+        def __init__(self) -> None:
+            self.destroyed = _FakeSignal()
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(
+        "ui_api.runtime_host.open_window",
+        lambda *_args, **_kwargs: SimpleNamespace(qml_window=_FakeWindow(), keepalive=()),
+    )
+
+    result, startup_result = start_runtime_host(
+        app=app,
+        engine=object(),
+        runtime=cast(Any, runtime),
+    )
+
+    assert startup_result.ok
+    assert result is not None
+
+    result.actions.trigger("plugin.activate:devtools")
+
+    assert runtime._plugin_active_calls == ["devtools"]
+
+
+def test_runtime_host_settings_save_all_action_uses_runtime_capability(monkeypatch) -> None:
+    """The ui_api host should save settings through runtime-owned actions."""
+
+    app = _FakeApp()
+    runtime = _FakeUiRuntime()
+
+    class _FakeWindow:
+        def __init__(self) -> None:
+            self.destroyed = _FakeSignal()
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(
+        "ui_api.runtime_host.open_window",
+        lambda *_args, **_kwargs: SimpleNamespace(qml_window=_FakeWindow(), keepalive=()),
+    )
+
+    result, startup_result = start_runtime_host(
+        app=app,
+        engine=object(),
+        runtime=cast(Any, runtime),
+    )
+
+    assert startup_result.ok
+    assert result is not None
+
+    result.actions.trigger("settings.saveAll")
+
+    assert runtime._settings_save_all_calls == 1
+
+
+def test_runtime_host_config_set_activate_action_uses_runtime_capability(monkeypatch) -> None:
+    """The ui_api host should activate config sets through runtime-owned actions."""
+
+    app = _FakeApp()
+    runtime = _FakeUiRuntime()
+
+    class _FakeWindow:
+        def __init__(self) -> None:
+            self.destroyed = _FakeSignal()
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(
+        "ui_api.runtime_host.open_window",
+        lambda *_args, **_kwargs: SimpleNamespace(qml_window=_FakeWindow(), keepalive=()),
+    )
+
+    result, startup_result = start_runtime_host(
+        app=app,
+        engine=object(),
+        runtime=cast(Any, runtime),
+    )
+
+    assert startup_result.ok
+    assert result is not None
+
+    result.actions.trigger("configSet.activate:streaming")
+
+    assert runtime._active_config_set == "streaming"
 
 
 def test_ui_startup_emits_window_record_change_before_ready(monkeypatch) -> None:
