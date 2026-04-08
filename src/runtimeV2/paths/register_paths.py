@@ -25,21 +25,21 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from runtime.app.paths import AppPaths
+from runtimeV2.paths.contracts import RuntimePaths
 
 
-def register_app_paths(app_paths: AppPaths) -> dict[str, Path]:
+def register_app_paths(runtime_paths: RuntimePaths) -> dict[str, Path]:
     """Return the app paths exposed by the paths domain."""
 
     named_paths: dict[str, Path] = {
-        "app_root": app_paths.app_root,
-        "config_dir": app_paths.config_dir,
-        "host_dir": app_paths.host_dir,
-        "plugins_dir": app_paths.plugins_dir,
-        "data_dir": app_paths.data_dir,
+        "app_root": runtime_paths.app_root,
+        "config_dir": runtime_paths.config_dir,
+        "host_dir": runtime_paths.host_dir,
+        "plugins_dir": runtime_paths.plugins_dir,
+        "data_dir": runtime_paths.data_dir,
     }
-    if app_paths.source_root is not None:
-        named_paths["source_root"] = app_paths.source_root
-    if app_paths.frozen_root is not None:
-        named_paths["frozen_root"] = app_paths.frozen_root
+    if runtime_paths.source_root is not None:
+        named_paths["source_root"] = runtime_paths.source_root
+    if runtime_paths.frozen_root is not None:
+        named_paths["frozen_root"] = runtime_paths.frozen_root
     return named_paths

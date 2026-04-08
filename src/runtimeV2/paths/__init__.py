@@ -22,10 +22,12 @@
 """Runtime V2 paths domain."""
 
 from runtimeV2.paths.capabilities.path import PathCapability
+from runtimeV2.paths.contracts import RuntimePaths
 from runtimeV2.paths.startup import PathsStartupResult, startup_paths
 
 __all__ = [
     "PathCapability",
     "PathsStartupResult",
+    "RuntimePaths",
     "startup_paths",
 ]

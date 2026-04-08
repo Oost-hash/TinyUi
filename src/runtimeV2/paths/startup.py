@@ -29,6 +29,7 @@ from pathlib import Path
 from runtime.app.paths import AppPaths
 from runtime_schema import StartupResult, startup_error, startup_ok
 from runtimeV2.paths.capabilities.path import PathCapability
+from runtimeV2.paths.contracts import RuntimePaths
 from runtimeV2.paths.register_capabilities import register_path_capabilities
 from runtimeV2.paths.register_paths import register_app_paths
 from runtimeV2.runtime import RuntimeV2
@@ -38,7 +39,7 @@ from runtimeV2.runtime import RuntimeV2
 class PathsStartupResult:
     """Result of paths domain startup."""
 
-    app_paths: AppPaths
+    runtime_paths: RuntimePaths
     named_paths: dict[str, Path]
     capability: PathCapability
 
@@ -47,11 +48,14 @@ def startup_paths(runtime: RuntimeV2) -> StartupResult:
     """Start the paths domain and register its result with runtime."""
 
     try:
-        app_paths = AppPaths.detect()
-        named_paths = register_app_paths(app_paths)
-        capability = register_path_capabilities(app_paths=app_paths, named_paths=named_paths)
+        runtime_paths = RuntimePaths.from_app_paths(AppPaths.detect())
+        named_paths = register_app_paths(runtime_paths)
+        capability = register_path_capabilities(
+            runtime_paths=runtime_paths,
+            named_paths=named_paths,
+        )
         result = PathsStartupResult(
-            app_paths=app_paths,
+            runtime_paths=runtime_paths,
             named_paths=named_paths,
             capability=capability,
         )

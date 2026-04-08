@@ -25,14 +25,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from runtime.app.paths import AppPaths
+from runtimeV2.paths.contracts import RuntimePaths
 
 
 class PathCapability:
     """Read-only interface over paths-domain data."""
 
-    def __init__(self, *, app_paths: AppPaths, named_paths: dict[str, Path]) -> None:
-        self._app_paths = app_paths
+    def __init__(self, *, runtime_paths: RuntimePaths, named_paths: dict[str, Path]) -> None:
+        self._runtime_paths = runtime_paths
         self._named_paths = named_paths
 
     def get(self, name: str) -> Path:
@@ -46,4 +46,4 @@ class PathCapability:
     def qml_dir(self, package: str) -> Path:
         """Return the QML directory for a package."""
 
-        return self._app_paths.qml_dir(package)
+        return self._runtime_paths.qml_dir(package)

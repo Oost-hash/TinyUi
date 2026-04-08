@@ -25,15 +25,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from runtime.app.paths import AppPaths
 from runtimeV2.paths.capabilities.path import PathCapability
+from runtimeV2.paths.contracts import RuntimePaths
 
 
 def register_path_capabilities(
     *,
-    app_paths: AppPaths,
+    runtime_paths: RuntimePaths,
     named_paths: dict[str, Path],
 ) -> PathCapability:
     """Create the capabilities exposed by the paths domain."""
 
-    return PathCapability(app_paths=app_paths, named_paths=named_paths)
+    return PathCapability(runtime_paths=runtime_paths, named_paths=named_paths)
