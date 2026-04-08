@@ -26,8 +26,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from runtime.app.paths import AppPaths
-
 
 @dataclass(frozen=True)
 class RuntimePaths:
@@ -40,20 +38,6 @@ class RuntimePaths:
     data_dir: Path
     source_root: Path | None = None
     frozen_root: Path | None = None
-
-    @classmethod
-    def from_app_paths(cls, app_paths: AppPaths) -> "RuntimePaths":
-        """Build runtime V2 paths from the current AppPaths detector."""
-
-        return cls(
-            app_root=app_paths.app_root,
-            config_dir=app_paths.config_dir,
-            host_dir=app_paths.host_dir,
-            plugins_dir=app_paths.plugins_dir,
-            data_dir=app_paths.data_dir,
-            source_root=app_paths.source_root,
-            frozen_root=app_paths.frozen_root,
-        )
 
     def qml_dir(self, package: str) -> Path:
         """Return the QML directory for a package."""

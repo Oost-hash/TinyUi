@@ -26,10 +26,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from runtime.app.paths import AppPaths
 from runtime_schema import StartupResult, startup_error, startup_ok
 from runtimeV2.paths.capabilities.path import PathCapability
 from runtimeV2.paths.contracts import RuntimePaths
+from runtimeV2.paths.detection import detect_runtime_paths
 from runtimeV2.paths.register_capabilities import register_path_capabilities
 from runtimeV2.paths.register_paths import register_app_paths
 from runtimeV2.runtime import RuntimeV2
@@ -48,7 +48,7 @@ def startup_paths(runtime: RuntimeV2) -> StartupResult:
     """Start the paths domain and register its result with runtime."""
 
     try:
-        runtime_paths = RuntimePaths.from_app_paths(AppPaths.detect())
+        runtime_paths = detect_runtime_paths()
         named_paths = register_app_paths(runtime_paths)
         capability = register_path_capabilities(
             runtime_paths=runtime_paths,
