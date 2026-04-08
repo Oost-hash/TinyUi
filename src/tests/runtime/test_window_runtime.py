@@ -11,10 +11,13 @@ from runtimeV2.host.contracts import HostAppIdentity, HostShell
 from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
 from runtimeV2.manifest.registry import ManifestRegistry
 from runtimeV2.plugins.schemas.manifest import PluginManifest
+from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
+from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
+from runtimeV2.ui.chrome_model import build_ui_chrome_model
 from runtimeV2.ui.contracts import UIWindowStatus
 from runtimeV2.ui.projection import project_ui_window_records
 from runtimeV2.ui.readiness import determine_render_status
-from runtimeV2.ui.schemas.manifest import AppManifest, ChromePolicy, UiManifest
+from runtimeV2.ui.schemas.manifest import AppManifest, ChromePolicy, MenuItem, StatusbarItemDecl, TabDecl, UiManifest
 
 
 def _manifest_registry() -> ManifestRegistry:
@@ -34,8 +37,19 @@ def _manifest_registry() -> ManifestRegistry:
                         id="tinyui.main",
                         title="TinyUI",
                         chrome=ChromePolicy(custom_chrome=Path("host_chrome.qml")),
+                        menu=[MenuItem(label="Settings", action="open:settings.main")],
+                        statusbar=[StatusbarItemDecl(text="Ready", side="left")],
                     )
-                ]
+                ],
+                tabs=[
+                    TabDecl(
+                        id="tinyui.widgets",
+                        label="Widgets",
+                        target="tinyui.main",
+                        surface=Path("widgets.qml"),
+                        plugin_id="tinyui",
+                    )
+                ],
             ),
         ),
         manifest_path=Path("tinyui/plugin.toml"),
@@ -52,13 +66,16 @@ def _manifest_registry() -> ManifestRegistry:
             icon="",
             requires=[],
             ui=UiManifest(
-                windows=[
-                    AppManifest(
-                        id="devtools.main",
-                        title="DevTools",
-                        surface=Path("devtools.qml"),
+                windows=[AppManifest(id="devtools.main", title="DevTools", surface=Path("devtools.qml"))],
+                tabs=[
+                    TabDecl(
+                        id="devtools.tab",
+                        label="DevTools",
+                        target="tinyui.main",
+                        surface=Path("devtools_tab.qml"),
+                        plugin_id="devtools",
                     )
-                ]
+                ],
             ),
         ),
         manifest_path=Path("devtools/plugin.toml"),
@@ -99,6 +116,8 @@ def _main_window_read() -> MainWindowRead:
                 id="tinyui.main",
                 title="TinyUI",
                 chrome=ChromePolicy(custom_chrome=Path("host_chrome.qml")),
+                menu=[MenuItem(label="Settings", action="open:settings.main")],
+                statusbar=[StatusbarItemDecl(text="Ready", side="left")],
             ),
             identity=HostAppIdentity(
                 app_id="tinyui",
@@ -166,3 +185,36 @@ def test_determine_render_status_blocks_when_main_window_record_is_missing() -> 
 
     assert not render_status.render_ready
     assert render_status.render_blocker == "Main window record is missing"
+
+
+def test_window_records_read_exposes_projected_ui_records() -> None:
+    """Window read capability should stay a thin wrapper around UI records."""
+
+    records = project_ui_window_records(
+        ui_manifest_read=ManifestUiRead(_manifest_registry()),
+        main_window_read=_main_window_read(),
+    )
+    capability = WindowRecordsRead(records)
+
+    assert capability.window_record("tinyui.main") == records[0]
+    assert capability.all_window_records() == records
+
+
+def test_ui_chrome_model_read_projects_tabs_menu_and_active_plugin() -> None:
+    """Chrome model read should expose the host-facing UI chrome projection."""
+
+    class _FakeActiveRead:
+        def get_active_plugin(self) -> str | None:
+            return "devtools"
+
+    model = build_ui_chrome_model(
+        main_window_read=_main_window_read(),
+        ui_manifest_read=ManifestUiRead(_manifest_registry()),
+        active_read=cast(Any, _FakeActiveRead()),
+    )
+    capability = UIChromeModelRead(model)
+
+    assert [tab.tab_id for tab in capability.tabs()] == ["tinyui.widgets", "devtools.tab"]
+    assert capability.menu_items()[0].label == "Settings"
+    assert capability.statusbar_items()[0].text == "Ready"
+    assert capability.chrome_model().active_plugin_id == "devtools"

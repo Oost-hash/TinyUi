@@ -7,6 +7,11 @@ import sys
 from pathlib import Path
 from typing import cast
 
+from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
+from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
+from runtimeV2.plugins.capabilities.icon import PluginIconCapability
+from runtimeV2.plugins.capabilities.state_read import PluginStateRead
+from runtimeV2.plugins.capabilities.state_write import PluginStateWrite
 from runtimeV2.connectors.poller import ConnectorServicePoller
 from runtimeV2.connectors.register_capabilities import register_connector_capabilities
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
@@ -184,3 +189,105 @@ def activate(ctx):
     sys.modules.pop(f"plugins.{plugin_id}.plugin", None)
     sys.modules.pop(f"plugins.{plugin_id}", None)
     sys.modules.pop("plugins", None)
+
+
+def test_plugin_capabilities_delegate_to_lifecycle_store(tmp_path, monkeypatch) -> None:
+    """Plugin read/write capabilities should stay thin wrappers around lifecycle."""
+
+    plugin_id = "demo_plugin"
+    plugin_root = _write_plugin_module(
+        tmp_path,
+        plugin_id,
+        """
+def activate(ctx):
+    return None
+
+def deactivate(ctx):
+    return None
+""".strip(),
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    registry = PluginRegistry()
+    registry.register_plugin(plugin_id=plugin_id, plugin_root=plugin_root, source="source")
+    lifecycle = PluginLifecycleStore(
+        registry=registry,
+        manifest_read=_manifest_read(plugin_id, "plugin"),
+        connectors=_connectors_result(EventBus()),
+        events=_events_result(EventBus()),
+        activation=PluginActivationStore(
+            registry=registry,
+            settings=_settings_store(tmp_path, plugin_id),
+            connector_services=ConnectorServiceRegistry(),
+        ),
+    )
+
+    active_read = PluginActiveRead(lifecycle)
+    active_write = PluginActiveWrite(lifecycle)
+    state_read = PluginStateRead(lifecycle)
+    state_write = PluginStateWrite(lifecycle)
+
+    assert active_read.get_active_plugin() is None
+    assert active_write.set_active_plugin(plugin_id) is True
+    assert active_read.get_active_plugin() == plugin_id
+    assert state_read.get_plugin_state(plugin_id) == PluginState.ACTIVE
+    assert state_write.disable_plugin(plugin_id) is True
+    assert state_read.get_plugin_state(plugin_id) == PluginState.DISABLED
+
+    sys.modules.pop(f"plugins.{plugin_id}.plugin", None)
+    sys.modules.pop(f"plugins.{plugin_id}", None)
+    sys.modules.pop("plugins", None)
+
+
+def test_plugin_icon_capability_resolves_safe_file_urls(tmp_path) -> None:
+    """Plugin icon capability should resolve in-root asset URLs and reject missing files."""
+
+    plugin_root = tmp_path / "plugins" / "demo_plugin"
+    plugin_root.mkdir(parents=True, exist_ok=True)
+    icon_dir = plugin_root / "assets"
+    icon_dir.mkdir()
+    icon_path = icon_dir / "logo.png"
+    icon_path.write_bytes(b"png")
+
+    registry = PluginRegistry()
+    registry.register_plugin(plugin_id="demo_plugin", plugin_root=plugin_root, source="source")
+
+    manifest_registry = ManifestRegistry()
+    manifest_registry.register_manifest(
+        manifest=PluginManifest(
+            plugin_id="demo_plugin",
+            plugin_type="plugin",
+            version="1.0.0",
+            author="Test",
+            description="Plugin with icon",
+            icon="assets/logo.png",
+            requires=[],
+        ),
+        manifest_path=plugin_root / "manifest.toml",
+        resource_root=plugin_root,
+        source="source",
+    )
+    manifest_registry.register_manifest(
+        manifest=PluginManifest(
+            plugin_id="missing_plugin",
+            plugin_type="plugin",
+            version="1.0.0",
+            author="Test",
+            description="Missing icon",
+            icon="assets/missing.png",
+            requires=[],
+        ),
+        manifest_path=tmp_path / "plugins" / "missing_plugin" / "manifest.toml",
+        resource_root=tmp_path / "plugins" / "missing_plugin",
+        source="source",
+    )
+    registry.register_plugin(
+        plugin_id="missing_plugin",
+        plugin_root=tmp_path / "plugins" / "missing_plugin",
+        source="source",
+    )
+
+    capability = PluginIconCapability(registry, ManifestRead(manifest_registry))
+
+    assert capability.get_icon_url("demo_plugin") == icon_path.as_uri()
+    assert capability.get_icon_url("missing_plugin") == ""

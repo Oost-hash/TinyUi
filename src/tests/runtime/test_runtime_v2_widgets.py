@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 from runtimeV2.events.contracts import EventBus, EventType
@@ -13,6 +14,9 @@ from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRe
 from runtimeV2.persistence.contracts import PersistencePaths
 from runtimeV2.persistence.widget_config import WidgetConfigStore
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
+from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
+from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
+from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.widgets.poller import WidgetRuntimePoller
 from runtimeV2.widgets.store import WidgetRecordsStore
 from runtimeV2.widgets.schemas.manifest import OverlayManifest, OverlayWidgetDecl, WidgetDefaults
@@ -163,3 +167,62 @@ def test_widget_runtime_poller_marks_ready_when_active_and_connected(tmp_path) -
     assert record.status == WidgetStatus.READY
     assert record.enabled is True
     assert record.position == (0, 0)
+
+
+def test_widget_records_read_exposes_store_projection(tmp_path) -> None:
+    """Widget records read should expose the store without adding extra policy."""
+
+    overlay_id = "demo_overlay"
+    widget_id = "speed"
+    store = WidgetRecordsStore()
+    poller = WidgetRuntimePoller(
+        store=store,
+        overlay_read=_FakeOverlayRead(
+            {
+                overlay_id: OverlayManifest(
+                    widgets=[OverlayWidgetDecl(id=widget_id, widget="gauge", bindings={"source": "car.speed"})]
+                )
+            }
+        ),
+        connector_decl_read=_FakeConnectorDeclRead({}),
+        connector_read=ConnectorRead(ConnectorServiceRegistry()),
+        active_read=_FakeActiveRead(None),
+        widget_config_read=_widget_config_read(tmp_path, overlay_id, widget_id),
+        events=EventBus(),
+    )
+
+    poller.refresh()
+    read = WidgetRecordsRead(store)
+    record = read.widget_record(overlay_id, widget_id)
+
+    assert record is not None
+    assert read.records_for_overlay(overlay_id) == [record]
+    assert read.all_widget_records() == [record]
+
+
+def test_widget_visibility_capabilities_project_and_persist_visibility(tmp_path) -> None:
+    """Widget visibility should stay widgets-owned while persisting through widget config."""
+
+    base_dir = tmp_path / "TinyUi"
+    config_root = base_dir / "config"
+    store = WidgetConfigStore(
+        PersistencePaths(
+            base_dir=base_dir,
+            config_root=config_root,
+            cache_dir=base_dir / "cache",
+            logs_dir=base_dir / "logs",
+            bootstrap_path=base_dir / "bootstrap.toml",
+            config_sets_path=config_root / "config_sets.json",
+        ),
+        "default",
+    )
+    config_write = WidgetConfigWrite(store)
+    visibility_read = WidgetVisibilityRead(WidgetConfigRead(store))
+    visibility_write = WidgetVisibilityWrite(config_write)
+
+    assert visibility_read.global_visible() is True
+    visibility_write.set_global_visible(False)
+    assert visibility_read.state().global_visible is False
+
+    assert visibility_write.set_widget_enabled("demo_overlay", "speed", False) is True
+    assert visibility_read.is_widget_enabled("demo_overlay", "speed") is False

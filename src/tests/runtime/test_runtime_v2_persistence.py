@@ -25,6 +25,10 @@ from __future__ import annotations
 
 import json
 
+from runtimeV2.persistence.capabilities.settings_read import SettingsRead
+from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
+from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
+from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.persistence.config_sets import ConfigSetCatalog
 from runtimeV2.persistence.contracts import PersistencePaths
 from runtimeV2.persistence.schemas.settings import SettingDecl
@@ -122,3 +126,47 @@ def test_widget_config_store_can_set_and_reset_widget_values(tmp_path) -> None:
     reset = store.get_widget("overlay.main", "speed")
     assert reset is not None
     assert reset.values == {}
+
+
+def test_settings_capabilities_read_and_write_values(tmp_path) -> None:
+    """Settings capabilities should expose specs and persist values through the store."""
+
+    store = SettingsStore(_paths(tmp_path), "default")
+    store.register_specs(
+        {
+            "tinyui": [
+                SettingDecl(key="showClock", label="Show Clock", type="bool", default=True),
+            ]
+        }
+    )
+    read = SettingsRead(store)
+    write = SettingsWrite(store)
+
+    assert read.by_namespace()["tinyui"][0].key == "showClock"
+    assert read.get("tinyui", "showClock") is True
+
+    write.set("tinyui", "showClock", False)
+    write.save("tinyui")
+    write.save_all()
+
+    assert read.get("tinyui", "showClock") is False
+    assert read.namespace_values("tinyui") == {"showClock": False}
+
+
+def test_widget_config_capabilities_keep_persistence_as_owner(tmp_path) -> None:
+    """Widget config read/write should keep persistence as the storage owner."""
+
+    store = WidgetConfigStore(_paths(tmp_path), "default")
+    read = WidgetConfigRead(store)
+    write = WidgetConfigWrite(store)
+
+    assert write.set_widget_enabled("overlay.main", "speed", False) is True
+    assert write.set_widget_position("overlay.main", "speed", 10, 20) is True
+    assert write.set_widget_values("overlay.main", "speed", {"units": "kph"}) is True
+
+    config = read.get_widget("overlay.main", "speed")
+    assert config is not None
+    assert config.enabled is False
+    assert config.position == (10, 20)
+    assert read.widget_values("overlay.main", "speed") == {"units": "kph"}
+    assert read.global_widgets_visible() is True
