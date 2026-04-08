@@ -26,13 +26,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from runtime_schema import Event, EventType, StartupResult, startup_error, startup_ok
+from runtimeV2.connectors.startup import ConnectorsStartupResult
 from runtimeV2.events.startup import EventsStartupResult
 from runtimeV2.manifest.capabilities.load import ManifestLoad
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.paths.startup import PathsStartupResult
 from runtimeV2.plugins.discovery import discover_plugins
+from runtimeV2.plugins.lifecycle import PluginLifecycleStore
 from runtimeV2.plugins.register_capabilities import PluginCapabilities, register_plugin_capabilities
 from runtimeV2.plugins.register_events import register_plugin_events
+from runtimeV2.plugins.register_lifecycle_capabilities import (
+    PluginLifecycleCapabilities,
+    register_plugin_lifecycle_capabilities,
+)
 from runtimeV2.plugins.registry import PluginRegistry
 from runtimeV2.runtime import RuntimeV2
 
@@ -43,6 +49,8 @@ class PluginsStartupResult:
 
     registry: PluginRegistry
     capabilities: PluginCapabilities
+    lifecycle: PluginLifecycleStore | None = None
+    lifecycle_capabilities: PluginLifecycleCapabilities | None = None
 
 
 def startup_plugins(runtime: RuntimeV2) -> StartupResult:
@@ -67,3 +75,35 @@ def startup_plugins(runtime: RuntimeV2) -> StartupResult:
         return startup_ok()
     except Exception as exc:
         return startup_error(f"Plugins domain startup failed: {exc}")
+
+
+def startup_plugins_lifecycle(runtime: RuntimeV2) -> StartupResult:
+    """Start the plugins-owned lifecycle slice after connectors exist."""
+
+    try:
+        plugins = runtime.domain_result("plugins", PluginsStartupResult)
+        if plugins.lifecycle is not None:
+            return startup_ok()
+
+        connectors = runtime.domain_result("connectors", ConnectorsStartupResult)
+        events = runtime.domain_result("events", EventsStartupResult)
+        lifecycle = PluginLifecycleStore(
+            registry=plugins.registry,
+            manifest_read=runtime.capability("manifest_read", ManifestRead),
+            connectors=connectors,
+            events=events,
+        )
+        lifecycle_capabilities = register_plugin_lifecycle_capabilities(lifecycle)
+        runtime.register_capability("plugin_active_read", lifecycle_capabilities.active_read)
+        runtime.register_capability("plugin_active_write", lifecycle_capabilities.active_write)
+        runtime.register_capability("plugin_state_read", lifecycle_capabilities.state_read)
+        runtime.register_capability("plugin_state_write", lifecycle_capabilities.state_write)
+        runtime.register_domain_result("plugins", PluginsStartupResult(
+            registry=plugins.registry,
+            capabilities=plugins.capabilities,
+            lifecycle=lifecycle,
+            lifecycle_capabilities=lifecycle_capabilities,
+        ))
+        return startup_ok()
+    except Exception as exc:
+        return startup_error(f"Plugin lifecycle startup failed: {exc}")

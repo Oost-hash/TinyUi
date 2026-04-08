@@ -29,7 +29,6 @@ from runtimeV2.host.startup import startup_host
 from runtimeV2.manifest.startup import startup_manifest
 from runtimeV2.paths.startup import startup_paths
 from runtimeV2.persistence.startup import startup_persistence
-from runtimeV2.plugins.lifecycle_startup import startup_plugin_lifecycle
 from runtimeV2.plugins.startup import startup_plugins
 from runtimeV2.ui.startup import startup_ui
 from runtimeV2.widgets.startup import startup_widgets
@@ -73,11 +72,6 @@ def register_default_domains(runtime: RuntimeV2) -> None:
         "connectors",
         startup_connectors,
         description="Owns connector declarations, service registry, and connector access.",
-    )
-    runtime.register_domain(
-        "plugins_lifecycle",
-        startup_plugin_lifecycle,
-        description="Owns plugin lifecycle state and active plugin policy.",
     )
     runtime.register_domain(
         "widgets",

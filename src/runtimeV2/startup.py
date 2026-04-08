@@ -31,6 +31,7 @@ from runtimeV2.register_domains import register_default_domains
 from runtimeV2.register_events import register_runtime_events
 from runtimeV2.register_globals import register_runtime_globals
 from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.plugins.startup import startup_plugins_lifecycle
 from runtimeV2.runtime import RuntimeV2
 
 
@@ -70,6 +71,11 @@ def startup_runtime_v2() -> StartupResult:
             if not startup_result.ok:
                 _runtime_v2_result = None
                 return startup_result
+            if domain_name == "connectors":
+                startup_result = startup_plugins_lifecycle(runtime)
+                if not startup_result.ok:
+                    _runtime_v2_result = None
+                    return startup_result
 
         _runtime_v2_result = RuntimeV2StartupResult(runtime=runtime)
         return startup_ok()
