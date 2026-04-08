@@ -23,7 +23,9 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QObject, Property, Signal, Slot
+from typing import Any
+
+from PySide6.QtCore import QObject, Property, QUrl, Signal, Slot
 
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
@@ -37,6 +39,10 @@ from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibili
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 
 
+_QVARIANT_LIST: Any = "QVariantList"
+_QVARIANT_MAP: Any = "QVariantMap"
+
+
 class ManifestQmlAdapter(QObject):
     """Expose manifest read models to QML."""
 
@@ -46,7 +52,7 @@ class ManifestQmlAdapter(QObject):
         super().__init__(parent)
         self._manifest_read = manifest_read
 
-    @Property(object, notify=pluginsChanged)
+    @Property(_QVARIANT_LIST, notify=pluginsChanged)
     def plugins(self) -> list[dict[str, object]]:
         """Return plugin manifests as a QML model."""
 
@@ -76,7 +82,7 @@ class WidgetRecordsQmlAdapter(QObject):
         super().__init__(parent)
         self._widget_records_read = widget_records_read
 
-    @Property(object, notify=widgetsChanged)
+    @Property(_QVARIANT_LIST, notify=widgetsChanged)
     def widgets(self) -> list[dict[str, object]]:
         """Return widget records as a QML model."""
 
@@ -104,7 +110,7 @@ class WindowRecordsQmlAdapter(QObject):
         super().__init__(parent)
         self._window_records_read = window_records_read
 
-    @Property(object, notify=windowsChanged)
+    @Property(_QVARIANT_LIST, notify=windowsChanged)
     def windows(self) -> list[dict[str, object]]:
         """Return UI window records as a QML model."""
 
@@ -201,7 +207,7 @@ class PluginStateQmlAdapter(QObject):
         self._state_read = state_read
         self._plugin_ids = plugin_ids
 
-    @Property(object, constant=True)
+    @Property(_QVARIANT_MAP, constant=True)
     def states(self) -> dict[str, str]:
         """Return plugin state map."""
 
@@ -210,13 +216,13 @@ class PluginStateQmlAdapter(QObject):
             for plugin_id in self._plugin_ids
         }
 
-    @Property(object, constant=True)
+    @Property(_QVARIANT_MAP, constant=True)
     def errors(self) -> dict[str, str]:
         """Return plugin error map."""
 
         return {}
 
-    @Property(object, constant=True)
+    @Property(_QVARIANT_MAP, constant=True)
     def histories(self) -> dict[str, list[dict[str, str]]]:
         """Return plugin state history map."""
 
@@ -241,19 +247,19 @@ class UIChromeQmlAdapter(QObject):
         super().__init__(parent)
         self._chrome_read = chrome_read
 
-    @Property(object, notify=tabModelChanged)
+    @Property(_QVARIANT_LIST, notify=tabModelChanged)
     def tabModel(self) -> list[dict[str, str]]:
         """Return QML tab model."""
 
         return [_tab_to_qml(tab) for tab in self._chrome_read.tabs()]
 
-    @Property(object, notify=menuItemsChanged)
+    @Property(_QVARIANT_LIST, notify=menuItemsChanged)
     def menuItems(self) -> list[dict[str, object]]:
         """Return QML menu model."""
 
         return [_menu_to_qml(item) for item in self._chrome_read.menu_items()]
 
-    @Property(object, notify=pluginMenuItemsChanged)
+    @Property(_QVARIANT_LIST, notify=pluginMenuItemsChanged)
     def pluginMenuItems(self) -> list[dict[str, object]]:
         """Return QML plugin menu model."""
 
@@ -265,7 +271,7 @@ class UIChromeQmlAdapter(QObject):
 
         return self._chrome_read.chrome_model().plugin_menu_label
 
-    @Property(object, notify=statusbarItemsChanged)
+    @Property(_QVARIANT_LIST, notify=statusbarItemsChanged)
     def leftItems(self) -> list[dict[str, str]]:
         """Return QML statusbar model."""
 
@@ -275,7 +281,7 @@ class UIChromeQmlAdapter(QObject):
             if item.side == "left"
         ]
 
-    @Property(object, notify=statusbarItemsChanged)
+    @Property(_QVARIANT_LIST, notify=statusbarItemsChanged)
     def rightItems(self) -> list[dict[str, str]]:
         """Return right-side QML statusbar model."""
 
@@ -285,7 +291,7 @@ class UIChromeQmlAdapter(QObject):
             if item.side == "right"
         ]
 
-    @Property(object, notify=statusbarItemsChanged)
+    @Property(_QVARIANT_LIST, notify=statusbarItemsChanged)
     def statusItems(self) -> list[dict[str, str]]:
         """Return all QML statusbar items."""
 
@@ -327,6 +333,12 @@ def _tab_to_qml(item: UITabItem) -> dict[str, str]:
         "id": item.tab_id,
         "label": item.label,
         "target": item.target,
-        "surface": item.surface,
+        "surface": _file_url(item.surface),
         "pluginId": item.plugin_id,
     }
+
+
+def _file_url(path: str) -> str:
+    if not path:
+        return ""
+    return QUrl.fromLocalFile(path).toString()
