@@ -6,7 +6,7 @@ from PySide6.QtCore import QUrl
 from PySide6.QtQml import QQmlComponent
 from PySide6.QtQuick import QQuickWindow
 
-from runtime_host.capabilities.widget_host import WidgetHostCapability
+from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 from runtimeV2.widgets.store import WidgetRecordsStore

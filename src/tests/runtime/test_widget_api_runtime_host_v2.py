@@ -5,7 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Any, cast
 
-from runtime_host.capabilities.widget_host import WidgetHostCapability
+from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.events.capabilities.event_read import EventRead
 from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry

@@ -27,7 +27,7 @@ from typing import Any
 
 from PySide6.QtCore import QObject, Slot
 
-from runtime_host.capabilities.widget_host import WidgetHostCapability
+from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.widgets.contracts import WidgetRecord
 

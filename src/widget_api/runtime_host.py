@@ -25,14 +25,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtime_host.capabilities.widget_host import WidgetHostCapability
+from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
+from shared_runtime_host.registry import create_shared_runtime_host_registry
 from runtimeV2.events.contracts import EventType
 from runtimeV2.events.startup import EventsStartupResult
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
-from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.startup import WidgetsStartupResult
+from widget_api.register_runtime_host import register_widget_runtime_host
 from widget_api.window_host import WidgetWindowHost
 
 
@@ -92,7 +93,9 @@ class WidgetWindowHostController:
 def create_widget_window_host(app, runtime: RuntimeV2) -> WidgetRuntimeHostResult:
     """Create the widget_api host bridge for runtime V2 widget records."""
 
-    widget_host = WidgetHostCapability(runtime.capability("widget_records_read", WidgetRecordsRead))
+    host_registry = create_shared_runtime_host_registry(runtime)
+    register_widget_runtime_host(host_registry)
+    widget_host = host_registry.capability("widget_host", WidgetHostCapability)
     host = WidgetWindowHost(widget_host, runtime.capability("widget_config_write", WidgetConfigWrite))
     controller = WidgetWindowHostController(runtime, host)
     controller.sync()

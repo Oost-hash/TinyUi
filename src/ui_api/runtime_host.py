@@ -26,7 +26,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, cast
 
-from runtime_host.capabilities.widget_host import WidgetHostCapability
+from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
+from shared_runtime_host.registry import SharedRuntimeHostRegistry, create_shared_runtime_host_registry
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
@@ -50,6 +51,7 @@ from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from ui_api.api.app_actions import AppActions
+from ui_api.register_runtime_host import register_ui_runtime_host
 from ui_api.runtime_adapters import (
     ManifestQmlAdapter,
     PluginActiveQmlAdapter,
@@ -94,7 +96,11 @@ class RuntimeHostResult:
     qml_properties: dict[str, object]
 
 
-def build_runtime_qml_properties(runtime: RuntimeV2, ui_result: UIStartupResult) -> dict[str, object]:
+def build_runtime_qml_properties(
+    runtime: RuntimeV2,
+    ui_result: UIStartupResult,
+    host_registry: SharedRuntimeHostRegistry | None = None,
+) -> dict[str, object]:
     """Build QML properties from the runtime V2 UI property schema."""
 
     properties: dict[str, object] = {}
@@ -103,11 +109,21 @@ def build_runtime_qml_properties(runtime: RuntimeV2, ui_result: UIStartupResult)
         if capability_type is None:
             raise KeyError(f"Runtime V2 QML property has no ui_api host type: {item.capability_name}")
         capability = runtime.capability(item.capability_name, capability_type)
-        properties[item.qml_property] = _adapt_qml_property(runtime, item.capability_name, capability)
+        properties[item.qml_property] = _adapt_qml_property(
+            runtime,
+            host_registry,
+            item.capability_name,
+            capability,
+        )
     return properties
 
 
-def _adapt_qml_property(runtime: RuntimeV2, capability_name: str, capability: object) -> object:
+def _adapt_qml_property(
+    runtime: RuntimeV2,
+    host_registry: SharedRuntimeHostRegistry | None,
+    capability_name: str,
+    capability: object,
+) -> object:
     """Adapt selected runtime V2 capabilities to QML-facing objects."""
 
     if capability_name == "ui_chrome_model_read":
@@ -115,7 +131,10 @@ def _adapt_qml_property(runtime: RuntimeV2, capability_name: str, capability: ob
     if capability_name == "manifest_read":
         return ManifestQmlAdapter(cast(ManifestRead, capability))
     if capability_name == "widget_records_read":
-        return WidgetRecordsQmlAdapter(WidgetHostCapability(cast(WidgetRecordsRead, capability)))
+        if host_registry is None:
+            host_registry = create_shared_runtime_host_registry(runtime)
+            register_ui_runtime_host(host_registry)
+        return WidgetRecordsQmlAdapter(host_registry.capability("widget_host", WidgetHostCapability))
     if capability_name == "window_records_read":
         return WindowRecordsQmlAdapter(cast(WindowRecordsRead, capability))
     if capability_name == "widget_visibility_read":
@@ -155,9 +174,11 @@ def start_runtime_host(
         if theme is None:
             theme = Theme("dark")
 
+        host_registry = create_shared_runtime_host_registry(runtime)
+        register_ui_runtime_host(host_registry)
         actions = AppActions()
         main_window = runtime.capability("main_window_read", MainWindowRead).main_window()
-        qml_properties = build_runtime_qml_properties(runtime, ui_result)
+        qml_properties = build_runtime_qml_properties(runtime, ui_result, host_registry)
         handle = open_window(
             main_window,
             engine=engine,

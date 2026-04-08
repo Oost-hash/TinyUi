@@ -27,7 +27,7 @@ from typing import Any
 
 from PySide6.QtCore import QObject, Property, QUrl, Signal, Slot
 
-from runtime_host.capabilities.widget_host import WidgetHostCapability
+from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
