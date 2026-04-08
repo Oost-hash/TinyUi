@@ -19,15 +19,8 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Application identity — name and version."""
+"""Capabilities exposed by the runtime V2 paths domain."""
 
-#TODO: should be moved too host
+from runtimeV2.paths.capabilities.path import PathCapability
 
-from __future__ import annotations
-
-from importlib.metadata import metadata
-
-_meta = metadata("tinyui")
-
-APP_NAME: str = _meta["Name"]
-VERSION: str  = _meta["Version"]
+__all__ = ["PathCapability"]

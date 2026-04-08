@@ -38,7 +38,8 @@ Rectangle {
     readonly property var widgetRead: hostWindow?.widgetRead ?? null
     readonly property var widgetConfigRead: hostWindow?.widgetConfigRead ?? null
     readonly property var widgetConfigWrite: hostWindow?.widgetConfigWrite ?? null
-    readonly property var widgetVisibility: hostWindow?.widget_visibility ?? null
+    readonly property var widgetVisibilityRead: hostWindow?.widget_visibility_read ?? null
+    readonly property var widgetVisibilityWrite: hostWindow?.widget_visibility_write ?? null
     
     // State
     property string selectedWidgetId: ""
@@ -68,8 +69,8 @@ Rectangle {
         }
         
         // If widgets are hidden and user selects a widget, make them visible
-        if (selectedWidgetId && widgetVisibility && !widgetVisibility.globalVisible) {
-            widgetVisibility.toggle()
+        if (selectedWidgetId && widgetVisibilityRead && !widgetVisibilityRead.globalVisible && widgetVisibilityWrite) {
+            widgetVisibilityWrite.setGlobalVisible(true)
         }
     }
 

@@ -21,6 +21,8 @@
 
 """Resolved application paths for source and frozen runtime modes."""
 
+#TODO: Runtime capabillity?
+
 from __future__ import annotations
 
 import os

@@ -19,15 +19,14 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Application identity — name and version."""
+"""Runtime V2 prototype package."""
 
-#TODO: should be moved too host
+from runtimeV2.runtime import RuntimeV2
+from runtimeV2.startup import RuntimeV2StartupResult, get_runtime_v2_result, startup_runtime_v2
 
-from __future__ import annotations
-
-from importlib.metadata import metadata
-
-_meta = metadata("tinyui")
-
-APP_NAME: str = _meta["Name"]
-VERSION: str  = _meta["Version"]
+__all__ = [
+    "RuntimeV2",
+    "RuntimeV2StartupResult",
+    "get_runtime_v2_result",
+    "startup_runtime_v2",
+]

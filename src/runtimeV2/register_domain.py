@@ -19,15 +19,17 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Application identity — name and version."""
-
-#TODO: should be moved too host
+"""Runtime V2 domain registration."""
 
 from __future__ import annotations
 
-from importlib.metadata import metadata
+from runtimeV2.runtime import RuntimeV2
 
-_meta = metadata("tinyui")
 
-APP_NAME: str = _meta["Name"]
-VERSION: str  = _meta["Version"]
+def register_default_domains(runtime: RuntimeV2) -> None:
+    """Register the first prototype domains."""
+
+    runtime.register_domain(
+        "paths",
+        description="Owns one-time path detection, the path registry, and path access.",
+    )

@@ -19,15 +19,18 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Application identity — name and version."""
-
-#TODO: should be moved too host
+"""Runtime V2 capability registration."""
 
 from __future__ import annotations
 
-from importlib.metadata import metadata
+from runtimeV2.runtime import RuntimeV2
 
-_meta = metadata("tinyui")
 
-APP_NAME: str = _meta["Name"]
-VERSION: str  = _meta["Version"]
+def register_runtime_capabilities(runtime: RuntimeV2) -> None:
+    """Register runtime-owned capabilities.
+
+    Runtime-owned V2 capabilities are not needed yet. Domain-owned
+    capabilities, such as paths, register themselves during domain startup.
+    """
+
+    _ = runtime

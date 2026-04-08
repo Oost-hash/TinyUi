@@ -19,15 +19,31 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Application identity — name and version."""
-
-#TODO: should be moved too host
+"""Path capability for the runtime V2 paths domain."""
 
 from __future__ import annotations
 
-from importlib.metadata import metadata
+from pathlib import Path
 
-_meta = metadata("tinyui")
+from runtime.app.paths import AppPaths
 
-APP_NAME: str = _meta["Name"]
-VERSION: str  = _meta["Version"]
+
+class PathCapability:
+    """Read-only interface over paths-domain data."""
+
+    def __init__(self, *, app_paths: AppPaths, named_paths: dict[str, Path]) -> None:
+        self._app_paths = app_paths
+        self._named_paths = named_paths
+
+    def get(self, name: str) -> Path:
+        """Return a registered path by name."""
+
+        try:
+            return self._named_paths[name]
+        except KeyError as exc:
+            raise KeyError(f"Path '{name}' is not registered") from exc
+
+    def qml_dir(self, package: str) -> Path:
+        """Return the QML directory for a package."""
+
+        return self._app_paths.qml_dir(package)
