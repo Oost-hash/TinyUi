@@ -19,40 +19,22 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Contracts for runtime V2 widgets."""
+"""Cross-domain global state registry for runtime V2."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
 
-
-class WidgetStatus(StrEnum):
-    """Runtime V2 status for one widget record."""
-
-    IDLE = "idle"
-    WAITING_FOR_CONNECTOR = "waiting_for_connector"
-    READY = "ready"
-    HIDDEN = "hidden"
-    ERROR = "error"
+from runtime_schema import EventType
 
 
 @dataclass(frozen=True)
-class WidgetRecord:
-    """Projected widget runtime record."""
+class GlobalRegistration:
+    """A runtime-visible cross-domain global state registration."""
 
-    overlay_id: str
-    widget_id: str
-    widget_type: str
-    label: str
-    source: str
-    status: WidgetStatus
-    connector_ids: tuple[str, ...]
-    error_message: str = ""
-
-
-@dataclass(frozen=True)
-class WidgetVisibilityState:
-    """Widget visibility read model."""
-
-    global_visible: bool
+    name: str
+    owner_domain: str
+    description: str = ""
+    read_capability: str = ""
+    write_capability: str = ""
+    event_type: EventType | None = None

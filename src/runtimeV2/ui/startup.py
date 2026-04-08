@@ -28,9 +28,11 @@ from dataclasses import dataclass
 from runtime_schema import Event, EventType, StartupResult, startup_error, startup_ok
 from runtimeV2.events import EventsStartupResult
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead
+from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.plugins.capabilities.ui_manifest_read import PluginUiManifestRead
 from runtimeV2.runtime import RuntimeV2
-from runtimeV2.ui.contracts import QmlPropertyPlan, UIRenderStatus, UIWindowRecord
+from runtimeV2.ui.chrome_model import build_ui_chrome_model
+from runtimeV2.ui.contracts import QmlPropertyPlan, UIChromeModel, UIRenderStatus, UIWindowRecord
 from runtimeV2.ui.projection import project_ui_window_records
 from runtimeV2.ui.readiness import determine_render_status
 from runtimeV2.ui.register_capabilities import UICapabilities, register_ui_capabilities
@@ -44,6 +46,7 @@ class UIStartupResult:
 
     records: list[UIWindowRecord]
     render_status: UIRenderStatus
+    chrome_model: UIChromeModel
     qml_property_plan: list[QmlPropertyPlan]
     capabilities: UICapabilities
 
@@ -63,13 +66,24 @@ def startup_ui(runtime: RuntimeV2) -> StartupResult:
             main_window_read=main_window_read,
             records=records,
         )
+        chrome_model = build_ui_chrome_model(
+            main_window_read=main_window_read,
+            ui_manifest_read=runtime.capability("plugin_ui_manifest_read", PluginUiManifestRead),
+            active_read=runtime.capability("plugin_active_read", PluginActiveRead),
+        )
         qml_property_plan = register_qml_property_plan()
-        capabilities = register_ui_capabilities(records=records, render_status=render_status)
+        capabilities = register_ui_capabilities(
+            records=records,
+            render_status=render_status,
+            chrome_model=chrome_model,
+        )
         runtime.register_capability("window_records_read", capabilities.window_records_read)
         runtime.register_capability("render_status_read", capabilities.render_status_read)
+        runtime.register_capability("ui_chrome_model_read", capabilities.chrome_model_read)
         runtime.register_domain_result("ui", UIStartupResult(
             records=records,
             render_status=render_status,
+            chrome_model=chrome_model,
             qml_property_plan=qml_property_plan,
             capabilities=capabilities,
         ))

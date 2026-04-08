@@ -23,11 +23,35 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
+from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
+from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
+from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
+from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.widgets.contracts import WidgetRecord
 
 
-def register_widget_capabilities(records: list[WidgetRecord]) -> WidgetRecordsRead:
+@dataclass(frozen=True)
+class WidgetCapabilities:
+    """Widgets domain capabilities."""
+
+    records_read: WidgetRecordsRead
+    visibility_read: WidgetVisibilityRead
+    visibility_write: WidgetVisibilityWrite
+
+
+def register_widget_capabilities(
+    *,
+    records: list[WidgetRecord],
+    widget_config_read: WidgetConfigRead,
+    widget_config_write: WidgetConfigWrite,
+) -> WidgetCapabilities:
     """Create widgets domain capabilities."""
 
-    return WidgetRecordsRead(records)
+    return WidgetCapabilities(
+        records_read=WidgetRecordsRead(records),
+        visibility_read=WidgetVisibilityRead(widget_config_read),
+        visibility_write=WidgetVisibilityWrite(widget_config_write),
+    )

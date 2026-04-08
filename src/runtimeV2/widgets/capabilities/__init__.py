@@ -21,3 +21,12 @@
 
 """Runtime V2 widget capabilities."""
 
+from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
+from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
+from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
+
+__all__ = [
+    "WidgetRecordsRead",
+    "WidgetVisibilityRead",
+    "WidgetVisibilityWrite",
+]

@@ -25,9 +25,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
 from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
-from runtimeV2.ui.contracts import UIRenderStatus, UIWindowRecord
+from runtimeV2.ui.contracts import UIChromeModel, UIRenderStatus, UIWindowRecord
 
 
 @dataclass(frozen=True)
@@ -36,16 +37,19 @@ class UICapabilities:
 
     window_records_read: WindowRecordsRead
     render_status_read: RenderStatusRead
+    chrome_model_read: UIChromeModelRead
 
 
 def register_ui_capabilities(
     *,
     records: list[UIWindowRecord],
     render_status: UIRenderStatus,
+    chrome_model: UIChromeModel,
 ) -> UICapabilities:
     """Create UI domain capabilities."""
 
     return UICapabilities(
         window_records_read=WindowRecordsRead(records),
         render_status_read=RenderStatusRead(render_status),
+        chrome_model_read=UIChromeModelRead(chrome_model),
     )

@@ -19,40 +19,35 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Contracts for runtime V2 widgets."""
+"""Chrome model read capability for runtime V2 UI."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from enum import StrEnum
+from runtimeV2.ui.contracts import UIChromeModel, UIMenuItem, UIStatusbarItem, UITabItem
 
 
-class WidgetStatus(StrEnum):
-    """Runtime V2 status for one widget record."""
+class UIChromeModelRead:
+    """Read the UI chrome model."""
 
-    IDLE = "idle"
-    WAITING_FOR_CONNECTOR = "waiting_for_connector"
-    READY = "ready"
-    HIDDEN = "hidden"
-    ERROR = "error"
+    def __init__(self, model: UIChromeModel) -> None:
+        self._model = model
 
+    def chrome_model(self) -> UIChromeModel:
+        """Return the full chrome model."""
 
-@dataclass(frozen=True)
-class WidgetRecord:
-    """Projected widget runtime record."""
+        return self._model
 
-    overlay_id: str
-    widget_id: str
-    widget_type: str
-    label: str
-    source: str
-    status: WidgetStatus
-    connector_ids: tuple[str, ...]
-    error_message: str = ""
+    def tabs(self) -> list[UITabItem]:
+        """Return UI tab items."""
 
+        return list(self._model.tabs)
 
-@dataclass(frozen=True)
-class WidgetVisibilityState:
-    """Widget visibility read model."""
+    def menu_items(self) -> list[UIMenuItem]:
+        """Return UI menu items."""
 
-    global_visible: bool
+        return list(self._model.menu_items)
+
+    def statusbar_items(self) -> list[UIStatusbarItem]:
+        """Return UI statusbar items."""
+
+        return list(self._model.statusbar_items)

@@ -21,3 +21,12 @@
 
 """Runtime V2 UI capabilities."""
 
+from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
+from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
+from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
+
+__all__ = [
+    "RenderStatusRead",
+    "UIChromeModelRead",
+    "WindowRecordsRead",
+]

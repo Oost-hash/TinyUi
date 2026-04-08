@@ -41,3 +41,8 @@ class WidgetConfigWrite:
         """Set widget position."""
 
         return self._store.set_widget_position(overlay_id, widget_id, x, y)
+
+    def set_global_widgets_visible(self, visible: bool) -> None:
+        """Set global widget visibility."""
+
+        self._store.set_global_visible(visible)

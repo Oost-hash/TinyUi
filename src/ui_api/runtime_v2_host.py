@@ -37,11 +37,14 @@ from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigW
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.plugins.capabilities.manifest_read import PluginManifestRead
+from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
 from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
 from runtimeV2.ui.startup import UIStartupResult
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
+from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
+from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from ui_api.api.app_actions import AppActions
 from ui_api.theme import Theme
 from ui_api.window import WindowHandle, open_window
@@ -58,8 +61,11 @@ _QML_CAPABILITY_TYPES: dict[str, type[Any]] = {
     "plugin_active_read": PluginActiveRead,
     "plugin_active_write": PluginActiveWrite,
     "widget_records_read": WidgetRecordsRead,
+    "widget_visibility_read": WidgetVisibilityRead,
+    "widget_visibility_write": WidgetVisibilityWrite,
     "window_records_read": WindowRecordsRead,
     "render_status_read": RenderStatusRead,
+    "ui_chrome_model_read": UIChromeModelRead,
 }
 
 

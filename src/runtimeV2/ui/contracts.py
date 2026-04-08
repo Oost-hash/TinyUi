@@ -64,3 +64,47 @@ class QmlPropertyPlan:
 
     capability_name: str
     qml_property: str
+
+
+@dataclass(frozen=True)
+class UIMenuItem:
+    """UI-facing menu item."""
+
+    label: str = ""
+    action: str = ""
+    separator: bool = False
+
+
+@dataclass(frozen=True)
+class UIStatusbarItem:
+    """UI-facing statusbar item."""
+
+    icon: str = ""
+    text: str = ""
+    tooltip: str = ""
+    action: str = ""
+    side: str = "left"
+
+
+@dataclass(frozen=True)
+class UITabItem:
+    """UI-facing tab item."""
+
+    tab_id: str
+    label: str
+    target: str
+    surface: str
+    plugin_id: str
+
+
+@dataclass(frozen=True)
+class UIChromeModel:
+    """UI-facing chrome model for the host window."""
+
+    menu_items: list[UIMenuItem]
+    plugin_menu_items: list[UIMenuItem]
+    plugin_menu_label: str
+    statusbar_items: list[UIStatusbarItem]
+    tabs: list[UITabItem]
+    active_plugin_id: str
+    status_active_label: str

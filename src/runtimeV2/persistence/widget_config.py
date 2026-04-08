@@ -32,6 +32,7 @@ class WidgetConfigStore:
     """Store widget configuration values for one config set."""
 
     WIDGETS_FILE = "widgets.json"
+    VISIBILITY_FILE = "widget_visibility.json"
 
     def __init__(self, paths: PersistencePaths, active_set: str) -> None:
         self._paths = paths
@@ -94,5 +95,31 @@ class WidgetConfigStore:
         self.save_for_overlay(overlay_id, configs)
         return True
 
+    def get_global_visible(self) -> bool:
+        """Return the global widget visibility flag."""
+
+        path = self._visibility_path()
+        if not path.exists():
+            return True
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return bool(data.get("global_visible", True))
+
+    def set_global_visible(self, visible: bool) -> None:
+        """Store the global widget visibility flag."""
+
+        path = self._visibility_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(
+                {"version": 1, "global_visible": visible},
+                indent=2,
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+
     def _widgets_path(self, overlay_id: str):
         return self._paths.namespace_dir(self._active_set, overlay_id) / self.WIDGETS_FILE
+
+    def _visibility_path(self):
+        return self._paths.config_set_dir(self._active_set) / self.VISIBILITY_FILE

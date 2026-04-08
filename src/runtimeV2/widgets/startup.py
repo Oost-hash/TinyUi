@@ -27,14 +27,16 @@ from dataclasses import dataclass
 
 from runtime_schema import StartupResult, startup_error, startup_ok
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
+from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
+from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.plugins.capabilities.connector_decl_read import PluginConnectorDeclRead
 from runtimeV2.plugins.capabilities.overlay_decl_read import PluginOverlayDeclRead
 from runtimeV2.runtime import RuntimeV2
-from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.contracts import WidgetRecord
 from runtimeV2.widgets.projection import project_widget_records
-from runtimeV2.widgets.register_capabilities import register_widget_capabilities
+from runtimeV2.widgets.register_capabilities import WidgetCapabilities, register_widget_capabilities
+from runtimeV2.widgets.register_globals import register_widget_globals
 
 
 @dataclass(frozen=True)
@@ -42,7 +44,7 @@ class WidgetsStartupResult:
     """Result of widgets domain startup."""
 
     records: list[WidgetRecord]
-    records_read: WidgetRecordsRead
+    capabilities: WidgetCapabilities
 
 
 def startup_widgets(runtime: RuntimeV2) -> StartupResult:
@@ -55,11 +57,18 @@ def startup_widgets(runtime: RuntimeV2) -> StartupResult:
             connector_read=runtime.capability("connector_read", ConnectorRead),
             active_read=runtime.capability("plugin_active_read", PluginActiveRead),
         )
-        records_read = register_widget_capabilities(records)
-        runtime.register_capability("widget_records_read", records_read)
+        capabilities = register_widget_capabilities(
+            records=records,
+            widget_config_read=runtime.capability("widget_config_read", WidgetConfigRead),
+            widget_config_write=runtime.capability("widget_config_write", WidgetConfigWrite),
+        )
+        runtime.register_capability("widget_records_read", capabilities.records_read)
+        runtime.register_capability("widget_visibility_read", capabilities.visibility_read)
+        runtime.register_capability("widget_visibility_write", capabilities.visibility_write)
+        register_widget_globals(runtime)
         runtime.register_domain_result("widgets", WidgetsStartupResult(
             records=records,
-            records_read=records_read,
+            capabilities=capabilities,
         ))
         return startup_ok()
     except Exception as exc:

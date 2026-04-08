@@ -27,6 +27,7 @@ from typing import TypeVar
 
 from runtime_schema import DomainStatusChangedData, EventType, StartupResult, startup_error, startup_ok
 from runtimeV2.domains import DomainRecord, DomainRegistration, DomainStartup, DomainStatus
+from runtimeV2.globals import GlobalRegistration
 
 T = TypeVar("T")
 
@@ -44,6 +45,7 @@ class RuntimeV2:
         self._domain_records: dict[str, DomainRecord] = {}
         self._domain_results: dict[str, object] = {}
         self._capabilities: dict[str, object] = {}
+        self._globals: dict[str, GlobalRegistration] = {}
 
     def register_domain(
         self,
@@ -129,6 +131,40 @@ class RuntimeV2:
         if not isinstance(capability, capability_type):
             raise KeyError(f"Capability '{name}' is not available as {capability_type.__name__}")
         return capability
+
+    def register_global(
+        self,
+        name: str,
+        *,
+        owner_domain: str,
+        description: str = "",
+        read_capability: str = "",
+        write_capability: str = "",
+        event_type: EventType | None = None,
+    ) -> None:
+        """Register a runtime-visible cross-domain global state."""
+
+        self._globals[name] = GlobalRegistration(
+            name=name,
+            owner_domain=owner_domain,
+            description=description,
+            read_capability=read_capability,
+            write_capability=write_capability,
+            event_type=event_type,
+        )
+
+    def global_records(self) -> list[GlobalRegistration]:
+        """Return registered cross-domain global states."""
+
+        return list(self._globals.values())
+
+    def global_record(self, name: str) -> GlobalRegistration:
+        """Return one registered cross-domain global state."""
+
+        try:
+            return self._globals[name]
+        except KeyError as exc:
+            raise KeyError(f"Runtime V2 global state is not registered: {name}") from exc
 
     def _set_domain_status(
         self,

@@ -42,3 +42,8 @@ class WidgetConfigRead:
         """Return config for one widget."""
 
         return self._store.get_widget(overlay_id, widget_id)
+
+    def global_widgets_visible(self) -> bool:
+        """Return global widget visibility."""
+
+        return self._store.get_global_visible()

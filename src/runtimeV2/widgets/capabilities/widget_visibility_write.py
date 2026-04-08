@@ -19,40 +19,25 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Contracts for runtime V2 widgets."""
+"""Widget visibility write capability for runtime V2."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from enum import StrEnum
+from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 
 
-class WidgetStatus(StrEnum):
-    """Runtime V2 status for one widget record."""
+class WidgetVisibilityWrite:
+    """Write widget visibility state owned by the widgets domain."""
 
-    IDLE = "idle"
-    WAITING_FOR_CONNECTOR = "waiting_for_connector"
-    READY = "ready"
-    HIDDEN = "hidden"
-    ERROR = "error"
+    def __init__(self, widget_config_write: WidgetConfigWrite) -> None:
+        self._widget_config_write = widget_config_write
 
+    def set_global_visible(self, visible: bool) -> None:
+        """Set global widget visibility."""
 
-@dataclass(frozen=True)
-class WidgetRecord:
-    """Projected widget runtime record."""
+        self._widget_config_write.set_global_widgets_visible(visible)
 
-    overlay_id: str
-    widget_id: str
-    widget_type: str
-    label: str
-    source: str
-    status: WidgetStatus
-    connector_ids: tuple[str, ...]
-    error_message: str = ""
+    def set_widget_enabled(self, overlay_id: str, widget_id: str, enabled: bool) -> bool:
+        """Set one widget enabled state."""
 
-
-@dataclass(frozen=True)
-class WidgetVisibilityState:
-    """Widget visibility read model."""
-
-    global_visible: bool
+        return self._widget_config_write.set_widget_enabled(overlay_id, widget_id, enabled)
