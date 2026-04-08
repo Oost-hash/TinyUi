@@ -28,10 +28,12 @@ from runtimeV2.connectors.startup import ConnectorsStartupResult
 from runtimeV2.events.contracts import EventType
 from runtimeV2.events.startup import EventsStartupResult
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
+from runtimeV2.plugins.activation import PluginActivationStore
 from runtimeV2.plugins.registry import PluginRegistry
 from runtimeV2.plugins.schemas.lifecycle import (
     PluginActivatedData,
     PluginDeactivatedData,
+    PluginErrorData,
     PluginState,
     PluginStateData,
 )
@@ -47,11 +49,13 @@ class PluginLifecycleStore:
         manifest_read: ManifestRead,
         connectors: ConnectorsStartupResult,
         events: EventsStartupResult,
+        activation: PluginActivationStore,
     ) -> None:
         self._registry = registry
         self._manifest_read = manifest_read
         self._connectors = connectors
         self._events = events
+        self._activation = activation
         self._states: dict[str, PluginState] = {
             plugin_id: PluginState.DISABLED
             for plugin_id in registry.plugin_ids()
@@ -88,24 +92,41 @@ class PluginLifecycleStore:
         manifest = self._manifest_read.plugin_manifest(plugin_id)
         if manifest is None:
             return False
+        if self.get_plugin_state(plugin_id) == PluginState.ACTIVE:
+            return True
 
-        if manifest.plugin_type == "connector":
-            declaration = manifest.connector
-            if declaration is not None:
-                register_connector_service(
-                    connector_id=plugin_id,
-                    declaration=declaration,
-                    connector_services=self._connectors.registry,
-                    events=self._events.bus,
-                )
+        self._set_state(plugin_id, PluginState.ENABLING)
 
-        self._set_state(plugin_id, PluginState.ACTIVE)
-        self._events.bus.emit_typed(
-            EventType.PLUGIN_ACTIVATED,
-            PluginActivatedData(plugin_id=plugin_id),
-            source="plugins",
-        )
-        return True
+        try:
+            if manifest.plugin_type == "connector":
+                declaration = manifest.connector
+                if declaration is not None:
+                    registered = register_connector_service(
+                        connector_id=plugin_id,
+                        declaration=declaration,
+                        connector_services=self._connectors.registry,
+                        events=self._events.bus,
+                    )
+                    if not registered:
+                        raise RuntimeError(f"Connector service could not be registered: {plugin_id}")
+
+            self._set_state(plugin_id, PluginState.LOADING)
+            self._activation.activate_plugin(plugin_id)
+            self._set_state(plugin_id, PluginState.ACTIVE)
+            self._events.bus.emit_typed(
+                EventType.PLUGIN_ACTIVATED,
+                PluginActivatedData(plugin_id=plugin_id),
+                source="plugins",
+            )
+            return True
+        except Exception as exc:
+            self._set_state(plugin_id, PluginState.ERROR)
+            self._events.bus.emit_typed(
+                EventType.PLUGIN_ERROR,
+                PluginErrorData(plugin_id=plugin_id, error_message=str(exc)),
+                source="plugins",
+            )
+            return False
 
     def disable_plugin(self, plugin_id: str) -> bool:
         """Disable one plugin lifecycle component."""
@@ -113,6 +134,14 @@ class PluginLifecycleStore:
         manifest = self._manifest_read.plugin_manifest(plugin_id)
         if manifest is None:
             return False
+        if self.get_plugin_state(plugin_id) != PluginState.ACTIVE:
+            return False
+
+        self._set_state(plugin_id, PluginState.UNLOADING)
+        try:
+            self._activation.deactivate_plugin(plugin_id)
+        except Exception:
+            pass
 
         if manifest.plugin_type == "connector":
             unregister_connector_service(
@@ -134,7 +163,7 @@ class PluginLifecycleStore:
     def _activate_hosts(self) -> None:
         for plugin_id, manifest in self._manifest_read.all_manifests().items():
             if manifest.plugin_type == "host":
-                self._set_state(plugin_id, PluginState.ACTIVE)
+                self.enable_plugin(plugin_id)
 
     def _set_state(self, plugin_id: str, new_state: PluginState) -> None:
         old_state = self._states.get(plugin_id, PluginState.DISABLED)

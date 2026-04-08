@@ -31,6 +31,8 @@ from runtimeV2.events.startup import EventsStartupResult
 from runtimeV2.manifest.capabilities.load import ManifestLoad
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.paths.startup import PathsStartupResult
+from runtimeV2.persistence.startup import PersistenceStartupResult
+from runtimeV2.plugins.activation import PluginActivationStore
 from runtimeV2.plugins.discovery import discover_plugins
 from runtimeV2.plugins.lifecycle import PluginLifecycleStore
 from runtimeV2.plugins.register_capabilities import PluginCapabilities, register_plugin_capabilities
@@ -88,11 +90,18 @@ def startup_plugins_lifecycle(runtime: RuntimeV2) -> StartupResult:
 
         connectors = runtime.domain_result("connectors", ConnectorsStartupResult)
         events = runtime.domain_result("events", EventsStartupResult)
+        persistence = runtime.domain_result("persistence", PersistenceStartupResult)
+        activation = PluginActivationStore(
+            registry=plugins.registry,
+            settings=persistence.settings,
+            connector_services=connectors.registry,
+        )
         lifecycle = PluginLifecycleStore(
             registry=plugins.registry,
             manifest_read=runtime.capability("manifest_read", ManifestRead),
             connectors=connectors,
             events=events,
+            activation=activation,
         )
         lifecycle_capabilities = register_plugin_lifecycle_capabilities(lifecycle)
         runtime.register_capability("plugin_active_read", lifecycle_capabilities.active_read)
