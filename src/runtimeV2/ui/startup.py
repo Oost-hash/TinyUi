@@ -32,7 +32,13 @@ from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.ui.chrome_model import build_ui_chrome_model
-from runtimeV2.ui.contracts import QmlPropertyPlan, UIChromeModel, UIRenderStatus, UIWindowRecord
+from runtimeV2.ui.contracts import (
+    QmlPropertyPlan,
+    UIChromeModel,
+    UIRenderStatus,
+    UIWindowRecord,
+    UIWindowRecordsChangedData,
+)
 from runtimeV2.ui.projection import project_ui_window_records
 from runtimeV2.ui.readiness import determine_render_status
 from runtimeV2.ui.register_capabilities import UICapabilities, register_ui_capabilities
@@ -88,6 +94,11 @@ def startup_ui(runtime: RuntimeV2) -> StartupResult:
             qml_property_plan=qml_property_plan,
             capabilities=capabilities,
         ))
+        events.bus.emit_typed(
+            EventType.UI_WINDOW_RECORDS_CHANGED,
+            UIWindowRecordsChangedData(window_count=len(records)),
+            source="ui",
+        )
         event_type = EventType.UI_READY if render_status.render_ready else EventType.UI_RENDER_BLOCKED
         events.bus.emit(Event(event_type, data=render_status, source="ui"))
         return startup_ok()

@@ -63,3 +63,14 @@ class ConnectorServiceUpdatedData:
 
     connector_id: str
     plugin_id: str
+
+
+@dataclass(frozen=True)
+class ConnectorSourceChangedData:
+    """Event payload for connector source ownership changes."""
+
+    connector_id: str
+    plugin_id: str
+    owner: str
+    source_name: str
+    action: str

@@ -108,3 +108,10 @@ class UIChromeModel:
     tabs: list[UITabItem]
     active_plugin_id: str
     status_active_label: str
+
+
+@dataclass(frozen=True)
+class UIWindowRecordsChangedData:
+    """Data for UI window record updates."""
+
+    window_count: int

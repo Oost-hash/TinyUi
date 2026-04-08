@@ -28,6 +28,7 @@ from typing import Any, cast
 
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
+from runtimeV2.connectors.contracts import ConnectorSourceChangedData
 from runtimeV2.connectors.policy import unregister_connector_service
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest, ConnectorServiceDecl
 from runtimeV2.connectors.startup import startup_connectors, ConnectorsStartupResult
@@ -179,6 +180,47 @@ def test_connector_write_can_update_all_services(monkeypatch) -> None:
     assert services["acc"].update_calls == 1
     assert read.service("iracing") is not None
     assert len(bus.get_history(EventType.CONNECTOR_SERVICE_UPDATED)) == 4
+
+
+def test_connector_write_emits_source_change_events(monkeypatch) -> None:
+    """Connector source requests and releases should emit explicit state-change events."""
+
+    service = _FakeConnectorService()
+    monkeypatch.setattr(
+        "runtimeV2.connectors.policy.load_connector_service",
+        lambda module_name, class_name: service,
+    )
+    runtime, bus = _make_runtime(
+        {
+            "iracing": ConnectorManifest(
+                service=ConnectorServiceDecl(module="plugins.iracing", class_name="IRacingService")
+            )
+        }
+    )
+
+    assert startup_connectors(cast(Any, runtime)) == StartupResult(ok=True)
+    write = cast(ConnectorWrite, runtime.registered_capabilities["connector_write"])
+
+    assert write.request_source("iracing", "devtools", "mock") is True
+    assert write.release_source("iracing", "devtools") is True
+
+    history = bus.get_history(EventType.CONNECTOR_SOURCE_CHANGED)
+    assert [event.data for event in history] == [
+        ConnectorSourceChangedData(
+            connector_id="iracing",
+            plugin_id="iracing",
+            owner="devtools",
+            source_name="mock",
+            action="request",
+        ),
+        ConnectorSourceChangedData(
+            connector_id="iracing",
+            plugin_id="iracing",
+            owner="devtools",
+            source_name="",
+            action="release",
+        ),
+    ]
 
 
 def test_unregister_connector_service_releases_source_and_closes(monkeypatch) -> None:

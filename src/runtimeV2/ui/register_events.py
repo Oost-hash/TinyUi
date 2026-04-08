@@ -30,6 +30,14 @@ from runtimeV2.events import EventRegistry
 def register_ui_events(registry: EventRegistry) -> None:
     """Register UI event contracts."""
 
-    registry.register(EventType.UI_READY, domain="ui")
-    registry.register(EventType.UI_RENDER_BLOCKED, domain="ui")
-    registry.register(EventType.UI_WINDOW_RECORDS_CHANGED, domain="ui")
+    registry.register(EventType.UI_READY, domain="ui", description="UI render readiness became ready.")
+    registry.register(
+        EventType.UI_RENDER_BLOCKED,
+        domain="ui",
+        description="UI render readiness is blocked and reports a blocker.",
+    )
+    registry.register(
+        EventType.UI_WINDOW_RECORDS_CHANGED,
+        domain="ui",
+        description="Projected UI window records changed.",
+    )

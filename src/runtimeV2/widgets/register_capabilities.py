@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from runtimeV2.events.contracts import EventBus
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
@@ -47,11 +48,12 @@ def register_widget_capabilities(
     store: WidgetRecordsStore,
     widget_config_read: WidgetConfigRead,
     widget_config_write: WidgetConfigWrite,
+    events: EventBus | None = None,
 ) -> WidgetCapabilities:
     """Create widgets domain capabilities."""
 
     return WidgetCapabilities(
         records_read=WidgetRecordsRead(store),
         visibility_read=WidgetVisibilityRead(widget_config_read),
-        visibility_write=WidgetVisibilityWrite(widget_config_write),
+        visibility_write=WidgetVisibilityWrite(widget_config_write, events),
     )

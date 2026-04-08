@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from runtimeV2.events.contracts import EventBus
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.connectors.poller import ConnectorServicePoller
@@ -42,10 +43,11 @@ class ConnectorCapabilities:
 def register_connector_capabilities(
     registry: ConnectorServiceRegistry,
     poller: ConnectorServicePoller,
+    events: EventBus | None = None,
 ) -> ConnectorCapabilities:
     """Create connector domain capabilities."""
 
     return ConnectorCapabilities(
         read=ConnectorRead(registry),
-        write=ConnectorWrite(registry, poller),
+        write=ConnectorWrite(registry, poller, events),
     )

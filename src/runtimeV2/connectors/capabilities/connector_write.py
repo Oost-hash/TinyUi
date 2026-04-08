@@ -23,6 +23,8 @@
 
 from __future__ import annotations
 
+from runtimeV2.connectors.contracts import ConnectorSourceChangedData
+from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.connectors.poller import ConnectorServicePoller
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 
@@ -30,19 +32,41 @@ from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 class ConnectorWrite:
     """Control connector service sources and updates."""
 
-    def __init__(self, registry: ConnectorServiceRegistry, poller: ConnectorServicePoller) -> None:
+    def __init__(
+        self,
+        registry: ConnectorServiceRegistry,
+        poller: ConnectorServicePoller,
+        events: EventBus | None = None,
+    ) -> None:
         self._registry = registry
         self._poller = poller
+        self._events = events
 
     def request_source(self, connector_id: str, owner: str, source_name: str) -> bool:
         """Request a connector source."""
 
-        return self._registry.request_source(connector_id, owner, source_name)
+        changed = self._registry.request_source(connector_id, owner, source_name)
+        if changed:
+            self._emit_source_changed(
+                connector_id=connector_id,
+                owner=owner,
+                source_name=source_name,
+                action="request",
+            )
+        return changed
 
     def release_source(self, connector_id: str, owner: str) -> bool:
         """Release a connector source claim."""
 
-        return self._registry.release_source(connector_id, owner)
+        changed = self._registry.release_source(connector_id, owner)
+        if changed:
+            self._emit_source_changed(
+                connector_id=connector_id,
+                owner=owner,
+                source_name="",
+                action="release",
+            )
+        return changed
 
     def update(self, connector_id: str) -> bool:
         """Update one connector service."""
@@ -53,3 +77,25 @@ class ConnectorWrite:
         """Update all connector services."""
 
         return self._poller.update_all()
+
+    def _emit_source_changed(
+        self,
+        *,
+        connector_id: str,
+        owner: str,
+        source_name: str,
+        action: str,
+    ) -> None:
+        if self._events is None:
+            return
+        self._events.emit_typed(
+            EventType.CONNECTOR_SOURCE_CHANGED,
+            ConnectorSourceChangedData(
+                connector_id=connector_id,
+                plugin_id=connector_id,
+                owner=owner,
+                source_name=source_name,
+                action=action,
+            ),
+            source="connectors",
+        )

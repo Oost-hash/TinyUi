@@ -23,21 +23,50 @@
 
 from __future__ import annotations
 
+from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
+from runtimeV2.widgets.contracts import WidgetVisibilityChangedData
 
 
 class WidgetVisibilityWrite:
     """Write widget visibility state owned by the widgets domain."""
 
-    def __init__(self, widget_config_write: WidgetConfigWrite) -> None:
+    def __init__(self, widget_config_write: WidgetConfigWrite, events: EventBus | None = None) -> None:
         self._widget_config_write = widget_config_write
+        self._events = events
 
     def set_global_visible(self, visible: bool) -> None:
         """Set global widget visibility."""
 
         self._widget_config_write.set_global_widgets_visible(visible)
+        self._emit_changed(
+            WidgetVisibilityChangedData(
+                scope="global",
+                global_visible=visible,
+            )
+        )
 
     def set_widget_enabled(self, overlay_id: str, widget_id: str, enabled: bool) -> bool:
         """Set one widget enabled state."""
 
-        return self._widget_config_write.set_widget_enabled(overlay_id, widget_id, enabled)
+        updated = self._widget_config_write.set_widget_enabled(overlay_id, widget_id, enabled)
+        if updated:
+            self._emit_changed(
+                WidgetVisibilityChangedData(
+                    scope="widget",
+                    global_visible=True,
+                    overlay_id=overlay_id,
+                    widget_id=widget_id,
+                    enabled=enabled,
+                )
+            )
+        return updated
+
+    def _emit_changed(self, data: WidgetVisibilityChangedData) -> None:
+        if self._events is None:
+            return
+        self._events.emit_typed(
+            EventType.WIDGET_VISIBILITY_CHANGED,
+            data,
+            source="widgets",
+        )

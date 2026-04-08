@@ -35,3 +35,8 @@ def register_widget_events(registry: EventRegistry) -> None:
         domain="widgets",
         description="Widget runtime records were refreshed.",
     )
+    registry.register(
+        EventType.WIDGET_VISIBILITY_CHANGED,
+        domain="widgets",
+        description="Widget visibility state changed.",
+    )

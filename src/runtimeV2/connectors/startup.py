@@ -67,7 +67,7 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
             events=events.bus,
         )
         poller = ConnectorServicePoller(registry, events.bus)
-        capabilities = register_connector_capabilities(registry, poller)
+        capabilities = register_connector_capabilities(registry, poller, events.bus)
         runtime.register_capability("connector_read", capabilities.read)
         runtime.register_capability("connector_write", capabilities.write)
         runtime.register_domain_result("connectors", ConnectorsStartupResult(

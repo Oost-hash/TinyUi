@@ -33,3 +33,4 @@ def register_connector_events(registry: EventRegistry) -> None:
     registry.register(EventType.CONNECTOR_SERVICE_REGISTERED, domain="connectors")
     registry.register(EventType.CONNECTOR_SERVICE_UNREGISTERED, domain="connectors")
     registry.register(EventType.CONNECTOR_SERVICE_UPDATED, domain="connectors")
+    registry.register(EventType.CONNECTOR_SOURCE_CHANGED, domain="connectors")

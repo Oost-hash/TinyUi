@@ -67,3 +67,14 @@ class WidgetRuntimeUpdatedData:
     """Data for widget runtime refresh events."""
 
     widget_count: int
+
+
+@dataclass(frozen=True)
+class WidgetVisibilityChangedData:
+    """Data for widget visibility changes."""
+
+    scope: str
+    global_visible: bool
+    overlay_id: str = ""
+    widget_id: str = ""
+    enabled: bool = True

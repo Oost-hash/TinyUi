@@ -17,8 +17,11 @@ from runtimeV2.events.startup import EventsStartupResult
 from runtimeV2.host.contracts import HostAppIdentity
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead
 from runtimeV2.host.contracts import HostShell
+from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
+from runtimeV2.manifest.registry import ManifestRegistry
 from runtimeV2.schemas.startup import StartupResult
 from runtimeV2.ui.contracts import QmlPropertyPlan, UIChromeModel, UIRenderStatus
+from runtimeV2.ui.contracts import UIWindowRecordsChangedData
 from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
 from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
 from runtimeV2.ui.schemas.manifest import AppManifest, ChromePolicy
@@ -243,3 +246,66 @@ def test_runtime_host_close_action_requests_runtime_shutdown(monkeypatch) -> Non
 
     assert runtime.shutdown.calls == ["main_window_close"]
     assert close_calls == ["closed"]
+
+
+def test_ui_startup_emits_window_record_change_before_ready(monkeypatch) -> None:
+    """UI startup should emit a typed window-record update alongside readiness."""
+
+    from runtimeV2.ui.startup import startup_ui
+
+    class _FakeRuntime:
+        def __init__(self) -> None:
+            self.events = EventsStartupResult(
+                bus=EventBus(),
+                registry=EventRegistry(),
+                event_read=EventRead(EventRegistry()),
+            )
+            self.records = []
+            self.capabilities: dict[str, object] = {
+                "main_window_read": _FakeUiRuntime()._main_window,
+                "manifest_ui_read": ManifestUiRead(ManifestRegistry()),
+                "plugin_active_read": cast(Any, SimpleNamespace(get_active_plugin=lambda: "")),
+            }
+            self.result: object | None = None
+
+        def domain_result(self, name: str, _result_type: type[Any]) -> Any:
+            if name == "events":
+                return self.events
+            raise KeyError(name)
+
+        def capability(self, name: str, _capability_type: type[Any]) -> Any:
+            return self.capabilities[name]
+
+        def register_capability(self, name: str, capability: object) -> None:
+            self.capabilities[name] = capability
+
+        def register_domain_result(self, name: str, result: object) -> None:
+            self.result = result
+
+    monkeypatch.setattr("runtimeV2.ui.startup.project_ui_window_records", lambda **_kwargs: [])
+    monkeypatch.setattr(
+        "runtimeV2.ui.startup.determine_render_status",
+        lambda **_kwargs: UIRenderStatus(render_ready=True, main_window_id="tinyui.main"),
+    )
+    monkeypatch.setattr(
+        "runtimeV2.ui.startup.build_ui_chrome_model",
+        lambda **_kwargs: UIChromeModel(
+            menu_items=[],
+            plugin_menu_items=[],
+            plugin_menu_label="",
+            statusbar_items=[],
+            tabs=[],
+            active_plugin_id="",
+            status_active_label="",
+        ),
+    )
+
+    runtime = _FakeRuntime()
+    result = startup_ui(cast(Any, runtime))
+
+    assert result.ok
+    window_events = runtime.events.bus.get_history(EventType.UI_WINDOW_RECORDS_CHANGED)
+    ready_events = runtime.events.bus.get_history(EventType.UI_READY)
+    assert len(window_events) == 1
+    assert window_events[0].data == UIWindowRecordsChangedData(window_count=0)
+    assert len(ready_events) == 1

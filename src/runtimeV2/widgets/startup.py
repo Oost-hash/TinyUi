@@ -79,6 +79,7 @@ def startup_widgets(runtime: RuntimeV2) -> StartupResult:
             store=store,
             widget_config_read=widget_config_read,
             widget_config_write=widget_config_write,
+            events=events.bus,
         )
         runtime.register_capability("widget_records_read", capabilities.records_read)
         runtime.register_capability("widget_visibility_read", capabilities.visibility_read)

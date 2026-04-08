@@ -49,10 +49,12 @@ class EventType(Enum):
     CONNECTOR_SERVICE_REGISTERED = auto()
     CONNECTOR_SERVICE_UNREGISTERED = auto()
     CONNECTOR_SERVICE_UPDATED = auto()
+    CONNECTOR_SOURCE_CHANGED = auto()
     UI_READY = auto()
     UI_RENDER_BLOCKED = auto()
     UI_WINDOW_RECORDS_CHANGED = auto()
     WIDGET_RUNTIME_UPDATED = auto()
+    WIDGET_VISIBILITY_CHANGED = auto()
 
 
 @dataclass(frozen=True)

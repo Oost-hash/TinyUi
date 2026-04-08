@@ -17,6 +17,7 @@ from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
+from runtimeV2.widgets.contracts import WidgetVisibilityChangedData
 from runtimeV2.widgets.poller import WidgetRuntimePoller
 from runtimeV2.widgets.store import WidgetRecordsStore
 from runtimeV2.widgets.schemas.manifest import OverlayManifest, OverlayWidgetDecl, WidgetDefaults
@@ -218,7 +219,8 @@ def test_widget_visibility_capabilities_project_and_persist_visibility(tmp_path)
     )
     config_write = WidgetConfigWrite(store)
     visibility_read = WidgetVisibilityRead(WidgetConfigRead(store))
-    visibility_write = WidgetVisibilityWrite(config_write)
+    bus = EventBus()
+    visibility_write = WidgetVisibilityWrite(config_write, bus)
 
     assert visibility_read.global_visible() is True
     visibility_write.set_global_visible(False)
@@ -226,3 +228,16 @@ def test_widget_visibility_capabilities_project_and_persist_visibility(tmp_path)
 
     assert visibility_write.set_widget_enabled("demo_overlay", "speed", False) is True
     assert visibility_read.is_widget_enabled("demo_overlay", "speed") is False
+    visibility_events = bus.get_history(EventType.WIDGET_VISIBILITY_CHANGED)
+    assert len(visibility_events) == 2
+    assert visibility_events[0].data == WidgetVisibilityChangedData(
+        scope="global",
+        global_visible=False,
+    )
+    assert visibility_events[1].data == WidgetVisibilityChangedData(
+        scope="widget",
+        global_visible=True,
+        overlay_id="demo_overlay",
+        widget_id="speed",
+        enabled=False,
+    )
