@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -22,7 +23,7 @@ from widget_api.runtime_host import create_widget_window_host, start_widget_host
 
 class _FakeSignal:
     def __init__(self) -> None:
-        self._callbacks: list[object] = []
+        self._callbacks: list[Callable[[], None]] = []
 
     def connect(self, callback) -> None:
         self._callbacks.append(callback)
@@ -81,6 +82,7 @@ class _FakeRuntime:
             event_read=EventRead(EventRegistry()),
         )
         self._widget_config_write = widget_config_write
+        self.shutdown_calls: list[str] = []
 
     def domain_result(self, name: str, _result_type: type[Any]) -> Any:
         if name == "events":
@@ -94,7 +96,18 @@ class _FakeRuntime:
             return self._widget_config_write
         if name == "widget_records_read":
             return WidgetRecordsRead(self._store)
+        if name == "shutdown":
+            return cast(Any, _FakeShutdown(self.shutdown_calls))
         raise KeyError(name)
+
+
+class _FakeShutdown:
+    def __init__(self, calls: list[str]) -> None:
+        self._calls = calls
+
+    def begin_shutdown(self, reason: str = "app_quit") -> bool:
+        self._calls.append(reason)
+        return True
 
 
 def test_widget_runtime_host_syncs_runtime_v2_widget_records(monkeypatch) -> None:
@@ -193,6 +206,53 @@ def test_start_widget_host_returns_typed_success(monkeypatch) -> None:
     _result, startup_result = start_widget_host(app, cast(Any, runtime))
 
     assert startup_result == StartupResult(ok=True)
+
+
+def test_widget_runtime_host_closes_on_runtime_shutdown(monkeypatch) -> None:
+    """Runtime shutdown should close hosted widget windows through the shared host layer."""
+
+    app = _FakeApp()
+    runtime = _FakeRuntime([], _FakeWidgetConfigWrite())
+    calls: list[str] = []
+
+    class _FakeHost:
+        def __init__(self, _widget_host, _widget_config_write) -> None:
+            pass
+
+        def sync_records(self, _runtime_records) -> None:
+            return None
+
+        def close_all(self) -> None:
+            calls.append("closed")
+
+    monkeypatch.setattr("widget_api.runtime_host.WidgetWindowHost", _FakeHost)
+
+    create_widget_window_host(app, cast(Any, runtime))
+    runtime.domain_result("events", EventsStartupResult).bus.emit_typed(
+        EventType.RUNTIME_SHUTDOWN,
+        data=None,
+        source="runtime",
+    )
+
+    assert calls == ["closed"]
+
+
+def test_widget_runtime_host_requests_runtime_shutdown_on_app_quit(monkeypatch) -> None:
+    """Application quit should request runtime shutdown through the shared host layer."""
+
+    app = _FakeApp()
+    runtime = _FakeRuntime([], _FakeWidgetConfigWrite())
+
+    monkeypatch.setattr(
+        "widget_api.runtime_host.WidgetWindowHost",
+        lambda _widget_host, _widget_config_write: SimpleNamespace(sync_records=lambda _records: None, close_all=lambda: None),
+    )
+
+    create_widget_window_host(app, cast(Any, runtime))
+    for callback in app.aboutToQuit._callbacks:
+        callback()
+
+    assert runtime.shutdown_calls == ["app_quit"]
 
 
 def test_widget_data_adapter_uses_runtime_v2_record_shape() -> None:

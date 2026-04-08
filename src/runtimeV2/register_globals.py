@@ -35,6 +35,8 @@ def register_runtime_globals(runtime: RuntimeV2) -> None:
     globals_capability.register_global(
         "shutdown",
         owner_domain="runtime",
+        read_capability="shutdown",
+        write_capability="shutdown",
         event_type=EventType.RUNTIME_SHUTDOWN,
         description="Runtime-wide shutdown intent.",
     )

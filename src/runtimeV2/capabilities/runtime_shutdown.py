@@ -19,9 +19,33 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime-owned runtime V2 capabilities."""
+"""Runtime shutdown capability."""
 
-from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
-from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
+from __future__ import annotations
 
-__all__ = ["RuntimeGlobals", "RuntimeShutdown"]
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from runtimeV2.runtime import RuntimeV2
+
+
+class RuntimeShutdown:
+    """Request and inspect runtime shutdown state."""
+
+    def __init__(self, runtime: RuntimeV2) -> None:
+        self._runtime = runtime
+
+    def begin_shutdown(self, reason: str = "app_quit") -> bool:
+        """Request runtime shutdown once."""
+
+        return self._runtime.begin_shutdown(reason)
+
+    def shutdown_requested(self) -> bool:
+        """Return whether shutdown was already requested."""
+
+        return self._runtime.shutdown_requested()
+
+    def shutdown_reason(self) -> str:
+        """Return the current shutdown reason."""
+
+        return self._runtime.shutdown_reason()

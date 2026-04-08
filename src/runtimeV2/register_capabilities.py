@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
+from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.runtime import RuntimeV2
 
 
@@ -31,3 +32,4 @@ def register_runtime_capabilities(runtime: RuntimeV2) -> None:
     """Register runtime-owned capabilities."""
 
     runtime.register_capability("globals", RuntimeGlobals(runtime))
+    runtime.register_capability("shutdown", RuntimeShutdown(runtime))

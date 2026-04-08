@@ -30,6 +30,7 @@ from shared_runtime_host.capabilities.ui_host import UIHostCapability
 from shared_runtime_host.capabilities.window_host import WindowHostCapability
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from shared_runtime_host.registry import SharedRuntimeHostRegistry, create_shared_runtime_host_registry
+from shared_runtime_host.shutdown import QmlRuntimeHostShutdown
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
@@ -44,6 +45,7 @@ from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
 from runtimeV2.plugins.capabilities.state_read import PluginStateRead
 from runtimeV2.plugins.capabilities.state_write import PluginStateWrite
+from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
@@ -96,6 +98,7 @@ class RuntimeHostResult:
     theme: Theme
     main_handle: WindowHandle
     qml_properties: dict[str, object]
+    shutdown: QmlRuntimeHostShutdown
 
 
 def build_runtime_qml_properties(
@@ -195,17 +198,25 @@ def start_runtime_host(
             theme=theme,
             **qml_properties,
         )
+        shutdown_capability = runtime.capability("shutdown", RuntimeShutdown)
+
+        def _request_main_window_close() -> None:
+            shutdown_capability.begin_shutdown("main_window_close")
+
         def _close_main_window() -> None:
             handle.qml_window.close()
 
-        actions.register("close", _close_main_window)
+        actions.register("close", _request_main_window_close)
         handle.qml_window.destroyed.connect(app.quit)
+        shutdown = QmlRuntimeHostShutdown(runtime, _close_main_window)
+        shutdown.attach(app)
 
         result = RuntimeHostResult(
             actions=actions,
             theme=theme,
             main_handle=handle,
             qml_properties=qml_properties,
+            shutdown=shutdown,
         )
         app.setProperty("_runtimeV2Host", result)
         return result, startup_ok()

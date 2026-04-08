@@ -23,6 +23,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TypeVar
 
 from runtimeV2.domains import DomainRecord, DomainRegistration, DomainStartup, DomainStatus
@@ -30,6 +31,7 @@ from runtimeV2.events.contracts import EventType
 from runtimeV2.globals import GlobalRegistration
 from runtimeV2.schemas.events import DomainStatusChangedData
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
+from runtimeV2.shutdown import RuntimeShutdownController
 
 T = TypeVar("T")
 
@@ -48,6 +50,8 @@ class RuntimeV2:
         self._domain_results: dict[str, object] = {}
         self._capabilities: dict[str, object] = {}
         self._globals: dict[str, GlobalRegistration] = {}
+        self._stop_hooks: dict[str, list[Callable[[], None]]] = {}
+        self._shutdown = RuntimeShutdownController(self)
 
     def register_domain(
         self,
@@ -167,6 +171,28 @@ class RuntimeV2:
             return self._globals[name]
         except KeyError as exc:
             raise KeyError(f"Runtime V2 global state is not registered: {name}") from exc
+
+    def register_stop_hook(self, owner: str, hook: Callable[[], None]) -> None:
+        """Register one runtime stop hook."""
+
+        if owner != "runtime" and owner not in self._domains:
+            raise KeyError(f"Runtime V2 stop hook owner is not registered: {owner}")
+        self._stop_hooks.setdefault(owner, []).append(hook)
+
+    def shutdown_requested(self) -> bool:
+        """Return whether runtime shutdown was already requested."""
+
+        return self._shutdown.shutdown_requested()
+
+    def shutdown_reason(self) -> str:
+        """Return the current shutdown reason."""
+
+        return self._shutdown.shutdown_reason()
+
+    def begin_shutdown(self, reason: str = "app_quit") -> bool:
+        """Request runtime shutdown once and run registered stop hooks."""
+
+        return self._shutdown.begin_shutdown(reason)
 
     def _set_domain_status(
         self,

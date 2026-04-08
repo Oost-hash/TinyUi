@@ -27,6 +27,7 @@ from dataclasses import dataclass
 
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from shared_runtime_host.registry import create_shared_runtime_host_registry
+from shared_runtime_host.shutdown import QmlRuntimeHostShutdown
 from runtimeV2.events.contracts import EventType
 from runtimeV2.events.startup import EventsStartupResult
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
@@ -43,6 +44,7 @@ class WidgetRuntimeHostResult:
 
     controller: "WidgetWindowHostController"
     host: WidgetWindowHost
+    shutdown: QmlRuntimeHostShutdown
 
 
 class WidgetWindowHostController:
@@ -64,11 +66,8 @@ class WidgetWindowHostController:
             EventType.CONNECTOR_SERVICE_UNREGISTERED,
             EventType.CONNECTOR_SERVICE_UPDATED,
             EventType.WIDGET_RUNTIME_UPDATED,
-            EventType.RUNTIME_SHUTDOWN,
         ):
             self._events.bus.on(event_type, self._on_runtime_change)
-
-        app.aboutToQuit.connect(self._host.close_all)
 
     def sync(self) -> None:
         """Refresh hosted windows from current widget runtime records."""
@@ -82,9 +81,6 @@ class WidgetWindowHostController:
         self.sync()
 
     def _on_runtime_change(self, event) -> None:
-        if event.type == EventType.RUNTIME_SHUTDOWN:
-            self._host.close_all()
-            return
         if event.type != EventType.WIDGET_RUNTIME_UPDATED:
             self._widgets.poller.refresh()
         self.sync()
@@ -100,7 +96,9 @@ def create_widget_window_host(app, runtime: RuntimeV2) -> WidgetRuntimeHostResul
     controller = WidgetWindowHostController(runtime, host)
     controller.sync()
     controller.attach(app)
-    result = WidgetRuntimeHostResult(controller=controller, host=host)
+    shutdown = QmlRuntimeHostShutdown(runtime, host.close_all)
+    shutdown.attach(app)
+    result = WidgetRuntimeHostResult(controller=controller, host=host, shutdown=shutdown)
     app.setProperty("_widgetRuntimeHost", result)
     return result
 
