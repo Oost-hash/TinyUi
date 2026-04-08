@@ -12,6 +12,7 @@ from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
 from runtimeV2.manifest.registry import ManifestRegistry
 from runtimeV2.plugins.schemas.manifest import PluginManifest
 from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
+from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
 from runtimeV2.ui.chrome_model import build_ui_chrome_model
 from runtimeV2.ui.contracts import UIWindowStatus
@@ -218,3 +219,20 @@ def test_ui_chrome_model_read_projects_tabs_menu_and_active_plugin() -> None:
     assert capability.menu_items()[0].label == "Settings"
     assert capability.statusbar_items()[0].text == "Ready"
     assert capability.chrome_model().active_plugin_id == "devtools"
+
+
+def test_window_actions_write_exposes_openable_non_main_windows() -> None:
+    """UI window actions should validate openable non-main window ids."""
+
+    records = project_ui_window_records(
+        ui_manifest_read=ManifestUiRead(_manifest_registry()),
+        main_window_read=_main_window_read(),
+    )
+    capability = WindowActionsWrite(WindowRecordsRead(records), "tinyui.main")
+
+    assert capability.main_window_id() == "tinyui.main"
+    assert capability.openable_window_ids() == ["devtools.main", "broken.dialog"]
+    assert capability.can_open_window("devtools.main") is True
+    assert capability.can_open_window("tinyui.main") is False
+    assert capability.request_open_window("devtools.main") is True
+    assert capability.request_open_window("tinyui.main") is False

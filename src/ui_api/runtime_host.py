@@ -36,6 +36,7 @@ from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
+from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
 from runtimeV2.persistence.capabilities.settings_read import SettingsRead
 from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
@@ -45,9 +46,9 @@ from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
 from runtimeV2.plugins.capabilities.state_read import PluginStateRead
 from runtimeV2.plugins.capabilities.state_write import PluginStateWrite
-from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
 from runtimeV2.runtime import RuntimeV2
+from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
 from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
 from runtimeV2.ui.startup import UIStartupResult
@@ -58,6 +59,7 @@ from shared_runtime_host.capabilities.ui_api import (
     ManifestQmlCapability,
     PluginActiveQmlCapability,
     PluginStateQmlCapability,
+    UIActionsCapability,
     UIChromeQmlCapability,
     WindowRecordsQmlCapability,
     WidgetRecordsQmlCapability,
@@ -85,6 +87,7 @@ _QML_CAPABILITY_TYPES: dict[str, type[Any]] = {
     "widget_visibility_read": WidgetVisibilityRead,
     "widget_visibility_write": WidgetVisibilityWrite,
     "window_records_read": WindowRecordsRead,
+    "window_actions_write": WindowActionsWrite,
     "render_status_read": RenderStatusRead,
     "ui_chrome_model_read": UIChromeModelRead,
 }
@@ -198,15 +201,28 @@ def start_runtime_host(
             theme=theme,
             **qml_properties,
         )
-        shutdown_capability = runtime.capability("shutdown", RuntimeShutdown)
-
-        def _request_main_window_close() -> None:
-            shutdown_capability.begin_shutdown("main_window_close")
+        manifest_ui_read = runtime.capability("manifest_ui_read", ManifestUiRead)
 
         def _close_main_window() -> None:
             handle.qml_window.close()
 
-        actions.register("close", _request_main_window_close)
+        def _open_runtime_window(window_id: str) -> None:
+            manifest = _window_manifest(manifest_ui_read, window_id)
+            if manifest is None:
+                return
+            open_window(
+                manifest,
+                engine=engine,
+                app=app,
+                actions=actions,
+                theme=theme,
+                **qml_properties,
+            )
+
+        host_registry.capability("ui_actions", UIActionsCapability).register(
+            actions,
+            open_window=_open_runtime_window,
+        )
         handle.qml_window.destroyed.connect(app.quit)
         shutdown = QmlRuntimeHostShutdown(runtime, _close_main_window)
         shutdown.attach(app)
@@ -222,3 +238,13 @@ def start_runtime_host(
         return result, startup_ok()
     except Exception as exc:
         return None, startup_error(f"Runtime V2 ui_api host startup failed: {exc}")
+
+
+def _window_manifest(ui_read: ManifestUiRead, window_id: str):
+    """Resolve one manifest window by id."""
+
+    for windows in ui_read.windows().values():
+        for window in windows:
+            if window.id == window_id:
+                return window
+    return None

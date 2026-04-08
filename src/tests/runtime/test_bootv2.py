@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import bootv2
+from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from shared_runtime_host.capabilities.ui_api import ManifestQmlCapability
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.events.capabilities.event_read import EventRead
@@ -19,13 +20,21 @@ from runtimeV2.host.capabilities.main_window_read import MainWindowRead
 from runtimeV2.host.contracts import HostShell
 from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
 from runtimeV2.manifest.registry import ManifestRegistry
+from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
+from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
+from runtimeV2.persistence.contracts import PersistencePaths
+from runtimeV2.persistence.widget_config import WidgetConfigStore
 from runtimeV2.schemas.startup import StartupResult
 from runtimeV2.ui.contracts import QmlPropertyPlan, UIChromeModel, UIRenderStatus
 from runtimeV2.ui.contracts import UIWindowRecordsChangedData
 from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
+from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
-from runtimeV2.ui.schemas.manifest import AppManifest, ChromePolicy
+from runtimeV2.ui.projection import project_ui_window_records
+from runtimeV2.ui.schemas.manifest import AppManifest, ChromePolicy, UiManifest
 from runtimeV2.ui.startup import UIStartupResult
+from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
+from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.store import WidgetRecordsStore
 from ui_api.runtime_host import build_runtime_qml_properties, start_runtime_host
@@ -115,7 +124,6 @@ class _FakeUiRuntime:
             )
         )
         self._widget_records = WidgetRecordsRead(WidgetRecordsStore())
-        self._window_records = WindowRecordsRead([])
         self._ui_chrome = UIChromeModelRead(
             UIChromeModel(
                 menu_items=[],
@@ -127,6 +135,51 @@ class _FakeUiRuntime:
                 status_active_label="",
             )
         )
+        manifest_registry = ManifestRegistry()
+        manifest_registry.register_manifest(
+            manifest=cast(
+                Any,
+                SimpleNamespace(
+                    plugin_id="tinyui",
+                    plugin_type="host",
+                    version="0.5.0",
+                    author="",
+                    description="",
+                    icon="",
+                    requires=[],
+                    ui=UiManifest(
+                        windows=[
+                            AppManifest(id="tinyui.main", title="TinyUI", surface=Path("surface.qml")),
+                            AppManifest(id="devtools.main", title="DevTools", surface=Path("devtools.qml")),
+                        ]
+                    ),
+                ),
+            ),
+            manifest_path=Path("tinyui/manifest.toml"),
+            resource_root=Path("."),
+            source="test",
+        )
+        self._manifest_ui = ManifestUiRead(manifest_registry)
+        projected_records = project_ui_window_records(
+            ui_manifest_read=self._manifest_ui,
+            main_window_read=self._main_window,
+        )
+        self._window_records = WindowRecordsRead(projected_records)
+        self._window_actions = WindowActionsWrite(self._window_records, "tinyui.main")
+        widget_store = WidgetConfigStore(
+            PersistencePaths(
+                base_dir=Path("."),
+                config_root=Path("."),
+                cache_dir=Path("."),
+                logs_dir=Path("."),
+                bootstrap_path=Path("bootstrap.toml"),
+                config_sets_path=Path("config_sets.json"),
+            ),
+            "default",
+        )
+        self._widget_visibility_read = WidgetVisibilityRead(WidgetConfigRead(widget_store))
+        self._widget_visibility_write = WidgetVisibilityWrite(WidgetConfigWrite(widget_store))
+        self._widget_visibility_write.set_global_visible(True)
 
     def domain_result(self, name: str, _result_type: type[Any]) -> Any:
         if name == "ui":
@@ -144,8 +197,16 @@ class _FakeUiRuntime:
             return self._widget_records
         if name == "window_records_read":
             return self._window_records
+        if name == "window_actions_write":
+            return self._window_actions
         if name == "ui_chrome_model_read":
             return self._ui_chrome
+        if name == "manifest_ui_read":
+            return self._manifest_ui
+        if name == "widget_visibility_read":
+            return self._widget_visibility_read
+        if name == "widget_visibility_write":
+            return self._widget_visibility_write
         raise KeyError(name)
 
 
@@ -246,6 +307,73 @@ def test_runtime_host_close_action_requests_runtime_shutdown(monkeypatch) -> Non
 
     assert runtime.shutdown.calls == ["main_window_close"]
     assert close_calls == ["closed"]
+
+
+def test_runtime_host_open_action_uses_runtime_window_actions(monkeypatch) -> None:
+    """The ui_api host should open runtime-declared windows through action mapping."""
+
+    app = _FakeApp()
+    runtime = _FakeUiRuntime()
+    opened: list[str] = []
+
+    class _FakeWindow:
+        def __init__(self) -> None:
+            self.destroyed = _FakeSignal()
+
+        def close(self) -> None:
+            return None
+
+    def _open_window(manifest, *_args, **_kwargs):
+        opened.append(manifest.id)
+        return SimpleNamespace(qml_window=_FakeWindow(), keepalive=())
+
+    monkeypatch.setattr("ui_api.runtime_host.open_window", _open_window)
+
+    result, startup_result = start_runtime_host(
+        app=app,
+        engine=object(),
+        runtime=cast(Any, runtime),
+    )
+
+    assert startup_result.ok
+    assert result is not None
+
+    result.actions.trigger("open:devtools.main")
+
+    assert opened == ["tinyui.main", "devtools.main"]
+
+
+def test_runtime_host_widget_visibility_toggle_uses_runtime_capability(monkeypatch) -> None:
+    """The ui_api host should toggle widget visibility through runtime-owned capabilities."""
+
+    app = _FakeApp()
+    runtime = _FakeUiRuntime()
+
+    class _FakeWindow:
+        def __init__(self) -> None:
+            self.destroyed = _FakeSignal()
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(
+        "ui_api.runtime_host.open_window",
+        lambda *_args, **_kwargs: SimpleNamespace(qml_window=_FakeWindow(), keepalive=()),
+    )
+
+    result, startup_result = start_runtime_host(
+        app=app,
+        engine=object(),
+        runtime=cast(Any, runtime),
+    )
+
+    assert startup_result.ok
+    assert result is not None
+    assert runtime._widget_visibility_read.global_visible() is True
+
+    result.actions.trigger("widgetVisibility.toggle")
+
+    assert runtime._widget_visibility_read.global_visible() is False
 
 
 def test_ui_startup_emits_window_record_change_before_ready(monkeypatch) -> None:

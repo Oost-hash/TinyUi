@@ -81,10 +81,12 @@ def startup_ui(runtime: RuntimeV2) -> StartupResult:
         qml_property_plan = register_qml_property_plan()
         capabilities = register_ui_capabilities(
             records=records,
+            main_window_id=main_window_read.main_window().id,
             render_status=render_status,
             chrome_model=chrome_model,
         )
         runtime.register_capability("window_records_read", capabilities.window_records_read)
+        runtime.register_capability("window_actions_write", capabilities.window_actions_write)
         runtime.register_capability("render_status_read", capabilities.render_status_read)
         runtime.register_capability("ui_chrome_model_read", capabilities.chrome_model_read)
         runtime.register_domain_result("ui", UIStartupResult(
