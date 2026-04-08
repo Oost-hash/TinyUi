@@ -29,6 +29,8 @@ from runtimeV2.connectors.register_capabilities import (
     ConnectorCapabilities,
     register_connector_capabilities,
 )
+from runtimeV2.connectors.poller import ConnectorServicePoller
+from runtimeV2.connectors.policy import register_declared_connector_services
 from runtimeV2.connectors.register_events import register_connector_events
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 from runtimeV2.events.startup import EventsStartupResult
@@ -43,6 +45,7 @@ class ConnectorsStartupResult:
     """Result of connectors domain startup."""
 
     registry: ConnectorServiceRegistry
+    poller: ConnectorServicePoller
     declarations: dict[str, ConnectorManifest]
     capabilities: ConnectorCapabilities
 
@@ -58,11 +61,18 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
             ManifestConnectorRead,
         ).connector_declarations()
         registry = ConnectorServiceRegistry()
-        capabilities = register_connector_capabilities(registry)
+        register_declared_connector_services(
+            declarations=declarations,
+            connector_services=registry,
+            events=events.bus,
+        )
+        poller = ConnectorServicePoller(registry, events.bus)
+        capabilities = register_connector_capabilities(registry, poller)
         runtime.register_capability("connector_read", capabilities.read)
         runtime.register_capability("connector_write", capabilities.write)
         runtime.register_domain_result("connectors", ConnectorsStartupResult(
             registry=registry,
+            poller=poller,
             declarations=declarations,
             capabilities=capabilities,
         ))

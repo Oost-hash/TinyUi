@@ -1,0 +1,212 @@
+#  TinyUI
+#  Copyright (C) 2026 Oost-hash
+#
+#  This file is part of TinyUI.
+#
+#  TinyUI is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  TinyUI is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
+#  licensed under GPLv3.
+
+"""Tests for runtime V2 connectors."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, cast
+
+from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
+from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
+from runtimeV2.connectors.policy import unregister_connector_service
+from runtimeV2.connectors.schemas.manifest import ConnectorManifest, ConnectorServiceDecl
+from runtimeV2.connectors.startup import startup_connectors, ConnectorsStartupResult
+from runtimeV2.events.contracts import EventBus, EventType
+from runtimeV2.events.event_registry import EventRegistry
+from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
+from runtimeV2.schemas.startup import StartupResult
+
+
+class _FakeConnectorService:
+    def __init__(self) -> None:
+        self.open_called = False
+        self.update_calls = 0
+        self.requested: list[tuple[str, str]] = []
+        self.released: list[str] = []
+        self.closed = False
+
+    def supports_source(self, source_name: str) -> bool:
+        return source_name == "mock"
+
+    def request_source(self, owner: str, source_name: str) -> bool:
+        self.requested.append((owner, source_name))
+        return True
+
+    def open(self) -> None:
+        self.open_called = True
+
+    def update(self) -> None:
+        self.update_calls += 1
+
+    def inspect_snapshot(self) -> list[tuple[str, str]]:
+        return [("speed", "321")]
+
+    def release_source(self, owner: str) -> bool:
+        self.released.append(owner)
+        return True
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class _FakeManifestConnectorRead:
+    def __init__(self, declarations: dict[str, ConnectorManifest]) -> None:
+        self._declarations = declarations
+
+    def connector_declarations(self) -> dict[str, ConnectorManifest]:
+        return dict(self._declarations)
+
+
+@dataclass(frozen=True)
+class _FakeRuntime:
+    _domain_results: dict[str, object]
+    _capabilities: dict[str, object]
+    registered_capabilities: dict[str, object]
+    registered_results: dict[str, object]
+
+    def domain_result(self, name: str, _result_type: type[Any]) -> Any:
+        return self._domain_results[name]
+
+    def capability(self, name: str, _capability_type: type[Any]) -> Any:
+        return self._capabilities[name]
+
+    def register_capability(self, name: str, capability: object) -> None:
+        self.registered_capabilities[name] = capability
+
+    def register_domain_result(self, name: str, result: object) -> None:
+        self.registered_results[name] = result
+
+
+def _make_runtime(declarations: dict[str, ConnectorManifest]) -> tuple[_FakeRuntime, EventBus]:
+    bus = EventBus()
+    events = EventsStartupResult(
+        bus=bus,
+        registry=EventRegistry(),
+        event_read=cast(Any, object()),
+    )
+    runtime = _FakeRuntime(
+        _domain_results={"events": events},
+        _capabilities={
+            "manifest_connector_read": _FakeManifestConnectorRead(declarations),
+        },
+        registered_capabilities={},
+        registered_results={},
+    )
+    return runtime, bus
+
+
+def test_startup_connectors_registers_declared_services(monkeypatch) -> None:
+    """Connectors startup should load and register manifest-declared services."""
+
+    service = _FakeConnectorService()
+    monkeypatch.setattr(
+        "runtimeV2.connectors.policy.load_connector_service",
+        lambda module_name, class_name: service,
+    )
+
+    runtime, bus = _make_runtime(
+        {
+            "iracing": ConnectorManifest(
+                service=ConnectorServiceDecl(module="plugins.iracing", class_name="IRacingService")
+            )
+        }
+    )
+
+    result = startup_connectors(cast(Any, runtime))
+
+    assert result == StartupResult(ok=True)
+    startup_result = cast(ConnectorsStartupResult, runtime.registered_results["connectors"])
+    assert startup_result.registry.has("iracing") is True
+    assert startup_result.capabilities.read.ids() == ["iracing"]
+    assert startup_result.capabilities.read.inspection_rows("iracing") == [("speed", "321")]
+    assert service.open_called is True
+    assert service.requested == [("__runtime__", "mock")]
+    assert [event.type for event in bus.get_history()] == [
+        EventType.CONNECTOR_SERVICE_REGISTERED,
+        EventType.CONNECTOR_SERVICE_UPDATED,
+    ]
+
+
+def test_connector_write_can_update_all_services(monkeypatch) -> None:
+    """Connector write capability should update all active services."""
+
+    services = {
+        "iracing": _FakeConnectorService(),
+        "acc": _FakeConnectorService(),
+    }
+
+    def _load_service(module_name: str, class_name: str) -> _FakeConnectorService:
+        return services[module_name]
+
+    monkeypatch.setattr("runtimeV2.connectors.policy.load_connector_service", _load_service)
+
+    runtime, bus = _make_runtime(
+        {
+            "iracing": ConnectorManifest(service=ConnectorServiceDecl(module="iracing", class_name="Service")),
+            "acc": ConnectorManifest(service=ConnectorServiceDecl(module="acc", class_name="Service")),
+        }
+    )
+
+    assert startup_connectors(cast(Any, runtime)) == StartupResult(ok=True)
+    write = cast(ConnectorWrite, runtime.registered_capabilities["connector_write"])
+    read = cast(ConnectorRead, runtime.registered_capabilities["connector_read"])
+
+    updated = write.update_all()
+
+    assert updated == ["iracing", "acc"]
+    assert services["iracing"].update_calls == 1
+    assert services["acc"].update_calls == 1
+    assert read.service("iracing") is not None
+    assert len(bus.get_history(EventType.CONNECTOR_SERVICE_UPDATED)) == 4
+
+
+def test_unregister_connector_service_releases_source_and_closes(monkeypatch) -> None:
+    """Connector unregister should release runtime mock source and close the service."""
+
+    service = _FakeConnectorService()
+    monkeypatch.setattr(
+        "runtimeV2.connectors.policy.load_connector_service",
+        lambda module_name, class_name: service,
+    )
+    runtime, bus = _make_runtime(
+        {
+            "iracing": ConnectorManifest(
+                service=ConnectorServiceDecl(module="plugins.iracing", class_name="IRacingService")
+            )
+        }
+    )
+    assert startup_connectors(cast(Any, runtime)) == StartupResult(ok=True)
+    startup_result = cast(ConnectorsStartupResult, runtime.registered_results["connectors"])
+
+    removed = unregister_connector_service(
+        connector_id="iracing",
+        connector_services=startup_result.registry,
+        events=bus,
+    )
+
+    assert removed is True
+    assert service.released == ["__runtime__"]
+    assert service.closed is True
+    assert startup_result.registry.has("iracing") is False
+    assert bus.get_history()[-1].type == EventType.CONNECTOR_SERVICE_UNREGISTERED

@@ -38,10 +38,20 @@ class ConnectorRead:
 
         return self._registry.records()
 
+    def ids(self) -> list[str]:
+        """Return active connector ids."""
+
+        return self._registry.ids()
+
     def has(self, connector_id: str) -> bool:
         """Return True when a connector is active."""
 
         return self._registry.has(connector_id)
+
+    def service(self, connector_id: str) -> ConnectorServiceRecord | None:
+        """Return one connector service record."""
+
+        return self._registry.metadata(connector_id)
 
     def inspection_rows(self, connector_id: str) -> ConnectorInspectionSnapshot:
         """Return connector inspection rows."""

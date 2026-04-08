@@ -23,41 +23,112 @@
 
 from __future__ import annotations
 
+from runtimeV2.connectors.contracts import (
+    ConnectorServiceRegisteredData,
+    ConnectorServiceUnregisteredData,
+    ConnectorServiceUpdatedData,
+)
+from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.connectors.service_loader import load_connector_service
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
-from runtimeV2.plugins.schemas.manifest import PluginManifest
+from runtimeV2.events.contracts import EventBus, EventType
 
 
 def register_connector_service(
     *,
-    manifest: PluginManifest,
+    connector_id: str,
+    declaration: ConnectorManifest,
     connector_services: ConnectorServiceRegistry,
+    events: EventBus | None = None,
 ) -> bool:
-    """Register a manifest-declared connector service."""
+    """Instantiate and register a connector-backed service when declared."""
 
-    connector = manifest.connector
-    if (
-        connector is None
-        or connector.service is None
-        or connector_services.has(manifest.plugin_id)
-    ):
+    if declaration.service is None or connector_services.has(connector_id):
         return False
 
-    service = load_connector_service(connector.service.module, connector.service.class_name)
+    service = load_connector_service(declaration.service.module, declaration.service.class_name)
+    if hasattr(service, "supports_source") and service.supports_source("mock") and hasattr(service, "request_source"):
+        service.request_source("__runtime__", "mock")
+    if hasattr(service, "open"):
+        service.open()
+
     connector_services.register(
-        manifest.plugin_id,
-        manifest.plugin_id,
-        manifest.plugin_id,
-        service,
+        connector_id=connector_id,
+        plugin_id=connector_id,
+        display_name=connector_id,
+        instance=service,
     )
+    _emit_registered(events, connector_id)
     return True
+
+
+def register_declared_connector_services(
+    *,
+    declarations: dict[str, ConnectorManifest],
+    connector_services: ConnectorServiceRegistry,
+    events: EventBus | None = None,
+) -> list[str]:
+    """Register all manifest-declared connector services."""
+
+    registered: list[str] = []
+    for connector_id, declaration in declarations.items():
+        if register_connector_service(
+            connector_id=connector_id,
+            declaration=declaration,
+            connector_services=connector_services,
+            events=events,
+        ):
+            registered.append(connector_id)
+    return registered
 
 
 def unregister_connector_service(
     *,
-    manifest: PluginManifest,
+    connector_id: str,
     connector_services: ConnectorServiceRegistry,
+    events: EventBus | None = None,
 ) -> bool:
-    """Unregister a manifest-declared connector service."""
+    """Close and unregister a connector-backed service when present."""
 
-    return connector_services.unregister(manifest.plugin_id)
+    service = connector_services.get(connector_id)
+    if service is not None and hasattr(service, "release_source"):
+        service.release_source("__runtime__")
+    if service is not None and hasattr(service, "close"):
+        service.close()
+    if not connector_services.unregister(connector_id):
+        return False
+
+    if events is not None:
+        events.emit_typed(
+            EventType.CONNECTOR_SERVICE_UNREGISTERED,
+            ConnectorServiceUnregisteredData(
+                connector_id=connector_id,
+                plugin_id=connector_id,
+            ),
+            source="connectors",
+        )
+    return True
+
+
+def _emit_registered(events: EventBus | None, connector_id: str) -> None:
+    """Emit connector registration/update events."""
+
+    if events is None:
+        return
+    events.emit_typed(
+        EventType.CONNECTOR_SERVICE_REGISTERED,
+        ConnectorServiceRegisteredData(
+            connector_id=connector_id,
+            plugin_id=connector_id,
+            display_name=connector_id,
+        ),
+        source="connectors",
+    )
+    events.emit_typed(
+        EventType.CONNECTOR_SERVICE_UPDATED,
+        ConnectorServiceUpdatedData(
+            connector_id=connector_id,
+            plugin_id=connector_id,
+        ),
+        source="connectors",
+    )

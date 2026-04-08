@@ -38,3 +38,28 @@ class ConnectorServiceRecord:
     plugin_id: str
     display_name: str
     instance: Any
+
+
+@dataclass(frozen=True)
+class ConnectorServiceRegisteredData:
+    """Event payload for connector service registration."""
+
+    connector_id: str
+    plugin_id: str
+    display_name: str
+
+
+@dataclass(frozen=True)
+class ConnectorServiceUnregisteredData:
+    """Event payload for connector service removal."""
+
+    connector_id: str
+    plugin_id: str
+
+
+@dataclass(frozen=True)
+class ConnectorServiceUpdatedData:
+    """Event payload for connector service updates."""
+
+    connector_id: str
+    plugin_id: str

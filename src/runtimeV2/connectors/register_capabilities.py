@@ -27,6 +27,7 @@ from dataclasses import dataclass
 
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
+from runtimeV2.connectors.poller import ConnectorServicePoller
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 
 
@@ -38,10 +39,13 @@ class ConnectorCapabilities:
     write: ConnectorWrite
 
 
-def register_connector_capabilities(registry: ConnectorServiceRegistry) -> ConnectorCapabilities:
+def register_connector_capabilities(
+    registry: ConnectorServiceRegistry,
+    poller: ConnectorServicePoller,
+) -> ConnectorCapabilities:
     """Create connector domain capabilities."""
 
     return ConnectorCapabilities(
         read=ConnectorRead(registry),
-        write=ConnectorWrite(registry),
+        write=ConnectorWrite(registry, poller),
     )

@@ -90,10 +90,14 @@ class PluginLifecycleStore:
             return False
 
         if manifest.plugin_type == "connector":
-            register_connector_service(
-                manifest=manifest,
-                connector_services=self._connectors.registry,
-            )
+            declaration = manifest.connector
+            if declaration is not None:
+                register_connector_service(
+                    connector_id=plugin_id,
+                    declaration=declaration,
+                    connector_services=self._connectors.registry,
+                    events=self._events.bus,
+                )
 
         self._set_state(plugin_id, PluginState.ACTIVE)
         self._events.bus.emit_typed(
@@ -112,8 +116,9 @@ class PluginLifecycleStore:
 
         if manifest.plugin_type == "connector":
             unregister_connector_service(
-                manifest=manifest,
+                connector_id=plugin_id,
                 connector_services=self._connectors.registry,
+                events=self._events.bus,
             )
 
         self._set_state(plugin_id, PluginState.DISABLED)

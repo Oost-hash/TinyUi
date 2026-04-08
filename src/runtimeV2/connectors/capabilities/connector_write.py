@@ -23,14 +23,16 @@
 
 from __future__ import annotations
 
+from runtimeV2.connectors.poller import ConnectorServicePoller
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 
 
 class ConnectorWrite:
     """Control connector service sources and updates."""
 
-    def __init__(self, registry: ConnectorServiceRegistry) -> None:
+    def __init__(self, registry: ConnectorServiceRegistry, poller: ConnectorServicePoller) -> None:
         self._registry = registry
+        self._poller = poller
 
     def request_source(self, connector_id: str, owner: str, source_name: str) -> bool:
         """Request a connector source."""
@@ -45,4 +47,9 @@ class ConnectorWrite:
     def update(self, connector_id: str) -> bool:
         """Update one connector service."""
 
-        return self._registry.update(connector_id)
+        return self._poller.update_one(connector_id)
+
+    def update_all(self) -> list[str]:
+        """Update all connector services."""
+
+        return self._poller.update_all()
