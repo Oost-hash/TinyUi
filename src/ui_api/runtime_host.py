@@ -26,6 +26,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, cast
 
+from shared_runtime_host.capabilities.ui_host import UIHostCapability
+from shared_runtime_host.capabilities.window_host import WindowHostCapability
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from shared_runtime_host.registry import SharedRuntimeHostRegistry, create_shared_runtime_host_registry
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
@@ -127,7 +129,10 @@ def _adapt_qml_property(
     """Adapt selected runtime V2 capabilities to QML-facing objects."""
 
     if capability_name == "ui_chrome_model_read":
-        return UIChromeQmlAdapter(cast(UIChromeModelRead, capability))
+        if host_registry is None:
+            host_registry = create_shared_runtime_host_registry(runtime)
+            register_ui_runtime_host(host_registry)
+        return UIChromeQmlAdapter(host_registry.capability("ui_host", UIHostCapability))
     if capability_name == "manifest_read":
         return ManifestQmlAdapter(cast(ManifestRead, capability))
     if capability_name == "widget_records_read":
@@ -136,7 +141,10 @@ def _adapt_qml_property(
             register_ui_runtime_host(host_registry)
         return WidgetRecordsQmlAdapter(host_registry.capability("widget_host", WidgetHostCapability))
     if capability_name == "window_records_read":
-        return WindowRecordsQmlAdapter(cast(WindowRecordsRead, capability))
+        if host_registry is None:
+            host_registry = create_shared_runtime_host_registry(runtime)
+            register_ui_runtime_host(host_registry)
+        return WindowRecordsQmlAdapter(host_registry.capability("window_host", WindowHostCapability))
     if capability_name == "widget_visibility_read":
         return WidgetVisibilityQmlAdapter(
             cast(WidgetVisibilityRead, capability),

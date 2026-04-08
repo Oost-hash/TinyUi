@@ -2,17 +2,41 @@
 
 from __future__ import annotations
 
+from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
+from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 
+from shared_runtime_host.capabilities.ui_host import UIHostCapability
+from shared_runtime_host.capabilities.window_host import WindowHostCapability
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from shared_runtime_host.registry import SharedRuntimeHostRegistry
 
 
-def register_shared_runtime_host_capabilities(registry: SharedRuntimeHostRegistry) -> None:
-    """Register the shared runtime host projections."""
+def register_widget_host(registry: SharedRuntimeHostRegistry) -> None:
+    """Register the shared widget host projection."""
 
     runtime = registry.runtime
     registry.register_capability(
         "widget_host",
         WidgetHostCapability(runtime.capability("widget_records_read", WidgetRecordsRead)),
+    )
+
+
+def register_ui_host(registry: SharedRuntimeHostRegistry) -> None:
+    """Register the shared UI chrome projection."""
+
+    runtime = registry.runtime
+    registry.register_capability(
+        "ui_host",
+        UIHostCapability(runtime.capability("ui_chrome_model_read", UIChromeModelRead)),
+    )
+
+
+def register_window_host(registry: SharedRuntimeHostRegistry) -> None:
+    """Register the shared window record projection."""
+
+    runtime = registry.runtime
+    registry.register_capability(
+        "window_host",
+        WindowHostCapability(runtime.capability("window_records_read", WindowRecordsRead)),
     )

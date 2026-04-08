@@ -27,15 +27,13 @@ from typing import Any
 
 from PySide6.QtCore import QObject, Property, QUrl, Signal, Slot
 
+from shared_runtime_host.capabilities.ui_host import UIHostCapability
+from shared_runtime_host.capabilities.window_host import WindowHostCapability
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.plugins.capabilities.state_read import PluginStateRead
-from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
-from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
-from runtimeV2.ui.contracts import UIMenuItem, UIStatusbarItem, UITabItem
-from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 
@@ -95,27 +93,15 @@ class WindowRecordsQmlAdapter(QObject):
 
     windowsChanged = Signal()
 
-    def __init__(self, window_records_read: WindowRecordsRead, parent: QObject | None = None) -> None:
+    def __init__(self, window_host: WindowHostCapability, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._window_records_read = window_records_read
+        self._window_host = window_host
 
     @Property(_QVARIANT_LIST, notify=windowsChanged)
     def windows(self) -> list[dict[str, object]]:
         """Return UI window records as a QML model."""
 
-        return [
-            {
-                "windowId": record.window_id,
-                "pluginId": record.plugin_id,
-                "windowRole": record.window_role,
-                "status": record.status.value,
-                "visible": record.visible,
-                "surface": record.surface,
-                "chromeSurface": record.chrome_surface,
-                "errorMessage": record.error_message,
-            }
-            for record in self._window_records_read.all_window_records()
-        ]
+        return self._window_host.windows()
 
 
 class WidgetVisibilityQmlAdapter(QObject):
@@ -232,102 +218,60 @@ class UIChromeQmlAdapter(QObject):
     pluginMenuItemsChanged = Signal()
     statusbarItemsChanged = Signal()
 
-    def __init__(self, chrome_read: UIChromeModelRead, parent: QObject | None = None) -> None:
+    def __init__(self, ui_host: UIHostCapability, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._chrome_read = chrome_read
+        self._ui_host = ui_host
 
     @Property(_QVARIANT_LIST, notify=tabModelChanged)
     def tabModel(self) -> list[dict[str, str]]:
         """Return QML tab model."""
 
-        return [_tab_to_qml(tab) for tab in self._chrome_read.tabs()]
+        return self._ui_host.tab_model()
 
     @Property(_QVARIANT_LIST, notify=menuItemsChanged)
     def menuItems(self) -> list[dict[str, object]]:
         """Return QML menu model."""
 
-        return [_menu_to_qml(item) for item in self._chrome_read.menu_items()]
+        return self._ui_host.menu_items()
 
     @Property(_QVARIANT_LIST, notify=pluginMenuItemsChanged)
     def pluginMenuItems(self) -> list[dict[str, object]]:
         """Return QML plugin menu model."""
 
-        return [_menu_to_qml(item) for item in self._chrome_read.chrome_model().plugin_menu_items]
+        return self._ui_host.plugin_menu_items()
 
     @Property(str, notify=pluginMenuItemsChanged)
     def pluginMenuLabel(self) -> str:
         """Return QML plugin menu label."""
 
-        return self._chrome_read.chrome_model().plugin_menu_label
+        return self._ui_host.plugin_menu_label()
 
     @Property(_QVARIANT_LIST, notify=statusbarItemsChanged)
     def leftItems(self) -> list[dict[str, str]]:
         """Return QML statusbar model."""
 
-        return [
-            _status_to_qml(item)
-            for item in self._chrome_read.statusbar_items()
-            if item.side == "left"
-        ]
+        return self._ui_host.left_status_items()
 
     @Property(_QVARIANT_LIST, notify=statusbarItemsChanged)
     def rightItems(self) -> list[dict[str, str]]:
         """Return right-side QML statusbar model."""
 
-        return [
-            _status_to_qml(item)
-            for item in self._chrome_read.statusbar_items()
-            if item.side == "right"
-        ]
+        return self._ui_host.right_status_items()
 
     @Property(_QVARIANT_LIST, notify=statusbarItemsChanged)
     def statusItems(self) -> list[dict[str, str]]:
         """Return all QML statusbar items."""
 
-        return [_status_to_qml(item) for item in self._chrome_read.statusbar_items()]
+        return self._ui_host.status_items()
 
     @Property(str, constant=True)
     def activePluginId(self) -> str:
         """Return the active plugin id."""
 
-        return self._chrome_read.chrome_model().active_plugin_id
+        return self._ui_host.active_plugin_id()
 
     @Property(str, constant=True)
     def statusActiveLabel(self) -> str:
         """Return the active status label."""
 
-        return self._chrome_read.chrome_model().status_active_label
-
-
-def _menu_to_qml(item: UIMenuItem) -> dict[str, object]:
-    return {
-        "label": item.label,
-        "action": item.action,
-        "separator": item.separator,
-    }
-
-
-def _status_to_qml(item: UIStatusbarItem) -> dict[str, str]:
-    return {
-        "icon": item.icon,
-        "text": item.text,
-        "tooltip": item.tooltip,
-        "action": item.action,
-        "side": item.side,
-    }
-
-
-def _tab_to_qml(item: UITabItem) -> dict[str, str]:
-    return {
-        "id": item.tab_id,
-        "label": item.label,
-        "target": item.target,
-        "surface": _file_url(item.surface),
-        "pluginId": item.plugin_id,
-    }
-
-
-def _file_url(path: str) -> str:
-    if not path:
-        return ""
-    return QUrl.fromLocalFile(path).toString()
+        return self._ui_host.status_active_label()

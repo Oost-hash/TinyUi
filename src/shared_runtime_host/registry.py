@@ -44,10 +44,6 @@ class SharedRuntimeHostRegistry:
 
 
 def create_shared_runtime_host_registry(runtime: RuntimeV2) -> SharedRuntimeHostRegistry:
-    """Create a shared runtime host registry with shared projections."""
+    """Create an empty shared runtime host registry for one host."""
 
-    from shared_runtime_host.register_capabilities import register_shared_runtime_host_capabilities
-
-    registry = SharedRuntimeHostRegistry(runtime)
-    register_shared_runtime_host_capabilities(registry)
-    return registry
+    return SharedRuntimeHostRegistry(runtime)

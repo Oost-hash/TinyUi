@@ -23,10 +23,11 @@
 
 from __future__ import annotations
 
+from shared_runtime_host.register_capabilities import register_widget_host
 from shared_runtime_host.registry import SharedRuntimeHostRegistry
 
 
 def register_widget_runtime_host(registry: SharedRuntimeHostRegistry) -> None:
     """Register widget_api-specific host projections when needed."""
 
-    _ = registry
+    register_widget_host(registry)
