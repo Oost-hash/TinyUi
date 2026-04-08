@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import bootv2
-from runtime_schema import StartupResult
+from runtimeV2.schemas.startup import StartupResult
 from runtimeV2.ui.contracts import QmlPropertyPlan
 from runtimeV2.ui.startup import UIStartupResult
 from ui_api.runtime_v2_host import build_runtime_v2_qml_properties

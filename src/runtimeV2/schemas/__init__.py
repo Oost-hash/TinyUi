@@ -19,22 +19,4 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Settings schema definitions."""
-
-from __future__ import annotations
-
-from dataclasses import dataclass, field
-from typing import Any
-
-
-@dataclass(frozen=True)
-class SettingsSpec:
-    """Settings specification."""
-    key: str
-    label: str
-    default: Any
-    type: str                       # "bool" | "str" | "int" | "float" | "choice"
-    choices: list[str] = field(default_factory=list)
-
-
-VALID_SETTING_TYPES = {"bool", "str", "int", "float", "choice"}
+"""Runtime V2 shared schemas."""

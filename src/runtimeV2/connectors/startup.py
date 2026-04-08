@@ -25,7 +25,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtime_schema import StartupResult, startup_error, startup_ok
 from runtimeV2.connectors.register_capabilities import (
     ConnectorCapabilities,
     register_connector_capabilities,
@@ -36,6 +35,7 @@ from runtimeV2.events.startup import EventsStartupResult
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.runtime import RuntimeV2
+from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 
 
 @dataclass(frozen=True)

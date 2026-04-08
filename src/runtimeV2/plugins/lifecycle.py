@@ -23,12 +23,18 @@
 
 from __future__ import annotations
 
-from runtime_schema import EventType, PluginActivatedData, PluginDeactivatedData, PluginState, PluginStateData
 from runtimeV2.connectors.policy import register_connector_service, unregister_connector_service
 from runtimeV2.connectors.startup import ConnectorsStartupResult
+from runtimeV2.events.contracts import EventType
 from runtimeV2.events.startup import EventsStartupResult
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.plugins.registry import PluginRegistry
+from runtimeV2.plugins.schemas.lifecycle import (
+    PluginActivatedData,
+    PluginDeactivatedData,
+    PluginState,
+    PluginStateData,
+)
 
 
 class PluginLifecycleStore:

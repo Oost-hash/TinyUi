@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import TYPE_CHECKING, Callable
 
-from runtime_schema import StartupResult
+from runtimeV2.schemas.startup import StartupResult
 
 if TYPE_CHECKING:
     from runtimeV2.runtime import RuntimeV2

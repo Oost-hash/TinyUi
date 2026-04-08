@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtime_schema import Event, EventType, StartupResult, startup_error, startup_ok
+from runtimeV2.events.contracts import Event, EventType
 from runtimeV2.events.startup import EventsStartupResult
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead
 from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
@@ -38,6 +38,7 @@ from runtimeV2.ui.readiness import determine_render_status
 from runtimeV2.ui.register_capabilities import UICapabilities, register_ui_capabilities
 from runtimeV2.ui.register_events import register_ui_events
 from runtimeV2.ui.register_qml_properties import register_qml_property_plan
+from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 
 
 @dataclass(frozen=True)

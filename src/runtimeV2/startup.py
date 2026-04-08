@@ -25,7 +25,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtime_schema import StartupResult, startup_error, startup_ok
 from runtimeV2.register_capabilities import register_runtime_capabilities
 from runtimeV2.register_domains import register_default_domains
 from runtimeV2.register_events import register_runtime_events
@@ -33,6 +32,7 @@ from runtimeV2.register_globals import register_runtime_globals
 from runtimeV2.events.startup import EventsStartupResult
 from runtimeV2.plugins.startup import startup_plugins_lifecycle
 from runtimeV2.runtime import RuntimeV2
+from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 
 
 @dataclass(frozen=True)

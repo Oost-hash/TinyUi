@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtime_schema import StartupResult, startup_error, startup_ok
+from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.host.capabilities.app_identity_read import AppIdentityRead
 from runtimeV2.persistence.config_sets import ConfigSetCatalog
 from runtimeV2.persistence.contracts import PersistencePaths

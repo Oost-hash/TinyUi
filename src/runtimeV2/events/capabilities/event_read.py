@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtime_schema import EventType
+from runtimeV2.events.contracts import EventType
 from runtimeV2.events.event_registry import EventContract, EventRegistry
 
 

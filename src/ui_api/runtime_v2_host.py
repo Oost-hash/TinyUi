@@ -26,7 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from runtime_schema import StartupResult, startup_error, startup_ok
+from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead

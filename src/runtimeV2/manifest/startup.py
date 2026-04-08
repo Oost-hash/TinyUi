@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtime_schema import StartupResult, startup_error, startup_ok
+from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.manifest.register_capabilities import ManifestCapabilities, register_manifest_capabilities
 from runtimeV2.manifest.register_schemas import register_manifest_schemas
 from runtimeV2.manifest.registry import ManifestRegistry

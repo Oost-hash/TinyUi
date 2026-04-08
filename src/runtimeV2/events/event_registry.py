@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtime_schema import EventType
+from runtimeV2.events.contracts import EventType
 
 
 @dataclass(frozen=True)

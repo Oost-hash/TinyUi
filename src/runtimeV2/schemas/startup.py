@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Typed startup contract and coordinator for boot-triggered domain startup."""
+"""Runtime V2 startup result contracts."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ from typing import Callable, Sequence
 
 @dataclass(frozen=True)
 class StartupResult:
-    """Minimal result shape for boot-triggered startup steps."""
+    """Minimal result shape for runtime V2 startup steps."""
 
     ok: bool
     error_message: str = ""
@@ -37,7 +37,7 @@ class StartupResult:
 
 @dataclass(frozen=True)
 class StartupStep:
-    """One named startup station in the boot pipeline."""
+    """One named startup station in the runtime V2 pipeline."""
 
     name: str
     run: Callable[[], StartupResult]

@@ -25,8 +25,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtime_schema import Event, EventType, StartupResult, startup_error, startup_ok
 from runtimeV2.connectors.startup import ConnectorsStartupResult
+from runtimeV2.events.contracts import Event, EventType
 from runtimeV2.events.startup import EventsStartupResult
 from runtimeV2.manifest.capabilities.load import ManifestLoad
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
@@ -41,6 +41,7 @@ from runtimeV2.plugins.register_lifecycle_capabilities import (
 )
 from runtimeV2.plugins.registry import PluginRegistry
 from runtimeV2.runtime import RuntimeV2
+from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 
 
 @dataclass(frozen=True)

@@ -19,22 +19,24 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime V2 global state registration."""
+"""Runtime-owned event payload schemas."""
 
 from __future__ import annotations
 
-from runtimeV2.events.contracts import EventType
-from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
-from runtimeV2.runtime import RuntimeV2
+from dataclasses import dataclass
 
 
-def register_runtime_globals(runtime: RuntimeV2) -> None:
-    """Register runtime-owned cross-domain global states."""
+@dataclass(frozen=True)
+class RuntimeShutdownData:
+    """Data for runtime shutdown requests."""
 
-    globals_capability = runtime.capability("globals", RuntimeGlobals)
-    globals_capability.register_global(
-        "shutdown",
-        owner_domain="runtime",
-        event_type=EventType.RUNTIME_SHUTDOWN,
-        description="Runtime-wide shutdown intent.",
-    )
+    reason: str = "app_quit"
+
+
+@dataclass(frozen=True)
+class DomainStatusChangedData:
+    """Data for runtime V2 domain status changes."""
+
+    domain: str
+    status: str
+    error_message: str = ""

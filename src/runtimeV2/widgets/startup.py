@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtime_schema import StartupResult, startup_error, startup_ok
+from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite

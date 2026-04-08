@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtime_schema import PluginState
+from runtimeV2.plugins.schemas.lifecycle import PluginState
 from runtimeV2.plugins.lifecycle import PluginLifecycleStore
 
 

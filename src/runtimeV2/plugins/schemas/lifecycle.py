@@ -19,34 +19,51 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Connector service lifecycle event schemas."""
+"""Plugin lifecycle schemas for runtime V2."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum, auto
+
+
+class PluginState(Enum):
+    """Plugin lifecycle states."""
+
+    DISABLED = auto()
+    ENABLING = auto()
+    LOADING = auto()
+    ACTIVE = auto()
+    UNLOADING = auto()
+    ERROR = auto()
 
 
 @dataclass(frozen=True)
-class ConnectorServiceRegisteredData:
-    """Data for connector service registration events."""
+class PluginStateData:
+    """Data for plugin lifecycle state change events."""
 
-    connector_id: str
     plugin_id: str
-    display_name: str = ""
-    source: str = "connector"
+    old_state: str
+    new_state: str
 
 
 @dataclass(frozen=True)
-class ConnectorServiceUnregisteredData:
-    """Data for connector service removal events."""
+class PluginActivatedData:
+    """Data for plugin activation events."""
 
-    connector_id: str
     plugin_id: str
 
 
 @dataclass(frozen=True)
-class ConnectorServiceUpdatedData:
-    """Data for connector service snapshot/source updates."""
+class PluginDeactivatedData:
+    """Data for plugin deactivation events."""
 
-    connector_id: str
     plugin_id: str
+
+
+@dataclass(frozen=True)
+class PluginErrorData:
+    """Data for plugin lifecycle error events."""
+
+    plugin_id: str
+    error_message: str
