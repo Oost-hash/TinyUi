@@ -30,6 +30,7 @@ from runtimeV2.paths.startup import startup_paths
 from runtimeV2.persistence.startup import startup_persistence
 from runtimeV2.plugins.lifecycle_startup import startup_plugin_lifecycle
 from runtimeV2.plugins.startup import startup_plugins
+from runtimeV2.ui.startup import startup_ui
 from runtimeV2.widgets.startup import startup_widgets
 from runtimeV2.runtime import RuntimeV2
 
@@ -76,4 +77,9 @@ def register_default_domains(runtime: RuntimeV2) -> None:
         "widgets",
         startup_widgets,
         description="Owns widget runtime records and readiness.",
+    )
+    runtime.register_domain(
+        "ui",
+        startup_ui,
+        description="Owns runtime UI read models and QML property handoff.",
     )

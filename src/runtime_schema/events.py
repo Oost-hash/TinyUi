@@ -52,6 +52,9 @@ class EventType(Enum):
     PLUGINS_DISCOVERED = auto()
     UI_PLUGIN_SELECTED = auto()
     UI_TAB_CHANGED = auto()
+    UI_READY = auto()
+    UI_RENDER_BLOCKED = auto()
+    UI_WINDOW_RECORDS_CHANGED = auto()
     # Connector service lifecycle events
     CONNECTOR_SERVICE_REGISTERED = auto()
     CONNECTOR_SERVICE_UNREGISTERED = auto()
