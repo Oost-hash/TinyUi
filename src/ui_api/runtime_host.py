@@ -52,17 +52,17 @@ from runtimeV2.ui.startup import UIStartupResult
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
+from shared_runtime_host.capabilities.ui_api import (
+    ManifestQmlCapability,
+    PluginActiveQmlCapability,
+    PluginStateQmlCapability,
+    UIChromeQmlCapability,
+    WindowRecordsQmlCapability,
+    WidgetRecordsQmlCapability,
+    WidgetVisibilityQmlCapability,
+)
 from ui_api.api.app_actions import AppActions
 from ui_api.register_runtime_host import register_ui_runtime_host
-from ui_api.runtime_adapters import (
-    ManifestQmlAdapter,
-    PluginActiveQmlAdapter,
-    PluginStateQmlAdapter,
-    UIChromeQmlAdapter,
-    WindowRecordsQmlAdapter,
-    WidgetRecordsQmlAdapter,
-    WidgetVisibilityQmlAdapter,
-)
 from ui_api.theme import Theme
 from ui_api.window import WindowHandle, open_window
 
@@ -132,32 +132,32 @@ def _adapt_qml_property(
         if host_registry is None:
             host_registry = create_shared_runtime_host_registry(runtime)
             register_ui_runtime_host(host_registry)
-        return UIChromeQmlAdapter(host_registry.capability("ui_host", UIHostCapability))
+        return UIChromeQmlCapability(host_registry.capability("ui_host", UIHostCapability))
     if capability_name == "manifest_read":
-        return ManifestQmlAdapter(cast(ManifestRead, capability))
+        return ManifestQmlCapability(cast(ManifestRead, capability))
     if capability_name == "widget_records_read":
         if host_registry is None:
             host_registry = create_shared_runtime_host_registry(runtime)
             register_ui_runtime_host(host_registry)
-        return WidgetRecordsQmlAdapter(host_registry.capability("widget_host", WidgetHostCapability))
+        return WidgetRecordsQmlCapability(host_registry.capability("widget_host", WidgetHostCapability))
     if capability_name == "window_records_read":
         if host_registry is None:
             host_registry = create_shared_runtime_host_registry(runtime)
             register_ui_runtime_host(host_registry)
-        return WindowRecordsQmlAdapter(host_registry.capability("window_host", WindowHostCapability))
+        return WindowRecordsQmlCapability(host_registry.capability("window_host", WindowHostCapability))
     if capability_name == "widget_visibility_read":
-        return WidgetVisibilityQmlAdapter(
+        return WidgetVisibilityQmlCapability(
             cast(WidgetVisibilityRead, capability),
             runtime.capability("widget_visibility_write", WidgetVisibilityWrite),
         )
     if capability_name == "plugin_active_read":
-        return PluginActiveQmlAdapter(
+        return PluginActiveQmlCapability(
             cast(PluginActiveRead, capability),
             runtime.capability("plugin_active_write", PluginActiveWrite),
         )
     if capability_name == "plugin_state_read":
         discovery = runtime.capability("plugin_discovery", PluginDiscoveryCapability)
-        return PluginStateQmlAdapter(
+        return PluginStateQmlCapability(
             cast(PluginStateRead, capability),
             discovery.plugin_ids(),
         )

@@ -16,7 +16,7 @@ from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 from runtimeV2.widgets.store import WidgetRecordsStore
 from runtimeV2.widgets.startup import WidgetsStartupResult
-from widget_api.runtime_adapters import widget_data_for_record
+from shared_runtime_host.capabilities.widget_api import widget_window_data
 from widget_api.runtime_host import create_widget_window_host, start_widget_host
 
 
@@ -214,7 +214,7 @@ def test_widget_data_adapter_uses_runtime_v2_record_shape() -> None:
     store = WidgetRecordsStore()
     store.set_records([record])
 
-    widget_data = widget_data_for_record(WidgetHostCapability(WidgetRecordsRead(store)), record)
+    widget_data = widget_window_data(WidgetHostCapability(WidgetRecordsRead(store)), record)
 
     assert widget_data["widgetId"] == "speed"
     assert widget_data["overlayId"] == "demo_overlay"

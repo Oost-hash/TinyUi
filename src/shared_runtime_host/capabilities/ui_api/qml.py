@@ -1,31 +1,10 @@
-#  TinyUI
-#  Copyright (C) 2026 Oost-hash
-#
-#  This file is part of TinyUI.
-#
-#  TinyUI is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  TinyUI is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#
-#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
-#  licensed under GPLv3.
-
-"""QML-facing adapters for runtime V2 handoff objects."""
+"""QML-facing ui_api capabilities above runtimeV2."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from PySide6.QtCore import QObject, Property, QUrl, Signal, Slot
+from PySide6.QtCore import QObject, Property, Signal, Slot
 
 from shared_runtime_host.capabilities.ui_host import UIHostCapability
 from shared_runtime_host.capabilities.window_host import WindowHostCapability
@@ -42,7 +21,7 @@ _QVARIANT_LIST: Any = "QVariantList"
 _QVARIANT_MAP: Any = "QVariantMap"
 
 
-class ManifestQmlAdapter(QObject):
+class ManifestQmlCapability(QObject):
     """Expose manifest read models to QML."""
 
     pluginsChanged = Signal()
@@ -72,7 +51,7 @@ class ManifestQmlAdapter(QObject):
         ]
 
 
-class WidgetRecordsQmlAdapter(QObject):
+class WidgetRecordsQmlCapability(QObject):
     """Expose widget records to QML."""
 
     widgetsChanged = Signal()
@@ -88,7 +67,7 @@ class WidgetRecordsQmlAdapter(QObject):
         return self._widget_host.panel_records()
 
 
-class WindowRecordsQmlAdapter(QObject):
+class WindowRecordsQmlCapability(QObject):
     """Expose UI window records to QML."""
 
     windowsChanged = Signal()
@@ -104,7 +83,7 @@ class WindowRecordsQmlAdapter(QObject):
         return self._window_host.windows()
 
 
-class WidgetVisibilityQmlAdapter(QObject):
+class WidgetVisibilityQmlCapability(QObject):
     """Expose widget visibility capabilities to QML."""
 
     globalVisibleChanged = Signal()
@@ -141,7 +120,7 @@ class WidgetVisibilityQmlAdapter(QObject):
         return self._visibility_read.is_widget_enabled(overlay_id, widget_id)
 
 
-class PluginActiveQmlAdapter(QObject):
+class PluginActiveQmlCapability(QObject):
     """Expose active plugin reads and writes to QML."""
 
     activePluginChanged = Signal(str)
@@ -172,7 +151,7 @@ class PluginActiveQmlAdapter(QObject):
         return self._active_read.get_active_plugin() or ""
 
 
-class PluginStateQmlAdapter(QObject):
+class PluginStateQmlCapability(QObject):
     """Expose plugin lifecycle state reads to QML."""
 
     pluginStateChanged = Signal(str, str)
@@ -210,7 +189,7 @@ class PluginStateQmlAdapter(QObject):
         return self._state_read.get_plugin_state(plugin_id).name.lower()
 
 
-class UIChromeQmlAdapter(QObject):
+class UIChromeQmlCapability(QObject):
     """Expose UI chrome model data to QML."""
 
     tabModelChanged = Signal()

@@ -7,10 +7,10 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import bootv2
+from shared_runtime_host.capabilities.ui_api import ManifestQmlCapability
 from runtimeV2.schemas.startup import StartupResult
 from runtimeV2.ui.contracts import QmlPropertyPlan
 from runtimeV2.ui.startup import UIStartupResult
-from ui_api.runtime_adapters import ManifestQmlAdapter
 from ui_api.runtime_host import build_runtime_qml_properties
 
 
@@ -94,7 +94,7 @@ def test_runtime_host_builds_qml_properties_from_ui_schema() -> None:
 
     properties = build_runtime_qml_properties(cast(Any, runtime), cast(UIStartupResult, ui_result))
 
-    assert isinstance(properties["manifestRead"], ManifestQmlAdapter)
+    assert isinstance(properties["manifestRead"], ManifestQmlCapability)
     assert properties["settingsRead"] == "settings_read:capability"
     assert runtime.calls == [
         ("manifest_read", "ManifestRead"),

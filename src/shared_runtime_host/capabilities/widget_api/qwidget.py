@@ -1,25 +1,4 @@
-#  TinyUI
-#  Copyright (C) 2026 Oost-hash
-#
-#  This file is part of TinyUI.
-#
-#  TinyUI is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  TinyUI is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#
-#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
-#  licensed under GPLv3.
-
-"""Widget API adapters for runtime V2 handoff objects."""
+"""Widget-facing host capabilities above runtimeV2."""
 
 from __future__ import annotations
 
@@ -32,7 +11,7 @@ from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigW
 from runtimeV2.widgets.contracts import WidgetRecord
 
 
-class WidgetConfigWriteAdapter(QObject):
+class WidgetConfigWriteQmlCapability(QObject):
     """Expose widget config writes in the shape QML expects."""
 
     def __init__(self, widget_config_write: WidgetConfigWrite, parent: QObject | None = None) -> None:
@@ -64,7 +43,7 @@ class WidgetConfigWriteAdapter(QObject):
         return self._widget_config_write.reset_widget_values(overlay_id, widget_id)
 
 
-def widget_data_for_record(widget_host: WidgetHostCapability, record: WidgetRecord) -> dict[str, Any]:
+def widget_window_data(widget_host: WidgetHostCapability, record: WidgetRecord) -> dict[str, Any]:
     """Build the widgetData payload expected by widget QML windows."""
 
     return widget_host.window_data(record)
