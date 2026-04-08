@@ -19,25 +19,12 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Overlay declaration read capability for runtime V2 plugins."""
+"""Widget-owned runtime V2 schemas."""
 
-from __future__ import annotations
+from runtimeV2.widgets.schemas.manifest import OverlayManifest, OverlayWidgetDecl, WidgetDefaults
 
-from runtimeV2.plugins.registry import PluginRegistry
-from runtimeV2.plugins.schemas import OverlayManifest
-
-
-class PluginOverlayDeclRead:
-    """Read overlay declarations from plugin manifests."""
-
-    def __init__(self, registry: PluginRegistry) -> None:
-        self._registry = registry
-
-    def overlay_declarations(self) -> dict[str, OverlayManifest]:
-        """Return overlay declarations by plugin id."""
-
-        return {
-            plugin_id: manifest.overlay
-            for plugin_id, manifest in self._registry.all_manifests().items()
-            if manifest.overlay is not None
-        }
+__all__ = [
+    "OverlayManifest",
+    "OverlayWidgetDecl",
+    "WidgetDefaults",
+]

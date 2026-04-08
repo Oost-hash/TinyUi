@@ -19,25 +19,21 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Connector declaration read capability for runtime V2 plugins."""
+"""Manifest schema registration orchestration."""
 
-from __future__ import annotations
+from runtimeV2.connectors.register_schemas import register_connector_schemas
+from runtimeV2.manifest.schema_registry import ManifestSchemaRegistry
+from runtimeV2.persistence.register_schemas import register_persistence_schemas
+from runtimeV2.plugins.register_schemas import register_plugin_schemas
+from runtimeV2.ui.register_schemas import register_ui_schemas
+from runtimeV2.widgets.register_schemas import register_widget_schemas
 
-from runtimeV2.plugins.registry import PluginRegistry
-from runtimeV2.plugins.schemas import ConnectorManifest
 
+def register_manifest_schemas(registry: ManifestSchemaRegistry) -> None:
+    """Register manifest schemas owned by runtime V2 domains."""
 
-class PluginConnectorDeclRead:
-    """Read connector declarations from plugin manifests."""
-
-    def __init__(self, registry: PluginRegistry) -> None:
-        self._registry = registry
-
-    def connector_declarations(self) -> dict[str, ConnectorManifest]:
-        """Return connector declarations by plugin id."""
-
-        return {
-            plugin_id: manifest.connector
-            for plugin_id, manifest in self._registry.all_manifests().items()
-            if manifest.connector is not None
-        }
+    register_plugin_schemas(registry)
+    register_ui_schemas(registry)
+    register_connector_schemas(registry)
+    register_widget_schemas(registry)
+    register_persistence_schemas(registry)

@@ -26,8 +26,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from runtime_schema import Event, EventType, StartupResult, startup_error, startup_ok
-from runtimeV2.events import EventsStartupResult
-from runtimeV2.paths import PathsStartupResult
+from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.manifest.capabilities.load import ManifestLoad
+from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
+from runtimeV2.paths.startup import PathsStartupResult
 from runtimeV2.plugins.discovery import discover_plugins
 from runtimeV2.plugins.register_capabilities import PluginCapabilities, register_plugin_capabilities
 from runtimeV2.plugins.register_events import register_plugin_events
@@ -51,14 +53,11 @@ def startup_plugins(runtime: RuntimeV2) -> StartupResult:
         events_result = runtime.domain_result("events", EventsStartupResult)
         register_plugin_events(events_result.registry)
 
-        registry = discover_plugins(paths_result.runtime_paths)
-        capabilities = register_plugin_capabilities(registry)
+        manifest_load = runtime.capability("manifest_load", ManifestLoad)
+        manifest_read = runtime.capability("manifest_read", ManifestRead)
+        registry = discover_plugins(paths_result.runtime_paths, manifest_load)
+        capabilities = register_plugin_capabilities(registry, manifest_read)
         runtime.register_capability("plugin_discovery", capabilities.discovery)
-        runtime.register_capability("plugin_manifest_read", capabilities.manifest_read)
-        runtime.register_capability("plugin_settings_spec_read", capabilities.settings_spec_read)
-        runtime.register_capability("plugin_ui_manifest_read", capabilities.ui_manifest_read)
-        runtime.register_capability("plugin_connector_decl_read", capabilities.connector_decl_read)
-        runtime.register_capability("plugin_overlay_decl_read", capabilities.overlay_decl_read)
         runtime.register_capability("plugin_icon", capabilities.icon)
         runtime.register_domain_result("plugins", PluginsStartupResult(
             registry=registry,

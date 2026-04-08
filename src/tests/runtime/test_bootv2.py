@@ -87,17 +87,17 @@ def test_runtime_v2_host_builds_qml_properties_from_ui_schema() -> None:
 
     runtime = _FakeCapabilityRuntime()
     ui_result = cast(Any, SimpleNamespace(qml_property_plan=[
-        QmlPropertyPlan("plugin_manifest_read", "pluginRead"),
+        QmlPropertyPlan("manifest_read", "pluginRead"),
         QmlPropertyPlan("settings_read", "settingsRead"),
     ]))
 
     properties = build_runtime_v2_qml_properties(cast(Any, runtime), cast(UIStartupResult, ui_result))
 
     assert properties == {
-        "pluginRead": "plugin_manifest_read:capability",
+        "pluginRead": "manifest_read:capability",
         "settingsRead": "settings_read:capability",
     }
     assert runtime.calls == [
-        ("plugin_manifest_read", "PluginManifestRead"),
+        ("manifest_read", "ManifestRead"),
         ("settings_read", "SettingsRead"),
     ]

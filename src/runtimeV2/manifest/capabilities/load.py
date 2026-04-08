@@ -19,17 +19,31 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Plugin manifest parser entry for runtime V2."""
+"""Manifest load capability for runtime V2."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from runtime.manifest import load_plugin_manifest as _load_plugin_manifest
-from runtimeV2.plugins.schemas import PluginManifest
+from runtimeV2.manifest.parser import load_plugin_manifest
+from runtimeV2.manifest.registry import ManifestRegistry
+from runtimeV2.plugins.schemas.manifest import PluginManifest
 
 
-def load_plugin_manifest(path: Path, *, resource_root: Path | None = None) -> PluginManifest:
-    """Load a plugin manifest through the runtime V2 plugins domain."""
+class ManifestLoad:
+    """Load and register plugin manifests."""
 
-    return _load_plugin_manifest(path, resource_root=resource_root)
+    def __init__(self, registry: ManifestRegistry) -> None:
+        self._registry = registry
+
+    def load_manifest(self, path: Path, *, resource_root: Path, source: str) -> PluginManifest:
+        """Load and register one plugin manifest."""
+
+        manifest = load_plugin_manifest(path, resource_root=resource_root)
+        self._registry.register_manifest(
+            manifest=manifest,
+            manifest_path=path,
+            resource_root=resource_root,
+            source=source,
+        )
+        return manifest

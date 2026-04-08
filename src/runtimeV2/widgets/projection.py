@@ -24,16 +24,16 @@
 from __future__ import annotations
 
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
+from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
+from runtimeV2.manifest.capabilities.overlay_read import ManifestOverlayRead
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
-from runtimeV2.plugins.capabilities.connector_decl_read import PluginConnectorDeclRead
-from runtimeV2.plugins.capabilities.overlay_decl_read import PluginOverlayDeclRead
 from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 
 
 def project_widget_records(
     *,
-    overlay_read: PluginOverlayDeclRead,
-    connector_decl_read: PluginConnectorDeclRead,
+    overlay_read: ManifestOverlayRead,
+    connector_decl_read: ManifestConnectorRead,
     connector_read: ConnectorRead,
     active_read: PluginActiveRead,
 ) -> list[WidgetRecord]:

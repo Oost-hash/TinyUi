@@ -19,34 +19,37 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Manifest read capability for runtime V2 plugins."""
+"""Manifest read capability for runtime V2."""
 
-from __future__ import annotations
-
-from runtimeV2.plugins.registry import PluginRegistry
-from runtimeV2.plugins.schemas import PluginManifest
+from runtimeV2.manifest.registry import ManifestRegistry
+from runtimeV2.plugins.schemas.manifest import PluginManifest
 
 
-class PluginManifestRead:
-    """Read plugin manifests from the discovery registry."""
+class ManifestRead:
+    """Read loaded plugin manifests."""
 
-    def __init__(self, registry: PluginRegistry) -> None:
+    def __init__(self, registry: ManifestRegistry) -> None:
         self._registry = registry
 
     def plugin_manifest(self, plugin_id: str) -> PluginManifest | None:
-        """Return one plugin manifest."""
+        """Return one loaded manifest."""
 
         return self._registry.manifest(plugin_id)
 
     def all_manifests(self) -> dict[str, PluginManifest]:
-        """Return all discovered plugin manifests."""
+        """Return all loaded manifests."""
 
         return self._registry.all_manifests()
 
     def plugin_roles(self) -> dict[str, str]:
-        """Return plugin manifest roles by plugin id."""
+        """Return plugin roles by plugin id."""
 
         return {
             plugin_id: manifest.plugin_type
             for plugin_id, manifest in self._registry.all_manifests().items()
         }
+
+    def resource_root(self, plugin_id: str):
+        """Return one manifest resource root."""
+
+        return self._registry.resource_root(plugin_id)

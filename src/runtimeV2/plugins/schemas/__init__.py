@@ -21,10 +21,13 @@
 
 """Runtime V2 plugin manifest schemas."""
 
-from app_schema.connector import ConnectorManifest
-from app_schema.overlay import OverlayManifest
-from app_schema.plugin import PluginManifest
-from app_schema.ui import AppManifest, MenuItem, MenuSeparator, SettingDecl, StatusbarItemDecl, TabDecl, UiManifest
+"""Plugin-owned runtime V2 schemas."""
+
+from runtimeV2.connectors.schemas.manifest import ConnectorManifest
+from runtimeV2.persistence.schemas.settings import SettingDecl
+from runtimeV2.plugins.schemas.manifest import PluginManifest
+from runtimeV2.ui.schemas.manifest import AppManifest, MenuItem, MenuSeparator, StatusbarItemDecl, TabDecl, UiManifest
+from runtimeV2.widgets.schemas.manifest import OverlayManifest
 
 __all__ = [
     "AppManifest",

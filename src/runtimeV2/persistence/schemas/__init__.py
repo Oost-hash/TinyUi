@@ -19,28 +19,10 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Settings read capability for runtime V2 persistence."""
+"""Persistence-owned runtime V2 schemas."""
 
-from __future__ import annotations
-
-from typing import Any
-
-from runtimeV2.persistence.settings import SettingsStore
 from runtimeV2.persistence.schemas.settings import SettingDecl
 
-
-class SettingsRead:
-    """Read setting specs and values."""
-
-    def __init__(self, store: SettingsStore) -> None:
-        self._store = store
-
-    def get(self, namespace: str, key: str) -> Any:
-        """Return one setting value."""
-
-        return self._store.get(namespace, key)
-
-    def by_namespace(self) -> dict[str, list[SettingDecl]]:
-        """Return specs by namespace."""
-
-        return self._store.specs_by_namespace()
+__all__ = [
+    "SettingDecl",
+]

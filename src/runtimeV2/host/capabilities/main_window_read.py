@@ -24,7 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.host.contracts import HostShell
-from runtimeV2.plugins.schemas import AppManifest
+from runtimeV2.ui.schemas.manifest import AppManifest
 
 
 class MainWindowRead:

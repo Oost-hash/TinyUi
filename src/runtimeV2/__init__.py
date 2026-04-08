@@ -22,11 +22,7 @@
 """Runtime V2 prototype package."""
 
 from runtimeV2.runtime import RuntimeV2
-from runtimeV2.startup import RuntimeV2StartupResult, get_runtime_v2_result, startup_runtime_v2
 
 __all__ = [
     "RuntimeV2",
-    "RuntimeV2StartupResult",
-    "get_runtime_v2_result",
-    "startup_runtime_v2",
 ]

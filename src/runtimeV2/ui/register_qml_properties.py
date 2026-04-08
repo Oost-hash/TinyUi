@@ -30,7 +30,7 @@ def register_qml_property_plan() -> list[QmlPropertyPlan]:
     """Return the runtime capability to QML property mapping."""
 
     return [
-        QmlPropertyPlan("plugin_manifest_read", "pluginRead"),
+        QmlPropertyPlan("manifest_read", "pluginRead"),
         QmlPropertyPlan("settings_read", "settingsRead"),
         QmlPropertyPlan("settings_write", "settingsWrite"),
         QmlPropertyPlan("widget_config_read", "widgetConfigRead"),

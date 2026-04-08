@@ -26,6 +26,7 @@ from __future__ import annotations
 from runtimeV2.events.startup import startup_events
 from runtimeV2.connectors.startup import startup_connectors
 from runtimeV2.host.startup import startup_host
+from runtimeV2.manifest.startup import startup_manifest
 from runtimeV2.paths.startup import startup_paths
 from runtimeV2.persistence.startup import startup_persistence
 from runtimeV2.plugins.lifecycle_startup import startup_plugin_lifecycle
@@ -49,9 +50,14 @@ def register_default_domains(runtime: RuntimeV2) -> None:
         description="Owns one-time path detection and path access.",
     )
     runtime.register_domain(
+        "manifest",
+        startup_manifest,
+        description="Owns manifest schemas, parsing, registry, and manifest read models.",
+    )
+    runtime.register_domain(
         "plugins",
         startup_plugins,
-        description="Owns plugin discovery and manifest read models.",
+        description="Owns plugin discovery and import roots.",
     )
     runtime.register_domain(
         "host",

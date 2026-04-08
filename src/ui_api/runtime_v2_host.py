@@ -30,13 +30,13 @@ from runtime_schema import StartupResult, startup_error, startup_ok
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead
+from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.persistence.capabilities.settings_read import SettingsRead
 from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
-from runtimeV2.plugins.capabilities.manifest_read import PluginManifestRead
 from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
@@ -51,7 +51,7 @@ from ui_api.window import WindowHandle, open_window
 
 
 _QML_CAPABILITY_TYPES: dict[str, type[Any]] = {
-    "plugin_manifest_read": PluginManifestRead,
+    "manifest_read": ManifestRead,
     "settings_read": SettingsRead,
     "settings_write": SettingsWrite,
     "widget_config_read": WidgetConfigRead,

@@ -32,9 +32,9 @@ from runtimeV2.connectors.register_capabilities import (
 )
 from runtimeV2.connectors.register_events import register_connector_events
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
-from runtimeV2.events import EventsStartupResult
-from runtimeV2.plugins.capabilities.connector_decl_read import PluginConnectorDeclRead
-from runtimeV2.plugins.schemas import ConnectorManifest
+from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.connectors.schemas.manifest import ConnectorManifest
+from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.runtime import RuntimeV2
 
 
@@ -54,8 +54,8 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
         events = runtime.domain_result("events", EventsStartupResult)
         register_connector_events(events.registry)
         declarations = runtime.capability(
-            "plugin_connector_decl_read",
-            PluginConnectorDeclRead,
+            "manifest_connector_read",
+            ManifestConnectorRead,
         ).connector_declarations()
         registry = ConnectorServiceRegistry()
         capabilities = register_connector_capabilities(registry)

@@ -19,24 +19,24 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Settings spec read capability for runtime V2 plugins."""
+"""UI-owned runtime V2 schemas."""
 
-from __future__ import annotations
+from runtimeV2.ui.schemas.manifest import (
+    AppManifest,
+    ChromePolicy,
+    MenuItem,
+    MenuSeparator,
+    StatusbarItemDecl,
+    TabDecl,
+    UiManifest,
+)
 
-from runtimeV2.plugins.registry import PluginRegistry
-from runtimeV2.plugins.schemas import SettingDecl
-
-
-class PluginSettingsSpecRead:
-    """Read settings specs declared by plugin manifests."""
-
-    def __init__(self, registry: PluginRegistry) -> None:
-        self._registry = registry
-
-    def settings_specs(self) -> dict[str, list[SettingDecl]]:
-        """Return settings specs by plugin id."""
-
-        return {
-            plugin_id: list(manifest.settings)
-            for plugin_id, manifest in self._registry.all_manifests().items()
-        }
+__all__ = [
+    "AppManifest",
+    "ChromePolicy",
+    "MenuItem",
+    "MenuSeparator",
+    "StatusbarItemDecl",
+    "TabDecl",
+    "UiManifest",
+]

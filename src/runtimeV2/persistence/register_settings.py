@@ -23,14 +23,14 @@
 
 from __future__ import annotations
 
+from runtimeV2.manifest.capabilities.settings_read import ManifestSettingsRead
 from runtimeV2.persistence.settings import SettingsStore
-from runtimeV2.plugins.capabilities.settings_spec_read import PluginSettingsSpecRead
 
 
 def register_settings_specs(
     *,
     settings: SettingsStore,
-    settings_spec_read: PluginSettingsSpecRead,
+    settings_spec_read: ManifestSettingsRead,
 ) -> None:
     """Register plugin-provided settings specs."""
 

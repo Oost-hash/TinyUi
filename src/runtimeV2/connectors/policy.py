@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from runtimeV2.connectors.service_loader import load_connector_service
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
-from runtimeV2.plugins.schemas import PluginManifest
+from runtimeV2.plugins.schemas.manifest import PluginManifest
 
 
 def register_connector_service(

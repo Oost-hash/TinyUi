@@ -23,12 +23,9 @@
 
 from runtimeV2.events.capabilities.event_read import EventRead
 from runtimeV2.events.event_registry import EventContract, EventRegistry
-from runtimeV2.events.startup import EventsStartupResult, startup_events
 
 __all__ = [
     "EventContract",
     "EventRead",
     "EventRegistry",
-    "EventsStartupResult",
-    "startup_events",
 ]

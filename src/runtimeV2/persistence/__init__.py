@@ -20,10 +20,3 @@
 #  licensed under GPLv3.
 
 """Runtime V2 persistence domain."""
-
-from runtimeV2.persistence.startup import PersistenceStartupResult, startup_persistence
-
-__all__ = [
-    "PersistenceStartupResult",
-    "startup_persistence",
-]

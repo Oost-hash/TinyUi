@@ -30,8 +30,8 @@ from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
-from runtimeV2.plugins.capabilities.connector_decl_read import PluginConnectorDeclRead
-from runtimeV2.plugins.capabilities.overlay_decl_read import PluginOverlayDeclRead
+from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
+from runtimeV2.manifest.capabilities.overlay_read import ManifestOverlayRead
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.widgets.contracts import WidgetRecord
 from runtimeV2.widgets.projection import project_widget_records
@@ -52,8 +52,8 @@ def startup_widgets(runtime: RuntimeV2) -> StartupResult:
 
     try:
         records = project_widget_records(
-            overlay_read=runtime.capability("plugin_overlay_decl_read", PluginOverlayDeclRead),
-            connector_decl_read=runtime.capability("plugin_connector_decl_read", PluginConnectorDeclRead),
+            overlay_read=runtime.capability("manifest_overlay_read", ManifestOverlayRead),
+            connector_decl_read=runtime.capability("manifest_connector_read", ManifestConnectorRead),
             connector_read=runtime.capability("connector_read", ConnectorRead),
             active_read=runtime.capability("plugin_active_read", PluginActiveRead),
         )

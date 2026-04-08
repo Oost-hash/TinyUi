@@ -24,7 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.host.contracts import HostAppIdentity, HostShell
-from runtimeV2.plugins.schemas import PluginManifest
+from runtimeV2.plugins.schemas.manifest import PluginManifest
 
 
 HOST_PLUGIN_ID = "tinyui"

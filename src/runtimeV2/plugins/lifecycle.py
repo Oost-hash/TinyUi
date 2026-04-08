@@ -26,7 +26,8 @@ from __future__ import annotations
 from runtime_schema import EventType, PluginActivatedData, PluginDeactivatedData, PluginState, PluginStateData
 from runtimeV2.connectors.policy import register_connector_service, unregister_connector_service
 from runtimeV2.connectors.startup import ConnectorsStartupResult
-from runtimeV2.events import EventsStartupResult
+from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.plugins.registry import PluginRegistry
 
 
@@ -37,10 +38,12 @@ class PluginLifecycleStore:
         self,
         *,
         registry: PluginRegistry,
+        manifest_read: ManifestRead,
         connectors: ConnectorsStartupResult,
         events: EventsStartupResult,
     ) -> None:
         self._registry = registry
+        self._manifest_read = manifest_read
         self._connectors = connectors
         self._events = events
         self._states: dict[str, PluginState] = {
@@ -58,7 +61,7 @@ class PluginLifecycleStore:
     def set_active_plugin(self, plugin_id: str) -> bool:
         """Set the active plugin or overlay."""
 
-        manifest = self._registry.manifest(plugin_id)
+        manifest = self._manifest_read.plugin_manifest(plugin_id)
         if manifest is None or manifest.plugin_type not in {"plugin", "overlay"}:
             return False
         if self._active_plugin == plugin_id:
@@ -76,7 +79,7 @@ class PluginLifecycleStore:
     def enable_plugin(self, plugin_id: str) -> bool:
         """Enable one plugin lifecycle component."""
 
-        manifest = self._registry.manifest(plugin_id)
+        manifest = self._manifest_read.plugin_manifest(plugin_id)
         if manifest is None:
             return False
 
@@ -97,7 +100,7 @@ class PluginLifecycleStore:
     def disable_plugin(self, plugin_id: str) -> bool:
         """Disable one plugin lifecycle component."""
 
-        manifest = self._registry.manifest(plugin_id)
+        manifest = self._manifest_read.plugin_manifest(plugin_id)
         if manifest is None:
             return False
 
@@ -118,7 +121,7 @@ class PluginLifecycleStore:
         return True
 
     def _activate_hosts(self) -> None:
-        for plugin_id, manifest in self._registry.all_manifests().items():
+        for plugin_id, manifest in self._manifest_read.all_manifests().items():
             if manifest.plugin_type == "host":
                 self._set_state(plugin_id, PluginState.ACTIVE)
 

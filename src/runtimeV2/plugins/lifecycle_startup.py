@@ -27,7 +27,8 @@ from dataclasses import dataclass
 
 from runtime_schema import StartupResult, startup_error, startup_ok
 from runtimeV2.connectors.startup import ConnectorsStartupResult
-from runtimeV2.events import EventsStartupResult
+from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.plugins.lifecycle import PluginLifecycleStore
 from runtimeV2.plugins.register_lifecycle_capabilities import (
     PluginLifecycleCapabilities,
@@ -54,6 +55,7 @@ def startup_plugin_lifecycle(runtime: RuntimeV2) -> StartupResult:
         events = runtime.domain_result("events", EventsStartupResult)
         lifecycle = PluginLifecycleStore(
             registry=plugins.registry,
+            manifest_read=runtime.capability("manifest_read", ManifestRead),
             connectors=connectors,
             events=events,
         )

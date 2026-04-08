@@ -19,28 +19,30 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Settings read capability for runtime V2 persistence."""
+"""Plugin root manifest schema."""
 
 from __future__ import annotations
 
-from typing import Any
+from dataclasses import dataclass, field
 
-from runtimeV2.persistence.settings import SettingsStore
+from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.persistence.schemas.settings import SettingDecl
+from runtimeV2.ui.schemas.manifest import UiManifest
+from runtimeV2.widgets.schemas.manifest import OverlayManifest
 
 
-class SettingsRead:
-    """Read setting specs and values."""
+@dataclass(frozen=True)
+class PluginManifest:
+    """Root plugin manifest container."""
 
-    def __init__(self, store: SettingsStore) -> None:
-        self._store = store
-
-    def get(self, namespace: str, key: str) -> Any:
-        """Return one setting value."""
-
-        return self._store.get(namespace, key)
-
-    def by_namespace(self) -> dict[str, list[SettingDecl]]:
-        """Return specs by namespace."""
-
-        return self._store.specs_by_namespace()
+    plugin_id: str
+    plugin_type: str
+    version: str
+    author: str
+    description: str
+    icon: str
+    requires: list[str]
+    settings: list[SettingDecl] = field(default_factory=list)
+    ui: UiManifest | None = None
+    connector: ConnectorManifest | None = None
+    overlay: OverlayManifest | None = None

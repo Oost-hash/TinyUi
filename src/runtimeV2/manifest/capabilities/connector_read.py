@@ -19,35 +19,23 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Public app schema exports."""
+"""Connector manifest read capability for runtime V2."""
 
-from app_schema.connector import ConnectorGameDecl, ConnectorManifest, ConnectorServiceDecl
-from app_schema.overlay import OverlayManifest, OverlayWidgetDecl
-from app_schema.plugin import PluginManifest
-from app_schema.ui import (
-    AppManifest,
-    ChromePolicy,
-    MenuItem,
-    MenuSeparator,
-    SettingDecl,
-    StatusbarItemDecl,
-    TabDecl,
-    UiManifest,
-)
+from runtimeV2.connectors.schemas.manifest import ConnectorManifest
+from runtimeV2.manifest.registry import ManifestRegistry
 
-__all__ = [
-    "AppManifest",
-    "ChromePolicy",
-    "ConnectorGameDecl",
-    "ConnectorManifest",
-    "ConnectorServiceDecl",
-    "MenuItem",
-    "MenuSeparator",
-    "OverlayManifest",
-    "OverlayWidgetDecl",
-    "PluginManifest",
-    "SettingDecl",
-    "StatusbarItemDecl",
-    "TabDecl",
-    "UiManifest",
-]
+
+class ManifestConnectorRead:
+    """Read connector declarations from plugin manifests."""
+
+    def __init__(self, registry: ManifestRegistry) -> None:
+        self._registry = registry
+
+    def connector_declarations(self) -> dict[str, ConnectorManifest]:
+        """Return connector declarations by plugin id."""
+
+        return {
+            plugin_id: manifest.connector
+            for plugin_id, manifest in self._registry.all_manifests().items()
+            if manifest.connector is not None
+        }

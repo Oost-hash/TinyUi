@@ -20,7 +20,3 @@
 #  licensed under GPLv3.
 
 """Runtime V2 widgets domain."""
-
-from runtimeV2.widgets.startup import WidgetsStartupResult, startup_widgets
-
-__all__ = ["WidgetsStartupResult", "startup_widgets"]

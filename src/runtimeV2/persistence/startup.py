@@ -38,7 +38,7 @@ from runtimeV2.persistence.register_paths import register_persistence_paths
 from runtimeV2.persistence.register_settings import register_settings_specs
 from runtimeV2.persistence.settings import SettingsStore
 from runtimeV2.persistence.widget_config import WidgetConfigStore
-from runtimeV2.plugins.capabilities.settings_spec_read import PluginSettingsSpecRead
+from runtimeV2.manifest.capabilities.settings_read import ManifestSettingsRead
 from runtimeV2.runtime import RuntimeV2
 
 
@@ -58,7 +58,7 @@ def startup_persistence(runtime: RuntimeV2) -> StartupResult:
 
     try:
         identity_read = runtime.capability("app_identity_read", AppIdentityRead)
-        settings_spec_read = runtime.capability("plugin_settings_spec_read", PluginSettingsSpecRead)
+        settings_spec_read = runtime.capability("manifest_settings_read", ManifestSettingsRead)
         paths = register_persistence_paths(resolve_persistence_paths(identity_read))
         catalog = ConfigSetCatalog(paths)
         active_set = catalog.active_set().id

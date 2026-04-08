@@ -19,37 +19,20 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Overlay-oriented manifest dataclasses."""
+"""Persistence-owned setting manifest schemas."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass(frozen=True)
-class WidgetDefaults:
-    """Declarative default values for a widget instance, authored by the plugin."""
+class SettingDecl:
+    """Setting declaration from a plugin manifest."""
 
-    enabled: bool = True
-    visible: bool = True
-    position: tuple[int, int] = (0, 0)
-
-
-@dataclass(frozen=True)
-class OverlayWidgetDecl:
-    """Overlay widget declaration from manifest."""
-
-    id: str
-    widget: str
-    label: str = ""
-    bindings: dict[str, str] = field(default_factory=dict)
-    defaults: WidgetDefaults = field(default_factory=WidgetDefaults)
-
-
-@dataclass(frozen=True)
-class OverlayManifest:
-    """Overlay-specific manifest declarations."""
-
-    connectors: list[str] = field(default_factory=list)
-    modules: list[str] = field(default_factory=list)
-    widgets: list[OverlayWidgetDecl] = field(default_factory=list)
+    key: str
+    label: str
+    default: Any
+    type: str
+    choices: list[str] = field(default_factory=list)

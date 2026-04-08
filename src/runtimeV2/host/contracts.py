@@ -25,7 +25,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtimeV2.plugins.schemas import AppManifest, PluginManifest
+from runtimeV2.plugins.schemas.manifest import PluginManifest
+from runtimeV2.ui.schemas.manifest import AppManifest
 
 
 @dataclass(frozen=True)

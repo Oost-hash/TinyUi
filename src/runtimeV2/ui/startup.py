@@ -26,10 +26,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from runtime_schema import Event, EventType, StartupResult, startup_error, startup_ok
-from runtimeV2.events import EventsStartupResult
+from runtimeV2.events.startup import EventsStartupResult
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead
+from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
-from runtimeV2.plugins.capabilities.ui_manifest_read import PluginUiManifestRead
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.ui.chrome_model import build_ui_chrome_model
 from runtimeV2.ui.contracts import QmlPropertyPlan, UIChromeModel, UIRenderStatus, UIWindowRecord
@@ -59,7 +59,7 @@ def startup_ui(runtime: RuntimeV2) -> StartupResult:
         register_ui_events(events.registry)
         main_window_read = runtime.capability("main_window_read", MainWindowRead)
         records = project_ui_window_records(
-            ui_manifest_read=runtime.capability("plugin_ui_manifest_read", PluginUiManifestRead),
+            ui_manifest_read=runtime.capability("manifest_ui_read", ManifestUiRead),
             main_window_read=main_window_read,
         )
         render_status = determine_render_status(
@@ -68,7 +68,7 @@ def startup_ui(runtime: RuntimeV2) -> StartupResult:
         )
         chrome_model = build_ui_chrome_model(
             main_window_read=main_window_read,
-            ui_manifest_read=runtime.capability("plugin_ui_manifest_read", PluginUiManifestRead),
+            ui_manifest_read=runtime.capability("manifest_ui_read", ManifestUiRead),
             active_read=runtime.capability("plugin_active_read", PluginActiveRead),
         )
         qml_property_plan = register_qml_property_plan()

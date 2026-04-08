@@ -19,33 +19,13 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Connector-oriented manifest dataclasses."""
+"""Manifest schema registration for persistence."""
 
-from __future__ import annotations
-
-from dataclasses import dataclass, field
-
-
-@dataclass(frozen=True)
-class ConnectorGameDecl:
-    """Connector game support declaration from manifest."""
-
-    id: str
-    detect_names: list[str] = field(default_factory=list)
+from runtimeV2.manifest.schema_registry import ManifestSchemaRegistry
+from runtimeV2.persistence.schemas.settings import SettingDecl
 
 
-@dataclass(frozen=True)
-class ConnectorServiceDecl:
-    """Connector service declaration from manifest."""
+def register_persistence_schemas(registry: ManifestSchemaRegistry) -> None:
+    """Register persistence-owned manifest schemas."""
 
-    module: str
-    class_name: str
-
-
-@dataclass(frozen=True)
-class ConnectorManifest:
-    """Connector-specific manifest declarations."""
-
-    provides: list[str] = field(default_factory=list)
-    games: list[ConnectorGameDecl] = field(default_factory=list)
-    service: ConnectorServiceDecl | None = None
+    registry.register_schema("settings", owner_domain="persistence", schema_type=SettingDecl)

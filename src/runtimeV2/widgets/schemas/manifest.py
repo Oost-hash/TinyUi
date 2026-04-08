@@ -19,28 +19,37 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Settings read capability for runtime V2 persistence."""
+"""Widget-owned manifest schemas."""
 
 from __future__ import annotations
 
-from typing import Any
-
-from runtimeV2.persistence.settings import SettingsStore
-from runtimeV2.persistence.schemas.settings import SettingDecl
+from dataclasses import dataclass, field
 
 
-class SettingsRead:
-    """Read setting specs and values."""
+@dataclass(frozen=True)
+class WidgetDefaults:
+    """Declarative default values for a widget instance."""
 
-    def __init__(self, store: SettingsStore) -> None:
-        self._store = store
+    enabled: bool = True
+    visible: bool = True
+    position: tuple[int, int] = (0, 0)
 
-    def get(self, namespace: str, key: str) -> Any:
-        """Return one setting value."""
 
-        return self._store.get(namespace, key)
+@dataclass(frozen=True)
+class OverlayWidgetDecl:
+    """Overlay widget declaration from a plugin manifest."""
 
-    def by_namespace(self) -> dict[str, list[SettingDecl]]:
-        """Return specs by namespace."""
+    id: str
+    widget: str
+    label: str = ""
+    bindings: dict[str, str] = field(default_factory=dict)
+    defaults: WidgetDefaults = field(default_factory=WidgetDefaults)
 
-        return self._store.specs_by_namespace()
+
+@dataclass(frozen=True)
+class OverlayManifest:
+    """Overlay-specific manifest declarations."""
+
+    connectors: list[str] = field(default_factory=list)
+    modules: list[str] = field(default_factory=list)
+    widgets: list[OverlayWidgetDecl] = field(default_factory=list)

@@ -19,28 +19,33 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Settings read capability for runtime V2 persistence."""
+"""Connector-owned manifest schemas."""
 
 from __future__ import annotations
 
-from typing import Any
-
-from runtimeV2.persistence.settings import SettingsStore
-from runtimeV2.persistence.schemas.settings import SettingDecl
+from dataclasses import dataclass, field
 
 
-class SettingsRead:
-    """Read setting specs and values."""
+@dataclass(frozen=True)
+class ConnectorGameDecl:
+    """Connector game support declaration from a plugin manifest."""
 
-    def __init__(self, store: SettingsStore) -> None:
-        self._store = store
+    id: str
+    detect_names: list[str] = field(default_factory=list)
 
-    def get(self, namespace: str, key: str) -> Any:
-        """Return one setting value."""
 
-        return self._store.get(namespace, key)
+@dataclass(frozen=True)
+class ConnectorServiceDecl:
+    """Connector service declaration from a plugin manifest."""
 
-    def by_namespace(self) -> dict[str, list[SettingDecl]]:
-        """Return specs by namespace."""
+    module: str
+    class_name: str
 
-        return self._store.specs_by_namespace()
+
+@dataclass(frozen=True)
+class ConnectorManifest:
+    """Connector-specific manifest declarations."""
+
+    provides: list[str] = field(default_factory=list)
+    games: list[ConnectorGameDecl] = field(default_factory=list)
+    service: ConnectorServiceDecl | None = None

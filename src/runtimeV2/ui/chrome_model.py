@@ -23,17 +23,17 @@
 
 from __future__ import annotations
 
-from app_schema.ui import MenuItem, MenuSeparator
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead
+from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
-from runtimeV2.plugins.capabilities.ui_manifest_read import PluginUiManifestRead
 from runtimeV2.ui.contracts import UIChromeModel, UIMenuItem, UIStatusbarItem, UITabItem
+from runtimeV2.ui.schemas.manifest import MenuItem, MenuSeparator
 
 
 def build_ui_chrome_model(
     *,
     main_window_read: MainWindowRead,
-    ui_manifest_read: PluginUiManifestRead,
+    ui_manifest_read: ManifestUiRead,
     active_read: PluginActiveRead,
 ) -> UIChromeModel:
     """Build the host window chrome model from V2 domain capabilities."""

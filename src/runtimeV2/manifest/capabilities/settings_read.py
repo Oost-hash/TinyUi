@@ -19,28 +19,22 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Settings read capability for runtime V2 persistence."""
+"""Settings manifest read capability for runtime V2."""
 
-from __future__ import annotations
-
-from typing import Any
-
-from runtimeV2.persistence.settings import SettingsStore
+from runtimeV2.manifest.registry import ManifestRegistry
 from runtimeV2.persistence.schemas.settings import SettingDecl
 
 
-class SettingsRead:
-    """Read setting specs and values."""
+class ManifestSettingsRead:
+    """Read settings specs declared by plugin manifests."""
 
-    def __init__(self, store: SettingsStore) -> None:
-        self._store = store
+    def __init__(self, registry: ManifestRegistry) -> None:
+        self._registry = registry
 
-    def get(self, namespace: str, key: str) -> Any:
-        """Return one setting value."""
+    def settings_specs(self) -> dict[str, list[SettingDecl]]:
+        """Return settings specs by plugin id."""
 
-        return self._store.get(namespace, key)
-
-    def by_namespace(self) -> dict[str, list[SettingDecl]]:
-        """Return specs by namespace."""
-
-        return self._store.specs_by_namespace()
+        return {
+            plugin_id: list(manifest.settings)
+            for plugin_id, manifest in self._registry.all_manifests().items()
+        }

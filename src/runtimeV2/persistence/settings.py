@@ -26,8 +26,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from app_schema.ui import SettingDecl
 from runtimeV2.persistence.contracts import PersistencePaths
+from runtimeV2.persistence.schemas.settings import SettingDecl
 
 
 class SettingsStore:

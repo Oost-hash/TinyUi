@@ -26,15 +26,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from runtimeV2.plugins.schemas import PluginManifest
-
-
 @dataclass(frozen=True)
 class PluginRecord:
     """Discovery record for one plugin."""
 
     plugin_id: str
-    manifest: PluginManifest
     plugin_root: Path
     source: str
 
@@ -51,7 +47,6 @@ class PluginRegistry:
         self,
         *,
         plugin_id: str,
-        manifest: PluginManifest,
         plugin_root: Path,
         source: str,
     ) -> None:
@@ -59,7 +54,6 @@ class PluginRegistry:
 
         self._records[plugin_id] = PluginRecord(
             plugin_id=plugin_id,
-            manifest=manifest,
             plugin_root=plugin_root,
             source=source,
         )
@@ -78,17 +72,6 @@ class PluginRegistry:
         """Return discovered plugin ids."""
 
         return list(self._records)
-
-    def manifest(self, plugin_id: str) -> PluginManifest | None:
-        """Return one plugin manifest."""
-
-        record = self._records.get(plugin_id)
-        return None if record is None else record.manifest
-
-    def all_manifests(self) -> dict[str, PluginManifest]:
-        """Return all plugin manifests."""
-
-        return {plugin_id: record.manifest for plugin_id, record in self._records.items()}
 
     def plugin_root(self, plugin_id: str) -> Path | None:
         """Return one plugin root."""

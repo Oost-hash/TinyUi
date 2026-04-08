@@ -20,7 +20,3 @@
 #  licensed under GPLv3.
 
 """Runtime V2 UI domain."""
-
-from runtimeV2.ui.startup import UIStartupResult, startup_ui
-
-__all__ = ["UIStartupResult", "startup_ui"]

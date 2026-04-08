@@ -23,19 +23,21 @@
 
 from __future__ import annotations
 
+from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.plugins.registry import PluginRegistry
 
 
 class PluginIconCapability:
     """Resolve plugin icon file URLs."""
 
-    def __init__(self, registry: PluginRegistry) -> None:
+    def __init__(self, registry: PluginRegistry, manifest_read: ManifestRead) -> None:
         self._registry = registry
+        self._manifest_read = manifest_read
 
     def get_icon_url(self, plugin_id: str) -> str:
         """Return a safe file URL for one plugin icon."""
 
-        manifest = self._registry.manifest(plugin_id)
+        manifest = self._manifest_read.plugin_manifest(plugin_id)
         if manifest is None or not manifest.icon:
             return ""
 

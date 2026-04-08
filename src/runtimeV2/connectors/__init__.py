@@ -20,12 +20,3 @@
 #  licensed under GPLv3.
 
 """Runtime V2 connectors domain."""
-
-from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
-from runtimeV2.connectors.startup import ConnectorsStartupResult, startup_connectors
-
-__all__ = [
-    "ConnectorServiceRegistry",
-    "ConnectorsStartupResult",
-    "startup_connectors",
-]

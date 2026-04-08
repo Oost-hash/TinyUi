@@ -26,37 +26,36 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from runtimeV2.paths import RuntimePaths
-from runtimeV2.plugins.manifest_parser import load_plugin_manifest
+from runtimeV2.manifest.capabilities.load import ManifestLoad
+from runtimeV2.paths.contracts import RuntimePaths
 from runtimeV2.plugins.registry import PluginRegistry
 
 
-def discover_plugins(runtime_paths: RuntimePaths) -> PluginRegistry:
+def discover_plugins(runtime_paths: RuntimePaths, manifest_load: ManifestLoad) -> PluginRegistry:
     """Discover host and source plugins into a registry."""
 
     registry = PluginRegistry()
-    _load_host_plugin(registry, runtime_paths)
-    _load_external_plugins(registry, runtime_paths)
+    _load_host_plugin(registry, runtime_paths, manifest_load)
+    _load_external_plugins(registry, runtime_paths, manifest_load)
     _ensure_import_roots(registry)
     return registry
 
 
-def _load_host_plugin(registry: PluginRegistry, runtime_paths: RuntimePaths) -> None:
+def _load_host_plugin(registry: PluginRegistry, runtime_paths: RuntimePaths, manifest_load: ManifestLoad) -> None:
     manifest_path = runtime_paths.host_dir / "manifest.toml"
     if not manifest_path.exists():
         raise RuntimeError(f"Host plugin manifest not found: {manifest_path}")
 
-    manifest = load_plugin_manifest(manifest_path, resource_root=runtime_paths.host_dir)
+    manifest = manifest_load.load_manifest(manifest_path, resource_root=runtime_paths.host_dir, source="host")
     registry.register_plugin(
-        plugin_id="tinyui",
-        manifest=manifest,
+        plugin_id=manifest.plugin_id,
         plugin_root=runtime_paths.host_dir,
         source="host",
     )
     registry.register_import_root(runtime_paths.host_dir.parent.parent)
 
 
-def _load_external_plugins(registry: PluginRegistry, runtime_paths: RuntimePaths) -> None:
+def _load_external_plugins(registry: PluginRegistry, runtime_paths: RuntimePaths, manifest_load: ManifestLoad) -> None:
     if not runtime_paths.plugins_dir.exists():
         return
 
@@ -65,16 +64,15 @@ def _load_external_plugins(registry: PluginRegistry, runtime_paths: RuntimePaths
             continue
         if plugin_dir.name == "tinyui":
             continue
-        _load_external_plugin(registry, plugin_dir)
+        _load_external_plugin(registry, plugin_dir, manifest_load)
 
 
-def _load_external_plugin(registry: PluginRegistry, plugin_dir: Path) -> None:
+def _load_external_plugin(registry: PluginRegistry, plugin_dir: Path, manifest_load: ManifestLoad) -> None:
     raw_manifest = plugin_dir / "manifest.toml"
     if raw_manifest.exists():
-        manifest = load_plugin_manifest(raw_manifest, resource_root=plugin_dir)
+        manifest = manifest_load.load_manifest(raw_manifest, resource_root=plugin_dir, source="source")
         registry.register_plugin(
-            plugin_id=plugin_dir.name,
-            manifest=manifest,
+            plugin_id=manifest.plugin_id,
             plugin_root=plugin_dir,
             source="source",
         )
