@@ -31,10 +31,9 @@ from PySide6.QtCore import QUrl
 from PySide6.QtQml import QQmlComponent
 from PySide6.QtQuick import QQuickWindow
 
-from capabilities.widget_config_write import WidgetConfigWrite
-from runtime.persistence import WidgetConfigStore
-from runtime.widgets import WidgetRuntimeRecord, WidgetRuntimeStatus
+from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 from ui_api.qt import create_engine
+from widget_api.runtime_adapters import WidgetConfigWriteAdapter, widget_data_for_record
 
 _QML_DIR = Path(__file__).resolve().parent / "qml"
 
@@ -43,21 +42,19 @@ _QML_DIR = Path(__file__).resolve().parent / "qml"
 class _HostedWidgetWindow:
     """Keep one hosted widget window together with its runtime record."""
 
-    record: WidgetRuntimeRecord
+    record: WidgetRecord
     window: QQuickWindow
 
 
 class WidgetWindowHost:
     """Manage frameless widget windows for render-ready runtime records.
 
-    Receives a WidgetConfigStore to read persisted positions and a
-    WidgetConfigWrite capability that is injected into each widget window
-    so QML can write position back after a drag.
+    Receives a runtime V2 widget config write capability that is exposed to QML
+    through a small adapter so widget windows can persist their own position.
     """
 
-    def __init__(self, widget_store: WidgetConfigStore) -> None:
-        self._widget_store = widget_store
-        self._widget_config_write = WidgetConfigWrite(widget_store)
+    def __init__(self, widget_config_write) -> None:
+        self._widget_config_write = WidgetConfigWriteAdapter(widget_config_write)
         self._engine = create_engine()
         self._component = QQmlComponent(
             self._engine,
@@ -65,24 +62,24 @@ class WidgetWindowHost:
         )
         self._windows: dict[str, _HostedWidgetWindow] = {}
 
-    def sync_records(self, records: Sequence[WidgetRuntimeRecord]) -> None:
+    def sync_records(self, records: Sequence[WidgetRecord]) -> None:
         """Synchronize hosted windows with the given runtime records."""
 
         desired = {
-            record.widget_id: record
+            _record_key(record): record
             for record in records
-            if record.status != WidgetRuntimeStatus.IDLE
+            if record.status != WidgetStatus.IDLE
         }
 
-        for widget_id in tuple(self._windows):
-            if widget_id not in desired:
-                hosted = self._windows.pop(widget_id)
+        for record_key in tuple(self._windows):
+            if record_key not in desired:
+                hosted = self._windows.pop(record_key)
                 hosted.window.close()
                 hosted.window.deleteLater()
 
-        for widget_id, record in desired.items():
-            widget_data = self._widget_data(record)
-            hosted = self._windows.get(widget_id)
+        for record_key, record in desired.items():
+            widget_data = widget_data_for_record(record)
+            hosted = self._windows.get(record_key)
             if hosted is None:
                 obj = self._component.createWithInitialProperties(
                     {
@@ -92,18 +89,18 @@ class WidgetWindowHost:
                 )
                 assert obj is not None, self._component.errorString()
                 assert isinstance(obj, QQuickWindow), self._component.errorString()
-                self._windows[widget_id] = _HostedWidgetWindow(record=record, window=obj)
+                self._windows[record_key] = _HostedWidgetWindow(record=record, window=obj)
                 obj.show()
                 continue
 
             hosted.record = record
             hosted.window.setProperty("widgetData", widget_data)
-            hosted.window.setVisible(record.status != WidgetRuntimeStatus.HIDDEN)
+            hosted.window.setVisible(record.status != WidgetStatus.HIDDEN)
 
     def windows(self) -> tuple[QQuickWindow, ...]:
         """Return the hosted widget windows in a stable order."""
 
-        return tuple(self._windows[widget_id].window for widget_id in sorted(self._windows))
+        return tuple(self._windows[record_key].window for record_key in sorted(self._windows))
 
     def close_all(self) -> None:
         """Close and release all hosted widget windows."""
@@ -113,34 +110,6 @@ class WidgetWindowHost:
             hosted.window.deleteLater()
         self._windows.clear()
 
-    def _widget_data(self, record: WidgetRuntimeRecord) -> dict[str, object]:
-        """Build the widgetData dict for QML, including persisted position."""
-        config = self._widget_store.get_widget(record.overlay_id, record.widget_id)
-        x, y = config.position if config else (0, 0)
-        return {
-            "widgetId": record.widget_id,
-            "overlayId": record.overlay_id,
-            "label": record.label,
-            "source": record.source,
-            "displayText": _display_text(record),
-            "textColor": "#E0E0E0" if record.status != WidgetRuntimeStatus.ERROR else "#FF7A7A",
-            "backgroundColor": "#CC000000",
-            "visible": record.status != WidgetRuntimeStatus.HIDDEN,
-            "status": record.status.value,
-            "x": x,
-            "y": y,
-        }
 
-
-def _display_text(record: WidgetRuntimeRecord) -> str:
-    if record.status == WidgetRuntimeStatus.READY:
-        return record.source
-    if record.status == WidgetRuntimeStatus.RENDERING:
-        return record.source
-    if record.status == WidgetRuntimeStatus.WAITING_FOR_GAME:
-        return "Waiting for game"
-    if record.status == WidgetRuntimeStatus.WAITING_FOR_CONNECTOR:
-        return "Waiting for connector"
-    if record.status == WidgetRuntimeStatus.ERROR:
-        return record.error_message or "Widget error"
-    return ""
+def _record_key(record: WidgetRecord) -> str:
+    return f"{record.overlay_id}:{record.widget_id}"

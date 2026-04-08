@@ -19,78 +19,90 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Qt host bridge for runtime-owned widget records."""
+"""widget_api host for runtime V2."""
 
 from __future__ import annotations
 
-from typing import Protocol, Sequence
+from dataclasses import dataclass
 
-from runtime_schema import EventBus, EventType, StartupResult, startup_error, startup_ok
-from runtime.persistence import WidgetConfigStore
-from runtime.widgets import WidgetRuntimePoller, WidgetRuntimeRecord
+from runtimeV2.events.contracts import EventType
+from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
+from runtimeV2.runtime import RuntimeV2
+from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
+from runtimeV2.widgets.startup import WidgetsStartupResult
 from widget_api.window_host import WidgetWindowHost
 
 
-class WidgetRuntimeLike(Protocol):
-    """Minimal runtime surface needed by the widget host bridge."""
+@dataclass(frozen=True)
+class WidgetRuntimeHostResult:
+    """Live widget_api objects hosting runtime V2 widget records."""
 
-    def active_overlay_widget_records(self) -> Sequence[WidgetRuntimeRecord]: ...
-    @property
-    def widget_store(self) -> WidgetConfigStore: ...
+    controller: "WidgetWindowHostController"
+    host: WidgetWindowHost
 
 
 class WidgetWindowHostController:
     """Keep the widget window host synchronized with runtime changes."""
 
-    def __init__(self, event_bus: EventBus, runtime: WidgetRuntimeLike, host: WidgetWindowHost) -> None:
-        self._event_bus = event_bus
+    def __init__(self, runtime: RuntimeV2, host: WidgetWindowHost) -> None:
         self._runtime = runtime
+        self._events = runtime.domain_result("events", EventsStartupResult)
+        self._widgets = runtime.domain_result("widgets", WidgetsStartupResult)
         self._host = host
 
-    def attach(self) -> None:
-        """Subscribe to the runtime events that can change active widget records."""
+    def attach(self, app) -> None:
+        """Subscribe to runtime V2 events that change widget runtime records."""
 
         for event_type in (
             EventType.PLUGIN_STATE_CHANGED,
             EventType.PLUGIN_ERROR,
-            EventType.UI_PLUGIN_SELECTED,
             EventType.CONNECTOR_SERVICE_REGISTERED,
             EventType.CONNECTOR_SERVICE_UNREGISTERED,
             EventType.CONNECTOR_SERVICE_UPDATED,
-            EventType.RUNTIME_SHUTDOWN,
             EventType.WIDGET_RUNTIME_UPDATED,
+            EventType.RUNTIME_SHUTDOWN,
         ):
-            self._event_bus.on(event_type, self._on_runtime_change)
+            self._events.bus.on(event_type, self._on_runtime_change)
+
+        app.aboutToQuit.connect(self._host.close_all)
 
     def sync(self) -> None:
-        """Refresh hosted windows from current runtime widget records."""
+        """Refresh hosted windows from current widget runtime records."""
 
-        self._host.sync_records(self._runtime.active_overlay_widget_records())
+        self._host.sync_records(self._widgets.store.all_widget_records())
 
-    def _on_runtime_change(self, _event) -> None:
+    def refresh(self) -> None:
+        """Refresh widgets through the widgets domain and sync the host."""
+
+        self._widgets.poller.refresh()
+        self.sync()
+
+    def _on_runtime_change(self, event) -> None:
+        if event.type == EventType.RUNTIME_SHUTDOWN:
+            self._host.close_all()
+            return
+        if event.type != EventType.WIDGET_RUNTIME_UPDATED:
+            self._widgets.poller.refresh()
         self.sync()
 
 
-def create_widget_window_host(app, event_bus: EventBus, runtime: WidgetRuntimeLike) -> WidgetWindowHost:
-    """Create the widget window host and keep it synchronized with runtime records."""
+def create_widget_window_host(app, runtime: RuntimeV2) -> WidgetRuntimeHostResult:
+    """Create the widget_api host bridge for runtime V2 widget records."""
 
-    host = WidgetWindowHost(runtime.widget_store)
-    controller = WidgetWindowHostController(event_bus, runtime, host)
-    poller = WidgetRuntimePoller(event_bus)
+    host = WidgetWindowHost(runtime.capability("widget_config_write", WidgetConfigWrite))
+    controller = WidgetWindowHostController(runtime, host)
     controller.sync()
-    controller.attach()
-    poller.start()
-    app.aboutToQuit.connect(host.close_all)
-    app.aboutToQuit.connect(poller.stop)
-    app.setProperty("_widgetWindowHostController", controller)
-    app.setProperty("_widgetRuntimePoller", poller)
-    return host
+    controller.attach(app)
+    result = WidgetRuntimeHostResult(controller=controller, host=host)
+    app.setProperty("_widgetRuntimeHost", result)
+    return result
 
 
-def start_widget_host(app, event_bus: EventBus, runtime: WidgetRuntimeLike) -> tuple[WidgetWindowHost | None, StartupResult]:
-    """Start the widget_api host bridge for runtime-owned widget records."""
+def start_widget_host(app, runtime: RuntimeV2) -> tuple[WidgetRuntimeHostResult | None, StartupResult]:
+    """Start the widget_api host bridge for runtime V2 widget records."""
 
     try:
-        return create_widget_window_host(app, event_bus, runtime), startup_ok()
+        return create_widget_window_host(app, runtime), startup_ok()
     except Exception as exc:
-        return None, startup_error(f"widget_api startup failed: {exc}")
+        return None, startup_error(f"widget_api runtime host startup failed: {exc}")
