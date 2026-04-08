@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.events.startup import startup_events
+from runtimeV2.host.startup import startup_host
 from runtimeV2.paths.startup import startup_paths
 from runtimeV2.plugins.startup import startup_plugins
 from runtimeV2.runtime import RuntimeV2
@@ -46,4 +47,9 @@ def register_default_domains(runtime: RuntimeV2) -> None:
         "plugins",
         startup_plugins,
         description="Owns plugin discovery and manifest read models.",
+    )
+    runtime.register_domain(
+        "host",
+        startup_host,
+        description="Owns host shell interpretation and app identity.",
     )
