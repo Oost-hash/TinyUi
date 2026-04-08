@@ -30,6 +30,7 @@ from runtimeV2.paths.startup import startup_paths
 from runtimeV2.persistence.startup import startup_persistence
 from runtimeV2.plugins.lifecycle_startup import startup_plugin_lifecycle
 from runtimeV2.plugins.startup import startup_plugins
+from runtimeV2.widgets.startup import startup_widgets
 from runtimeV2.runtime import RuntimeV2
 
 
@@ -70,4 +71,9 @@ def register_default_domains(runtime: RuntimeV2) -> None:
         "plugins_lifecycle",
         startup_plugin_lifecycle,
         description="Owns plugin lifecycle state and active plugin policy.",
+    )
+    runtime.register_domain(
+        "widgets",
+        startup_widgets,
+        description="Owns widget runtime records and readiness.",
     )
