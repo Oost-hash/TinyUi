@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.events.startup import startup_events
+from runtimeV2.connectors.startup import startup_connectors
 from runtimeV2.host.startup import startup_host
 from runtimeV2.paths.startup import startup_paths
 from runtimeV2.persistence.startup import startup_persistence
@@ -58,4 +59,9 @@ def register_default_domains(runtime: RuntimeV2) -> None:
         "persistence",
         startup_persistence,
         description="Owns bootstrap, config sets, settings, and widget config.",
+    )
+    runtime.register_domain(
+        "connectors",
+        startup_connectors,
+        description="Owns connector declarations, service registry, and connector access.",
     )

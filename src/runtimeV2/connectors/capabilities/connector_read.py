@@ -1,0 +1,49 @@
+#  TinyUI
+#  Copyright (C) 2026 Oost-hash
+#
+#  This file is part of TinyUI.
+#
+#  TinyUI is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  TinyUI is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
+#  licensed under GPLv3.
+
+"""Connector read capability for runtime V2."""
+
+from __future__ import annotations
+
+from runtimeV2.connectors.contracts import ConnectorInspectionSnapshot, ConnectorServiceRecord
+from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
+
+
+class ConnectorRead:
+    """Read connector service registry state."""
+
+    def __init__(self, registry: ConnectorServiceRegistry) -> None:
+        self._registry = registry
+
+    def services(self) -> list[ConnectorServiceRecord]:
+        """Return active connector service records."""
+
+        return self._registry.records()
+
+    def has(self, connector_id: str) -> bool:
+        """Return True when a connector is active."""
+
+        return self._registry.has(connector_id)
+
+    def inspection_rows(self, connector_id: str) -> ConnectorInspectionSnapshot:
+        """Return connector inspection rows."""
+
+        return self._registry.inspect(connector_id)
