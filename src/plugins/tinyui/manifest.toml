@@ -21,7 +21,7 @@ menu = [
 [[window.statusbar]]
 text = "Widgets"
 side = "left"
-action = "widget_visibility.toggle"
+action = "widgetVisibility.toggle"
 
 [window.chrome]
 show_menu_button     = true

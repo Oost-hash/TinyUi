@@ -35,11 +35,10 @@ Rectangle {
     readonly property int colPad:     16
 
     // Capabilities from hostWindow
-    readonly property var widgetRead: hostWindow?.widgetRead ?? null
+    readonly property var widgetRecords: hostWindow?.widgetRecords ?? null
     readonly property var widgetConfigRead: hostWindow?.widgetConfigRead ?? null
     readonly property var widgetConfigWrite: hostWindow?.widgetConfigWrite ?? null
-    readonly property var widgetVisibilityRead: hostWindow?.widget_visibility_read ?? null
-    readonly property var widgetVisibilityWrite: hostWindow?.widget_visibility_write ?? null
+    readonly property var widgetVisibility: hostWindow?.widgetVisibility ?? null
     
     // State
     property string selectedWidgetId: ""
@@ -55,11 +54,11 @@ Rectangle {
     // Sync overlay ID and ensure widgets are visible when selection changes
     onSelectedWidgetIdChanged: {
         // Update overlay ID
-        if (!selectedWidgetId || !widgetRead) {
+        if (!selectedWidgetId || !widgetRecords) {
             selectedOverlayId = ""
         } else {
             // Find the widget in the model to get its overlayId
-            var widgets = widgetRead.widgets
+            var widgets = widgetRecords.widgets
             for (var i = 0; i < widgets.length; i++) {
                 if (widgets[i].widgetId === selectedWidgetId) {
                     selectedOverlayId = widgets[i].overlayId ?? ""
@@ -69,8 +68,8 @@ Rectangle {
         }
         
         // If widgets are hidden and user selects a widget, make them visible
-        if (selectedWidgetId && widgetVisibilityRead && !widgetVisibilityRead.globalVisible && widgetVisibilityWrite) {
-            widgetVisibilityWrite.setGlobalVisible(true)
+        if (selectedWidgetId && widgetVisibility && !widgetVisibility.globalVisible) {
+            widgetVisibility.setGlobalVisible(true)
         }
     }
 
@@ -128,7 +127,7 @@ Rectangle {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             clip: true
-            model: widgetRead?.widgets ?? []
+            model: widgetRecords?.widgets ?? []
 
             delegate: Rectangle {
                 id: widgetItem

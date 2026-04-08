@@ -30,19 +30,18 @@ def register_qml_property_plan() -> list[QmlPropertyPlan]:
     """Return the runtime capability to QML property mapping."""
 
     return [
-        QmlPropertyPlan("manifest_read", "pluginRead"),
+        QmlPropertyPlan("manifest_read", "manifestRead"),
         QmlPropertyPlan("settings_read", "settingsRead"),
         QmlPropertyPlan("settings_write", "settingsWrite"),
-        QmlPropertyPlan("widget_config_read", "widgetConfigRead"),
-        QmlPropertyPlan("widget_config_write", "widgetConfigWrite"),
         QmlPropertyPlan("connector_read", "connectorRead"),
         QmlPropertyPlan("connector_write", "connectorActions"),
-        QmlPropertyPlan("plugin_active_read", "pluginActiveRead"),
-        QmlPropertyPlan("plugin_active_write", "pluginActiveWrite"),
-        QmlPropertyPlan("widget_records_read", "widgetRead"),
-        QmlPropertyPlan("widget_visibility_read", "widget_visibility"),
-        QmlPropertyPlan("widget_visibility_write", "widgetVisibilityWrite"),
-        QmlPropertyPlan("window_records_read", "windowRead"),
-        QmlPropertyPlan("render_status_read", "renderStatusRead"),
+        QmlPropertyPlan("plugin_active_read", "pluginActive"),
+        QmlPropertyPlan("plugin_state_read", "pluginState"),
+        QmlPropertyPlan("widget_records_read", "widgetRecords"),
+        QmlPropertyPlan("widget_visibility_read", "widgetVisibility"),
+        QmlPropertyPlan("widget_config_read", "widgetConfigRead"),
+        QmlPropertyPlan("widget_config_write", "widgetConfigWrite"),
+        QmlPropertyPlan("window_records_read", "windowRecords"),
+        QmlPropertyPlan("render_status_read", "renderStatus"),
         QmlPropertyPlan("ui_chrome_model_read", "uiChrome"),
     ]

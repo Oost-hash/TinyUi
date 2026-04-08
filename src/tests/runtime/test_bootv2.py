@@ -10,7 +10,8 @@ import bootv2
 from runtimeV2.schemas.startup import StartupResult
 from runtimeV2.ui.contracts import QmlPropertyPlan
 from runtimeV2.ui.startup import UIStartupResult
-from ui_api.runtime_v2_host import build_runtime_v2_qml_properties
+from ui_api.runtime_adapters import ManifestQmlAdapter
+from ui_api.runtime_host import build_runtime_qml_properties
 
 
 @dataclass(frozen=True)
@@ -46,7 +47,7 @@ def test_bootv2_returns_zero_when_runtime_v2_is_render_ready(monkeypatch) -> Non
     monkeypatch.setattr(bootv2, "create_engine", lambda: object())
     monkeypatch.setattr(
         bootv2,
-        "start_runtime_v2_host",
+        "start_runtime_host",
         lambda **_kwargs: (SimpleNamespace(), StartupResult(ok=True)),
     )
 
@@ -74,7 +75,7 @@ def test_bootv2_returns_error_when_ui_api_host_fails(monkeypatch, capsys) -> Non
     monkeypatch.setattr(bootv2, "create_engine", lambda: object())
     monkeypatch.setattr(
         bootv2,
-        "start_runtime_v2_host",
+        "start_runtime_host",
         lambda **_kwargs: (None, StartupResult(ok=False, error_message="missing main window")),
     )
 
@@ -82,21 +83,19 @@ def test_bootv2_returns_error_when_ui_api_host_fails(monkeypatch, capsys) -> Non
     assert "missing main window" in capsys.readouterr().err
 
 
-def test_runtime_v2_host_builds_qml_properties_from_ui_schema() -> None:
+def test_runtime_host_builds_qml_properties_from_ui_schema() -> None:
     """The ui_api host should apply the runtime V2 QML property schema."""
 
     runtime = _FakeCapabilityRuntime()
     ui_result = cast(Any, SimpleNamespace(qml_property_plan=[
-        QmlPropertyPlan("manifest_read", "pluginRead"),
+        QmlPropertyPlan("manifest_read", "manifestRead"),
         QmlPropertyPlan("settings_read", "settingsRead"),
     ]))
 
-    properties = build_runtime_v2_qml_properties(cast(Any, runtime), cast(UIStartupResult, ui_result))
+    properties = build_runtime_qml_properties(cast(Any, runtime), cast(UIStartupResult, ui_result))
 
-    assert properties == {
-        "pluginRead": "manifest_read:capability",
-        "settingsRead": "settings_read:capability",
-    }
+    assert isinstance(properties["manifestRead"], ManifestQmlAdapter)
+    assert properties["settingsRead"] == "settings_read:capability"
     assert runtime.calls == [
         ("manifest_read", "ManifestRead"),
         ("settings_read", "SettingsRead"),
