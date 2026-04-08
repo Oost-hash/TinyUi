@@ -24,6 +24,7 @@
 from runtime_schema.events import (
     BootInitData,
     BootReadyData,
+    DomainStatusChangedData,
     Event,
     EventBus,
     EventCallback,
@@ -55,6 +56,7 @@ __all__ = [
     # Events
     "BootInitData",
     "BootReadyData",
+    "DomainStatusChangedData",
     "Event",
     "EventBus",
     "EventCallback",

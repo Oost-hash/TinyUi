@@ -27,9 +27,10 @@ from dataclasses import dataclass
 
 from runtime_schema import StartupResult, startup_error, startup_ok
 from runtimeV2.register_capabilities import register_runtime_capabilities
-from runtimeV2.register_domain import register_default_domains
+from runtimeV2.register_domains import register_default_domains
+from runtimeV2.register_events import register_runtime_events
+from runtimeV2.events.startup import EventsStartupResult
 from runtimeV2.runtime import RuntimeV2
-from runtimeV2.paths.startup import startup_paths
 
 
 @dataclass(frozen=True)
@@ -52,10 +53,21 @@ def startup_runtime_v2() -> StartupResult:
         register_runtime_capabilities(runtime)
         register_default_domains(runtime)
 
-        paths_result = startup_paths(runtime)
-        if not paths_result.ok:
+        startup_result = runtime.start_domain("events")
+        if not startup_result.ok:
             _runtime_v2_result = None
-            return paths_result
+            return startup_result
+
+        events = runtime.domain_result("events", EventsStartupResult)
+        register_runtime_events(events.registry)
+
+        for domain_name in runtime.domain_names():
+            if domain_name == "events":
+                continue
+            startup_result = runtime.start_domain(domain_name)
+            if not startup_result.ok:
+                _runtime_v2_result = None
+                return startup_result
 
         _runtime_v2_result = RuntimeV2StartupResult(runtime=runtime)
         return startup_ok()

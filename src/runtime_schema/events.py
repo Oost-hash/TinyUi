@@ -38,6 +38,12 @@ class EventType(Enum):
     BOOT_READY = auto()     # System ready, can open windows
     BOOT_COMPLETE = auto()  # All windows opened
     RUNTIME_SHUTDOWN = auto()
+    DOMAIN_REGISTERED = auto()
+    DOMAIN_STARTING = auto()
+    DOMAIN_READY = auto()
+    DOMAIN_ERROR = auto()
+    DOMAIN_STOPPED = auto()
+    EVENT_REGISTRY_UPDATED = auto()
     # Plugin lifecycle events
     PLUGIN_STATE_CHANGED = auto()
     PLUGIN_ACTIVATED = auto()
@@ -92,6 +98,15 @@ class RuntimeShutdownData:
     """Data for runtime shutdown requests."""
 
     reason: str = "app_quit"
+
+
+@dataclass(frozen=True)
+class DomainStatusChangedData:
+    """Data for runtime V2 domain status changes."""
+
+    domain: str
+    status: str
+    error_message: str = ""
 
 
 @dataclass(frozen=True)

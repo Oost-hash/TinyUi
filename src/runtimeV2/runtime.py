@@ -23,19 +23,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TypeVar
 
+from runtime_schema import DomainStatusChangedData, EventType, StartupResult, startup_error, startup_ok
+from runtimeV2.domains import DomainRecord, DomainRegistration, DomainStartup, DomainStatus
 
 T = TypeVar("T")
-
-
-@dataclass(frozen=True)
-class DomainRegistration:
-    """A registered runtime V2 domain."""
-
-    name: str
-    description: str = ""
 
 
 class RuntimeV2:
@@ -48,24 +41,72 @@ class RuntimeV2:
 
     def __init__(self) -> None:
         self._domains: dict[str, DomainRegistration] = {}
+        self._domain_records: dict[str, DomainRecord] = {}
         self._domain_results: dict[str, object] = {}
         self._capabilities: dict[str, object] = {}
 
-    def register_domain(self, name: str, *, description: str = "") -> None:
+    def register_domain(
+        self,
+        name: str,
+        startup: DomainStartup,
+        *,
+        description: str = "",
+    ) -> None:
         """Register a domain with the runtime orchestrator."""
 
-        self._domains[name] = DomainRegistration(name=name, description=description)
+        self._domains[name] = DomainRegistration(
+            name=name,
+            startup=startup,
+            description=description,
+        )
+        self._set_domain_status(name, DomainStatus.REGISTERED)
 
     def domain_names(self) -> list[str]:
         """Return registered domain names in registration order."""
 
         return list(self._domains)
 
+    def domain_records(self) -> list[DomainRecord]:
+        """Return domain records in registration order."""
+
+        return [self._domain_records[name] for name in self._domains]
+
+    def domain_status(self, name: str) -> DomainStatus:
+        """Return the current status for a registered domain."""
+
+        return self._domain_records[name].status
+
+    def start_registered_domains(self) -> StartupResult:
+        """Start registered domains in registration order."""
+
+        for registration in self._domains.values():
+            result = self.start_domain(registration.name)
+            if not result.ok:
+                return result
+        return startup_ok()
+
+    def start_domain(self, name: str) -> StartupResult:
+        """Start one registered domain."""
+
+        registration = self._domains.get(name)
+        if registration is None:
+            return startup_error(f"Runtime V2 domain is not registered: {name}")
+
+        self._set_domain_status(name, DomainStatus.STARTING)
+        result = registration.startup(self)
+        if result.ok:
+            self._set_domain_status(name, DomainStatus.READY)
+            return result
+
+        error_message = result.error_message or f"Runtime V2 domain failed: {name}"
+        self._set_domain_status(name, DomainStatus.ERROR, error_message=error_message)
+        return startup_error(error_message)
+
     def register_domain_result(self, name: str, result: object) -> None:
         """Store the startup result owned by a domain."""
 
         if name not in self._domains:
-            self.register_domain(name)
+            raise KeyError(f"Runtime V2 domain is not registered: {name}")
         self._domain_results[name] = result
 
     def domain_result(self, name: str, result_type: type[T]) -> T:
@@ -88,3 +129,65 @@ class RuntimeV2:
         if not isinstance(capability, capability_type):
             raise KeyError(f"Capability '{name}' is not available as {capability_type.__name__}")
         return capability
+
+    def _set_domain_status(
+        self,
+        name: str,
+        status: DomainStatus,
+        *,
+        error_message: str = "",
+    ) -> None:
+        description = self._domains.get(name, DomainRegistration(name=name, startup=_missing_startup)).description
+        self._domain_records[name] = DomainRecord(
+            name=name,
+            description=description,
+            status=status,
+            error_message=error_message,
+        )
+        self._emit_domain_status(name, status, error_message=error_message)
+
+    def _emit_domain_status(
+        self,
+        name: str,
+        status: DomainStatus,
+        *,
+        error_message: str = "",
+    ) -> None:
+        event_type = _event_type_for_domain_status(status)
+        if event_type is None:
+            return
+
+        try:
+            from runtimeV2.events.startup import EventsStartupResult
+
+            events = self.domain_result("events", EventsStartupResult)
+        except KeyError:
+            return
+
+        events.bus.emit_typed(
+            event_type,
+            DomainStatusChangedData(
+                domain=name,
+                status=status.value,
+                error_message=error_message,
+            ),
+            source="runtimeV2",
+        )
+
+
+def _missing_startup(_runtime: RuntimeV2) -> StartupResult:
+    return startup_error("Missing runtime V2 domain startup")
+
+
+def _event_type_for_domain_status(status: DomainStatus) -> EventType | None:
+    if status == DomainStatus.REGISTERED:
+        return EventType.DOMAIN_REGISTERED
+    if status == DomainStatus.STARTING:
+        return EventType.DOMAIN_STARTING
+    if status == DomainStatus.READY:
+        return EventType.DOMAIN_READY
+    if status == DomainStatus.ERROR:
+        return EventType.DOMAIN_ERROR
+    if status == DomainStatus.STOPPED:
+        return EventType.DOMAIN_STOPPED
+    return None

@@ -19,17 +19,15 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime V2 domain registration."""
+"""Capability registration for the runtime V2 events domain."""
 
 from __future__ import annotations
 
-from runtimeV2.runtime import RuntimeV2
+from runtimeV2.events.capabilities.event_read import EventRead
+from runtimeV2.events.event_registry import EventRegistry
 
 
-def register_default_domains(runtime: RuntimeV2) -> None:
-    """Register the first prototype domains."""
+def register_event_capabilities(registry: EventRegistry) -> EventRead:
+    """Create events domain capabilities."""
 
-    runtime.register_domain(
-        "paths",
-        description="Owns one-time path detection, the path registry, and path access.",
-    )
+    return EventRead(registry)
