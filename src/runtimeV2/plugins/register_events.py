@@ -19,31 +19,19 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime V2 domain registration."""
+"""Event contract registration for runtime V2 plugins."""
 
 from __future__ import annotations
 
-from runtimeV2.events.startup import startup_events
-from runtimeV2.paths.startup import startup_paths
-from runtimeV2.plugins.startup import startup_plugins
-from runtimeV2.runtime import RuntimeV2
+from runtime_schema import EventType
+from runtimeV2.events import EventRegistry
 
 
-def register_default_domains(runtime: RuntimeV2) -> None:
-    """Register the first runtime V2 domains in startup order."""
+def register_plugin_events(registry: EventRegistry) -> None:
+    """Register plugin event contracts used by the discovery slice."""
 
-    runtime.register_domain(
-        "events",
-        startup_events,
-        description="Owns the eventbus and event registry.",
-    )
-    runtime.register_domain(
-        "paths",
-        startup_paths,
-        description="Owns one-time path detection and path access.",
-    )
-    runtime.register_domain(
-        "plugins",
-        startup_plugins,
-        description="Owns plugin discovery and manifest read models.",
+    registry.register(
+        EventType.PLUGINS_DISCOVERED,
+        domain="plugins",
+        description="Plugin discovery finished and read models are available.",
     )

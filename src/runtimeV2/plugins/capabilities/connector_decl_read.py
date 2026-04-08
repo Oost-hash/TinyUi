@@ -19,31 +19,25 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime V2 domain registration."""
+"""Connector declaration read capability for runtime V2 plugins."""
 
 from __future__ import annotations
 
-from runtimeV2.events.startup import startup_events
-from runtimeV2.paths.startup import startup_paths
-from runtimeV2.plugins.startup import startup_plugins
-from runtimeV2.runtime import RuntimeV2
+from runtimeV2.plugins.registry import PluginRegistry
+from runtimeV2.plugins.schemas import ConnectorManifest
 
 
-def register_default_domains(runtime: RuntimeV2) -> None:
-    """Register the first runtime V2 domains in startup order."""
+class PluginConnectorDeclRead:
+    """Read connector declarations from plugin manifests."""
 
-    runtime.register_domain(
-        "events",
-        startup_events,
-        description="Owns the eventbus and event registry.",
-    )
-    runtime.register_domain(
-        "paths",
-        startup_paths,
-        description="Owns one-time path detection and path access.",
-    )
-    runtime.register_domain(
-        "plugins",
-        startup_plugins,
-        description="Owns plugin discovery and manifest read models.",
-    )
+    def __init__(self, registry: PluginRegistry) -> None:
+        self._registry = registry
+
+    def connector_declarations(self) -> dict[str, ConnectorManifest]:
+        """Return connector declarations by plugin id."""
+
+        return {
+            plugin_id: manifest.connector
+            for plugin_id, manifest in self._registry.all_manifests().items()
+            if manifest.connector is not None
+        }

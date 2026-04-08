@@ -49,6 +49,7 @@ class EventType(Enum):
     PLUGIN_ACTIVATED = auto()
     PLUGIN_DEACTIVATED = auto()
     PLUGIN_ERROR = auto()
+    PLUGINS_DISCOVERED = auto()
     UI_PLUGIN_SELECTED = auto()
     UI_TAB_CHANGED = auto()
     # Connector service lifecycle events

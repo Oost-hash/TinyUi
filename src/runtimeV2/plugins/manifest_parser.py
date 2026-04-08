@@ -19,31 +19,17 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime V2 domain registration."""
+"""Plugin manifest parser entry for runtime V2."""
 
 from __future__ import annotations
 
-from runtimeV2.events.startup import startup_events
-from runtimeV2.paths.startup import startup_paths
-from runtimeV2.plugins.startup import startup_plugins
-from runtimeV2.runtime import RuntimeV2
+from pathlib import Path
+
+from runtime.manifest import load_plugin_manifest as _load_plugin_manifest
+from runtimeV2.plugins.schemas import PluginManifest
 
 
-def register_default_domains(runtime: RuntimeV2) -> None:
-    """Register the first runtime V2 domains in startup order."""
+def load_plugin_manifest(path: Path, *, resource_root: Path | None = None) -> PluginManifest:
+    """Load a plugin manifest through the runtime V2 plugins domain."""
 
-    runtime.register_domain(
-        "events",
-        startup_events,
-        description="Owns the eventbus and event registry.",
-    )
-    runtime.register_domain(
-        "paths",
-        startup_paths,
-        description="Owns one-time path detection and path access.",
-    )
-    runtime.register_domain(
-        "plugins",
-        startup_plugins,
-        description="Owns plugin discovery and manifest read models.",
-    )
+    return _load_plugin_manifest(path, resource_root=resource_root)
