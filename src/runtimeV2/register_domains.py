@@ -26,6 +26,7 @@ from __future__ import annotations
 from runtimeV2.events.startup import startup_events
 from runtimeV2.host.startup import startup_host
 from runtimeV2.paths.startup import startup_paths
+from runtimeV2.persistence.startup import startup_persistence
 from runtimeV2.plugins.startup import startup_plugins
 from runtimeV2.runtime import RuntimeV2
 
@@ -52,4 +53,9 @@ def register_default_domains(runtime: RuntimeV2) -> None:
         "host",
         startup_host,
         description="Owns host shell interpretation and app identity.",
+    )
+    runtime.register_domain(
+        "persistence",
+        startup_persistence,
+        description="Owns bootstrap, config sets, settings, and widget config.",
     )
