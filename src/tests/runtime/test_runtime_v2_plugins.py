@@ -14,7 +14,6 @@ from runtimeV2.plugins.capabilities.icon import PluginIconCapability
 from runtimeV2.plugins.capabilities.state_read import PluginStateRead
 from runtimeV2.plugins.capabilities.state_write import PluginStateWrite
 from runtimeV2.connectors.poller import ConnectorServicePoller
-from runtimeV2.connectors.startup_shutdown.register_capabilities import register_connector_capabilities
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 from runtimeV2.connectors.startup_shutdown.startup import ConnectorsStartupResult
 from runtimeV2.events.capabilities.event_read import EventRead
@@ -92,12 +91,11 @@ def _manifest_read(plugin_id: str, plugin_type: str) -> ManifestRead:
 def _connectors_result(bus: EventBus) -> ConnectorsStartupResult:
     registry = ConnectorServiceRegistry()
     poller = ConnectorServicePoller(registry, bus)
-    capabilities = register_connector_capabilities(registry, poller)
     return ConnectorsStartupResult(
         registry=registry,
         poller=poller,
         declarations={},
-        capabilities=capabilities,
+        capabilities=cast(Any, SimpleNamespace()),
     )
 
 
