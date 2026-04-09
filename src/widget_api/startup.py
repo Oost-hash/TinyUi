@@ -19,55 +19,28 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Widget API domain startup."""
+"""widget_api startup entrypoints above the runtime host implementation."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
-
-from widget_api.defaults import create_default_widget_registry
-from widget_api.registry import WidgetRegistry
-
-if TYPE_CHECKING:
-    from runtime_schema import EventBus
-    from runtime_schema.startup import StartupResult
+from runtimeV2.runtime import RuntimeV2
+from runtimeV2.schemas.startup import StartupResult
+from widget_api.runtime_host import (
+    WidgetRuntimeHostResult,
+    create_widget_window_host,
+    start_widget_host,
+)
 
 
-@dataclass
-class WidgetApiStartupResult:
-    """Result of widget API domain startup."""
+def startup_widget_api(app, runtime: RuntimeV2) -> tuple[WidgetRuntimeHostResult | None, StartupResult]:
+    """Start the widget_api runtime host for runtime V2."""
 
-    registry: WidgetRegistry
-
-
-# Module-level storage for startup result
-_widget_api_result: WidgetApiStartupResult | None = None
+    return start_widget_host(app=app, runtime=runtime)
 
 
-def startup_widget_api(event_bus: EventBus | None = None) -> StartupResult:
-    """Startup function for widget_api domain.
-    
-    Creates the widget registry with default widget definitions.
-    
-    Returns:
-        StartupResult with ok=True on success.
-    """
-    from runtime_schema.startup import startup_ok, startup_error
-    global _widget_api_result
-
-    try:
-        registry = create_default_widget_registry()
-        _widget_api_result = WidgetApiStartupResult(registry=registry)
-        return startup_ok()
-    except Exception as e:
-        _widget_api_result = None
-        return startup_error(f"Widget API startup failed: {e}")
-
-
-def get_widget_api_result() -> WidgetApiStartupResult | None:
-    """Get the widget API startup result.
-    
-    Returns None if startup was not called or failed.
-    """
-    return _widget_api_result
+__all__ = [
+    "WidgetRuntimeHostResult",
+    "create_widget_window_host",
+    "start_widget_host",
+    "startup_widget_api",
+]

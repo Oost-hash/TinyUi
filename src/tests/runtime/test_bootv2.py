@@ -335,6 +335,11 @@ def test_bootv2_returns_zero_when_runtime_v2_is_render_ready(monkeypatch) -> Non
         "start_runtime_host",
         lambda **_kwargs: (SimpleNamespace(), StartupResult(ok=True)),
     )
+    monkeypatch.setattr(
+        bootv2,
+        "startup_widget_api",
+        lambda **_kwargs: (SimpleNamespace(), StartupResult(ok=True)),
+    )
 
     assert bootv2.main() == 0
     assert app.exec_called
@@ -363,9 +368,36 @@ def test_bootv2_returns_error_when_ui_api_host_fails(monkeypatch, capsys) -> Non
         "start_runtime_host",
         lambda **_kwargs: (None, StartupResult(ok=False, error_message="missing main window")),
     )
+    monkeypatch.setattr(
+        bootv2,
+        "startup_widget_api",
+        lambda **_kwargs: (SimpleNamespace(), StartupResult(ok=True)),
+    )
 
     assert bootv2.main() == 1
     assert "missing main window" in capsys.readouterr().err
+
+
+def test_bootv2_returns_error_when_widget_api_host_fails(monkeypatch, capsys) -> None:
+    """bootv2 should report widget_api host failures."""
+
+    monkeypatch.setattr(bootv2, "startup_runtime_v2", lambda: StartupResult(ok=True))
+    monkeypatch.setattr(bootv2, "get_runtime_v2_result", lambda: _FakeRuntimeResult(object()))
+    monkeypatch.setattr(bootv2, "create_application", lambda: _FakeApp())
+    monkeypatch.setattr(bootv2, "create_engine", lambda: object())
+    monkeypatch.setattr(
+        bootv2,
+        "start_runtime_host",
+        lambda **_kwargs: (SimpleNamespace(), StartupResult(ok=True)),
+    )
+    monkeypatch.setattr(
+        bootv2,
+        "startup_widget_api",
+        lambda **_kwargs: (None, StartupResult(ok=False, error_message="widget host failed")),
+    )
+
+    assert bootv2.main() == 1
+    assert "widget host failed" in capsys.readouterr().err
 
 
 def test_runtime_host_builds_qml_properties_from_ui_schema() -> None:

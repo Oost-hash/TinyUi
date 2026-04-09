@@ -35,6 +35,10 @@ from runtimeV2.plugins.startup_shutdown.startup import _initial_active_plugin_id
 
 
 def _write_plugin_module(tmp_path: Path, plugin_id: str, body: str) -> Path:
+    importlib.invalidate_caches()
+    sys.modules.pop(f"plugins.{plugin_id}.plugin", None)
+    sys.modules.pop(f"plugins.{plugin_id}", None)
+    sys.modules.pop("plugins", None)
     package_root = tmp_path / "plugins" / plugin_id
     package_root.mkdir(parents=True, exist_ok=True)
     (tmp_path / "plugins" / "__init__.py").write_text("", encoding="utf-8")

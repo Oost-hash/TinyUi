@@ -272,15 +272,26 @@ class WidgetRecordsQmlCapability(QObject):
 
     widgetsChanged = Signal()
 
-    def __init__(self, widget_host: WidgetHostCapability, parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        widget_host: WidgetHostCapability,
+        events: EventsStartupResult,
+        parent: QObject | None = None,
+    ) -> None:
         super().__init__(parent)
         self._widget_host = widget_host
+        events.bus.on(EventType.WIDGET_RUNTIME_UPDATED, self._on_widgets_changed)
 
     @Property(_QVARIANT_LIST, notify=widgetsChanged)
     def widgets(self) -> list[dict[str, object]]:
         """Return widget records as a QML model."""
 
         return self._widget_host.panel_records()
+
+    def _on_widgets_changed(self, _event: object) -> None:
+        """Mirror widget runtime refreshes into QML."""
+
+        self.widgetsChanged.emit()
 
 
 class WindowRecordsQmlCapability(QObject):
@@ -308,11 +319,13 @@ class WidgetVisibilityQmlCapability(QObject):
         self,
         visibility_read: WidgetVisibilityRead,
         visibility_write: WidgetVisibilityWrite,
+        events: EventsStartupResult,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._visibility_read = visibility_read
         self._visibility_write = visibility_write
+        events.bus.on(EventType.WIDGET_VISIBILITY_CHANGED, self._on_visibility_changed)
 
     @Property(bool, notify=globalVisibleChanged)
     def globalVisible(self) -> bool:
@@ -334,6 +347,11 @@ class WidgetVisibilityQmlCapability(QObject):
         """Return whether one widget is enabled."""
 
         return self._visibility_read.is_widget_enabled(overlay_id, widget_id)
+
+    def _on_visibility_changed(self, _event: object) -> None:
+        """Mirror widget visibility changes into QML."""
+
+        self.globalVisibleChanged.emit()
 
 
 class PluginActiveQmlCapability(QObject):

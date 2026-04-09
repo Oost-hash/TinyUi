@@ -43,12 +43,21 @@ Rectangle {
     // State
     property string selectedWidgetId: ""
     property string selectedOverlayId: ""
+
+    function selectedWidgetRecord() {
+        if (!selectedWidgetId || !widgetRecords) return null
+        var widgets = widgetRecords.widgets
+        for (var i = 0; i < widgets.length; i++) {
+            if (widgets[i].widgetId === selectedWidgetId) {
+                return widgets[i]
+            }
+        }
+        return null
+    }
     
     // Helper to get enabled state for a widget
-    function isWidgetEnabled(widgetId) {
-        if (!widgetConfigRead) return false
-        var config = widgetConfigRead.getWidget(widgetId)
-        return config ? config.enabled : false
+    function isWidgetEnabled(widget) {
+        return widget ? !!widget.enabled : false
     }
     
     // Sync overlay ID and ensure widgets are visible when selection changes
@@ -168,7 +177,7 @@ Rectangle {
                     anchors.right: parent.right
                     anchors.rightMargin: 8
                     anchors.verticalCenter: parent.verticalCenter
-                    checked: widgetTab.isWidgetEnabled(widgetItem.widgetId)
+                    checked: widgetTab.isWidgetEnabled(modelData)
                     enabled: widgetTab.widgetConfigWrite !== null && modelData.overlayId !== undefined
 
                     onClicked: {
@@ -251,7 +260,7 @@ Rectangle {
                     Label { text: "X:"; color: "#ffffff" }
                     SpinBox {
                         id: posX
-                        value: widgetTab.widgetConfigRead?.getWidget(widgetTab.selectedWidgetId)?.position?.x ?? 0
+                        value: widgetTab.selectedWidgetRecord()?.position?.x ?? 0
                         enabled: widgetTab.selectedOverlayId !== ""
                         onValueModified: {
                             if (widgetTab.widgetConfigWrite && widgetTab.selectedOverlayId !== "") {
@@ -268,7 +277,7 @@ Rectangle {
                     Label { text: "Y:"; color: "#ffffff" }
                     SpinBox {
                         id: posY
-                        value: widgetTab.widgetConfigRead?.getWidget(widgetTab.selectedWidgetId)?.position?.y ?? 0
+                        value: widgetTab.selectedWidgetRecord()?.position?.y ?? 0
                         enabled: widgetTab.selectedOverlayId !== ""
                         onValueModified: {
                             if (widgetTab.widgetConfigWrite && widgetTab.selectedOverlayId !== "") {

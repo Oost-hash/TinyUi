@@ -65,6 +65,7 @@ class WidgetWindowHostController:
             EventType.CONNECTOR_SERVICE_REGISTERED,
             EventType.CONNECTOR_SERVICE_UNREGISTERED,
             EventType.CONNECTOR_SERVICE_UPDATED,
+            EventType.WIDGET_VISIBILITY_CHANGED,
             EventType.WIDGET_RUNTIME_UPDATED,
         ):
             self._events.bus.on(event_type, self._on_runtime_change)

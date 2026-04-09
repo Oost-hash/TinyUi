@@ -28,6 +28,7 @@ import sys
 from runtimeV2.startup import get_runtime_v2_result, startup_runtime_v2
 from ui_api.qt import create_application, create_engine
 from ui_api.runtime_host import start_runtime_host
+from widget_api.startup import startup_widget_api
 from ui_api.windowing import win_window  # eager import: registers QML singletons before engine
 
 
@@ -53,6 +54,14 @@ def main() -> int:
     )
     if not ui_api_result.ok:
         print(ui_api_result.error_message, file=sys.stderr)
+        return 1
+
+    _widget_host_result, widget_api_result = startup_widget_api(
+        app=app,
+        runtime=runtime_result.runtime,
+    )
+    if not widget_api_result.ok:
+        print(widget_api_result.error_message, file=sys.stderr)
         return 1
 
     return app.exec()

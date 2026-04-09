@@ -216,7 +216,10 @@ def _adapt_qml_property(
         if host_registry is None:
             host_registry = create_shared_runtime_host_registry(runtime)
             register_ui_runtime_host(host_registry)
-        return WidgetRecordsQmlCapability(host_registry.capability("widget_host", WidgetHostCapability))
+        return WidgetRecordsQmlCapability(
+            host_registry.capability("widget_host", WidgetHostCapability),
+            runtime.domain_result("events", EventsStartupResult),
+        )
     if capability_name == "window_records_read":
         if host_registry is None:
             host_registry = create_shared_runtime_host_registry(runtime)
@@ -226,6 +229,7 @@ def _adapt_qml_property(
         return WidgetVisibilityQmlCapability(
             cast(WidgetVisibilityRead, capability),
             runtime.capability("widget_visibility_write", WidgetVisibilityWrite),
+            runtime.domain_result("events", EventsStartupResult),
         )
     if capability_name == "plugin_active_read":
         globals_capability = runtime.capability("globals", RuntimeGlobals)

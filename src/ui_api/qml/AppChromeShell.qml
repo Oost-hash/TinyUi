@@ -225,8 +225,6 @@ Item {
                                 root.menuOpen = false
                                 if (root.appActions)
                                     root.appActions.trigger(menuDelegate.modelData.action)
-                                else if (menuDelegate.modelData.action === "close" && root.hostWindow)
-                                    root.hostWindow.close()
                             }
                         }
                         }
@@ -287,8 +285,8 @@ Item {
                                 root.windowController.minimize()
                             } else if (titleButtonDelegate.modelData.action === "maximize" && root.windowController) {
                                 root.windowController.toggleMaximize()
-                            } else if (titleButtonDelegate.modelData.action === "close" && root.hostWindow) {
-                                root.hostWindow.close()
+                            } else if (titleButtonDelegate.modelData.action === "close" && root.appActions) {
+                                root.appActions.trigger("close")
                             }
                         }
                     }

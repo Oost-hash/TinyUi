@@ -193,6 +193,48 @@ def test_widget_runtime_host_refreshes_on_connector_events(monkeypatch) -> None:
     assert cast(_FakePoller, runtime.domain_result("widgets", WidgetsStartupResult).poller).refresh_calls == 1
 
 
+def test_widget_runtime_host_refreshes_on_widget_visibility_events(monkeypatch) -> None:
+    """Widget visibility changes should refresh widgets through the V2 widgets poller."""
+
+    records = [
+        WidgetRecord(
+            overlay_id="demo_overlay",
+            widget_id="speed",
+            widget_type="gauge",
+            label="Speed",
+            source="car.speed",
+            bindings={"source": "car.speed"},
+            status=WidgetStatus.READY,
+            connector_ids=("iracing",),
+        )
+    ]
+    app = _FakeApp()
+    runtime = _FakeRuntime(records, _FakeWidgetConfigWrite())
+    sync_calls: list[list[WidgetRecord]] = []
+
+    class _FakeHost:
+        def __init__(self, _widget_host, _widget_config_write) -> None:
+            pass
+
+        def sync_records(self, runtime_records) -> None:
+            sync_calls.append(list(runtime_records))
+
+        def close_all(self) -> None:
+            return None
+
+    monkeypatch.setattr("widget_api.runtime_host.WidgetWindowHost", _FakeHost)
+
+    create_widget_window_host(app, cast(Any, runtime))
+    runtime.domain_result("events", EventsStartupResult).bus.emit_typed(
+        EventType.WIDGET_VISIBILITY_CHANGED,
+        data=None,
+        source="widgets",
+    )
+
+    assert sync_calls == [records, records]
+    assert cast(_FakePoller, runtime.domain_result("widgets", WidgetsStartupResult).poller).refresh_calls == 1
+
+
 def test_start_widget_host_returns_typed_success(monkeypatch) -> None:
     """Widget runtime host startup should return a typed success result."""
 
