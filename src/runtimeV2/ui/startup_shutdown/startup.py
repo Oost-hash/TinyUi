@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.events.contracts import Event, EventType
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead
@@ -74,10 +75,11 @@ def startup_ui(runtime: RuntimeV2) -> StartupResult:
             main_window_read=main_window_read,
             records=records,
         )
+        globals_capability = runtime.capability("globals", RuntimeGlobals)
         chrome_model = build_ui_chrome_model(
             main_window_read=main_window_read,
             ui_manifest_read=runtime.capability("manifest_ui_read", ManifestUiRead),
-            active_read=runtime.capability("plugin_active_read", PluginActiveRead),
+            active_read=globals_capability.read_global("active_plugin", PluginActiveRead),
         )
         panel_state = UIPanelStateStore(events)
         qml_property_plan = register_qml_property_plan()

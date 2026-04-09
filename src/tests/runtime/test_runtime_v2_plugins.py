@@ -5,7 +5,8 @@ from __future__ import annotations
 import importlib
 import sys
 from pathlib import Path
-from typing import cast
+from types import SimpleNamespace
+from typing import Any, cast
 
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
@@ -30,6 +31,7 @@ from runtimeV2.plugins.lifecycle import PluginLifecycleStore
 from runtimeV2.plugins.registry import PluginRegistry
 from runtimeV2.plugins.schemas.manifest import PluginManifest
 from runtimeV2.plugins.schemas.lifecycle import PluginErrorData, PluginState
+from runtimeV2.plugins.startup_shutdown.startup import _initial_active_plugin_id
 
 
 def _write_plugin_module(tmp_path: Path, plugin_id: str, body: str) -> Path:
@@ -291,4 +293,65 @@ def test_plugin_icon_capability_resolves_safe_file_urls(tmp_path) -> None:
 
     assert capability.get_icon_url("demo_plugin") == icon_path.as_uri()
     assert capability.get_icon_url("missing_plugin") == ""
+
+
+def test_initial_active_plugin_picks_first_enabled_plugin_or_overlay() -> None:
+    """Boot policy should pick the first enabled plugin or overlay from manifest order."""
+
+    registry = ManifestRegistry()
+    registry.register_manifest(
+        manifest=PluginManifest(
+            plugin_id="tinyui",
+            plugin_type="host",
+            version="1.0.0",
+            author="Test",
+            description="Host",
+            icon="",
+            requires=[],
+        ),
+        manifest_path=Path("tinyui/manifest.toml"),
+        resource_root=Path("tinyui"),
+        source="host",
+    )
+    registry.register_manifest(
+        manifest=PluginManifest(
+            plugin_id="demo_overlay",
+            plugin_type="overlay",
+            version="1.0.0",
+            author="Test",
+            description="Overlay",
+            icon="",
+            requires=[],
+        ),
+        manifest_path=Path("demo_overlay/manifest.toml"),
+        resource_root=Path("demo_overlay"),
+        source="source",
+    )
+    registry.register_manifest(
+        manifest=PluginManifest(
+            plugin_id="dummy_plugin",
+            plugin_type="plugin",
+            version="1.0.0",
+            author="Test",
+            description="Plugin",
+            icon="",
+            requires=[],
+        ),
+        manifest_path=Path("dummy_plugin/manifest.toml"),
+        resource_root=Path("dummy_plugin"),
+        source="source",
+    )
+
+    settings = SimpleNamespace(
+        get=lambda namespace, key: {
+            ("demo_overlay", "enabled"): True,
+            ("dummy_plugin", "enabled"): True,
+        }.get((namespace, key)),
+    )
+    persistence = cast(Any, SimpleNamespace(settings=settings))
+
+    assert _initial_active_plugin_id(
+        manifest_read=ManifestRead(registry),
+        persistence=persistence,
+    ) == "demo_overlay"
 

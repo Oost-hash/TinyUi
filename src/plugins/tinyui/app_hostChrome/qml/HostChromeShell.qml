@@ -441,21 +441,19 @@ Item {
         }
 
         // Plugin picker
-        Item {
+        Rectangle {
+            id: pluginPickerButton
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            width: pluginNameRow.width + 20
+            width: pluginNameRow.implicitWidth + 20
             visible: root.statusActiveLabel !== ""
-
-            Rectangle {
-                anchors.fill: parent
-                color: root.hostWindow && root.hostWindow.showPluginPanel
-                       ? (root.theme ? root.theme.surfaceAlt : "#2f343e")
-                       : pluginNameHover.containsMouse 
-                         ? (root.theme ? root.theme.surfaceFloating : "#20242b") 
-                         : "transparent"
-            }
+            z: 25
+            color: root.hostWindow && root.hostWindow.showPluginPanel
+                   ? (root.theme ? root.theme.surfaceAlt : "#2f343e")
+                   : pluginNameHover.containsMouse
+                     ? (root.theme ? root.theme.surfaceFloating : "#20242b")
+                     : "transparent"
             
             Rectangle { 
                 visible: root.hostWindow && root.hostWindow.showPluginPanel

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
+from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
+from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.register_capabilities import register_runtime_capabilities
 from runtimeV2.register_domains import register_default_domains
 from runtimeV2.register_globals import register_runtime_globals
@@ -43,8 +45,8 @@ def test_runtime_v2_has_no_separate_plugin_lifecycle_domain() -> None:
     assert "plugins_lifecycle" not in runtime.domain_names()
 
 
-def test_startup_runtime_v2_exposes_shutdown_global_and_plugin_lifecycle_caps() -> None:
-    """A booted runtime V2 should expose shutdown and plugin lifecycle capabilities."""
+def test_startup_runtime_v2_exposes_shutdown_and_active_plugin_globals() -> None:
+    """A booted runtime V2 should expose runtime and plugin globals through RuntimeGlobals."""
 
     result = startup_runtime_v2()
 
@@ -57,6 +59,14 @@ def test_startup_runtime_v2_exposes_shutdown_global_and_plugin_lifecycle_caps() 
     globals_capability = runtime.capability("globals", RuntimeGlobals)
 
     assert globals_capability.read_global("shutdown", RuntimeShutdown) is runtime.capability("shutdown", RuntimeShutdown)
+    assert globals_capability.read_global("active_plugin", PluginActiveRead) is runtime.capability(
+        "plugin_active_read",
+        PluginActiveRead,
+    )
+    assert globals_capability.write_global("active_plugin", PluginActiveWrite) is runtime.capability(
+        "plugin_active_write",
+        PluginActiveWrite,
+    )
     assert runtime.capability("plugin_active_read", object) is not None
     assert runtime.capability("plugin_state_read", object) is not None
     assert runtime.domain_names() == [

@@ -37,6 +37,7 @@ from runtimeV2.plugins.discovery import discover_plugins
 from runtimeV2.plugins.lifecycle import PluginLifecycleStore
 from runtimeV2.plugins.startup_shutdown.register_capabilities import PluginCapabilities, register_plugin_capabilities
 from runtimeV2.plugins.startup_shutdown.register_events import register_plugin_events
+from runtimeV2.plugins.startup_shutdown.register_globals import register_plugin_globals
 from runtimeV2.plugins.startup_shutdown.register_lifecycle_capabilities import (
     PluginLifecycleCapabilities,
     register_plugin_lifecycle_capabilities,
@@ -108,6 +109,13 @@ def startup_plugins_lifecycle(runtime: RuntimeV2) -> StartupResult:
         runtime.register_capability("plugin_active_write", lifecycle_capabilities.active_write)
         runtime.register_capability("plugin_state_read", lifecycle_capabilities.state_read)
         runtime.register_capability("plugin_state_write", lifecycle_capabilities.state_write)
+        register_plugin_globals(runtime)
+        initial_active_plugin = _initial_active_plugin_id(
+            manifest_read=runtime.capability("manifest_read", ManifestRead),
+            persistence=persistence,
+        )
+        if initial_active_plugin is not None:
+            lifecycle.set_active_plugin(initial_active_plugin)
         runtime.register_domain_result("plugins", PluginsStartupResult(
             registry=plugins.registry,
             capabilities=plugins.capabilities,
@@ -117,4 +125,20 @@ def startup_plugins_lifecycle(runtime: RuntimeV2) -> StartupResult:
         return startup_ok()
     except Exception as exc:
         return startup_error(f"Plugin lifecycle startup failed: {exc}")
+
+
+def _initial_active_plugin_id(
+    *,
+    manifest_read: ManifestRead,
+    persistence: PersistenceStartupResult,
+) -> str | None:
+    """Return the first enabled plugin or overlay to activate at boot."""
+
+    for plugin_id, manifest in manifest_read.all_manifests().items():
+        if manifest.plugin_type not in {"plugin", "overlay"}:
+            continue
+        if persistence.settings.get(plugin_id, "enabled") is False:
+            continue
+        return plugin_id
+    return None
 

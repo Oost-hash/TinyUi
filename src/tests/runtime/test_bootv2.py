@@ -15,6 +15,7 @@ from shared_runtime_host.capabilities.ui_api import (
     SettingsQmlCapability,
 )
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
+from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.events.capabilities.event_read import EventRead
 from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry
@@ -267,6 +268,14 @@ class _FakeUiRuntime:
         self._settings_write = _FakeSettingsWrite(self)
         self._panel_state_read = _FakePanelStateRead(self)
         self._panel_state_write = _FakePanelStateWrite(self)
+        self._globals = SimpleNamespace(
+            read_global=lambda name, _capability_type: self._plugin_active_read
+            if name == "active_plugin"
+            else (_FakeShutdown(self._events) if name == "shutdown" else None),
+            write_global=lambda name, _capability_type: self._plugin_active_write
+            if name == "active_plugin"
+            else (_FakeShutdown(self._events) if name == "shutdown" else None),
+        )
 
     def domain_result(self, name: str, _result_type: type[Any]) -> Any:
         if name == "ui":
@@ -278,6 +287,8 @@ class _FakeUiRuntime:
     def capability(self, name: str, _capability_type: type[Any]) -> Any:
         if name == "main_window_read":
             return self._main_window
+        if name == "globals":
+            return self._globals
         if name == "shutdown":
             return self.shutdown
         if name == "widget_records_read":
@@ -374,6 +385,7 @@ def test_runtime_host_builds_qml_properties_from_ui_schema() -> None:
     assert isinstance(properties["connectorActions"], ConnectorWriteQmlCapability)
     assert runtime.calls == [
         ("manifest_read", "ManifestRead"),
+        ("plugin_icon", "PluginIconCapability"),
         ("settings_read", "SettingsRead"),
         ("connector_write", "ConnectorWrite"),
     ]
@@ -626,6 +638,14 @@ def test_ui_startup_emits_window_record_change_before_ready(monkeypatch) -> None
                 "main_window_read": _FakeUiRuntime()._main_window,
                 "manifest_ui_read": ManifestUiRead(ManifestRegistry()),
                 "plugin_active_read": cast(Any, SimpleNamespace(get_active_plugin=lambda: "")),
+                "globals": cast(
+                    Any,
+                    SimpleNamespace(
+                        read_global=lambda name, _capability_type: self.capabilities["plugin_active_read"]
+                        if name == "active_plugin"
+                        else None,
+                    ),
+                ),
             }
             self.result: object | None = None
 

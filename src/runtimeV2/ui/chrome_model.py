@@ -68,7 +68,7 @@ def build_ui_chrome_model(
         ],
         tabs=tabs,
         active_plugin_id=active_plugin_id,
-        status_active_label=active_plugin_id,
+        status_active_label=active_plugin_id or "Plugins",
     )
 
 

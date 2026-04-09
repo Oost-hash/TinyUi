@@ -12,6 +12,8 @@ from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.connectors.contracts import ConnectorInspectionSnapshot
+from runtimeV2.events.contracts import EventType
+from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.persistence.capabilities.settings_read import SettingsRead
 from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
@@ -19,6 +21,7 @@ from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRe
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
+from runtimeV2.plugins.capabilities.icon import PluginIconCapability
 from runtimeV2.plugins.capabilities.state_read import PluginStateRead
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
 from runtimeV2.ui.capabilities.panel_state_read import PanelStateRead
@@ -36,9 +39,15 @@ class ManifestQmlCapability(QObject):
 
     pluginsChanged = Signal()
 
-    def __init__(self, manifest_read: ManifestRead, parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        manifest_read: ManifestRead,
+        plugin_icon: PluginIconCapability,
+        parent: QObject | None = None,
+    ) -> None:
         super().__init__(parent)
         self._manifest_read = manifest_read
+        self._plugin_icon = plugin_icon
 
     @Property(_QVARIANT_LIST, notify=pluginsChanged)
     def plugins(self) -> list[dict[str, object]]:
@@ -51,7 +60,7 @@ class ManifestQmlCapability(QObject):
                 "version": manifest.version,
                 "author": manifest.author,
                 "description": manifest.description,
-                "iconUrl": manifest.icon,
+                "iconUrl": self._plugin_icon.get_icon_url(manifest.plugin_id),
                 "requires": manifest.requires,
                 "windows": [window.id for window in manifest.ui.windows] if manifest.ui is not None else [],
                 "windowCount": len(manifest.ui.windows) if manifest.ui is not None else 0,
@@ -336,11 +345,14 @@ class PluginActiveQmlCapability(QObject):
         self,
         active_read: PluginActiveRead,
         active_write: PluginActiveWrite,
+        events: EventsStartupResult,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._active_read = active_read
         self._active_write = active_write
+        events.bus.on(EventType.PLUGIN_ACTIVATED, self._on_plugin_activity_changed)
+        events.bus.on(EventType.PLUGIN_DEACTIVATED, self._on_plugin_activity_changed)
 
     @Slot(str, result=bool)
     def setActivePlugin(self, plugin_id: str) -> bool:
@@ -357,16 +369,31 @@ class PluginActiveQmlCapability(QObject):
 
         return self._active_read.get_active_plugin() or ""
 
+    def _on_plugin_activity_changed(self, _event: object) -> None:
+        """Mirror runtime active plugin changes into QML."""
+
+        self.activePluginChanged.emit(self._active_read.get_active_plugin() or "")
+
 
 class PluginStateQmlCapability(QObject):
     """Expose plugin lifecycle state reads to QML."""
 
     stateDataChanged = Signal()
 
-    def __init__(self, state_read: PluginStateRead, plugin_ids: list[str], parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        state_read: PluginStateRead,
+        plugin_ids: list[str],
+        events: EventsStartupResult,
+        parent: QObject | None = None,
+    ) -> None:
         super().__init__(parent)
         self._state_read = state_read
         self._plugin_ids = plugin_ids
+        events.bus.on(EventType.PLUGIN_STATE_CHANGED, self._on_state_changed)
+        events.bus.on(EventType.PLUGIN_ERROR, self._on_state_changed)
+        events.bus.on(EventType.PLUGIN_ACTIVATED, self._on_state_changed)
+        events.bus.on(EventType.PLUGIN_DEACTIVATED, self._on_state_changed)
 
     @Property(_QVARIANT_MAP, notify=stateDataChanged)
     def states(self) -> dict[str, str]:
@@ -395,6 +422,11 @@ class PluginStateQmlCapability(QObject):
 
         return self._state_read.get_plugin_state(plugin_id).name.lower()
 
+    def _on_state_changed(self, _event: object) -> None:
+        """Mirror runtime state changes into QML."""
+
+        self.stateDataChanged.emit()
+
 
 class PanelStateQmlCapability(QObject):
     """Expose runtime-owned UI panel state to QML."""
@@ -405,11 +437,13 @@ class PanelStateQmlCapability(QObject):
         self,
         panel_state_read: PanelStateRead,
         panel_state_write: PanelStateWrite,
+        events: EventsStartupResult,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._panel_state_read = panel_state_read
         self._panel_state_write = panel_state_write
+        events.bus.on(EventType.UI_PANEL_VISIBILITY_CHANGED, self._on_panel_visibility_changed)
 
     @Property(bool, notify=visibleChanged)
     def visible(self) -> bool:
@@ -434,6 +468,11 @@ class PanelStateQmlCapability(QObject):
         if changed:
             self.visibleChanged.emit()
         return changed
+
+    def _on_panel_visibility_changed(self, _event: object) -> None:
+        """Mirror runtime panel visibility changes into QML."""
+
+        self.visibleChanged.emit()
 
 
 class UIChromeQmlCapability(QObject):
