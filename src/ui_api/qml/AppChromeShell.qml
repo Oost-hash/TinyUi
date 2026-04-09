@@ -223,7 +223,11 @@ Item {
                                 hoverEnabled: true
                             onClicked: {
                                 root.menuOpen = false
-                                if (root.appActions)
+                                if (menuDelegate.modelData.action === "close" && root.hostWindow && root.hostWindow.isMainWindow && root.appActions)
+                                    root.appActions.trigger(menuDelegate.modelData.action)
+                                else if (menuDelegate.modelData.action === "close" && root.hostWindow)
+                                    root.hostWindow.close()
+                                else if (root.appActions)
                                     root.appActions.trigger(menuDelegate.modelData.action)
                             }
                         }
@@ -285,8 +289,10 @@ Item {
                                 root.windowController.minimize()
                             } else if (titleButtonDelegate.modelData.action === "maximize" && root.windowController) {
                                 root.windowController.toggleMaximize()
-                            } else if (titleButtonDelegate.modelData.action === "close" && root.appActions) {
+                            } else if (titleButtonDelegate.modelData.action === "close" && root.hostWindow && root.hostWindow.isMainWindow && root.appActions) {
                                 root.appActions.trigger("close")
+                            } else if (titleButtonDelegate.modelData.action === "close" && root.hostWindow) {
+                                root.hostWindow.close()
                             }
                         }
                     }

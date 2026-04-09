@@ -537,6 +537,59 @@ def test_runtime_host_shutdown_closes_secondary_windows(monkeypatch) -> None:
     assert close_calls == ["tinyui.main", "devtools.main"]
 
 
+def test_runtime_host_secondary_window_close_does_not_request_runtime_shutdown(monkeypatch) -> None:
+    """Closing a secondary host window should not trigger runtime shutdown."""
+
+    app = _FakeApp()
+    runtime = _FakeUiRuntime()
+    opened_windows: dict[str, _FakeWindow] = {}
+
+    class _FakeWindow:
+        def __init__(self, window_id: str) -> None:
+            self.window_id = window_id
+            self.destroyed = _FakeSignal()
+            self.closed = False
+            self.properties: dict[str, object] = {}
+
+        def close(self) -> None:
+            self.closed = True
+
+        def raise_(self) -> None:
+            return None
+
+        def requestActivate(self) -> None:
+            return None
+
+        def setProperty(self, key: str, value: object) -> None:
+            self.properties[key] = value
+
+    def _open_window(manifest, *_args, **kwargs):
+        window = _FakeWindow(manifest.id)
+        window.properties.update(kwargs)
+        opened_windows[manifest.id] = window
+        return SimpleNamespace(qml_window=window, keepalive=())
+
+    monkeypatch.setattr("ui_api.runtime_host.open_window", _open_window)
+
+    result, startup_result = start_runtime_host(
+        app=app,
+        engine=object(),
+        runtime=cast(Any, runtime),
+    )
+
+    assert startup_result.ok
+    assert result is not None
+
+    result.actions.trigger("open:devtools.main")
+
+    assert opened_windows["tinyui.main"].properties["isMainWindow"] is True
+    assert opened_windows["devtools.main"].properties["isMainWindow"] is False
+
+    opened_windows["devtools.main"].close()
+
+    assert runtime.shutdown.calls == []
+
+
 def test_runtime_host_widget_visibility_toggle_uses_runtime_capability(monkeypatch) -> None:
     """The ui_api host should toggle widget visibility through runtime-owned capabilities."""
 

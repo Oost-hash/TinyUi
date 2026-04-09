@@ -66,6 +66,7 @@ def open_window(
     
     window.setProperty("appActions", actions)
     window.setProperty("theme", theme)
+    window.setProperty("windowId", manifest.id)
     window.setProperty("windowTitle", manifest.title)
     window.setProperty("showTabBar", manifest.chrome.show_tab_bar)
     window.setProperty("showStatusBar", manifest.chrome.show_status_bar)

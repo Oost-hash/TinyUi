@@ -300,6 +300,7 @@ def start_runtime_host(
             app=app,
             actions=actions,
             theme=theme,
+            isMainWindow=True,
             **qml_properties,
         )
         open_handles: dict[str, WindowHandle] = {main_window.id: handle}
@@ -329,6 +330,7 @@ def start_runtime_host(
                 app=app,
                 actions=actions,
                 theme=theme,
+                isMainWindow=False,
                 **qml_properties,
             )
             open_handles[window_id] = window_handle

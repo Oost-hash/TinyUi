@@ -45,6 +45,8 @@ Window {
     property var renderStatus: null
     property var connectorRead: null
     property var connectorActions: null
+    property string windowId: ""
+    property bool isMainWindow: false
     property string windowTitle: ""
     property var menuItems: []
     property var pluginMenuItems: []
