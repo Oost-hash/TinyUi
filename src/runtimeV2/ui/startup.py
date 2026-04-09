@@ -44,6 +44,7 @@ from runtimeV2.ui.readiness import determine_render_status
 from runtimeV2.ui.register_capabilities import UICapabilities, register_ui_capabilities
 from runtimeV2.ui.register_events import register_ui_events
 from runtimeV2.ui.register_qml_properties import register_qml_property_plan
+from runtimeV2.ui.panel_state import UIPanelStateStore
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 
 
@@ -78,15 +79,19 @@ def startup_ui(runtime: RuntimeV2) -> StartupResult:
             ui_manifest_read=runtime.capability("manifest_ui_read", ManifestUiRead),
             active_read=runtime.capability("plugin_active_read", PluginActiveRead),
         )
+        panel_state = UIPanelStateStore(events)
         qml_property_plan = register_qml_property_plan()
         capabilities = register_ui_capabilities(
             records=records,
             main_window_id=main_window_read.main_window().id,
+            panel_state=panel_state,
             render_status=render_status,
             chrome_model=chrome_model,
         )
         runtime.register_capability("window_records_read", capabilities.window_records_read)
         runtime.register_capability("window_actions_write", capabilities.window_actions_write)
+        runtime.register_capability("panel_state_read", capabilities.panel_state_read)
+        runtime.register_capability("panel_state_write", capabilities.panel_state_write)
         runtime.register_capability("render_status_read", capabilities.render_status_read)
         runtime.register_capability("ui_chrome_model_read", capabilities.chrome_model_read)
         runtime.register_domain_result("ui", UIStartupResult(

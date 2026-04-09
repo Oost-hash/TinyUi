@@ -47,6 +47,8 @@ from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
 from runtimeV2.plugins.capabilities.state_read import PluginStateRead
 from runtimeV2.plugins.capabilities.state_write import PluginStateWrite
 from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
+from runtimeV2.ui.capabilities.panel_state_read import PanelStateRead
+from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
@@ -57,6 +59,7 @@ from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibili
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from shared_runtime_host.capabilities.ui_api import (
     ManifestQmlCapability,
+    PanelStateQmlCapability,
     PluginActiveQmlCapability,
     PluginStateQmlCapability,
     UIActionsCapability,
@@ -87,6 +90,7 @@ _QML_CAPABILITY_TYPES: dict[str, type[Any]] = {
     "widget_visibility_read": WidgetVisibilityRead,
     "widget_visibility_write": WidgetVisibilityWrite,
     "window_records_read": WindowRecordsRead,
+    "panel_state_read": PanelStateRead,
     "window_actions_write": WindowActionsWrite,
     "render_status_read": RenderStatusRead,
     "ui_chrome_model_read": UIChromeModelRead,
@@ -166,6 +170,11 @@ def _adapt_qml_property(
         return PluginStateQmlCapability(
             cast(PluginStateRead, capability),
             discovery.plugin_ids(),
+        )
+    if capability_name == "panel_state_read":
+        return PanelStateQmlCapability(
+            cast(PanelStateRead, capability),
+            runtime.capability("panel_state_write", PanelStateWrite),
         )
     return capability
 

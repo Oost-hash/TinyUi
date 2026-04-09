@@ -10,6 +10,7 @@ from runtimeV2.persistence.capabilities.config_set_write import ConfigSetWrite
 from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
 from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
+from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
@@ -67,6 +68,7 @@ def register_ui_actions_host(registry: SharedRuntimeHostRegistry) -> None:
             config_set_read=runtime.capability("config_set_read", ConfigSetRead),
             config_set_write=runtime.capability("config_set_write", ConfigSetWrite),
             settings_write=runtime.capability("settings_write", SettingsWrite),
+            panel_state_write=runtime.capability("panel_state_write", PanelStateWrite),
             shutdown=runtime.capability("shutdown", RuntimeShutdown),
         ),
     )

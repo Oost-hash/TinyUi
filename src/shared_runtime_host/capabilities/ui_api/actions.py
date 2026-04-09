@@ -12,6 +12,7 @@ from runtimeV2.persistence.capabilities.config_set_write import ConfigSetWrite
 from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
 from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
+from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
 from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
@@ -31,6 +32,7 @@ class UIActionsCapability:
         config_set_read: ConfigSetRead,
         config_set_write: ConfigSetWrite,
         settings_write: SettingsWrite,
+        panel_state_write: PanelStateWrite,
         shutdown: RuntimeShutdown,
     ) -> None:
         self._window_actions = window_actions
@@ -41,6 +43,7 @@ class UIActionsCapability:
         self._config_set_read = config_set_read
         self._config_set_write = config_set_write
         self._settings_write = settings_write
+        self._panel_state_write = panel_state_write
         self._shutdown = shutdown
 
     def register(
@@ -52,6 +55,7 @@ class UIActionsCapability:
         """Register runtime-backed action handlers into ui_api."""
 
         actions.register("close", self._request_close)
+        actions.register("pluginPanel.toggle", self._toggle_plugin_panel)
         actions.register("widgetVisibility.toggle", self._toggle_widget_visibility)
         actions.register("settings.saveAll", self._save_all_settings)
 
@@ -75,6 +79,9 @@ class UIActionsCapability:
     def _toggle_widget_visibility(self) -> None:
         current = self._widget_visibility_read.global_visible()
         self._widget_visibility_write.set_global_visible(not current)
+
+    def _toggle_plugin_panel(self) -> None:
+        self._panel_state_write.toggle_plugin_panel()
 
     def _make_activate_plugin_handler(self, plugin_id: str) -> Callable[[], None]:
         def handler() -> None:

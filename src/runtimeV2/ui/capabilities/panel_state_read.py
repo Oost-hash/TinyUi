@@ -19,30 +19,20 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Event registration for runtime V2 UI."""
+"""Read capability for runtime V2 UI panel state."""
 
 from __future__ import annotations
 
-from runtimeV2.events.contracts import EventType
-from runtimeV2.events import EventRegistry
+from runtimeV2.ui.panel_state import UIPanelStateStore
 
 
-def register_ui_events(registry: EventRegistry) -> None:
-    """Register UI event contracts."""
+class PanelStateRead:
+    """Read runtime-owned UI panel visibility."""
 
-    registry.register(EventType.UI_READY, domain="ui", description="UI render readiness became ready.")
-    registry.register(
-        EventType.UI_RENDER_BLOCKED,
-        domain="ui",
-        description="UI render readiness is blocked and reports a blocker.",
-    )
-    registry.register(
-        EventType.UI_WINDOW_RECORDS_CHANGED,
-        domain="ui",
-        description="Projected UI window records changed.",
-    )
-    registry.register(
-        EventType.UI_PANEL_VISIBILITY_CHANGED,
-        domain="ui",
-        description="Runtime-owned plugin panel visibility changed.",
-    )
+    def __init__(self, store: UIPanelStateStore) -> None:
+        self._store = store
+
+    def plugin_panel_visible(self) -> bool:
+        """Return whether the runtime plugin panel is visible."""
+
+        return self._store.plugin_panel_visible()

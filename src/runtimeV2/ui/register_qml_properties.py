@@ -42,6 +42,7 @@ def register_qml_property_plan() -> list[QmlPropertyPlan]:
         QmlPropertyPlan("widget_config_read", "widgetConfigRead"),
         QmlPropertyPlan("widget_config_write", "widgetConfigWrite"),
         QmlPropertyPlan("window_records_read", "windowRecords"),
+        QmlPropertyPlan("panel_state_read", "panelState"),
         QmlPropertyPlan("render_status_read", "renderStatus"),
         QmlPropertyPlan("ui_chrome_model_read", "uiChrome"),
     ]

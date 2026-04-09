@@ -509,7 +509,8 @@ Item {
                     if (!root.hostWindow.showPluginPanel) {
                         root.pendingPluginActivation = ""
                     }
-                    root.hostWindow.showPluginPanel = !root.hostWindow.showPluginPanel
+                    if (root.appActions)
+                        root.appActions.trigger("pluginPanel.toggle")
                 }
             }
         }

@@ -115,3 +115,10 @@ class UIWindowRecordsChangedData:
     """Data for UI window record updates."""
 
     window_count: int
+
+
+@dataclass(frozen=True)
+class UIPanelVisibilityChangedData:
+    """Data for UI plugin panel visibility updates."""
+
+    visible: bool

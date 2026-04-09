@@ -26,10 +26,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
+from runtimeV2.ui.capabilities.panel_state_read import PanelStateRead
+from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
 from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
 from runtimeV2.ui.contracts import UIChromeModel, UIRenderStatus, UIWindowRecord
+from runtimeV2.ui.panel_state import UIPanelStateStore
 
 
 @dataclass(frozen=True)
@@ -38,6 +41,8 @@ class UICapabilities:
 
     window_records_read: WindowRecordsRead
     window_actions_write: WindowActionsWrite
+    panel_state_read: PanelStateRead
+    panel_state_write: PanelStateWrite
     render_status_read: RenderStatusRead
     chrome_model_read: UIChromeModelRead
 
@@ -46,6 +51,7 @@ def register_ui_capabilities(
     *,
     records: list[UIWindowRecord],
     main_window_id: str,
+    panel_state: UIPanelStateStore,
     render_status: UIRenderStatus,
     chrome_model: UIChromeModel,
 ) -> UICapabilities:
@@ -55,6 +61,8 @@ def register_ui_capabilities(
     return UICapabilities(
         window_records_read=window_records_read,
         window_actions_write=WindowActionsWrite(window_records_read, main_window_id),
+        panel_state_read=PanelStateRead(panel_state),
+        panel_state_write=PanelStateWrite(panel_state),
         render_status_read=RenderStatusRead(render_status),
         chrome_model_read=UIChromeModelRead(chrome_model),
     )

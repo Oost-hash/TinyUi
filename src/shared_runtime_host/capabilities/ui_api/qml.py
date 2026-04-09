@@ -13,6 +13,8 @@ from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.plugins.capabilities.state_read import PluginStateRead
+from runtimeV2.ui.capabilities.panel_state_read import PanelStateRead
+from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 
@@ -187,6 +189,46 @@ class PluginStateQmlCapability(QObject):
         """Return one plugin state."""
 
         return self._state_read.get_plugin_state(plugin_id).name.lower()
+
+
+class PanelStateQmlCapability(QObject):
+    """Expose runtime-owned UI panel state to QML."""
+
+    visibleChanged = Signal()
+
+    def __init__(
+        self,
+        panel_state_read: PanelStateRead,
+        panel_state_write: PanelStateWrite,
+        parent: QObject | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self._panel_state_read = panel_state_read
+        self._panel_state_write = panel_state_write
+
+    @Property(bool, notify=visibleChanged)
+    def visible(self) -> bool:
+        """Return whether the runtime plugin panel is visible."""
+
+        return self._panel_state_read.plugin_panel_visible()
+
+    @Slot(bool, result=bool)
+    def setVisible(self, visible: bool) -> bool:
+        """Set runtime-owned plugin panel visibility."""
+
+        changed = self._panel_state_write.set_plugin_panel_visible(visible)
+        if changed:
+            self.visibleChanged.emit()
+        return changed
+
+    @Slot(result=bool)
+    def toggle(self) -> bool:
+        """Toggle runtime-owned plugin panel visibility."""
+
+        changed = self._panel_state_write.toggle_plugin_panel()
+        if changed:
+            self.visibleChanged.emit()
+        return changed
 
 
 class UIChromeQmlCapability(QObject):

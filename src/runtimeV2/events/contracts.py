@@ -53,6 +53,7 @@ class EventType(Enum):
     UI_READY = auto()
     UI_RENDER_BLOCKED = auto()
     UI_WINDOW_RECORDS_CHANGED = auto()
+    UI_PANEL_VISIBILITY_CHANGED = auto()
     WIDGET_RUNTIME_UPDATED = auto()
     WIDGET_VISIBILITY_CHANGED = auto()
 

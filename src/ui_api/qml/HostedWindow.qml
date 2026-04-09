@@ -32,6 +32,7 @@ Window {
     property string pluginPanelUrl: ""
     property var pluginPanelComponent: null
     property bool showPluginPanel: false
+    property var panelState: null
     property var manifestRead: null
     property var uiChrome: null
     property var pluginActive: null
@@ -72,6 +73,7 @@ Window {
 
     title: windowTitle
     readonly property bool nativeChrome: Qt.platform.os === "linux" || Qt.platform.os === "osx"
+    readonly property bool runtimeShowPluginPanel: panelState ? panelState.visible : false
     flags: nativeChrome ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
     color: root.theme ? root.theme.surface : "#17181c"
 
@@ -85,8 +87,11 @@ Window {
         root.statusActiveLabel = root.uiChrome ? root.uiChrome.statusActiveLabel : root.activePluginId
     }
 
+    onPanelStateChanged: root.showPluginPanel = root.runtimeShowPluginPanel
+
     onUiChromeChanged: syncRuntimeChrome()
     onPluginActiveChanged: syncRuntimeChrome()
+    onRuntimeShowPluginPanelChanged: root.showPluginPanel = root.runtimeShowPluginPanel
 
     Shortcut {
         enabled: root.globalShortcutsEnabled

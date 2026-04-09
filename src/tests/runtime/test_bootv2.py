@@ -183,6 +183,7 @@ class _FakeUiRuntime:
         self._plugin_active_calls: list[str] = []
         self._settings_save_all_calls = 0
         self._active_config_set = "default"
+        self._plugin_panel_visible = False
 
         class _FakePluginDiscovery:
             def plugin_ids(self) -> list[str]:
@@ -221,11 +222,32 @@ class _FakeUiRuntime:
             def save_all(self) -> None:
                 self._outer._settings_save_all_calls += 1
 
+        class _FakePanelStateRead:
+            def __init__(self, outer: "_FakeUiRuntime") -> None:
+                self._outer = outer
+
+            def plugin_panel_visible(self) -> bool:
+                return self._outer._plugin_panel_visible
+
+        class _FakePanelStateWrite:
+            def __init__(self, outer: "_FakeUiRuntime") -> None:
+                self._outer = outer
+
+            def set_plugin_panel_visible(self, visible: bool) -> bool:
+                changed = self._outer._plugin_panel_visible != visible
+                self._outer._plugin_panel_visible = visible
+                return changed
+
+            def toggle_plugin_panel(self) -> bool:
+                return self.set_plugin_panel_visible(not self._outer._plugin_panel_visible)
+
         self._plugin_discovery = _FakePluginDiscovery()
         self._plugin_active_write = _FakePluginActiveWrite(self._plugin_active_calls)
         self._config_set_read = _FakeConfigSetRead(self)
         self._config_set_write = _FakeConfigSetWrite(self)
         self._settings_write = _FakeSettingsWrite(self)
+        self._panel_state_read = _FakePanelStateRead(self)
+        self._panel_state_write = _FakePanelStateWrite(self)
 
     def domain_result(self, name: str, _result_type: type[Any]) -> Any:
         if name == "ui":
@@ -259,6 +281,10 @@ class _FakeUiRuntime:
             return self._config_set_write
         if name == "settings_write":
             return self._settings_write
+        if name == "panel_state_read":
+            return self._panel_state_read
+        if name == "panel_state_write":
+            return self._panel_state_write
         if name == "widget_visibility_read":
             return self._widget_visibility_read
         if name == "widget_visibility_write":
@@ -526,6 +552,39 @@ def test_runtime_host_config_set_activate_action_uses_runtime_capability(monkeyp
     result.actions.trigger("configSet.activate:streaming")
 
     assert runtime._active_config_set == "streaming"
+
+
+def test_runtime_host_plugin_panel_toggle_uses_runtime_capability(monkeypatch) -> None:
+    """The ui_api host should toggle plugin panel visibility through runtime-owned state."""
+
+    app = _FakeApp()
+    runtime = _FakeUiRuntime()
+
+    class _FakeWindow:
+        def __init__(self) -> None:
+            self.destroyed = _FakeSignal()
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(
+        "ui_api.runtime_host.open_window",
+        lambda *_args, **_kwargs: SimpleNamespace(qml_window=_FakeWindow(), keepalive=()),
+    )
+
+    result, startup_result = start_runtime_host(
+        app=app,
+        engine=object(),
+        runtime=cast(Any, runtime),
+    )
+
+    assert startup_result.ok
+    assert result is not None
+    assert runtime._plugin_panel_visible is False
+
+    result.actions.trigger("pluginPanel.toggle")
+
+    assert runtime._plugin_panel_visible is True
 
 
 def test_ui_startup_emits_window_record_change_before_ready(monkeypatch) -> None:
