@@ -2,10 +2,13 @@
 
 TinyUi tracks roadmap items latest-first.
 
+I am currently hard at work rewriting most of the program. So an actual roadmap does not make sense in this point of time.
+
 ## Next
 
 These are on the radar, not tied to a release yet:
 
+- update LMU connector to api version 13000 
 - Widget globals (font, background, opacity, layout)
 - Processing / derived data layer
 - Game detection and automatic source handoff inside provider families
