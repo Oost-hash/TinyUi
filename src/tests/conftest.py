@@ -115,7 +115,7 @@ def create_test_runtime_with_paths(paths: object) -> RuntimeV2:
     """Create a booted RuntimeV2 with test-specific runtime paths."""
 
     runtime_paths = _coerce_runtime_paths(paths)
-    with patch("runtimeV2.paths.startup.detect_runtime_paths", return_value=runtime_paths):
+    with patch("runtimeV2.paths.startup_shutdown.startup.detect_runtime_paths", return_value=runtime_paths):
         result = startup_runtime_v2()
     if not result.ok:
         raise RuntimeError(result.error_message or "Runtime V2 startup failed")
@@ -129,3 +129,4 @@ def create_minimal_test_runtime(_bus: object | None = None) -> RuntimeV2:
     if not result.ok:
         raise RuntimeError(result.error_message or "Runtime V2 startup failed")
     return _runtime_from_last_startup()
+

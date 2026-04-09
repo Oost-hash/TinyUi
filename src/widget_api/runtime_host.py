@@ -29,11 +29,11 @@ from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from shared_runtime_host.registry import create_shared_runtime_host_registry
 from shared_runtime_host.shutdown import QmlRuntimeHostShutdown
 from runtimeV2.events.contracts import EventType
-from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
-from runtimeV2.widgets.startup import WidgetsStartupResult
+from runtimeV2.widgets.startup_shutdown.startup import WidgetsStartupResult
 from widget_api.register_runtime_host import register_widget_runtime_host
 from widget_api.window_host import WidgetWindowHost
 
@@ -110,3 +110,4 @@ def start_widget_host(app, runtime: RuntimeV2) -> tuple[WidgetRuntimeHostResult 
         return create_widget_window_host(app, runtime), startup_ok()
     except Exception as exc:
         return None, startup_error(f"widget_api runtime host startup failed: {exc}")
+

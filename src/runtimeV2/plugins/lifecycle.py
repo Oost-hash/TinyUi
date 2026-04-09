@@ -24,9 +24,9 @@
 from __future__ import annotations
 
 from runtimeV2.connectors.policy import register_connector_service, unregister_connector_service
-from runtimeV2.connectors.startup import ConnectorsStartupResult
+from runtimeV2.connectors.startup_shutdown.startup import ConnectorsStartupResult
 from runtimeV2.events.contracts import EventType
-from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.plugins.activation import PluginActivationStore
 from runtimeV2.plugins.registry import PluginRegistry
@@ -179,3 +179,4 @@ class PluginLifecycleStore:
             ),
             source="plugins",
         )
+

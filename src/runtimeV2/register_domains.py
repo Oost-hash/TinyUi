@@ -23,15 +23,15 @@
 
 from __future__ import annotations
 
-from runtimeV2.events.startup import startup_events
-from runtimeV2.connectors.startup import startup_connectors
-from runtimeV2.host.startup import startup_host
-from runtimeV2.manifest.startup import startup_manifest
-from runtimeV2.paths.startup import startup_paths
-from runtimeV2.persistence.startup import startup_persistence
-from runtimeV2.plugins.startup import startup_plugins
-from runtimeV2.ui.startup import startup_ui
-from runtimeV2.widgets.startup import startup_widgets
+from runtimeV2.events.startup_shutdown.startup import startup_events
+from runtimeV2.connectors.startup_shutdown.startup import startup_connectors
+from runtimeV2.host.startup_shutdown.startup import startup_host
+from runtimeV2.manifest.startup_shutdown.startup import startup_manifest
+from runtimeV2.paths.startup_shutdown.startup import startup_paths
+from runtimeV2.persistence.startup_shutdown.startup import startup_persistence
+from runtimeV2.plugins.startup_shutdown.startup import startup_plugins
+from runtimeV2.ui.startup_shutdown.startup import startup_ui
+from runtimeV2.widgets.startup_shutdown.startup import startup_widgets
 from runtimeV2.runtime import RuntimeV2
 
 
@@ -83,3 +83,4 @@ def register_default_domains(runtime: RuntimeV2) -> None:
         startup_ui,
         description="Owns runtime UI read models and QML property handoff.",
     )
+

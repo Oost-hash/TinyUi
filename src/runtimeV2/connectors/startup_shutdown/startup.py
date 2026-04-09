@@ -25,15 +25,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtimeV2.connectors.register_capabilities import (
+from runtimeV2.connectors.startup_shutdown.register_capabilities import (
     ConnectorCapabilities,
     register_connector_capabilities,
 )
 from runtimeV2.connectors.poller import ConnectorServicePoller
 from runtimeV2.connectors.policy import register_declared_connector_services
-from runtimeV2.connectors.register_events import register_connector_events
+from runtimeV2.connectors.startup_shutdown.register_events import register_connector_events
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
-from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.runtime import RuntimeV2
@@ -79,3 +79,4 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
         return startup_ok()
     except Exception as exc:
         return startup_error(f"Connectors domain startup failed: {exc}")
+

@@ -29,8 +29,8 @@ from pathlib import Path
 from runtimeV2.paths.capabilities.path import PathCapability
 from runtimeV2.paths.contracts import RuntimePaths
 from runtimeV2.paths.detection import detect_runtime_paths
-from runtimeV2.paths.register_capabilities import register_path_capabilities
-from runtimeV2.paths.register_paths import register_app_paths
+from runtimeV2.paths.startup_shutdown.register_capabilities import register_path_capabilities
+from runtimeV2.paths.startup_shutdown.register_paths import register_app_paths
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 
@@ -64,3 +64,4 @@ def startup_paths(runtime: RuntimeV2) -> StartupResult:
         return startup_ok()
     except Exception as exc:
         return startup_error(f"Paths domain startup failed: {exc}")
+

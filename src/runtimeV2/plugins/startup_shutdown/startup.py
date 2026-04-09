@@ -25,19 +25,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtimeV2.connectors.startup import ConnectorsStartupResult
+from runtimeV2.connectors.startup_shutdown.startup import ConnectorsStartupResult
 from runtimeV2.events.contracts import Event, EventType
-from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.manifest.capabilities.load import ManifestLoad
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
-from runtimeV2.paths.startup import PathsStartupResult
-from runtimeV2.persistence.startup import PersistenceStartupResult
+from runtimeV2.paths.startup_shutdown.startup import PathsStartupResult
+from runtimeV2.persistence.startup_shutdown.startup import PersistenceStartupResult
 from runtimeV2.plugins.activation import PluginActivationStore
 from runtimeV2.plugins.discovery import discover_plugins
 from runtimeV2.plugins.lifecycle import PluginLifecycleStore
-from runtimeV2.plugins.register_capabilities import PluginCapabilities, register_plugin_capabilities
-from runtimeV2.plugins.register_events import register_plugin_events
-from runtimeV2.plugins.register_lifecycle_capabilities import (
+from runtimeV2.plugins.startup_shutdown.register_capabilities import PluginCapabilities, register_plugin_capabilities
+from runtimeV2.plugins.startup_shutdown.register_events import register_plugin_events
+from runtimeV2.plugins.startup_shutdown.register_lifecycle_capabilities import (
     PluginLifecycleCapabilities,
     register_plugin_lifecycle_capabilities,
 )
@@ -117,3 +117,4 @@ def startup_plugins_lifecycle(runtime: RuntimeV2) -> StartupResult:
         return startup_ok()
     except Exception as exc:
         return startup_error(f"Plugin lifecycle startup failed: {exc}")
+

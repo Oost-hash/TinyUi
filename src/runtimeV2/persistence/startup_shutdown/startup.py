@@ -30,12 +30,12 @@ from runtimeV2.host.capabilities.app_identity_read import AppIdentityRead
 from runtimeV2.persistence.config_sets import ConfigSetCatalog
 from runtimeV2.persistence.contracts import PersistencePaths
 from runtimeV2.persistence.paths import resolve_persistence_paths
-from runtimeV2.persistence.register_capabilities import (
+from runtimeV2.persistence.startup_shutdown.register_capabilities import (
     PersistenceCapabilities,
     register_persistence_capabilities,
 )
-from runtimeV2.persistence.register_paths import register_persistence_paths
-from runtimeV2.persistence.register_settings import register_settings_specs
+from runtimeV2.persistence.startup_shutdown.register_paths import register_persistence_paths
+from runtimeV2.persistence.startup_shutdown.register_settings import register_settings_specs
 from runtimeV2.persistence.settings import SettingsStore
 from runtimeV2.persistence.widget_config import WidgetConfigStore
 from runtimeV2.manifest.capabilities.settings_read import ManifestSettingsRead
@@ -86,3 +86,4 @@ def startup_persistence(runtime: RuntimeV2) -> StartupResult:
         return startup_ok()
     except Exception as exc:
         return startup_error(f"Persistence domain startup failed: {exc}")
+

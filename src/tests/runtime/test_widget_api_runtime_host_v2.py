@@ -10,13 +10,13 @@ from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.events.capabilities.event_read import EventRead
 from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry
-from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.schemas.startup import StartupResult
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 from runtimeV2.widgets.store import WidgetRecordsStore
-from runtimeV2.widgets.startup import WidgetsStartupResult
+from runtimeV2.widgets.startup_shutdown.startup import WidgetsStartupResult
 from shared_runtime_host.capabilities.widget_api import widget_window_data
 from widget_api.runtime_host import create_widget_window_host, start_widget_host
 
@@ -283,3 +283,4 @@ def test_widget_data_adapter_uses_runtime_v2_record_shape() -> None:
     assert widget_data["visible"] is False
     assert widget_data["x"] == 12
     assert widget_data["y"] == 34
+

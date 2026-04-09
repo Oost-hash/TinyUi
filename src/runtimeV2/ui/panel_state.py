@@ -24,7 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.events.contracts import EventType
-from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.ui.contracts import UIPanelVisibilityChangedData
 
 
@@ -57,3 +57,4 @@ class UIPanelStateStore:
         """Toggle runtime-owned plugin panel visibility."""
 
         return self.set_plugin_panel_visible(not self._plugin_panel_visible)
+

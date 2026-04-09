@@ -73,7 +73,7 @@ class RuntimeShutdownController:
 
     def _emit_runtime_shutdown(self, reason: str) -> None:
         try:
-            from runtimeV2.events.startup import EventsStartupResult
+            from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 
             events = self._runtime.domain_result("events", EventsStartupResult)
         except KeyError:
@@ -98,3 +98,4 @@ class RuntimeShutdownController:
             record = self._runtime._domain_records.get(owner)
             if record is not None and record.status in {DomainStatus.READY, DomainStatus.STARTING, DomainStatus.ERROR}:
                 self._runtime._set_domain_status(owner, DomainStatus.STOPPED)
+

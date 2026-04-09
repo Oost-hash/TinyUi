@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.host.contracts import HostShell
 from runtimeV2.host.policy import build_host_shell
-from runtimeV2.host.register_capabilities import HostCapabilities, register_host_capabilities
+from runtimeV2.host.startup_shutdown.register_capabilities import HostCapabilities, register_host_capabilities
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.runtime import RuntimeV2
 
@@ -58,3 +58,4 @@ def startup_host(runtime: RuntimeV2) -> StartupResult:
         return startup_ok()
     except Exception as exc:
         return startup_error(f"Host domain startup failed: {exc}")
+

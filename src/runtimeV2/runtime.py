@@ -222,7 +222,7 @@ class RuntimeV2:
             return
 
         try:
-            from runtimeV2.events.startup import EventsStartupResult
+            from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 
             events = self.domain_result("events", EventsStartupResult)
         except KeyError:
@@ -255,3 +255,4 @@ def _event_type_for_domain_status(status: DomainStatus) -> EventType | None:
     if status == DomainStatus.STOPPED:
         return EventType.DOMAIN_STOPPED
     return None
+

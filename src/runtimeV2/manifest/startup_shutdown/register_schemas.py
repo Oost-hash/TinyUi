@@ -21,12 +21,12 @@
 
 """Manifest schema registration orchestration."""
 
-from runtimeV2.connectors.register_schemas import register_connector_schemas
+from runtimeV2.connectors.startup_shutdown.register_schemas import register_connector_schemas
 from runtimeV2.manifest.schema_registry import ManifestSchemaRegistry
-from runtimeV2.persistence.register_schemas import register_persistence_schemas
-from runtimeV2.plugins.register_schemas import register_plugin_schemas
-from runtimeV2.ui.register_schemas import register_ui_schemas
-from runtimeV2.widgets.register_schemas import register_widget_schemas
+from runtimeV2.persistence.startup_shutdown.register_schemas import register_persistence_schemas
+from runtimeV2.plugins.startup_shutdown.register_schemas import register_plugin_schemas
+from runtimeV2.ui.startup_shutdown.register_schemas import register_ui_schemas
+from runtimeV2.widgets.startup_shutdown.register_schemas import register_widget_schemas
 
 
 def register_manifest_schemas(registry: ManifestSchemaRegistry) -> None:
@@ -37,3 +37,4 @@ def register_manifest_schemas(registry: ManifestSchemaRegistry) -> None:
     register_connector_schemas(registry)
     register_widget_schemas(registry)
     register_persistence_schemas(registry)
+

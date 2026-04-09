@@ -6,7 +6,7 @@ from collections.abc import Callable
 
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.events.contracts import EventType
-from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.runtime import RuntimeV2
 
 
@@ -40,3 +40,4 @@ class QmlRuntimeHostShutdown:
         shutdown = self._runtime.capability("shutdown", RuntimeShutdown)
         shutdown.begin_shutdown("app_quit")
         self.close_host()
+

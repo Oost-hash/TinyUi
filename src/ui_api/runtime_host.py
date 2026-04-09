@@ -53,18 +53,25 @@ from runtimeV2.runtime import RuntimeV2
 from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
 from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
-from runtimeV2.ui.startup import UIStartupResult
+from runtimeV2.ui.startup_shutdown.startup import UIStartupResult
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from shared_runtime_host.capabilities.ui_api import (
+    ConnectorReadQmlCapability,
+    ConnectorWriteQmlCapability,
     ManifestQmlCapability,
     PanelStateQmlCapability,
     PluginActiveQmlCapability,
     PluginStateQmlCapability,
+    RenderStatusQmlCapability,
+    SettingsQmlCapability,
+    SettingsWriteQmlCapability,
     UIActionsCapability,
     UIChromeQmlCapability,
     WindowRecordsQmlCapability,
+    WidgetConfigReadQmlCapability,
+    WidgetConfigWriteQmlCapability,
     WidgetRecordsQmlCapability,
     WidgetVisibilityQmlCapability,
 )
@@ -130,6 +137,39 @@ def build_runtime_qml_properties(
     return properties
 
 
+def _normalize_qml_properties(
+    runtime: RuntimeV2,
+    properties: dict[str, object],
+) -> dict[str, object]:
+    """Defensively normalize host properties to QML-facing wrappers."""
+
+    connector_actions = properties.get("connectorActions")
+    if isinstance(connector_actions, ConnectorWrite):
+        properties["connectorActions"] = ConnectorWriteQmlCapability(connector_actions)
+
+    connector_read = properties.get("connectorRead")
+    if isinstance(connector_read, ConnectorRead):
+        properties["connectorRead"] = ConnectorReadQmlCapability(connector_read)
+
+    settings_read = properties.get("settingsRead")
+    if isinstance(settings_read, SettingsRead):
+        properties["settingsRead"] = SettingsQmlCapability(settings_read)
+
+    manifest_read = properties.get("manifestRead")
+    if isinstance(manifest_read, ManifestRead):
+        properties["manifestRead"] = ManifestQmlCapability(manifest_read)
+
+    plugin_state = properties.get("pluginState")
+    if isinstance(plugin_state, PluginStateRead):
+        discovery = runtime.capability("plugin_discovery", PluginDiscoveryCapability)
+        properties["pluginState"] = PluginStateQmlCapability(
+            plugin_state,
+            discovery.plugin_ids(),
+        )
+
+    return properties
+
+
 def _adapt_qml_property(
     runtime: RuntimeV2,
     host_registry: SharedRuntimeHostRegistry | None,
@@ -145,6 +185,18 @@ def _adapt_qml_property(
         return UIChromeQmlCapability(host_registry.capability("ui_host", UIHostCapability))
     if capability_name == "manifest_read":
         return ManifestQmlCapability(cast(ManifestRead, capability))
+    if capability_name == "settings_read":
+        return SettingsQmlCapability(cast(SettingsRead, capability))
+    if capability_name == "settings_write":
+        return SettingsWriteQmlCapability(cast(SettingsWrite, capability))
+    if capability_name == "connector_read":
+        return ConnectorReadQmlCapability(cast(ConnectorRead, capability))
+    if capability_name == "connector_write":
+        return ConnectorWriteQmlCapability(cast(ConnectorWrite, capability))
+    if capability_name == "widget_config_read":
+        return WidgetConfigReadQmlCapability(cast(WidgetConfigRead, capability))
+    if capability_name == "widget_config_write":
+        return WidgetConfigWriteQmlCapability(cast(WidgetConfigWrite, capability))
     if capability_name == "widget_records_read":
         if host_registry is None:
             host_registry = create_shared_runtime_host_registry(runtime)
@@ -176,6 +228,8 @@ def _adapt_qml_property(
             cast(PanelStateRead, capability),
             runtime.capability("panel_state_write", PanelStateWrite),
         )
+    if capability_name == "render_status_read":
+        return RenderStatusQmlCapability(cast(RenderStatusRead, capability))
     return capability
 
 
@@ -201,7 +255,10 @@ def start_runtime_host(
         register_ui_runtime_host(host_registry)
         actions = AppActions()
         main_window = runtime.capability("main_window_read", MainWindowRead).main_window()
-        qml_properties = build_runtime_qml_properties(runtime, ui_result, host_registry)
+        qml_properties = _normalize_qml_properties(
+            runtime,
+            build_runtime_qml_properties(runtime, ui_result, host_registry),
+        )
         handle = open_window(
             main_window,
             engine=engine,
@@ -257,3 +314,4 @@ def _window_manifest(ui_read: ManifestUiRead, window_id: str):
             if window.id == window_id:
                 return window
     return None
+

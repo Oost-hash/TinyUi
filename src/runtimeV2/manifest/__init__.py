@@ -29,7 +29,7 @@ from runtimeV2.manifest.capabilities.settings_read import ManifestSettingsRead
 from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
 from runtimeV2.manifest.registry import ManifestRecord, ManifestRegistry
 from runtimeV2.manifest.schema_registry import ManifestSchemaRecord, ManifestSchemaRegistry
-from runtimeV2.manifest.startup import ManifestStartupResult
+from runtimeV2.manifest.startup_shutdown.startup import ManifestStartupResult
 
 __all__ = [
     "ManifestConnectorRead",
@@ -44,3 +44,4 @@ __all__ = [
     "ManifestStartupResult",
     "ManifestUiRead",
 ]
+

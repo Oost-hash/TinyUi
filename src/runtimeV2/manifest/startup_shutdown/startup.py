@@ -26,8 +26,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
-from runtimeV2.manifest.register_capabilities import ManifestCapabilities, register_manifest_capabilities
-from runtimeV2.manifest.register_schemas import register_manifest_schemas
+from runtimeV2.manifest.startup_shutdown.register_capabilities import ManifestCapabilities, register_manifest_capabilities
+from runtimeV2.manifest.startup_shutdown.register_schemas import register_manifest_schemas
 from runtimeV2.manifest.registry import ManifestRegistry
 from runtimeV2.manifest.schema_registry import ManifestSchemaRegistry
 from runtimeV2.runtime import RuntimeV2
@@ -64,3 +64,4 @@ def startup_manifest(runtime: RuntimeV2) -> StartupResult:
         return startup_ok()
     except Exception as exc:
         return startup_error(f"Manifest domain startup failed: {exc}")
+

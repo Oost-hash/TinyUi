@@ -27,7 +27,7 @@ from dataclasses import dataclass
 
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
-from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
@@ -36,9 +36,9 @@ from runtimeV2.manifest.capabilities.overlay_read import ManifestOverlayRead
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.widgets.contracts import WidgetRecord
 from runtimeV2.widgets.poller import WidgetRuntimePoller
-from runtimeV2.widgets.register_events import register_widget_events
-from runtimeV2.widgets.register_capabilities import WidgetCapabilities, register_widget_capabilities
-from runtimeV2.widgets.register_globals import register_widget_globals
+from runtimeV2.widgets.startup_shutdown.register_events import register_widget_events
+from runtimeV2.widgets.startup_shutdown.register_capabilities import WidgetCapabilities, register_widget_capabilities
+from runtimeV2.widgets.startup_shutdown.register_globals import register_widget_globals
 from runtimeV2.widgets.store import WidgetRecordsStore
 
 
@@ -94,3 +94,4 @@ def startup_widgets(runtime: RuntimeV2) -> StartupResult:
         return startup_ok()
     except Exception as exc:
         return startup_error(f"Widgets domain startup failed: {exc}")
+

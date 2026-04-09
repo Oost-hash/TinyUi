@@ -31,10 +31,10 @@ from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.connectors.contracts import ConnectorSourceChangedData
 from runtimeV2.connectors.policy import unregister_connector_service
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest, ConnectorServiceDecl
-from runtimeV2.connectors.startup import startup_connectors, ConnectorsStartupResult
+from runtimeV2.connectors.startup_shutdown.startup import startup_connectors, ConnectorsStartupResult
 from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry
-from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.schemas.startup import StartupResult
 
@@ -252,3 +252,4 @@ def test_unregister_connector_service_releases_source_and_closes(monkeypatch) ->
     assert service.closed is True
     assert startup_result.registry.has("iracing") is False
     assert bus.get_history()[-1].type == EventType.CONNECTOR_SERVICE_UNREGISTERED
+

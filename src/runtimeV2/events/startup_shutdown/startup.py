@@ -28,8 +28,8 @@ from dataclasses import dataclass
 from runtimeV2.events.contracts import EventBus
 from runtimeV2.events.capabilities.event_read import EventRead
 from runtimeV2.events.event_registry import EventRegistry
-from runtimeV2.events.register_capabilities import register_event_capabilities
-from runtimeV2.events.register_events import register_events_domain_events
+from runtimeV2.events.startup_shutdown.register_capabilities import register_event_capabilities
+from runtimeV2.events.startup_shutdown.register_events import register_events_domain_events
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 
@@ -57,3 +57,4 @@ def startup_events(runtime: RuntimeV2) -> StartupResult:
         return startup_ok()
     except Exception as exc:
         return startup_error(f"Events domain startup failed: {exc}")
+

@@ -13,13 +13,13 @@ from runtimeV2.plugins.capabilities.icon import PluginIconCapability
 from runtimeV2.plugins.capabilities.state_read import PluginStateRead
 from runtimeV2.plugins.capabilities.state_write import PluginStateWrite
 from runtimeV2.connectors.poller import ConnectorServicePoller
-from runtimeV2.connectors.register_capabilities import register_connector_capabilities
+from runtimeV2.connectors.startup_shutdown.register_capabilities import register_connector_capabilities
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
-from runtimeV2.connectors.startup import ConnectorsStartupResult
+from runtimeV2.connectors.startup_shutdown.startup import ConnectorsStartupResult
 from runtimeV2.events.capabilities.event_read import EventRead
 from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry
-from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.manifest.registry import ManifestRegistry
 from runtimeV2.persistence.contracts import PersistencePaths
@@ -291,3 +291,4 @@ def test_plugin_icon_capability_resolves_safe_file_urls(tmp_path) -> None:
 
     assert capability.get_icon_url("demo_plugin") == icon_path.as_uri()
     assert capability.get_icon_url("missing_plugin") == ""
+

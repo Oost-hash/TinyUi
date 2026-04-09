@@ -5,7 +5,7 @@ from __future__ import annotations
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.events.contracts import EventType
-from runtimeV2.events.startup import EventsStartupResult, startup_events
+from runtimeV2.events.startup_shutdown.startup import EventsStartupResult, startup_events
 from runtimeV2.register_capabilities import register_runtime_capabilities
 from runtimeV2.register_globals import register_runtime_globals
 from runtimeV2.runtime import RuntimeV2
@@ -77,3 +77,4 @@ def test_runtime_shutdown_runs_stop_hooks_in_reverse_domain_order() -> None:
     assert calls == ["beta", "alpha"]
     assert runtime.domain_status("alpha").value == "stopped"
     assert runtime.domain_status("beta").value == "stopped"
+
