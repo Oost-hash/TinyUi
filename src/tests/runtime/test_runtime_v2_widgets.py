@@ -48,6 +48,14 @@ class _FakeActiveRead:
         return self._plugin_id
 
 
+class _FakeConnectorService:
+    def __init__(self, snapshot: list[tuple[str, str]]) -> None:
+        self._snapshot = snapshot
+
+    def inspect_snapshot(self) -> list[tuple[str, str]]:
+        return list(self._snapshot)
+
+
 def _widget_config_read(tmp_path, overlay_id: str, widget_id: str) -> WidgetConfigRead:
     base_dir = tmp_path / "TinyUi"
     config_root = base_dir / "config"
@@ -123,7 +131,12 @@ def test_widget_runtime_poller_marks_ready_when_active_and_connected(tmp_path) -
     overlay_id = "demo_overlay"
     widget_id = "speed"
     connector_services = ConnectorServiceRegistry()
-    connector_services.register("iracing", "iracing", "IRacing", object())
+    connector_services.register(
+        "iracing",
+        "iracing",
+        "IRacing",
+        _FakeConnectorService([("car.speed", "321 km/h")]),
+    )
     base_dir = tmp_path / "TinyUi"
     config_root = base_dir / "config"
     widget_config = WidgetConfigRead(
@@ -168,6 +181,7 @@ def test_widget_runtime_poller_marks_ready_when_active_and_connected(tmp_path) -
     assert record.status == WidgetStatus.READY
     assert record.enabled is True
     assert record.position == (0, 0)
+    assert record.resolved_value == "321 km/h"
 
 
 def test_widget_records_read_exposes_store_projection(tmp_path) -> None:

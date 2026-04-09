@@ -57,3 +57,13 @@ class ConnectorRead:
         """Return connector inspection rows."""
 
         return self._registry.inspect(connector_id)
+
+    def inspection_map(self, connector_id: str) -> dict[str, str]:
+        """Return one connector inspection snapshot keyed by name."""
+
+        return dict(self.inspection_rows(connector_id))
+
+    def value(self, connector_id: str, key: str) -> str | None:
+        """Return one inspection value by key."""
+
+        return self.inspection_map(connector_id).get(key)

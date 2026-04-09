@@ -47,8 +47,6 @@ def register_connector_service(
         return False
 
     service = load_connector_service(declaration.service.module, declaration.service.class_name)
-    if hasattr(service, "supports_source") and service.supports_source("mock") and hasattr(service, "request_source"):
-        service.request_source("__runtime__", "mock")
     if hasattr(service, "open"):
         service.open()
 

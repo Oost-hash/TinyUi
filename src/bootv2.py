@@ -26,6 +26,7 @@ from __future__ import annotations
 import sys
 
 from runtimeV2.startup import get_runtime_v2_result, startup_runtime_v2
+from shared_runtime_host.scheduler import start_runtime_scheduler_clock
 from ui_api.qt import create_application, create_engine
 from ui_api.runtime_host import start_runtime_host
 from widget_api.startup import startup_widget_api
@@ -47,6 +48,7 @@ def main() -> int:
         print("Runtime V2 startup did not expose a runtime result", file=sys.stderr)
         return 1
 
+    _scheduler_driver = start_runtime_scheduler_clock(app, runtime_result.runtime)
     _host_result, ui_api_result = start_runtime_host(
         app=app,
         engine=engine,

@@ -144,16 +144,19 @@ class ConnectorRuntime(TelemetryReader):
 
     def open(self) -> None:
         self._opened = True
-        self._require_active_source().open()
+        for source in self._sources.values():
+            source.open()
+        self._sync_active_source()
 
     def close(self) -> None:
-        active = self.active_source_handle()
-        if active is not None:
-            active.close()
+        for source in self._sources.values():
+            source.close()
         self._opened = False
 
     def update(self) -> None:
-        self._require_active_source().update()
+        for source in self._sources.values():
+            source.update()
+        self._sync_active_source()
 
     def request_demo_mode(self, owner: str) -> None:
         self._demo_owners.add(owner)
@@ -366,15 +369,10 @@ class ConnectorRuntime(TelemetryReader):
         previous = self.active_source_handle()
         if previous is not None and previous.name == name:
             return
-        was_open = self._opened
-        if previous is not None and was_open:
-            previous.close()
         self._active_source_name = name
         next_source = self._require_active_source()
         if next_source.kind != "mock":
             self._preferred_source_name = next_source.name
-        if was_open:
-            next_source.open()
 
     def _sync_active_source(self) -> None:
         target_name = self._requested_source_name()
@@ -398,7 +396,23 @@ class ConnectorRuntime(TelemetryReader):
             return "mock"
         if self._source_requests:
             return next(reversed(self._source_requests.values()))
+        active_real = self._first_active_real_source_name()
+        if active_real is not None:
+            return active_real
+        if self.supports_source("mock"):
+            return "mock"
         return self._preferred_source_name or self._first_non_mock_source_name()
+
+    def _first_active_real_source_name(self) -> str | None:
+        for source in self._sources.values():
+            if source.kind == "mock":
+                continue
+            try:
+                if source.reader.state.active():
+                    return source.name
+            except Exception:
+                continue
+        return None
 
     def _mock_source(self) -> ConfigurableMockSource:
         source = self.source("mock")

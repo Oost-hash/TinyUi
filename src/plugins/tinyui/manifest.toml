@@ -68,3 +68,9 @@ key     = "plugin_folder"
 label   = "Plugin folder"
 default = ""
 type    = "str"
+
+[[setting]]
+key     = "connector_poll_interval_ms"
+label   = "Connector poll interval (ms)"
+default = 20
+type    = "int"

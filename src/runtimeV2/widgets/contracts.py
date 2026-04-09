@@ -52,6 +52,7 @@ class WidgetRecord:
     enabled: bool = True
     position: tuple[int, int] = (0, 0)
     values: dict[str, object] | None = None
+    resolved_value: str = ""
     error_message: str = ""
 
 

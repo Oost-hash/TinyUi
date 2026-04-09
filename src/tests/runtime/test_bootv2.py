@@ -204,6 +204,7 @@ class _FakeUiRuntime:
         self._settings_save_all_calls = 0
         self._active_config_set = "default"
         self._plugin_panel_visible = False
+        self._plugin_active_read = SimpleNamespace(get_active_plugin=lambda: "")
 
         class _FakePluginDiscovery:
             def plugin_ids(self) -> list[str]:
@@ -330,6 +331,7 @@ def test_bootv2_returns_zero_when_runtime_v2_is_render_ready(monkeypatch) -> Non
     monkeypatch.setattr(bootv2, "get_runtime_v2_result", lambda: _FakeRuntimeResult(object()))
     monkeypatch.setattr(bootv2, "create_application", lambda: app)
     monkeypatch.setattr(bootv2, "create_engine", lambda: object())
+    monkeypatch.setattr(bootv2, "start_runtime_scheduler_clock", lambda *_args, **_kwargs: SimpleNamespace())
     monkeypatch.setattr(
         bootv2,
         "start_runtime_host",
@@ -363,6 +365,7 @@ def test_bootv2_returns_error_when_ui_api_host_fails(monkeypatch, capsys) -> Non
     monkeypatch.setattr(bootv2, "get_runtime_v2_result", lambda: _FakeRuntimeResult(object()))
     monkeypatch.setattr(bootv2, "create_application", lambda: _FakeApp())
     monkeypatch.setattr(bootv2, "create_engine", lambda: object())
+    monkeypatch.setattr(bootv2, "start_runtime_scheduler_clock", lambda *_args, **_kwargs: SimpleNamespace())
     monkeypatch.setattr(
         bootv2,
         "start_runtime_host",
@@ -385,6 +388,7 @@ def test_bootv2_returns_error_when_widget_api_host_fails(monkeypatch, capsys) ->
     monkeypatch.setattr(bootv2, "get_runtime_v2_result", lambda: _FakeRuntimeResult(object()))
     monkeypatch.setattr(bootv2, "create_application", lambda: _FakeApp())
     monkeypatch.setattr(bootv2, "create_engine", lambda: object())
+    monkeypatch.setattr(bootv2, "start_runtime_scheduler_clock", lambda *_args, **_kwargs: SimpleNamespace())
     monkeypatch.setattr(
         bootv2,
         "start_runtime_host",

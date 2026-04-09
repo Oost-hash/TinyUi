@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
+from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
@@ -60,7 +61,8 @@ def startup_widgets(runtime: RuntimeV2) -> StartupResult:
         register_widget_events(events.registry)
         overlay_read = runtime.capability("manifest_overlay_read", ManifestOverlayRead)
         connector_decl_read = runtime.capability("manifest_connector_read", ManifestConnectorRead)
-        connector_read = runtime.capability("connector_read", ConnectorRead)
+        globals_capability = runtime.capability("globals", RuntimeGlobals)
+        connector_read = globals_capability.read_global("connector_runtime", ConnectorRead)
         active_read = runtime.capability("plugin_active_read", PluginActiveRead)
         widget_config_read = runtime.capability("widget_config_read", WidgetConfigRead)
         widget_config_write = runtime.capability("widget_config_write", WidgetConfigWrite)

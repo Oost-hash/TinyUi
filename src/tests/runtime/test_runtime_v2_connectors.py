@@ -26,15 +26,23 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, cast
 
+from plugins.LMU_RF2_Connector.runtime import ConnectorRuntime
+from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.connectors.contracts import ConnectorSourceChangedData
 from runtimeV2.connectors.policy import unregister_connector_service
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest, ConnectorServiceDecl
+from runtimeV2.persistence.capabilities.settings_read import SettingsRead
+from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
+from runtimeV2.scheduler.capabilities.scheduler_read import SchedulerRead
+from runtimeV2.scheduler.driver import SchedulerDriver
+from runtimeV2.scheduler.registry import SchedulerRegistry
 from runtimeV2.connectors.startup_shutdown.startup import startup_connectors, ConnectorsStartupResult
 from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
+from runtimeV2.globals import GlobalRegistration
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.schemas.startup import StartupResult
 
@@ -71,6 +79,46 @@ class _FakeConnectorService:
         self.closed = True
 
 
+class _FakeState:
+    def __init__(self, active: bool) -> None:
+        self._active = active
+
+    def active(self) -> bool:
+        return self._active
+
+    def paused(self) -> bool:
+        return False
+
+    def version(self) -> str:
+        return "test"
+
+
+class _FakeReader:
+    def __init__(self, active: bool) -> None:
+        self.state = _FakeState(active)
+
+
+class _FakeSource:
+    def __init__(self, name: str, *, kind: str, game: str, active: bool) -> None:
+        self.name = name
+        self.kind = kind
+        self.game = game
+        self.description = f"{name} source"
+        self.reader = _FakeReader(active)
+        self.open_calls = 0
+        self.close_calls = 0
+        self.update_calls = 0
+
+    def open(self) -> None:
+        self.open_calls += 1
+
+    def close(self) -> None:
+        self.close_calls += 1
+
+    def update(self) -> None:
+        self.update_calls += 1
+
+
 class _FakeManifestConnectorRead:
     def __init__(self, declarations: dict[str, ConnectorManifest]) -> None:
         self._declarations = declarations
@@ -85,11 +133,14 @@ class _FakeRuntime:
     _capabilities: dict[str, object]
     registered_capabilities: dict[str, object]
     registered_results: dict[str, object]
+    registered_globals: dict[str, GlobalRegistration]
 
     def domain_result(self, name: str, _result_type: type[Any]) -> Any:
         return self._domain_results[name]
 
     def capability(self, name: str, _capability_type: type[Any]) -> Any:
+        if name in self.registered_capabilities:
+            return self.registered_capabilities[name]
         return self._capabilities[name]
 
     def register_capability(self, name: str, capability: object) -> None:
@@ -97,6 +148,28 @@ class _FakeRuntime:
 
     def register_domain_result(self, name: str, result: object) -> None:
         self.registered_results[name] = result
+
+    def register_global(
+        self,
+        name: str,
+        *,
+        owner_domain: str,
+        description: str = "",
+        read_capability: str = "",
+        write_capability: str = "",
+        event_type=None,
+    ) -> None:
+        self.registered_globals[name] = GlobalRegistration(
+            name=name,
+            owner_domain=owner_domain,
+            description=description,
+            read_capability=read_capability,
+            write_capability=write_capability,
+            event_type=event_type,
+        )
+
+    def global_record(self, name: str) -> GlobalRegistration:
+        return self.registered_globals[name]
 
 
 def _make_runtime(declarations: dict[str, ConnectorManifest]) -> tuple[_FakeRuntime, EventBus]:
@@ -106,15 +179,29 @@ def _make_runtime(declarations: dict[str, ConnectorManifest]) -> tuple[_FakeRunt
         registry=EventRegistry(),
         event_read=cast(Any, object()),
     )
+    registered_capabilities: dict[str, object] = {}
     runtime = _FakeRuntime(
         _domain_results={"events": events},
         _capabilities={
             "manifest_connector_read": _FakeManifestConnectorRead(declarations),
+            "settings_read": cast(Any, _FakeSettingsRead()),
         },
-        registered_capabilities={},
+        registered_capabilities=registered_capabilities,
         registered_results={},
+        registered_globals={},
     )
+    registered_capabilities["globals"] = RuntimeGlobals(cast(Any, runtime))
+    scheduler_registry = SchedulerRegistry()
+    scheduler_driver = SchedulerDriver(scheduler_registry, bus)
+    registered_capabilities["scheduler_write"] = SchedulerWrite(scheduler_registry, scheduler_driver, bus)
     return runtime, bus
+
+
+class _FakeSettingsRead:
+    def get(self, namespace: str, key: str) -> int | None:
+        if namespace == "tinyui" and key == "connector_poll_interval_ms":
+            return 20
+        return None
 
 
 def test_startup_connectors_registers_declared_services(monkeypatch) -> None:
@@ -141,11 +228,20 @@ def test_startup_connectors_registers_declared_services(monkeypatch) -> None:
     assert startup_result.registry.has("iracing") is True
     assert startup_result.capabilities.read.ids() == ["iracing"]
     assert startup_result.capabilities.read.inspection_rows("iracing") == [("speed", "321")]
+    assert startup_result.capabilities.read.inspection_map("iracing") == {"speed": "321"}
+    assert startup_result.capabilities.read.value("iracing", "speed") == "321"
     assert service.open_called is True
-    assert service.requested == [("__runtime__", "mock")]
+    assert service.update_calls == 0
+    assert service.requested == []
+    scheduler_write = cast(SchedulerWrite, runtime.registered_capabilities["scheduler_write"])
+    scheduler_write.tick(20)
+    assert service.update_calls == 1
     assert [event.type for event in bus.get_history()] == [
         EventType.CONNECTOR_SERVICE_REGISTERED,
         EventType.CONNECTOR_SERVICE_UPDATED,
+        EventType.SCHEDULER_JOB_REGISTERED,
+        EventType.CONNECTOR_SERVICE_UPDATED,
+        EventType.SCHEDULER_TICK,
     ]
 
 
@@ -252,4 +348,34 @@ def test_unregister_connector_service_releases_source_and_closes(monkeypatch) ->
     assert service.closed is True
     assert startup_result.registry.has("iracing") is False
     assert bus.get_history()[-1].type == EventType.CONNECTOR_SERVICE_UNREGISTERED
+
+
+def test_connector_runtime_prefers_active_real_source_over_mock() -> None:
+    """Connector runtime should switch to a live source when it reports active state."""
+
+    lmu = _FakeSource("lmu", kind="shared-memory", game="lmu", active=True)
+    rf2 = _FakeSource("rf2", kind="shared-memory", game="rf2", active=False)
+
+    runtime = ConnectorRuntime(cast(Any, lmu), cast(Any, rf2))
+
+    runtime.open()
+    runtime.update()
+
+    assert runtime.active_source() == "lmu"
+    assert runtime.active_game() == "lmu"
+
+
+def test_connector_runtime_falls_back_to_mock_without_active_real_source() -> None:
+    """Connector runtime should keep mock active when no live source reports activity."""
+
+    lmu = _FakeSource("lmu", kind="shared-memory", game="lmu", active=False)
+    rf2 = _FakeSource("rf2", kind="shared-memory", game="rf2", active=False)
+
+    runtime = ConnectorRuntime(cast(Any, lmu), cast(Any, rf2))
+
+    runtime.open()
+    runtime.update()
+
+    assert runtime.active_source() == "mock"
+    assert runtime.active_game() == "mock"
 

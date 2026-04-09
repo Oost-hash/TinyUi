@@ -61,6 +61,11 @@ def project_widget_records(
                 global_visible=global_visible,
                 enabled=enabled,
             )
+            resolved_value = _resolve_widget_value(
+                source=source,
+                connector_ids=connector_ids,
+                connector_read=connector_read,
+            )
             records.append(WidgetRecord(
                 overlay_id=overlay_id,
                 widget_id=widget.id,
@@ -73,8 +78,24 @@ def project_widget_records(
                 enabled=enabled,
                 position=position,
                 values=values,
+                resolved_value=resolved_value,
             ))
     return records
+
+
+def _resolve_widget_value(
+    *,
+    source: str,
+    connector_ids: tuple[str, ...],
+    connector_read: ConnectorRead,
+) -> str:
+    if not source:
+        return ""
+    for connector_id in connector_ids:
+        value = connector_read.value(connector_id, source)
+        if value is not None:
+            return value
+    return ""
 
 
 def _widget_status(

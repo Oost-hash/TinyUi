@@ -30,6 +30,7 @@ from runtimeV2.manifest.startup_shutdown.startup import startup_manifest
 from runtimeV2.paths.startup_shutdown.startup import startup_paths
 from runtimeV2.persistence.startup_shutdown.startup import startup_persistence
 from runtimeV2.plugins.startup_shutdown.startup import startup_plugins
+from runtimeV2.scheduler.startup_shutdown.startup import startup_scheduler
 from runtimeV2.ui.startup_shutdown.startup import startup_ui
 from runtimeV2.widgets.startup_shutdown.startup import startup_widgets
 from runtimeV2.runtime import RuntimeV2
@@ -67,6 +68,11 @@ def register_default_domains(runtime: RuntimeV2) -> None:
         "persistence",
         startup_persistence,
         description="Owns bootstrap, config sets, settings, and widget config.",
+    )
+    runtime.register_domain(
+        "scheduler",
+        startup_scheduler,
+        description="Owns recurring runtime jobs and scheduler cadence.",
     )
     runtime.register_domain(
         "connectors",

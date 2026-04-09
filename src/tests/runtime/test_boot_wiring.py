@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
+from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
+from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.register_capabilities import register_runtime_capabilities
@@ -28,6 +30,7 @@ def test_register_default_domains_uses_runtime_v2_order() -> None:
         "plugins",
         "host",
         "persistence",
+        "scheduler",
         "connectors",
         "widgets",
         "ui",
@@ -45,8 +48,8 @@ def test_runtime_v2_has_no_separate_plugin_lifecycle_domain() -> None:
     assert "plugins_lifecycle" not in runtime.domain_names()
 
 
-def test_startup_runtime_v2_exposes_shutdown_and_active_plugin_globals() -> None:
-    """A booted runtime V2 should expose runtime and plugin globals through RuntimeGlobals."""
+def test_startup_runtime_v2_exposes_shutdown_plugin_and_connector_globals() -> None:
+    """A booted runtime V2 should expose runtime, plugin, and connector globals through RuntimeGlobals."""
 
     result = startup_runtime_v2()
 
@@ -67,6 +70,14 @@ def test_startup_runtime_v2_exposes_shutdown_and_active_plugin_globals() -> None
         "plugin_active_write",
         PluginActiveWrite,
     )
+    assert globals_capability.read_global("connector_runtime", ConnectorRead) is runtime.capability(
+        "connector_read",
+        ConnectorRead,
+    )
+    assert globals_capability.write_global("connector_runtime", ConnectorWrite) is runtime.capability(
+        "connector_write",
+        ConnectorWrite,
+    )
     assert runtime.capability("plugin_active_read", object) is not None
     assert runtime.capability("plugin_state_read", object) is not None
     assert runtime.domain_names() == [
@@ -76,6 +87,7 @@ def test_startup_runtime_v2_exposes_shutdown_and_active_plugin_globals() -> None
         "plugins",
         "host",
         "persistence",
+        "scheduler",
         "connectors",
         "widgets",
         "ui",

@@ -34,6 +34,7 @@ class WidgetHostCapability:
             "enabled": record.enabled,
             "position": {"x": record.position[0], "y": record.position[1]},
             "values": {} if record.values is None else dict(record.values),
+            "resolvedValue": record.resolved_value,
             "errorMessage": record.error_message,
         }
 
@@ -47,6 +48,7 @@ class WidgetHostCapability:
             "source": record.source,
             "bindings": dict(record.bindings),
             "values": {} if record.values is None else dict(record.values),
+            "resolvedValue": record.resolved_value,
             "displayText": self.display_text(record),
             "textColor": "#E0E0E0" if record.status != WidgetStatus.ERROR else "#FF7A7A",
             "backgroundColor": "#CC000000",
@@ -61,7 +63,7 @@ class WidgetHostCapability:
         """Return widget display text for host surfaces."""
 
         if record.status == WidgetStatus.READY:
-            return record.source
+            return record.resolved_value or record.source
         if record.status == WidgetStatus.WAITING_FOR_CONNECTOR:
             return "Waiting for connector"
         if record.status == WidgetStatus.ERROR:

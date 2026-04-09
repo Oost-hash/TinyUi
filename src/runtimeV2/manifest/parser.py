@@ -179,9 +179,19 @@ def _parse_ui_manifest(
 
 
 def _parse_overlay_manifest(data: dict, plugin: dict, manifest_dir: Path) -> OverlayManifest | None:
-    connectors = list(plugin.get("overlay_connectors", data.get("overlay_connectors", [])))
-    modules = list(plugin.get("overlay_modules", data.get("overlay_modules", [])))
     overlay_section = data.get("overlay", {})
+    connectors = list(
+        overlay_section.get(
+            "connectors",
+            plugin.get("overlay_connectors", data.get("overlay_connectors", [])),
+        )
+    )
+    modules = list(
+        overlay_section.get(
+            "modules",
+            plugin.get("overlay_modules", data.get("overlay_modules", [])),
+        )
+    )
     widgets_dir_name = overlay_section.get("widgets_dir")
     if widgets_dir_name:
         widgets = _load_widgets_from_dir(manifest_dir / widgets_dir_name)
