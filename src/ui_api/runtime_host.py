@@ -323,9 +323,12 @@ def start_runtime_host(
             log_startup_step(f"requested runtime window: {window_id}")
             existing = open_handles.get(window_id)
             if existing is not None:
-                existing.qml_window.raise_()
-                existing.qml_window.requestActivate()
-                return
+                if not existing.qml_window.isVisible():
+                    _drop_handle(window_id)
+                else:
+                    existing.qml_window.raise_()
+                    existing.qml_window.requestActivate()
+                    return
             manifest = _window_manifest(manifest_ui_read, window_id)
             if manifest is None:
                 return

@@ -590,6 +590,56 @@ def test_runtime_host_secondary_window_close_does_not_request_runtime_shutdown(m
     assert runtime.shutdown.calls == []
 
 
+def test_runtime_host_reopens_secondary_window_after_close(monkeypatch) -> None:
+    """Closed secondary windows should be recreated on the next open action."""
+
+    app = _FakeApp()
+    runtime = _FakeUiRuntime()
+    opened: list[str] = []
+    opened_windows: dict[str, _FakeWindow] = {}
+
+    class _FakeWindow:
+        def __init__(self, window_id: str) -> None:
+            self.window_id = window_id
+            self.destroyed = _FakeSignal()
+            self._visible = True
+
+        def close(self) -> None:
+            self._visible = False
+
+        def raise_(self) -> None:
+            return None
+
+        def requestActivate(self) -> None:
+            return None
+
+        def isVisible(self) -> bool:
+            return self._visible
+
+    def _open_window(manifest, *_args, **_kwargs):
+        opened.append(manifest.id)
+        window = _FakeWindow(manifest.id)
+        opened_windows[manifest.id] = window
+        return SimpleNamespace(qml_window=window, keepalive=())
+
+    monkeypatch.setattr("ui_api.runtime_host.open_window", _open_window)
+
+    result, startup_result = start_runtime_host(
+        app=app,
+        engine=object(),
+        runtime=cast(Any, runtime),
+    )
+
+    assert startup_result.ok
+    assert result is not None
+
+    result.actions.trigger("open:devtools.main")
+    opened_windows["devtools.main"].close()
+    result.actions.trigger("open:devtools.main")
+
+    assert opened == ["tinyui.main", "devtools.main", "devtools.main"]
+
+
 def test_runtime_host_widget_visibility_toggle_uses_runtime_capability(monkeypatch) -> None:
     """The ui_api host should toggle widget visibility through runtime-owned capabilities."""
 

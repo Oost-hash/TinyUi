@@ -31,6 +31,10 @@ At the UI level, 0.5.5 is less about flashy new features and more about making t
 
 What makes this release important is not one specific feature. It is that TinyUi now has a more believable architecture. The system is more explicit about what is runtime policy, what is host interpretation, what is packaging adaptation, and what is merely build metadata. That separation cost a lot of code churn, but it leaves the project in a far better place for the next phase: plugin switching, smarter packaged runtime loading, and continued refinement of the domain model without collapsing back into one large, ambiguous runtime blob.
 
+### 0.5.5 Hotfix
+
+- Dialog windows can be opened again after being closed
+
 ## [0.4.0] — 2026-03-28
 This release rewrites the shape of TinyUi's core. The project no longer treats runtime behavior,
 plugin participation, session state, capability binding, polling, and app boot as separate half-owned
