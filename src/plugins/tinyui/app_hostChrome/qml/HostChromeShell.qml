@@ -72,11 +72,10 @@ Item {
 
     Connections {
         target: root.hostWindow ? root.hostWindow.pluginState : null
-        function onPluginStateChanged(pluginId, state) {
-            root.pluginStates[pluginId] = state
-            var temp = root.pluginStates
-            root.pluginStates = {}
-            root.pluginStates = temp
+        function onStateDataChanged() {
+            if (!root.hostWindow || !root.hostWindow.pluginState)
+                return
+            root.pluginStates = root.hostWindow.pluginState.states
         }
     }
 

@@ -9,12 +9,16 @@ from typing import Any, cast
 
 import bootv2
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
-from shared_runtime_host.capabilities.ui_api import ManifestQmlCapability
+from shared_runtime_host.capabilities.ui_api import (
+    ConnectorWriteQmlCapability,
+    ManifestQmlCapability,
+    SettingsQmlCapability,
+)
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.events.capabilities.event_read import EventRead
 from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry
-from runtimeV2.events.startup import EventsStartupResult
+from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.host.contracts import HostAppIdentity
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead
 from runtimeV2.host.contracts import HostShell
@@ -32,7 +36,7 @@ from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
 from runtimeV2.ui.projection import project_ui_window_records
 from runtimeV2.ui.schemas.manifest import AppManifest, ChromePolicy, UiManifest
-from runtimeV2.ui.startup import UIStartupResult
+from runtimeV2.ui.startup_shutdown.startup import UIStartupResult
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
@@ -76,6 +80,21 @@ class _FakeCapabilityRuntime:
 
     def capability(self, name: str, capability_type: type) -> object:
         self.calls.append((name, capability_type.__name__))
+        if name == "connector_write":
+            class _FakeConnectorWrite:
+                def update(self, connector_id: str) -> bool:
+                    return connector_id == "demo"
+
+                def update_all(self) -> list[str]:
+                    return ["demo"]
+
+                def request_source(self, connector_id: str, owner: str, source_name: str) -> bool:
+                    return True
+
+                def release_source(self, connector_id: str, owner: str) -> bool:
+                    return True
+
+            return _FakeConnectorWrite()
         return f"{name}:capability"
 
 
@@ -345,15 +364,18 @@ def test_runtime_host_builds_qml_properties_from_ui_schema() -> None:
     ui_result = cast(Any, SimpleNamespace(qml_property_plan=[
         QmlPropertyPlan("manifest_read", "manifestRead"),
         QmlPropertyPlan("settings_read", "settingsRead"),
+        QmlPropertyPlan("connector_write", "connectorActions"),
     ]))
 
     properties = build_runtime_qml_properties(cast(Any, runtime), cast(UIStartupResult, ui_result))
 
     assert isinstance(properties["manifestRead"], ManifestQmlCapability)
-    assert properties["settingsRead"] == "settings_read:capability"
+    assert isinstance(properties["settingsRead"], SettingsQmlCapability)
+    assert isinstance(properties["connectorActions"], ConnectorWriteQmlCapability)
     assert runtime.calls == [
         ("manifest_read", "ManifestRead"),
         ("settings_read", "SettingsRead"),
+        ("connector_write", "ConnectorWrite"),
     ]
 
 
@@ -590,7 +612,7 @@ def test_runtime_host_plugin_panel_toggle_uses_runtime_capability(monkeypatch) -
 def test_ui_startup_emits_window_record_change_before_ready(monkeypatch) -> None:
     """UI startup should emit a typed window-record update alongside readiness."""
 
-    from runtimeV2.ui.startup import startup_ui
+    from runtimeV2.ui.startup_shutdown.startup import startup_ui
 
     class _FakeRuntime:
         def __init__(self) -> None:
@@ -621,13 +643,13 @@ def test_ui_startup_emits_window_record_change_before_ready(monkeypatch) -> None
         def register_domain_result(self, name: str, result: object) -> None:
             self.result = result
 
-    monkeypatch.setattr("runtimeV2.ui.startup.project_ui_window_records", lambda **_kwargs: [])
+    monkeypatch.setattr("runtimeV2.ui.startup_shutdown.startup.project_ui_window_records", lambda **_kwargs: [])
     monkeypatch.setattr(
-        "runtimeV2.ui.startup.determine_render_status",
+        "runtimeV2.ui.startup_shutdown.startup.determine_render_status",
         lambda **_kwargs: UIRenderStatus(render_ready=True, main_window_id="tinyui.main"),
     )
     monkeypatch.setattr(
-        "runtimeV2.ui.startup.build_ui_chrome_model",
+        "runtimeV2.ui.startup_shutdown.startup.build_ui_chrome_model",
         lambda **_kwargs: UIChromeModel(
             menu_items=[],
             plugin_menu_items=[],
@@ -648,3 +670,4 @@ def test_ui_startup_emits_window_record_change_before_ready(monkeypatch) -> None
     assert len(window_events) == 1
     assert window_events[0].data == UIWindowRecordsChangedData(window_count=0)
     assert len(ready_events) == 1
+

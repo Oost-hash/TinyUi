@@ -9,10 +9,18 @@ from PySide6.QtCore import QObject, Property, Signal, Slot
 from shared_runtime_host.capabilities.ui_host import UIHostCapability
 from shared_runtime_host.capabilities.window_host import WindowHostCapability
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
+from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
+from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
+from runtimeV2.connectors.contracts import ConnectorInspectionSnapshot
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
+from runtimeV2.persistence.capabilities.settings_read import SettingsRead
+from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
+from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
+from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.plugins.capabilities.state_read import PluginStateRead
+from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
 from runtimeV2.ui.capabilities.panel_state_read import PanelStateRead
 from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
@@ -45,12 +53,209 @@ class ManifestQmlCapability(QObject):
                 "description": manifest.description,
                 "iconUrl": manifest.icon,
                 "requires": manifest.requires,
+                "windows": [window.id for window in manifest.ui.windows] if manifest.ui is not None else [],
                 "windowCount": len(manifest.ui.windows) if manifest.ui is not None else 0,
                 "settingCount": len(manifest.settings),
                 "state": "",
             }
             for manifest in self._manifest_read.all_manifests().values()
         ]
+
+
+class SettingsQmlCapability(QObject):
+    """Expose persistence settings to QML."""
+
+    settingsChanged = Signal()
+
+    def __init__(self, settings_read: SettingsRead, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._settings_read = settings_read
+
+    @Property(_QVARIANT_LIST, notify=settingsChanged)
+    def settings(self) -> list[dict[str, object]]:
+        """Return settings as a QML model."""
+
+        items: list[dict[str, object]] = []
+        for namespace, specs in self._settings_read.by_namespace().items():
+            values = self._settings_read.namespace_values(namespace)
+            for spec in specs:
+                items.append(
+                    {
+                        "namespace": namespace,
+                        "key": spec.key,
+                        "type": spec.type,
+                        "currentValue": str(values.get(spec.key, spec.default)),
+                    }
+                )
+        return items
+
+
+class SettingsWriteQmlCapability(QObject):
+    """Expose settings write actions to QML."""
+
+    def __init__(self, settings_write: SettingsWrite, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._settings_write = settings_write
+
+    @Slot(str, str, "QVariant")
+    def setValue(self, namespace: str, key: str, value: object) -> None:
+        """Set one setting value."""
+
+        self._settings_write.set(namespace, key, value)
+
+    @Slot(str)
+    def save(self, namespace: str) -> None:
+        """Save one namespace."""
+
+        self._settings_write.save(namespace)
+
+    @Slot()
+    def saveAll(self) -> None:
+        """Save all namespaces."""
+
+        self._settings_write.save_all()
+
+
+class ConnectorReadQmlCapability(QObject):
+    """Expose connector registry reads to QML."""
+
+    servicesChanged = Signal()
+    connectorDataChanged = Signal(str)
+
+    def __init__(self, connector_read: ConnectorRead, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._connector_read = connector_read
+
+    @Property(_QVARIANT_LIST, notify=servicesChanged)
+    def services(self) -> list[dict[str, object]]:
+        """Return connector services as a QML model."""
+
+        return [
+            {
+                "id": service.connector_id,
+                "pluginId": service.plugin_id,
+                "label": service.display_name,
+            }
+            for service in self._connector_read.services()
+        ]
+
+    @Slot(str, result=_QVARIANT_LIST)
+    def inspectionRows(self, connector_id: str) -> list[dict[str, str]]:
+        """Return connector inspection rows as a QML model."""
+
+        snapshot: ConnectorInspectionSnapshot = self._connector_read.inspection_rows(connector_id)
+        return [{"key": key, "value": value} for key, value in snapshot]
+
+
+class ConnectorWriteQmlCapability(QObject):
+    """Expose connector write actions to QML."""
+
+    def __init__(self, connector_write: ConnectorWrite, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._connector_write = connector_write
+
+    @Slot(str, result=bool)
+    def updateConnector(self, connector_id: str) -> bool:
+        """Update one connector service."""
+
+        return self._connector_write.update(connector_id)
+
+    @Slot(result=_QVARIANT_LIST)
+    def updateAll(self) -> list[str]:
+        """Update all connector services."""
+
+        return self._connector_write.update_all()
+
+    @Slot(str, str, str, result=bool)
+    def requestSource(self, connector_id: str, owner: str, source_name: str) -> bool:
+        """Request a connector source claim."""
+
+        return self._connector_write.request_source(connector_id, owner, source_name)
+
+    @Slot(str, str, result=bool)
+    def releaseSource(self, connector_id: str, owner: str) -> bool:
+        """Release a connector source claim."""
+
+        return self._connector_write.release_source(connector_id, owner)
+
+
+class WidgetConfigReadQmlCapability(QObject):
+    """Expose widget config reads to QML."""
+
+    def __init__(self, widget_config_read: WidgetConfigRead, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._widget_config_read = widget_config_read
+
+    @Slot(str, str, result=_QVARIANT_MAP)
+    def widgetValues(self, overlay_id: str, widget_id: str) -> dict[str, object]:
+        """Return one widget value map."""
+
+        return self._widget_config_read.widget_values(overlay_id, widget_id)
+
+    @Slot(str, str, result=bool)
+    def isWidgetEnabled(self, overlay_id: str, widget_id: str) -> bool:
+        """Return whether one widget is enabled."""
+
+        widget = self._widget_config_read.get_widget(overlay_id, widget_id)
+        return True if widget is None else widget.enabled
+
+
+class WidgetConfigWriteQmlCapability(QObject):
+    """Expose widget config writes to QML."""
+
+    def __init__(self, widget_config_write: WidgetConfigWrite, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._widget_config_write = widget_config_write
+
+    @Slot(str, str, bool, result=bool)
+    def setWidgetEnabled(self, overlay_id: str, widget_id: str, enabled: bool) -> bool:
+        """Set widget enabled state."""
+
+        return self._widget_config_write.set_widget_enabled(overlay_id, widget_id, enabled)
+
+    @Slot(str, str, int, int, result=bool)
+    def setWidgetPosition(self, overlay_id: str, widget_id: str, x: int, y: int) -> bool:
+        """Set widget position."""
+
+        return self._widget_config_write.set_widget_position(overlay_id, widget_id, x, y)
+
+    @Slot(str, str, _QVARIANT_MAP, result=bool)
+    def setWidgetValues(self, overlay_id: str, widget_id: str, values: dict[str, object]) -> bool:
+        """Set widget value map."""
+
+        return self._widget_config_write.set_widget_values(overlay_id, widget_id, values)
+
+    @Slot(str, str, result=bool)
+    def resetWidgetValues(self, overlay_id: str, widget_id: str) -> bool:
+        """Reset widget value map."""
+
+        return self._widget_config_write.reset_widget_values(overlay_id, widget_id)
+
+
+class RenderStatusQmlCapability(QObject):
+    """Expose UI render status to QML."""
+
+    def __init__(self, render_status_read: RenderStatusRead, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._render_status_read = render_status_read
+
+    @Property(bool, constant=True)
+    def renderReady(self) -> bool:
+        """Return whether UI render is ready."""
+
+        return self._render_status_read.is_render_ready()
+
+    @Property(str, constant=True)
+    def renderBlocker(self) -> str:
+        """Return the current render blocker."""
+
+        return self._render_status_read.render_blocker()
+
+    @Property(str, constant=True)
+    def mainWindowId(self) -> str:
+        """Return the main window id."""
+
+        return self._render_status_read.main_window_id()
 
 
 class WidgetRecordsQmlCapability(QObject):
@@ -156,14 +361,14 @@ class PluginActiveQmlCapability(QObject):
 class PluginStateQmlCapability(QObject):
     """Expose plugin lifecycle state reads to QML."""
 
-    pluginStateChanged = Signal(str, str)
+    stateDataChanged = Signal()
 
     def __init__(self, state_read: PluginStateRead, plugin_ids: list[str], parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._state_read = state_read
         self._plugin_ids = plugin_ids
 
-    @Property(_QVARIANT_MAP, constant=True)
+    @Property(_QVARIANT_MAP, notify=stateDataChanged)
     def states(self) -> dict[str, str]:
         """Return plugin state map."""
 
@@ -172,13 +377,13 @@ class PluginStateQmlCapability(QObject):
             for plugin_id in self._plugin_ids
         }
 
-    @Property(_QVARIANT_MAP, constant=True)
+    @Property(_QVARIANT_MAP, notify=stateDataChanged)
     def errors(self) -> dict[str, str]:
         """Return plugin error map."""
 
         return {}
 
-    @Property(_QVARIANT_MAP, constant=True)
+    @Property(_QVARIANT_MAP, notify=stateDataChanged)
     def histories(self) -> dict[str, list[dict[str, str]]]:
         """Return plugin state history map."""
 

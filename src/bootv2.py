@@ -28,6 +28,7 @@ import sys
 from runtimeV2.startup import get_runtime_v2_result, startup_runtime_v2
 from ui_api.qt import create_application, create_engine
 from ui_api.runtime_host import start_runtime_host
+from ui_api.windowing import win_window  # eager import: registers QML singletons before engine
 
 
 def main() -> int:

@@ -33,13 +33,12 @@ Item {
     property string emptyText:  "No data."
 
     // Column headers
-    Rectangle {
+    Item {
         id: header
         anchors.top:   parent.top
         anchors.left:  parent.left
         anchors.right: parent.right
         height: 24
-        color: "transparent"
 
         Rectangle {
             anchors.fill: parent
@@ -110,10 +109,9 @@ Item {
             height: rowDelegate.isSection ? 28 : 22
 
             // Section row
-            Rectangle {
+            Item {
                 anchors.fill: parent
                 visible: rowDelegate.isSection
-                color: "transparent"
 
                 Rectangle {
                     anchors.fill: parent
@@ -159,10 +157,9 @@ Item {
             }
 
             // Data row
-            Rectangle {
+            Item {
                 anchors.fill: parent
                 visible: !rowDelegate.isSection
-                color: "transparent"
 
                 Rectangle {
                     anchors.fill: parent
