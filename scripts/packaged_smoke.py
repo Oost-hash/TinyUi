@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import os
 import platform
 import subprocess
-import time
 import tempfile
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -48,8 +49,22 @@ def _smoke_env() -> dict[str, str]:
         env.setdefault("QT_QUICK_BACKEND", "software")
         env.setdefault("QSG_RHI_BACKEND", "software")
         env.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
-        env.setdefault("XDG_RUNTIME_DIR", tempfile.gettempdir())
     return env
+
+
+@contextlib.contextmanager
+def _smoke_temp_dirs():
+    """Create temporary OS dirs needed by packaged smoke on Linux."""
+
+    with contextlib.ExitStack() as stack:
+        env_updates: dict[str, str] = {}
+        if platform.system() == "Linux":
+            runtime_dir = Path(stack.enter_context(tempfile.TemporaryDirectory(prefix="tinyui-runtime-")))
+            runtime_dir.chmod(0o700)
+            config_dir = Path(stack.enter_context(tempfile.TemporaryDirectory(prefix="tinyui-config-")))
+            env_updates["XDG_RUNTIME_DIR"] = str(runtime_dir)
+            env_updates["XDG_CONFIG_HOME"] = str(config_dir)
+        yield env_updates
 
 
 def _emit_relevant_output(stdout: str, stderr: str) -> None:
@@ -71,35 +86,62 @@ def _emit_relevant_output(stdout: str, stderr: str) -> None:
         print(combined)
 
 
+def _emit_startup_log(env: dict[str, str]) -> None:
+    """Print startup diagnostics when the packaged app created a startup log."""
+
+    if platform.system() == "Windows":
+        base_dir = Path(env.get("APPDATA", ""))
+    else:
+        base_dir = Path(env.get("XDG_CONFIG_HOME", ""))
+    if not str(base_dir):
+        return
+
+    log_path = base_dir / "TinyUi" / "logs" / "startup.log"
+    if not log_path.exists():
+        return
+
+    try:
+        content = log_path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return
+    if not content:
+        return
+    print("TinyUi startup.log:")
+    print(content)
+
+
 def main() -> int:
     args = _parse_args()
     dist_arg = Path(args.dist)
     dist_dir = dist_arg if dist_arg.is_absolute() else (ROOT / dist_arg).resolve()
     exe_path = _validate_layout(dist_dir)
+    with _smoke_temp_dirs() as env_updates:
+        env = _smoke_env()
+        env.update(env_updates)
+        proc = subprocess.Popen(
+            [str(exe_path)],
+            cwd=str(dist_dir),
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
 
-    proc = subprocess.Popen(
-        [str(exe_path)],
-        cwd=str(dist_dir),
-        env=_smoke_env(),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-
-    try:
-        time.sleep(args.timeout)
-        if proc.poll() not in (None, 0):
-            stdout, stderr = proc.communicate(timeout=5)
+        try:
+            time.sleep(args.timeout)
+            if proc.poll() not in (None, 0):
+                stdout, stderr = proc.communicate(timeout=5)
+                _emit_relevant_output(stdout, stderr)
+                _emit_startup_log(env)
+                return proc.returncode or 1
+            proc.terminate()
+            stdout, stderr = proc.communicate(timeout=10)
             _emit_relevant_output(stdout, stderr)
-            return proc.returncode or 1
-        proc.terminate()
-        stdout, stderr = proc.communicate(timeout=10)
-        _emit_relevant_output(stdout, stderr)
-        return 0
-    finally:
-        if proc.poll() is None:
-            proc.kill()
-            proc.wait(timeout=10)
+            return 0
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait(timeout=10)
 
 
 if __name__ == "__main__":
