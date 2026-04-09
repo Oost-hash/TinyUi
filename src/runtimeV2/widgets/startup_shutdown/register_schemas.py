@@ -1,0 +1,33 @@
+#  TinyUI
+#  Copyright (C) 2026 Oost-hash
+#
+#  This file is part of TinyUI.
+#
+#  TinyUI is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  TinyUI is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
+#  licensed under GPLv3.
+
+"""Manifest schema registration for widgets."""
+
+from runtimeV2.manifest.schema_registry import ManifestSchemaRegistry
+from runtimeV2.widgets.schemas.manifest import OverlayManifest, OverlayWidgetDecl, WidgetDefaults
+
+
+def register_widget_schemas(registry: ManifestSchemaRegistry) -> None:
+    """Register widget-owned manifest schemas."""
+
+    registry.register_schema("overlay", owner_domain="widgets", schema_type=OverlayManifest)
+    registry.register_schema("overlay.widget", owner_domain="widgets", schema_type=OverlayWidgetDecl)
+    registry.register_schema("overlay.widget_defaults", owner_domain="widgets", schema_type=WidgetDefaults)

@@ -71,6 +71,21 @@ class LMUTelemetryReader(TelemetryReader):
     def open(self) -> None: self._real.open()
     def close(self) -> None: self._real.close()
     def update(self) -> None: self._real.update()
+    def game_phase(self) -> int | None:
+        data = self._real._source.info.data
+        if data is None:
+            return None
+        return int(data.scoring.scoringInfo.mGamePhase)
+    def has_player_vehicle(self) -> bool | None:
+        data = self._real._source.info.data
+        if data is None:
+            return None
+        return bool(data.telemetry.playerHasVehicle)
+    def in_realtime(self) -> bool | None:
+        data = self._real._source.info.data
+        if data is None:
+            return None
+        return bool(data.scoring.scoringInfo.mInRealtime)
     @property
     def state(self) -> State: return cast(State, self._real.state)
     @property

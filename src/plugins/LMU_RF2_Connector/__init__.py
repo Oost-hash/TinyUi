@@ -21,16 +21,16 @@
 
 """TinyUi-owned connector family for LMU, rF2, and mock telemetry."""
 
-from .runtime import (
-    ConnectorRuntime,
-    create_connector_service,
-    create_lmu_connector_service,
-    create_lmu_rf2_connector_service,
+from .service import (
+    LMURF2ConnectorService,
+    create_family_service,
+    create_lmu_service,
+    create_lmu_rf2_service,
 )
 
 __all__ = [
-    "ConnectorRuntime",
-    "create_connector_service",
-    "create_lmu_connector_service",
-    "create_lmu_rf2_connector_service",
+    "LMURF2ConnectorService",
+    "create_family_service",
+    "create_lmu_service",
+    "create_lmu_rf2_service",
 ]

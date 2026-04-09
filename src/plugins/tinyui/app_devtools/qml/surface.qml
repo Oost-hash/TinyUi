@@ -28,11 +28,11 @@ Rectangle {
     id: root
 
     property var hostWindow: Window.window
-    property var pluginRead: hostWindow && hostWindow.pluginRead ? hostWindow.pluginRead : null
+    property var manifestRead: hostWindow && hostWindow.manifestRead ? hostWindow.manifestRead : null
     property var pluginState: hostWindow && hostWindow.pluginState ? hostWindow.pluginState : null
     property var settingsRead: hostWindow && hostWindow.settingsRead ? hostWindow.settingsRead : null
-    property var windowRead: hostWindow && hostWindow.windowRead ? hostWindow.windowRead : null
-    property var widgetRead: hostWindow && hostWindow.widgetRead ? hostWindow.widgetRead : null
+    property var windowRecords: hostWindow && hostWindow.windowRecords ? hostWindow.windowRecords : null
+    property var widgetRecords: hostWindow && hostWindow.widgetRecords ? hostWindow.widgetRecords : null
     property var connectorRead: hostWindow && hostWindow.connectorRead ? hostWindow.connectorRead : null
     property var connectorActions: hostWindow && hostWindow.connectorActions ? hostWindow.connectorActions : null
     property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
@@ -49,7 +49,7 @@ Rectangle {
     readonly property var tabs: ["Plugins", "Settings", "Windows", "Widgets", "Connectors"]
 
     function rebuildRows() {
-        var plugins = pluginRead ? pluginRead.plugins : []
+        var plugins = manifestRead ? manifestRead.plugins : []
         var states = pluginState ? pluginState.states : ({})
         var errors = pluginState ? pluginState.errors : ({})
 
@@ -143,7 +143,7 @@ Rectangle {
 
     function buildWindowRows() {
         var rows = []
-        var windows = windowRead ? windowRead.windows : []
+        var windows = windowRecords ? windowRecords.windows : []
         for (var i = 0; i < windows.length; i++) {
             var window = windows[i]
             rows.push({
@@ -189,7 +189,7 @@ Rectangle {
 
     function buildWidgetRows() {
         var rows = []
-        var widgets = widgetRead ? widgetRead.widgets : []
+        var widgets = widgetRecords ? widgetRecords.widgets : []
         for (var i = 0; i < widgets.length; i++) {
             var widget = widgets[i]
             rows.push({
@@ -273,7 +273,7 @@ Rectangle {
         spacing: 0
         
         Connections {
-            target: root.pluginRead
+            target: root.manifestRead
             function onPluginsChanged() { root.rebuildRows() }
         }
 
@@ -288,12 +288,12 @@ Rectangle {
         }
 
         Connections {
-            target: root.windowRead
+            target: root.windowRecords
             function onWindowsChanged() { root.windowRows = root.buildWindowRows() }
         }
 
         Connections {
-            target: root.widgetRead
+            target: root.widgetRecords
             function onWidgetsChanged() { root.widgetRows = root.buildWidgetRows() }
         }
 

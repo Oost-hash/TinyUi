@@ -34,21 +34,22 @@ Item {
     readonly property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     readonly property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
     readonly property var windowController: hostWindow && hostWindow.windowController ? hostWindow.windowController : null
+    readonly property var uiChrome: hostWindow && hostWindow.uiChrome ? hostWindow.uiChrome : null
 
     property string windowTitle: hostWindow && typeof hostWindow.windowTitle === "string" ? hostWindow.windowTitle : ""
-    property var menuItems: hostWindow && hostWindow.menuItems ? hostWindow.menuItems : []
+    property var menuItems: uiChrome ? uiChrome.menuItems : []
     property int currentTab: hostWindow && typeof hostWindow.currentTab === "number" ? hostWindow.currentTab : 0
     property bool showTabBar: hostWindow && typeof hostWindow.showTabBar === "boolean" ? hostWindow.showTabBar : false
     property bool showStatusBar: hostWindow && typeof hostWindow.showStatusBar === "boolean" ? hostWindow.showStatusBar : false
-    property var statusItems: hostWindow && hostWindow.statusItems ? hostWindow.statusItems : []
-    property var pluginMenuItems: hostWindow && hostWindow.pluginMenuItems ? hostWindow.pluginMenuItems : []
-    property var pluginMenuLabel: hostWindow && hostWindow.pluginMenuLabel ? hostWindow.pluginMenuLabel : "Plugins"
-    property string statusActiveLabel: hostWindow && typeof hostWindow.statusActiveLabel === "string" ? hostWindow.statusActiveLabel : ""
+    property var statusItems: uiChrome ? uiChrome.statusItems : []
+    property var pluginMenuItems: uiChrome ? uiChrome.pluginMenuItems : []
+    property var pluginMenuLabel: uiChrome ? uiChrome.pluginMenuLabel : "Plugins"
+    property string statusActiveLabel: uiChrome ? uiChrome.statusActiveLabel : ""
     property bool pluginMenuOpen: false
     property bool menuOpen: false
     property string pendingPluginActivation: ""
     property var pluginStates: ({})
-    property bool widgetsVisible: hostWindow && hostWindow.widget_visibility ? hostWindow.widget_visibility.globalVisible : true
+    property bool widgetsVisible: hostWindow && hostWindow.widgetVisibility ? hostWindow.widgetVisibility.globalVisible : true
 
     readonly property url menuIconSource: Qt.resolvedUrl("../../assets/images/ui/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
 
@@ -71,18 +72,17 @@ Item {
 
     Connections {
         target: root.hostWindow ? root.hostWindow.pluginState : null
-        function onPluginStateChanged(pluginId, state) {
-            root.pluginStates[pluginId] = state
-            var temp = root.pluginStates
-            root.pluginStates = {}
-            root.pluginStates = temp
+        function onStateDataChanged() {
+            if (!root.hostWindow || !root.hostWindow.pluginState)
+                return
+            root.pluginStates = root.hostWindow.pluginState.states
         }
     }
 
     Connections {
-        target: root.hostWindow && root.hostWindow.widget_visibility ? root.hostWindow.widget_visibility : null
+        target: root.hostWindow && root.hostWindow.widgetVisibility ? root.hostWindow.widgetVisibility : null
         function onGlobalVisibleChanged() {
-            root.widgetsVisible = root.hostWindow.widget_visibility.globalVisible
+            root.widgetsVisible = root.hostWindow.widgetVisibility.globalVisible
         }
     }
 
@@ -415,7 +415,7 @@ Item {
                         }
                         color: {
                             // Widget visibility toggle gets special coloring
-                            if (statusItemDelegate.modelData && statusItemDelegate.modelData.action === "widget_visibility.toggle") {
+                            if (statusItemDelegate.modelData && statusItemDelegate.modelData.action === "widgetVisibility.toggle") {
                                 return root.widgetsVisible 
                                     ? (root.theme ? root.theme.success : "#4caf50")
                                     : (root.theme ? root.theme.textMuted : "#878a98")
@@ -431,10 +431,7 @@ Item {
                         hoverEnabled: true
                         onClicked: {
                             var action = statusItemDelegate.modelData.action
-                            if (action === "widget_visibility.toggle") {
-                                var currentlyVisible = root.hostWindow.widget_visibility.globalVisible
-                                root.hostWindow.widget_visibility.setGlobalVisible(!currentlyVisible)
-                            } else if (action && root.appActions) {
+                            if (action && root.appActions) {
                                 root.appActions.trigger(action)
                             }
                         }
@@ -444,21 +441,19 @@ Item {
         }
 
         // Plugin picker
-        Item {
+        Rectangle {
+            id: pluginPickerButton
             anchors.right: parent.right
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            width: pluginNameRow.width + 20
+            width: pluginNameRow.implicitWidth + 20
             visible: root.statusActiveLabel !== ""
-
-            Rectangle {
-                anchors.fill: parent
-                color: root.hostWindow && root.hostWindow.showPluginPanel
-                       ? (root.theme ? root.theme.surfaceAlt : "#2f343e")
-                       : pluginNameHover.containsMouse 
-                         ? (root.theme ? root.theme.surfaceFloating : "#20242b") 
-                         : "transparent"
-            }
+            z: 25
+            color: root.hostWindow && root.hostWindow.showPluginPanel
+                   ? (root.theme ? root.theme.surfaceAlt : "#2f343e")
+                   : pluginNameHover.containsMouse
+                     ? (root.theme ? root.theme.surfaceFloating : "#20242b")
+                     : "transparent"
             
             Rectangle { 
                 visible: root.hostWindow && root.hostWindow.showPluginPanel
@@ -504,14 +499,15 @@ Item {
                 onClicked: {
                     if (!root.hostWindow) return
                     // Activate pending plugin before destroying the panel item
-                    if (root.hostWindow.showPluginPanel && root.pendingPluginActivation !== "" && root.hostWindow.pluginSelectionActions) {
-                        root.hostWindow.pluginSelectionActions.setActivePlugin(root.pendingPluginActivation)
+                    if (root.hostWindow.showPluginPanel && root.pendingPluginActivation !== "" && root.appActions) {
+                        root.appActions.trigger("plugin.activate:" + root.pendingPluginActivation)
                         root.pendingPluginActivation = ""
                     }
                     if (!root.hostWindow.showPluginPanel) {
                         root.pendingPluginActivation = ""
                     }
-                    root.hostWindow.showPluginPanel = !root.hostWindow.showPluginPanel
+                    if (root.appActions)
+                        root.appActions.trigger("pluginPanel.toggle")
                 }
             }
         }

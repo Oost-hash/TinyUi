@@ -32,19 +32,17 @@ Window {
     property string pluginPanelUrl: ""
     property var pluginPanelComponent: null
     property bool showPluginPanel: false
-    property var menus: null
-    property var statusbar: null
-    property var pluginSelection: null
-    property var pluginSelectionActions: null
+    property var panelState: null
+    property var manifestRead: null
+    property var uiChrome: null
+    property var pluginActive: null
     property var pluginState: null
-    property var pluginStateWrite: null
-    property var pluginRead: null
     property var settingsRead: null
     property var settingsWrite: null
-    property var windowRead: null
-    property var widgetRead: null
-    property var widget_visibility: null
-    property var tabs: null
+    property var windowRecords: null
+    property var widgetRecords: null
+    property var widgetVisibility: null
+    property var renderStatus: null
     property var connectorRead: null
     property var connectorActions: null
     property string windowTitle: ""
@@ -75,39 +73,25 @@ Window {
 
     title: windowTitle
     readonly property bool nativeChrome: Qt.platform.os === "linux" || Qt.platform.os === "osx"
+    readonly property bool runtimeShowPluginPanel: panelState ? panelState.visible : false
     flags: nativeChrome ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
     color: root.theme ? root.theme.surface : "#17181c"
 
-    // Sync menu properties when menu model changes
-    onMenusChanged: {
-        if (menus) {
-            root.menuItems = menus.menuItems
-            root.pluginMenuItems = menus.pluginMenuItems
-            root.pluginMenuLabel = menus.pluginMenuLabel
-        }
+    function syncRuntimeChrome() {
+        root.menuItems = root.uiChrome ? root.uiChrome.menuItems : []
+        root.pluginMenuItems = root.uiChrome ? root.uiChrome.pluginMenuItems : []
+        root.pluginMenuLabel = root.uiChrome ? root.uiChrome.pluginMenuLabel : "Plugins"
+        root.statusItems = root.uiChrome ? root.uiChrome.statusItems : []
+        root.tabModel = root.uiChrome ? root.uiChrome.tabModel : []
+        root.activePluginId = root.pluginActive ? root.pluginActive.activePlugin : ""
+        root.statusActiveLabel = root.uiChrome ? root.uiChrome.statusActiveLabel : root.activePluginId
     }
 
-    // Sync statusbar properties when statusbar model changes
-    onStatusbarChanged: {
-        if (statusbar) {
-            root.statusItems = statusbar.leftItems
-        }
-    }
+    onPanelStateChanged: root.showPluginPanel = root.runtimeShowPluginPanel
 
-    // Sync active plugin properties when plugin selection changes
-    onPluginSelectionChanged: {
-        if (pluginSelection) {
-            root.activePluginId = pluginSelection.activePlugin
-            root.statusActiveLabel = pluginSelection.activePlugin
-        }
-    }
-
-    // Sync tab properties when tabs API changes
-    onTabsChanged: {
-        if (tabs) {
-            root.tabModel = tabs.tabModel
-        }
-    }
+    onUiChromeChanged: syncRuntimeChrome()
+    onPluginActiveChanged: syncRuntimeChrome()
+    onRuntimeShowPluginPanelChanged: root.showPluginPanel = root.runtimeShowPluginPanel
 
     Shortcut {
         enabled: root.globalShortcutsEnabled
@@ -119,25 +103,25 @@ Window {
     }
     
     Connections {
-        target: root.menus
+        target: root.uiChrome
         function onMenuItemsChanged() {
-            root.menuItems = root.menus ? root.menus.menuItems : []
+            root.menuItems = root.uiChrome ? root.uiChrome.menuItems : []
         }
         function onPluginMenuItemsChanged() {
-            root.pluginMenuItems = root.menus ? root.menus.pluginMenuItems : []
-            root.pluginMenuLabel = root.menus ? root.menus.pluginMenuLabel : ""
+            root.pluginMenuItems = root.uiChrome ? root.uiChrome.pluginMenuItems : []
+            root.pluginMenuLabel = root.uiChrome ? root.uiChrome.pluginMenuLabel : "Plugins"
         }
     }
 
     Connections {
-        target: root.statusbar
+        target: root.uiChrome
         function onStatusbarItemsChanged() {
-            root.statusItems = root.statusbar ? root.statusbar.leftItems : []
+            root.statusItems = root.uiChrome ? root.uiChrome.statusItems : []
         }
     }
 
     Connections {
-        target: root.pluginSelection
+        target: root.pluginActive
         function onActivePluginChanged(pluginId) {
             root.activePluginId = pluginId
             root.statusActiveLabel = pluginId
@@ -145,9 +129,9 @@ Window {
     }
 
     Connections {
-        target: root.tabs
+        target: root.uiChrome
         function onTabModelChanged() {
-            root.tabModel = root.tabs ? root.tabs.tabModel : []
+            root.tabModel = root.uiChrome ? root.uiChrome.tabModel : []
         }
     }
 

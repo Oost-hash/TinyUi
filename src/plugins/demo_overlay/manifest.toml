@@ -8,4 +8,5 @@ icon = "assets/logo.png"
 requires = ["LMU_RF2_Connector"]
 
 [overlay]
+connectors = ["LMU_RF2_Connector"]
 widgets_dir = "widgets"

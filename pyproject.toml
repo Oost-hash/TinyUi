@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [project.scripts]
-tinyui = "boot:main"
+tinyui = "bootv2:main"
 
 [project.optional-dependencies]
 dev = [

@@ -32,20 +32,21 @@ Item {
     readonly property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     readonly property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
     readonly property var windowController: hostWindow && hostWindow.windowController ? hostWindow.windowController : null
+    readonly property var uiChrome: hostWindow && hostWindow.uiChrome ? hostWindow.uiChrome : null
 
     property string windowTitle: hostWindow && typeof hostWindow.windowTitle === "string" ? hostWindow.windowTitle : ""
     
     // UI state from hostWindow capability models
-    property var menuItems: hostWindow ? hostWindow.menuItems : []
-    property var pluginMenuItems: hostWindow ? hostWindow.pluginMenuItems : []
-    property var pluginMenuLabel: hostWindow ? hostWindow.pluginMenuLabel : ""
-    property var tabModel: hostWindow ? hostWindow.tabModel : []
-    property var activePlugin: hostWindow ? hostWindow.activePluginId : ""
+    property var menuItems: uiChrome ? uiChrome.menuItems : []
+    property var pluginMenuItems: uiChrome ? uiChrome.pluginMenuItems : []
+    property var pluginMenuLabel: uiChrome ? uiChrome.pluginMenuLabel : ""
+    property var tabModel: uiChrome ? uiChrome.tabModel : []
+    property var activePlugin: hostWindow && hostWindow.pluginActive ? hostWindow.pluginActive.activePlugin : ""
     
     property int currentTab: hostWindow && typeof hostWindow.currentTab === "number" ? hostWindow.currentTab : 0
     property bool showTabBar: hostWindow && typeof hostWindow.showTabBar === "boolean" ? hostWindow.showTabBar : false
     property bool showStatusBar: hostWindow && typeof hostWindow.showStatusBar === "boolean" ? hostWindow.showStatusBar : false
-    property var statusItems: hostWindow ? hostWindow.statusItems : []
+    property var statusItems: uiChrome ? uiChrome.statusItems : []
     property var chromePolicy: hostWindow && hostWindow.chromePolicy ? hostWindow.chromePolicy : ({
         showMenuButton: true,
         showTitleText: true,
@@ -224,8 +225,6 @@ Item {
                                 root.menuOpen = false
                                 if (root.appActions)
                                     root.appActions.trigger(menuDelegate.modelData.action)
-                                else if (menuDelegate.modelData.action === "close" && root.hostWindow)
-                                    root.hostWindow.close()
                             }
                         }
                         }
@@ -286,8 +285,8 @@ Item {
                                 root.windowController.minimize()
                             } else if (titleButtonDelegate.modelData.action === "maximize" && root.windowController) {
                                 root.windowController.toggleMaximize()
-                            } else if (titleButtonDelegate.modelData.action === "close" && root.hostWindow) {
-                                root.hostWindow.close()
+                            } else if (titleButtonDelegate.modelData.action === "close" && root.appActions) {
+                                root.appActions.trigger("close")
                             }
                         }
                     }
@@ -305,8 +304,8 @@ Item {
         height: 42
         visible: root.showTabBar
             && root.hostWindow
-            && root.hostWindow.tabModel
-            && root.hostWindow.tabModel.length > 0
+            && root.tabModel
+            && root.tabModel.length > 0
             && !root.hostWindow.showPluginPanel
         color: root.theme ? root.theme.surfaceAlt : "#2f343e"
         z: 5
@@ -324,7 +323,7 @@ Item {
             spacing: -1
 
             Repeater {
-                model: root.hostWindow ? root.hostWindow.tabModel : []
+                model: root.tabModel
 
                 delegate: Rectangle {
                     id: tabDelegate
@@ -401,7 +400,7 @@ Item {
         Loader {
             anchors.fill: parent
             sourceComponent: {
-                if (root.showTabBar && root.hostWindow && root.hostWindow.tabModel && root.hostWindow.tabModel.length > 0) {
+                if (root.showTabBar && root.tabModel && root.tabModel.length > 0) {
                     return tabContentComponent
                 }
                 return root.hostWindow ? root.hostWindow.surfaceComponent : null
@@ -414,7 +413,7 @@ Item {
                 currentIndex: root.hostWindow ? root.hostWindow.currentTab : 0
 
                 Repeater {
-                    model: root.hostWindow ? root.hostWindow.tabModel : []
+                    model: root.tabModel
 
                     delegate: Item {
                         id: tabContentDelegate

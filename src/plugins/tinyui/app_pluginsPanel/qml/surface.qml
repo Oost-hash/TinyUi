@@ -28,7 +28,7 @@ Rectangle {
     id: root
 
     property var hostWindow: Window.window
-    property var pluginRead: hostWindow && hostWindow.pluginRead ? hostWindow.pluginRead : null
+    property var manifestRead: hostWindow && hostWindow.manifestRead ? hostWindow.manifestRead : null
     property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     property var pluginGroups: []
     
@@ -43,13 +43,6 @@ Rectangle {
     // Listen to state changes from runtime
     Connections {
         target: root.hostWindow ? root.hostWindow.pluginState : null
-        function onPluginStateChanged(pluginId, state) {
-            root.pluginStates[pluginId] = state
-            // Force update
-            var temp = root.pluginStates
-            root.pluginStates = {}
-            root.pluginStates = temp
-        }
         function onStateDataChanged() {
             if (!root.hostWindow || !root.hostWindow.pluginState)
                 return
@@ -58,7 +51,7 @@ Rectangle {
     }
 
     Connections {
-        target: root.pluginRead
+        target: root.manifestRead
         function onPluginsChanged() {
             root.pluginGroups = root.buildPluginGroups()
         }
@@ -71,7 +64,7 @@ Rectangle {
             { "type": "overlay", "label": "Overlays", "plugins": [] },
             { "type": "connector", "label": "Connectors", "plugins": [] }
         ]
-        var plugins = pluginRead ? pluginRead.plugins : []
+        var plugins = manifestRead ? manifestRead.plugins : []
         for (var i = 0; i < plugins.length; i++) {
             var plugin = plugins[i]
             for (var j = 0; j < groups.length; j++) {
@@ -86,14 +79,14 @@ Rectangle {
 
     // Check if a connector is used by the active plugin
     function isConnectorUsed(connectorId: string) : bool {
-        if (!hostWindow || !hostWindow.activePluginId || !pluginRead) return false
+        if (!hostWindow || !hostWindow.pluginActive || !manifestRead) return false
         
         // Find the active plugin
         for (var i = 0; i < pluginGroups.length; i++) {
             var group = pluginGroups[i]
             for (var j = 0; j < group.plugins.length; j++) {
                 var plugin = group.plugins[j]
-                if (plugin.id === hostWindow.activePluginId) {
+                if (plugin.id === hostWindow.pluginActive.activePlugin) {
                     // Check if this plugin requires the connector
                     if (plugin.requires && plugin.requires.indexOf(connectorId) >= 0) {
                         return true
@@ -105,7 +98,7 @@ Rectangle {
     }
 
     function isConnectorPending(connectorId: string) : bool {
-        if (!root.pluginToActivate || !pluginRead) return false
+        if (!root.pluginToActivate || !manifestRead) return false
 
         for (var i = 0; i < pluginGroups.length; i++) {
             var group = pluginGroups[i]
@@ -122,7 +115,8 @@ Rectangle {
     function isOutgoingPlugin(pluginId: string) : bool {
         return root.pluginToActivate !== ""
             && root.hostWindow
-            && root.hostWindow.activePluginId === pluginId
+            && root.hostWindow.pluginActive
+            && root.hostWindow.pluginActive.activePlugin === pluginId
             && root.pluginToActivate !== pluginId
     }
 
@@ -135,12 +129,12 @@ Rectangle {
             root.pluginStates = hostWindow.pluginState.states
         }
         root.pluginGroups = root.buildPluginGroups()
-        if (hostWindow && hostWindow.activePluginId && pluginRead) {
+        if (hostWindow && hostWindow.pluginActive && hostWindow.pluginActive.activePlugin && manifestRead) {
             // Find the active plugin in the list
             for (var i = 0; i < pluginGroups.length; i++) {
                 var group = pluginGroups[i]
                 for (var j = 0; j < group.plugins.length; j++) {
-                    if (group.plugins[j].id === hostWindow.activePluginId) {
+                    if (group.plugins[j].id === hostWindow.pluginActive.activePlugin) {
                         selectedPlugin = group.plugins[j]
                         pluginToActivate = ""
                         return
@@ -650,7 +644,7 @@ Rectangle {
                                     root.selectedPlugin = pluginRowDelegate.modelData
                                     if (pluginRowDelegate.modelData.type === "plugin"
                                             || pluginRowDelegate.modelData.type === "overlay") {
-                                        root.pluginToActivate = pluginRowDelegate.modelData.id !== root.hostWindow.activePluginId
+                                        root.pluginToActivate = pluginRowDelegate.modelData.id !== root.hostWindow.pluginActive.activePlugin
                                             ? pluginRowDelegate.modelData.id
                                             : ""
                                     } else {

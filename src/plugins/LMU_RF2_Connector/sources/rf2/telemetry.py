@@ -259,6 +259,9 @@ class RF2TelemetryReader(TelemetryReader):
     def open(self) -> None: self._info.open()
     def close(self) -> None: self._info.close()
     def update(self) -> None: self._info.update()
+    def game_phase(self) -> int | None: return int(self._info.rf2ScorInfo.mGamePhase)
+    def has_player_vehicle(self) -> bool | None: return self._info.playerIndex >= 0
+    def in_realtime(self) -> bool | None: return bool(self._info.rf2ScorInfo.mInRealtime)
     @property
     def state(self) -> State: return self._state
     @property
