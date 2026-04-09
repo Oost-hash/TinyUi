@@ -16,7 +16,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 TinyUi 0.5.5 is the release where the project stops looking like an incremental evolution of the old runtime and starts behaving like a new system with clearer ownership, sharper boundaries, and a more honest packaging story. Since 0.4.0, most of the codebase has been reworked around the idea that runtime behavior should be owned by explicit domains instead of being spread across half-architectural layers, convenience shims, and build-time assumptions that only happened to work in source mode.
 
-The biggest shift is the move into the `runtimeV2` model. Paths, manifest loading, host interpretation, persistence, scheduler behavior, connectors, widgets, plugins, and UI handoff are now treated as separate runtime domains with much more explicit contracts. The runtime is no longer just a place where everything eventually lands; it is now the place where startup order, ownership, and handoff are deliberately shaped. That gives TinyUi a much stronger base for future work such as plugin switching, packaged runtime hosting, and more isolated domain evolution.
+The biggest shift is the move into the `runtimeV2` model. Paths, manifest loading, host interpretation, persistence, scheduler behavior, connectors, widgets, plugins, and UI handoff are now treated as separate runtime domains with much more explicit contracts. The runtime is no longer just a place where everything eventually lands; it is now the place where startup order, ownership, and handoff are deliberately shaped. That gives TinyUi a much stronger base.
 
 ## Host Identity
 
@@ -24,7 +24,7 @@ The host plugin has also become more central in the way the application understa
 
 ## Packaging And Persistence
 
-Packaging and release behavior have changed just as deeply. External plugins are no longer treated as raw source folders that happen to sit next to the app. TinyUi now builds packaged plugin artifacts, mounts them through a dedicated `pkg_runtime_host` layer, and lets the runtime consume them through normal runtime-facing shapes instead of leaking `.pkg`, lockfile, or extraction details into unrelated domains. This release also forced the build pipeline to become much stricter about what packaged mode really needs. Several bugs only showed up after packaging, and fixing them led to a healthier product structure: runtime QML is bundled explicitly, plugin import roots are projected correctly for packaged plugins, Linux packaged smoke is more diagnostic, and startup logging now makes packaged failures visible instead of opaque.
+Packaging and release behavior have changed just as deeply. External plugins are no longer treated as raw source folders that happen to sit next to the app. TinyUi now builds packaged plugin artifacts, mounts them through a dedicated `pkg_runtime_host` layer, and lets the runtime consume them through normal runtime-facing shapes instead of leaking `.pkg`, lockfile, or extraction details into unrelated domains. This release also forced the build pipeline to become much stricter about what packaged mode really needs.
 
 Persistence has also become more coherent. User data no longer belongs next to the executable as a leftover distribution concept. TinyUi now treats configuration, cache, logs, and packaged runtime mounts as OS-level app data, which is the right long-term direction for a product that expects packaged plugins, repeated rebuilds, and multiple runtime environments. This lines up the code, the build output, and the runtime expectations much more cleanly than the earlier mixed model.
 
@@ -32,9 +32,11 @@ Persistence has also become more coherent. User data no longer belongs next to t
 
 At the UI level, 0.5.5 is less about flashy new features and more about making the host surfaces and runtime projections trustworthy. The main window, widget host, plugin panel, and startup flow all now sit on top of clearer runtime handoffs. That work matters because it removes a lot of hidden coupling between source layout assumptions and actual product behavior. The result is a UI layer that is easier to reason about, easier to package, and easier to debug when the packaged application behaves differently from the source tree.
 
+Some polish is still needed en the settings dialog does not display anything yet, this was on purpose or I would be working too long on implementation details, instead of designing the next part. 
+
 ## Why It Matters
 
-What makes this release important is not one specific feature. It is that TinyUi now has a more believable architecture. The system is more explicit about what is runtime policy, what is host interpretation, what is packaging adaptation, and what is merely build metadata. That separation cost a lot of code churn, but it leaves the project in a far better place for the next phase: plugin switching, smarter packaged runtime loading, and continued refinement of the domain model without collapsing back into one large, ambiguous runtime blob.
+What makes this release important is not one specific feature. It is that TinyUi now has a more believable architecture. The system is more explicit about what is runtime policy, what is host interpretation, what is packaging adaptation. That separation cost a lot of code churn, but it leaves the project in a far better place for the next phase: plugin switching, smarter packaged runtime loading, and continued refinement of the domain model without collapsing back into one large, ambiguous runtime blob.
 
 
 ## [0.4.0] — 2026-03-28
