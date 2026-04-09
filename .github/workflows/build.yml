@@ -225,7 +225,7 @@ jobs:
           fi
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.os == 'windows-latest' && needs.release_meta.outputs.windows_zip || needs.release_meta.outputs.linux_zip }}
