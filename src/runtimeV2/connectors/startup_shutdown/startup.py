@@ -38,9 +38,11 @@ from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.persistence.capabilities.settings_read import SettingsRead
+from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
+from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 
 
 @dataclass(frozen=True)
@@ -72,6 +74,7 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
         poller = ConnectorServicePoller(registry, events.bus)
         scheduler_write = runtime.capability("scheduler_write", SchedulerWrite)
         settings_read = runtime.capability("settings_read", SettingsRead)
+        widget_config_write = runtime.capability("widget_config_write", WidgetConfigWrite)
         interval_value = settings_read.get("tinyui", "connector_poll_interval_ms")
         interval_ms = int(interval_value) if isinstance(interval_value, int) else 20
         capabilities = register_connector_capabilities(
@@ -81,9 +84,12 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
             scheduler_write,
             interval_ms,
             events.bus,
+            WidgetVisibilityWrite(widget_config_write, events.bus),
         )
         runtime.register_capability("connector_read", capabilities.read)
         runtime.register_capability("connector_write", capabilities.write)
+        runtime.register_capability("connector_game_detector_read", capabilities.game_detector_read)
+        runtime.register_capability("connector_game_detector_write", capabilities.game_detector_write)
         runtime.register_capability("connector_scheduler_write", capabilities.scheduler_write)
         register_connector_globals(runtime)
         for connector_id in registry.ids():

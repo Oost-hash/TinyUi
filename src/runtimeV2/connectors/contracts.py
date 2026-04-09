@@ -77,6 +77,26 @@ class ConnectorSourceChangedData:
 
 
 @dataclass(frozen=True)
+class ConnectorGameDetectedData:
+    """Event payload when runtime detects a supported game for one connector family."""
+
+    connector_id: str
+    plugin_id: str
+    game_id: str
+    process_name: str
+
+
+@dataclass(frozen=True)
+class ConnectorGameLostData:
+    """Event payload when runtime no longer detects a supported game for one connector family."""
+
+    connector_id: str
+    plugin_id: str
+    game_id: str
+    process_name: str
+
+
+@dataclass(frozen=True)
 class ConnectorGameStateUpdate:
     """Small connector game-state handoff for plugin.py hooks."""
 
@@ -85,6 +105,8 @@ class ConnectorGameStateUpdate:
     active_source: str
     active_game: str
     is_live: bool
+    state_active: bool
+    state_paused: bool
 
 
 @dataclass(frozen=True)

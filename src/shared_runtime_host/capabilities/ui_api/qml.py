@@ -131,9 +131,20 @@ class ConnectorReadQmlCapability(QObject):
     servicesChanged = Signal()
     connectorDataChanged = Signal(str)
 
-    def __init__(self, connector_read: ConnectorRead, parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        connector_read: ConnectorRead,
+        events: EventsStartupResult | None = None,
+        parent: QObject | None = None,
+    ) -> None:
         super().__init__(parent)
         self._connector_read = connector_read
+        if events is not None:
+            events.bus.on(EventType.CONNECTOR_SERVICE_REGISTERED, self._on_services_changed)
+            events.bus.on(EventType.CONNECTOR_SERVICE_UNREGISTERED, self._on_services_changed)
+            events.bus.on(EventType.CONNECTOR_SERVICE_UPDATED, self._on_connector_runtime_changed)
+            events.bus.on(EventType.CONNECTOR_GAME_DETECTED, self._on_connector_runtime_changed)
+            events.bus.on(EventType.CONNECTOR_GAME_LOST, self._on_connector_runtime_changed)
 
     @Property(_QVARIANT_LIST, notify=servicesChanged)
     def services(self) -> list[dict[str, object]]:
@@ -153,7 +164,27 @@ class ConnectorReadQmlCapability(QObject):
         """Return connector inspection rows as a QML model."""
 
         snapshot: ConnectorInspectionSnapshot = self._connector_read.inspection_rows(connector_id)
-        return [{"key": key, "value": value} for key, value in snapshot]
+        rows = [{"key": key, "value": value} for key, value in snapshot]
+        detected_game = self._connector_read.detected_game(connector_id)
+        detected_process = self._connector_read.detected_process_name(connector_id)
+        if detected_game is not None:
+            rows.append({"key": "connector.detected_game", "value": detected_game})
+        if detected_process is not None:
+            rows.append({"key": "connector.detected_process", "value": detected_process})
+        return rows
+
+    def _on_services_changed(self, _event: object) -> None:
+        """Mirror connector service registry changes into QML."""
+
+        self.servicesChanged.emit()
+
+    def _on_connector_runtime_changed(self, event: object) -> None:
+        """Mirror connector runtime changes into QML."""
+
+        connector_id = getattr(getattr(event, "data", None), "connector_id", "")
+        if isinstance(connector_id, str) and connector_id:
+            self.connectorDataChanged.emit(connector_id)
+        self.servicesChanged.emit()
 
 
 class ConnectorWriteQmlCapability(QObject):

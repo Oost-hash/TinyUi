@@ -19,20 +19,21 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Event contract registration for runtime V2 connectors."""
+"""Write capability for connector game detection state."""
 
 from __future__ import annotations
 
-from runtimeV2.events.contracts import EventType
-from runtimeV2.events import EventRegistry
+from runtimeV2.connectors.game_detector import ConnectorGameDetector
+from runtimeV2.connectors.game_detector_store import DetectedConnectorGame
 
 
-def register_connector_events(registry: EventRegistry) -> None:
-    """Register connector event contracts."""
+class ConnectorGameDetectorWrite:
+    """Drive host game detection for connector families."""
 
-    registry.register(EventType.CONNECTOR_SERVICE_REGISTERED, domain="connectors")
-    registry.register(EventType.CONNECTOR_SERVICE_UNREGISTERED, domain="connectors")
-    registry.register(EventType.CONNECTOR_SERVICE_UPDATED, domain="connectors")
-    registry.register(EventType.CONNECTOR_SOURCE_CHANGED, domain="connectors")
-    registry.register(EventType.CONNECTOR_GAME_DETECTED, domain="connectors")
-    registry.register(EventType.CONNECTOR_GAME_LOST, domain="connectors")
+    def __init__(self, detector: ConnectorGameDetector) -> None:
+        self._detector = detector
+
+    def sync(self, connector_id: str) -> DetectedConnectorGame | None:
+        """Detect and persist the current host game for one connector family."""
+
+        return self._detector.detect(connector_id)

@@ -201,6 +201,38 @@ class LMURF2ConnectorService(TelemetryReader):
         active = self.active_source_handle()
         return active.name if active is not None else "none"
 
+    def game_phase(self) -> int | None:
+        reader = self._active_reader_or_none()
+        if reader is None:
+            return None
+        game_phase = getattr(reader, "game_phase", None)
+        if not callable(game_phase):
+            return None
+        value = game_phase()
+        if not isinstance(value, int):
+            return None
+        return value
+
+    def has_player_vehicle(self) -> bool | None:
+        reader = self._active_reader_or_none()
+        if reader is None:
+            return None
+        has_player_vehicle = getattr(reader, "has_player_vehicle", None)
+        if not callable(has_player_vehicle):
+            return None
+        value = has_player_vehicle()
+        return None if value is None else bool(value)
+
+    def in_realtime(self) -> bool | None:
+        reader = self._active_reader_or_none()
+        if reader is None:
+            return None
+        in_realtime = getattr(reader, "in_realtime", None)
+        if not callable(in_realtime):
+            return None
+        value = in_realtime()
+        return None if value is None else bool(value)
+
     def supports_demo_mode(self) -> bool:
         return "mock" in self._sources
 
@@ -384,6 +416,12 @@ class LMURF2ConnectorService(TelemetryReader):
         if active is None:
             raise RuntimeError("No active connector source has been registered")
         return active
+
+    def _active_reader_or_none(self) -> TelemetryReader | None:
+        active = self.active_source_handle()
+        if active is None:
+            return None
+        return active.reader
 
     def _first_non_mock_source_name(self) -> str | None:
         for source in self._sources.values():

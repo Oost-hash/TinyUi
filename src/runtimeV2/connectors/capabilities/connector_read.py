@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.connectors.decision_store import ConnectorGameStateDecisionStore
+from runtimeV2.connectors.game_detector_store import ConnectorGameDetectorStore
 from runtimeV2.connectors.contracts import ConnectorInspectionSnapshot, ConnectorServiceRecord
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 
@@ -35,9 +36,11 @@ class ConnectorRead:
         self,
         registry: ConnectorServiceRegistry,
         decision_store: ConnectorGameStateDecisionStore | None = None,
+        detector_store: ConnectorGameDetectorStore | None = None,
     ) -> None:
         self._registry = registry
         self._decision_store = decision_store
+        self._detector_store = detector_store
 
     def services(self) -> list[ConnectorServiceRecord]:
         """Return active connector service records."""
@@ -90,6 +93,28 @@ class ConnectorRead:
             return None
         return str(service.active_game())
 
+    def state_active(self, connector_id: str) -> bool | None:
+        """Return whether one connector reports an active in-session state."""
+
+        service = self._registry.get(connector_id)
+        if service is None or not hasattr(service, "state"):
+            return None
+        try:
+            return bool(service.state.active())
+        except Exception:
+            return None
+
+    def state_paused(self, connector_id: str) -> bool | None:
+        """Return whether one connector reports a paused session state."""
+
+        service = self._registry.get(connector_id)
+        if service is None or not hasattr(service, "state"):
+            return None
+        try:
+            return bool(service.state.paused())
+        except Exception:
+            return None
+
     def show_widgets(self, connector_id: str) -> bool | None:
         """Return the connector-owned widget visibility decision when available."""
 
@@ -99,3 +124,19 @@ class ConnectorRead:
         if decision is None:
             return None
         return decision.show_widgets
+
+    def detected_game(self, connector_id: str) -> str | None:
+        """Return the runtime-detected host game id when available."""
+
+        if self._detector_store is None:
+            return None
+        record = self._detector_store.get(connector_id)
+        return None if record is None else record.game_id
+
+    def detected_process_name(self, connector_id: str) -> str | None:
+        """Return the runtime-detected host process name when available."""
+
+        if self._detector_store is None:
+            return None
+        record = self._detector_store.get(connector_id)
+        return None if record is None else record.process_name

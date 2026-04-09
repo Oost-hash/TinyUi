@@ -30,6 +30,7 @@ from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.contracts import ConnectorGameStateDecision, ConnectorGameStateUpdate
 from runtimeV2.connectors.decision_store import ConnectorGameStateDecisionStore
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
+from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 
 
 class ConnectorGameStateHookDispatcher:
@@ -40,37 +41,45 @@ class ConnectorGameStateHookDispatcher:
         declarations: dict[str, ConnectorManifest],
         connector_read: ConnectorRead,
         decision_store: ConnectorGameStateDecisionStore,
+        widget_visibility_write: WidgetVisibilityWrite | None = None,
     ) -> None:
         self._declarations = declarations
         self._connector_read = connector_read
         self._decision_store = decision_store
-        self._last_updates: dict[str, ConnectorGameStateUpdate] = {}
+        self._widget_visibility_write = widget_visibility_write
 
     def sync_connector(self, connector_id: str) -> bool:
-        """Dispatch one connector update when the manifest declares a hook and state changed."""
+        """Dispatch one connector update when the manifest declares a hook."""
 
         hook = self._resolve_hook(connector_id)
         if hook is None:
             return False
         update = self._build_update(connector_id)
-        previous = self._last_updates.get(connector_id)
-        if previous == update:
-            return False
-        self._last_updates[connector_id] = update
         decision = self._normalize_decision(hook(update))
         if decision is not None:
             self._decision_store.set(connector_id, decision)
+            self._apply_decision(decision)
         return True
+
+    def _apply_decision(self, decision: ConnectorGameStateDecision) -> None:
+        if self._widget_visibility_write is None:
+            return
+        if decision.show_widgets is not None:
+            self._widget_visibility_write.set_global_visible(decision.show_widgets)
 
     def _build_update(self, connector_id: str) -> ConnectorGameStateUpdate:
         active_source = self._connector_read.active_source(connector_id) or "none"
         active_game = self._connector_read.active_game(connector_id) or "none"
+        state_active = self._connector_read.state_active(connector_id)
+        state_paused = self._connector_read.state_paused(connector_id)
         return ConnectorGameStateUpdate(
             connector_id=connector_id,
             plugin_id=connector_id,
             active_source=active_source,
             active_game=active_game,
             is_live=active_source not in {"none", "mock"},
+            state_active=bool(state_active),
+            state_paused=bool(state_paused),
         )
 
     def _resolve_hook(

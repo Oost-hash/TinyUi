@@ -157,7 +157,10 @@ def _normalize_qml_properties(
 
     connector_read = properties.get("connectorRead")
     if isinstance(connector_read, ConnectorRead):
-        properties["connectorRead"] = ConnectorReadQmlCapability(connector_read)
+        properties["connectorRead"] = ConnectorReadQmlCapability(
+            connector_read,
+            runtime.domain_result("events", EventsStartupResult),
+        )
 
     settings_read = properties.get("settingsRead")
     if isinstance(settings_read, SettingsRead):
@@ -206,7 +209,10 @@ def _adapt_qml_property(
     if capability_name == "settings_write":
         return SettingsWriteQmlCapability(cast(SettingsWrite, capability))
     if capability_name == "connector_read":
-        return ConnectorReadQmlCapability(cast(ConnectorRead, capability))
+        return ConnectorReadQmlCapability(
+            cast(ConnectorRead, capability),
+            runtime.domain_result("events", EventsStartupResult),
+        )
     if capability_name == "connector_write":
         return ConnectorWriteQmlCapability(cast(ConnectorWrite, capability))
     if capability_name == "widget_config_read":

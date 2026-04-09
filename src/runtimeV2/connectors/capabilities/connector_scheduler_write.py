@@ -23,6 +23,7 @@
 
 from __future__ import annotations
 
+from runtimeV2.connectors.capabilities.connector_game_detector_write import ConnectorGameDetectorWrite
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.plugin_handoff import ConnectorGameStateHookDispatcher
 from runtimeV2.connectors.poller import ConnectorServicePoller
@@ -32,13 +33,14 @@ from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 class ConnectorSchedulerWrite:
     """Switch connector jobs between probe mode and live polling."""
 
-    PROBE_INTERVAL_MS = 1000
+    PROBE_INTERVAL_MS = 5000
 
     def __init__(
         self,
         connector_read: ConnectorRead,
         scheduler_write: SchedulerWrite,
         poller: ConnectorServicePoller,
+        game_detector_write: ConnectorGameDetectorWrite,
         plugin_handoff: ConnectorGameStateHookDispatcher | None = None,
         *,
         live_interval_ms: int,
@@ -46,6 +48,7 @@ class ConnectorSchedulerWrite:
         self._connector_read = connector_read
         self._scheduler_write = scheduler_write
         self._poller = poller
+        self._game_detector_write = game_detector_write
         self._plugin_handoff = plugin_handoff
         self._live_interval_ms = max(1, int(live_interval_ms))
 
@@ -89,6 +92,10 @@ class ConnectorSchedulerWrite:
         self._scheduler_write.set_enabled(self._live_job_id(connector_id), True)
 
     def _run_probe(self, connector_id: str) -> None:
+        detected = self._game_detector_write.sync(connector_id)
+        if detected is None:
+            self.sync_scheduler_mode(connector_id)
+            return
         self._poller.update_one(connector_id)
         self._sync_plugin_handoff(connector_id)
         self.sync_scheduler_mode(connector_id)

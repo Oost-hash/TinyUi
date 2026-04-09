@@ -33,9 +33,14 @@ from plugins.LMU_RF2_Connector.service import LMURF2ConnectorService
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
-from runtimeV2.connectors.contracts import ConnectorSourceChangedData
+from runtimeV2.connectors.contracts import ConnectorGameDetectedData, ConnectorGameLostData, ConnectorSourceChangedData
 from runtimeV2.connectors.policy import unregister_connector_service
-from runtimeV2.connectors.schemas.manifest import ConnectorManifest, ConnectorRuntimeDecl, ConnectorServiceDecl
+from runtimeV2.connectors.schemas.manifest import (
+    ConnectorGameDecl,
+    ConnectorManifest,
+    ConnectorRuntimeDecl,
+    ConnectorServiceDecl,
+)
 from runtimeV2.manifest.parser import load_plugin_manifest
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.scheduler.capabilities.scheduler_read import SchedulerRead
@@ -57,6 +62,10 @@ class _FakeConnectorService:
         self.requested: list[tuple[str, str]] = []
         self.released: list[str] = []
         self.closed = False
+        self.state = _FakeState(False)
+        self._game_phase: int | None = 0
+        self._has_player_vehicle: bool | None = False
+        self._in_realtime: bool | None = False
 
     def supports_source(self, source_name: str) -> bool:
         return source_name == "mock"
@@ -80,6 +89,15 @@ class _FakeConnectorService:
     def active_game(self) -> str:
         return "mock"
 
+    def game_phase(self) -> int | None:
+        return self._game_phase
+
+    def has_player_vehicle(self) -> bool | None:
+        return self._has_player_vehicle
+
+    def in_realtime(self) -> bool | None:
+        return self._in_realtime
+
     def release_source(self, owner: str) -> bool:
         self.released.append(owner)
         return True
@@ -98,6 +116,40 @@ class _FakeLiveConnectorService(_FakeConnectorService):
         super().update()
         self._active_source = "lmu"
         self._active_game = "lmu"
+        self.state = _FakeState(True)
+        self._game_phase = 5
+        self._has_player_vehicle = True
+        self._in_realtime = True
+
+    def active_source(self) -> str:
+        return self._active_source
+
+    def active_game(self) -> str:
+        return self._active_game
+
+
+class _FakeStickyLiveConnectorService(_FakeConnectorService):
+    def __init__(self) -> None:
+        super().__init__()
+        self._active_source = "lmu"
+        self._active_game = "lmu"
+        self._game_phase = 5
+        self._has_player_vehicle = True
+        self._in_realtime = True
+        self.state = _FakeState(True)
+
+    def update(self) -> None:
+        super().update()
+        if self.update_calls == 1:
+            self._game_phase = 5
+            self._has_player_vehicle = True
+            self._in_realtime = True
+            self.state = _FakeState(True)
+            return
+        self._game_phase = 9
+        self._has_player_vehicle = True
+        self._in_realtime = False
+        self.state = _FakeState(True)
 
     def active_source(self) -> str:
         return self._active_source
@@ -212,6 +264,7 @@ def _make_runtime(declarations: dict[str, ConnectorManifest]) -> tuple[_FakeRunt
         _capabilities={
             "manifest_connector_read": _FakeManifestConnectorRead(declarations),
             "settings_read": cast(Any, _FakeSettingsRead()),
+            "widget_config_write": cast(Any, _FakeWidgetConfigWrite()),
         },
         registered_capabilities=registered_capabilities,
         registered_results={},
@@ -232,6 +285,31 @@ class _FakeSettingsRead:
         return None
 
 
+class _FakeWidgetConfigWrite:
+    def __init__(self) -> None:
+        self.global_visible = True
+        self.calls: list[bool] = []
+
+    def set_global_widgets_visible(self, visible: bool) -> None:
+        self.global_visible = visible
+        self.calls.append(visible)
+
+
+def _connector_manifest(
+    module_name: str,
+    class_name: str = "IRacingService",
+    *,
+    game_id: str = "iracing",
+    detect_names: list[str] | None = None,
+    runtime: ConnectorRuntimeDecl | None = None,
+) -> ConnectorManifest:
+    return ConnectorManifest(
+        games=[ConnectorGameDecl(id=game_id, detect_names=detect_names or ["iRacing"])],
+        service=ConnectorServiceDecl(module=module_name, class_name=class_name),
+        runtime=runtime,
+    )
+
+
 def test_startup_connectors_registers_declared_services(monkeypatch) -> None:
     """Connectors startup should load and register manifest-declared services."""
 
@@ -240,12 +318,14 @@ def test_startup_connectors_registers_declared_services(monkeypatch) -> None:
         "runtimeV2.connectors.policy.load_connector_service",
         lambda module_name, class_name: service,
     )
+    monkeypatch.setattr(
+        "runtimeV2.connectors.game_detector.psutil.process_iter",
+        lambda attrs=None: [type("Proc", (), {"info": {"name": "iRacing"}})()],
+    )
 
     runtime, bus = _make_runtime(
         {
-            "iracing": ConnectorManifest(
-                service=ConnectorServiceDecl(module="plugins.iracing", class_name="IRacingService")
-            )
+            "iracing": _connector_manifest("plugins.iracing")
         }
     )
 
@@ -262,11 +342,11 @@ def test_startup_connectors_registers_declared_services(monkeypatch) -> None:
     assert service.update_calls == 0
     assert service.requested == []
     scheduler_write = cast(SchedulerWrite, runtime.registered_capabilities["scheduler_write"])
-    scheduler_write.tick(20)
+    scheduler_write.tick(5000)
     assert service.update_calls == 1
-    scheduler_write.tick(1000)
+    scheduler_write.tick(5020)
     assert service.update_calls == 1
-    scheduler_write.tick(1020)
+    scheduler_write.tick(10000)
     assert service.update_calls == 2
     scheduler_jobs = cast(SchedulerRead, runtime.registered_capabilities["scheduler_read"]).jobs()
     assert [job.job_id for job in scheduler_jobs] == [
@@ -280,6 +360,7 @@ def test_startup_connectors_registers_declared_services(monkeypatch) -> None:
         EventType.CONNECTOR_SERVICE_UPDATED,
         EventType.SCHEDULER_JOB_REGISTERED,
         EventType.SCHEDULER_JOB_REGISTERED,
+        EventType.CONNECTOR_GAME_DETECTED,
         EventType.CONNECTOR_SERVICE_UPDATED,
         EventType.SCHEDULER_TICK,
         EventType.SCHEDULER_TICK,
@@ -300,11 +381,15 @@ def test_connector_write_can_update_all_services(monkeypatch) -> None:
         return services[module_name]
 
     monkeypatch.setattr("runtimeV2.connectors.policy.load_connector_service", _load_service)
+    monkeypatch.setattr(
+        "runtimeV2.connectors.game_detector.psutil.process_iter",
+        lambda attrs=None: [type("Proc", (), {"info": {"name": "iRacing"}})(), type("Proc", (), {"info": {"name": "Assetto Corsa Competizione"}})()],
+    )
 
     runtime, bus = _make_runtime(
         {
-            "iracing": ConnectorManifest(service=ConnectorServiceDecl(module="iracing", class_name="Service")),
-            "acc": ConnectorManifest(service=ConnectorServiceDecl(module="acc", class_name="Service")),
+            "iracing": _connector_manifest("iracing", "Service", game_id="iracing", detect_names=["iRacing"]),
+            "acc": _connector_manifest("acc", "Service", game_id="acc", detect_names=["Assetto Corsa Competizione"]),
         }
     )
 
@@ -329,11 +414,13 @@ def test_connector_scheduler_switches_from_probe_to_live_mode(monkeypatch) -> No
         "runtimeV2.connectors.policy.load_connector_service",
         lambda module_name, class_name: service,
     )
+    monkeypatch.setattr(
+        "runtimeV2.connectors.game_detector.psutil.process_iter",
+        lambda attrs=None: [type("Proc", (), {"info": {"name": "iRacing"}})()],
+    )
     runtime, _bus = _make_runtime(
         {
-            "iracing": ConnectorManifest(
-                service=ConnectorServiceDecl(module="plugins.iracing", class_name="IRacingService")
-            )
+            "iracing": _connector_manifest("plugins.iracing")
         }
     )
 
@@ -342,7 +429,7 @@ def test_connector_scheduler_switches_from_probe_to_live_mode(monkeypatch) -> No
     scheduler_write = cast(SchedulerWrite, runtime.registered_capabilities["scheduler_write"])
     scheduler_read = cast(SchedulerRead, runtime.registered_capabilities["scheduler_read"])
 
-    scheduler_write.tick(20)
+    scheduler_write.tick(5000)
 
     jobs = {job.job_id: job for job in scheduler_read.jobs()}
     assert jobs["connectors.iracing.probe_game_state"].enabled is False
@@ -350,7 +437,7 @@ def test_connector_scheduler_switches_from_probe_to_live_mode(monkeypatch) -> No
     assert service.active_source() == "lmu"
     assert service.update_calls == 1
 
-    scheduler_write.tick(40)
+    scheduler_write.tick(5020)
     assert service.update_calls == 2
 
 
@@ -362,11 +449,13 @@ def test_connector_write_emits_source_change_events(monkeypatch) -> None:
         "runtimeV2.connectors.policy.load_connector_service",
         lambda module_name, class_name: service,
     )
+    monkeypatch.setattr(
+        "runtimeV2.connectors.game_detector.psutil.process_iter",
+        lambda attrs=None: [type("Proc", (), {"info": {"name": "iRacing"}})()],
+    )
     runtime, bus = _make_runtime(
         {
-            "iracing": ConnectorManifest(
-                service=ConnectorServiceDecl(module="plugins.iracing", class_name="IRacingService")
-            )
+            "iracing": _connector_manifest("plugins.iracing")
         }
     )
 
@@ -403,11 +492,13 @@ def test_unregister_connector_service_releases_source_and_closes(monkeypatch) ->
         "runtimeV2.connectors.policy.load_connector_service",
         lambda module_name, class_name: service,
     )
+    monkeypatch.setattr(
+        "runtimeV2.connectors.game_detector.psutil.process_iter",
+        lambda attrs=None: [type("Proc", (), {"info": {"name": "iRacing"}})()],
+    )
     runtime, bus = _make_runtime(
         {
-            "iracing": ConnectorManifest(
-                service=ConnectorServiceDecl(module="plugins.iracing", class_name="IRacingService")
-            )
+            "iracing": _connector_manifest("plugins.iracing")
         }
     )
     assert startup_connectors(cast(Any, runtime)) == StartupResult(ok=True)
@@ -487,12 +578,18 @@ def test_connector_scheduler_dispatches_manifest_declared_game_state_hook(monkey
     """Connectors should dispatch game-state changes into the declared plugin.py hook."""
 
     service = _FakeLiveConnectorService()
-    updates: list[tuple[str, str, bool]] = []
+    updates: list[tuple[str, str, bool, bool, bool]] = []
     module = ModuleType("plugins.iracing.plugin")
 
     def update_game_state(update) -> object:
-        updates.append((update.active_source, update.active_game, update.is_live))
-        return {"show_widgets": update.is_live}
+        updates.append((
+            update.active_source,
+            update.active_game,
+            update.is_live,
+            update.state_active,
+            update.state_paused,
+        ))
+        return {"show_widgets": update.state_active and not update.state_paused}
 
     setattr(module, "update_game_state", update_game_state)
 
@@ -504,11 +601,15 @@ def test_connector_scheduler_dispatches_manifest_declared_game_state_hook(monkey
         "runtimeV2.connectors.plugin_handoff.importlib.import_module",
         lambda name: module,
     )
+    monkeypatch.setattr(
+        "runtimeV2.connectors.game_detector.psutil.process_iter",
+        lambda attrs=None: [type("Proc", (), {"info": {"name": "iRacing"}})()],
+    )
 
     runtime, _bus = _make_runtime(
         {
-            "iracing": ConnectorManifest(
-                service=ConnectorServiceDecl(module="plugins.iracing", class_name="IRacingService"),
+            "iracing": _connector_manifest(
+                "plugins.iracing",
                 runtime=ConnectorRuntimeDecl(game_state_hook="update_game_state"),
             )
         }
@@ -518,42 +619,236 @@ def test_connector_scheduler_dispatches_manifest_declared_game_state_hook(monkey
 
     scheduler_write = cast(SchedulerWrite, runtime.registered_capabilities["scheduler_write"])
 
-    assert updates == [("mock", "mock", False)]
+    assert updates == [("mock", "mock", False, False, False)]
     read = cast(ConnectorRead, runtime.registered_capabilities["connector_read"])
     assert read.show_widgets("iracing") is False
+    widget_config_write = cast(_FakeWidgetConfigWrite, runtime._capabilities["widget_config_write"])
+    assert widget_config_write.global_visible is False
 
-    scheduler_write.tick(20)
+    scheduler_write.tick(5000)
 
-    assert updates[-1] == ("lmu", "lmu", True)
+    assert updates[-1] == ("lmu", "lmu", True, True, False)
     assert read.show_widgets("iracing") is True
+    assert widget_config_write.global_visible is True
+    assert widget_config_write.calls == [False, True]
+
+
+def test_startup_connectors_fails_without_detect_names(monkeypatch) -> None:
+    """Connectors startup should fail hard when a family omits detect_names."""
+
+    monkeypatch.setattr(
+        "runtimeV2.connectors.policy.load_connector_service",
+        lambda module_name, class_name: _FakeConnectorService(),
+    )
+
+    runtime, _bus = _make_runtime(
+        {
+            "iracing": ConnectorManifest(
+                games=[ConnectorGameDecl(id="iracing", detect_names=[])],
+                service=ConnectorServiceDecl(module="plugins.iracing", class_name="IRacingService"),
+            )
+        }
+    )
+
+    result = startup_connectors(cast(Any, runtime))
+
+    assert result.ok is False
+    assert "detect_names" in result.error_message
+
+
+def test_connector_game_detector_emits_detected_and_lost_events(monkeypatch) -> None:
+    """Connector game detection should emit explicit events when runtime state changes."""
+
+    service = _FakeConnectorService()
+    monkeypatch.setattr(
+        "runtimeV2.connectors.policy.load_connector_service",
+        lambda module_name, class_name: service,
+    )
+    process_names = [
+        [type("Proc", (), {"info": {"name": "iRacing"}})()],
+        [],
+    ]
+    monkeypatch.setattr(
+        "runtimeV2.connectors.game_detector.psutil.process_iter",
+        lambda attrs=None: process_names.pop(0),
+    )
+    runtime, bus = _make_runtime({"iracing": _connector_manifest("plugins.iracing")})
+
+    assert startup_connectors(cast(Any, runtime)) == StartupResult(ok=True)
+    game_detector_write = cast(Any, runtime.registered_capabilities["connector_game_detector_write"])
+    read = cast(ConnectorRead, runtime.registered_capabilities["connector_read"])
+
+    assert game_detector_write.sync("iracing") is not None
+    assert read.detected_game("iracing") == "iracing"
+    assert read.detected_process_name("iracing") == "iRacing"
+
+    assert game_detector_write.sync("iracing") is None
+    assert read.detected_game("iracing") is None
+
+    game_events = [event.data for event in bus.get_history() if event.type in {EventType.CONNECTOR_GAME_DETECTED, EventType.CONNECTOR_GAME_LOST}]
+    assert game_events == [
+        ConnectorGameDetectedData(
+            connector_id="iracing",
+            plugin_id="iracing",
+            game_id="iracing",
+            process_name="iRacing",
+        ),
+        ConnectorGameLostData(
+            connector_id="iracing",
+            plugin_id="iracing",
+            game_id="iracing",
+            process_name="iRacing",
+        ),
+    ]
+
+
+def test_connector_game_detector_matches_normalized_process_names(monkeypatch) -> None:
+    """Connector game detection should match practical executable name variants."""
+
+    monkeypatch.setattr(
+        "runtimeV2.connectors.policy.load_connector_service",
+        lambda module_name, class_name: _FakeConnectorService(),
+    )
+    monkeypatch.setattr(
+        "runtimeV2.connectors.game_detector.psutil.process_iter",
+        lambda attrs=None: [type("Proc", (), {"info": {"name": "LeMansUltimate.exe"}})()],
+    )
+    runtime, _bus = _make_runtime(
+        {
+            "LMU_RF2_Connector": ConnectorManifest(
+                games=[
+                    ConnectorGameDecl(id="lmu", detect_names=["Le Mans Ultimate"]),
+                    ConnectorGameDecl(id="rf2", detect_names=["rFactor2", "rFactor2 Dedicated"]),
+                ],
+                service=ConnectorServiceDecl(
+                    module="plugins.LMU_RF2_Connector.plugin",
+                    class_name="LMURF2Connector",
+                ),
+            )
+        }
+    )
+
+    assert startup_connectors(cast(Any, runtime)) == StartupResult(ok=True)
+    read = cast(ConnectorRead, runtime.registered_capabilities["connector_read"])
+    game_detector_write = cast(Any, runtime.registered_capabilities["connector_game_detector_write"])
+
+    detected = game_detector_write.sync("LMU_RF2_Connector")
+
+    assert detected is not None
+    assert read.detected_game("LMU_RF2_Connector") == "lmu"
+    assert read.detected_process_name("LMU_RF2_Connector") == "LeMansUltimate.exe"
 
 
 def test_lmu_rf2_plugin_game_state_hook_accepts_both_live_games() -> None:
     """The LMU/RF2 connector plugin should enable widgets for both supported live games."""
 
+    service = _FakeLiveConnectorService()
+    lmu_rf2_plugin._service_instance = cast(Any, service)
+    service._active_source = "lmu"
+    service._active_game = "lmu"
+    service._game_phase = 5
+    service._has_player_vehicle = True
+    service._in_realtime = True
+    service.state = _FakeState(True)
     lmu_decision = lmu_rf2_plugin.update_game_state(
         cast(Any, type("Update", (), {
             "active_source": "lmu",
             "active_game": "lmu",
             "is_live": True,
+            "state_active": True,
+            "state_paused": False,
         })())
     )
+    service._active_source = "rf2"
+    service._active_game = "rf2"
+    service.state = _FakeState(True)
     rf2_decision = lmu_rf2_plugin.update_game_state(
         cast(Any, type("Update", (), {
             "active_source": "rf2",
             "active_game": "rf2",
             "is_live": True,
+            "state_active": True,
+            "state_paused": False,
         })())
     )
+    service._active_source = "mock"
+    service._active_game = "mock"
+    service._game_phase = 0
+    service._has_player_vehicle = False
+    service._in_realtime = False
+    service.state = _FakeState(False)
     mock_decision = lmu_rf2_plugin.update_game_state(
         cast(Any, type("Update", (), {
             "active_source": "mock",
             "active_game": "mock",
             "is_live": False,
+            "state_active": False,
+            "state_paused": False,
+        })())
+    )
+    service._active_source = "lmu"
+    service._active_game = "lmu"
+    service._in_realtime = True
+    service.state = _FakeState(False)
+    inactive_decision = lmu_rf2_plugin.update_game_state(
+        cast(Any, type("Update", (), {
+            "active_source": "lmu",
+            "active_game": "lmu",
+            "is_live": True,
+            "state_active": False,
+            "state_paused": False,
         })())
     )
 
     assert lmu_decision == {"show_widgets": True}
     assert rf2_decision == {"show_widgets": True}
     assert mock_decision == {"show_widgets": False}
+    assert inactive_decision == {"show_widgets": False}
+    lmu_rf2_plugin._service_instance = None
+
+
+def test_connector_handoff_reapplies_family_decision_when_internal_state_changes(monkeypatch) -> None:
+    """Connector handoff should re-evaluate plugin decisions when family state changes behind a stable live source."""
+
+    service = _FakeStickyLiveConnectorService()
+    lmu_rf2_plugin._service_instance = cast(Any, service)
+
+    monkeypatch.setattr(
+        "runtimeV2.connectors.policy.load_connector_service",
+        lambda module_name, class_name: service,
+    )
+    monkeypatch.setattr(
+        "runtimeV2.connectors.game_detector.psutil.process_iter",
+        lambda attrs=None: [type("Proc", (), {"info": {"name": "LeMansUltimate.exe"}})()],
+    )
+
+    runtime, _bus = _make_runtime(
+        {
+            "LMU_RF2_Connector": ConnectorManifest(
+                games=[
+                    ConnectorGameDecl(id="lmu", detect_names=["Le Mans Ultimate"]),
+                    ConnectorGameDecl(id="rf2", detect_names=["rFactor2"]),
+                ],
+                service=ConnectorServiceDecl(
+                    module="plugins.LMU_RF2_Connector.plugin",
+                    class_name="LMURF2Connector",
+                ),
+                runtime=ConnectorRuntimeDecl(game_state_hook="update_game_state"),
+            )
+        }
+    )
+
+    assert startup_connectors(cast(Any, runtime)) == StartupResult(ok=True)
+    scheduler_write = cast(SchedulerWrite, runtime.registered_capabilities["scheduler_write"])
+    read = cast(ConnectorRead, runtime.registered_capabilities["connector_read"])
+    widget_config_write = cast(_FakeWidgetConfigWrite, runtime._capabilities["widget_config_write"])
+
+    scheduler_write.tick(5000)
+    assert read.show_widgets("LMU_RF2_Connector") is True
+    assert widget_config_write.global_visible is True
+
+    scheduler_write.tick(5020)
+    assert read.show_widgets("LMU_RF2_Connector") is False
+    assert widget_config_write.global_visible is False
+    lmu_rf2_plugin._service_instance = None
 
