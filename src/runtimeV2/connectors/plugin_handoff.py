@@ -61,6 +61,13 @@ class ConnectorGameStateHookDispatcher:
             self._apply_decision(decision)
         return True
 
+    def apply_no_game(self, connector_id: str) -> None:
+        """Apply the generic no-game connector decision."""
+
+        decision = ConnectorGameStateDecision(show_widgets=False)
+        self._decision_store.set(connector_id, decision)
+        self._apply_decision(decision)
+
     def _apply_decision(self, decision: ConnectorGameStateDecision) -> None:
         if self._widget_visibility_write is None:
             return

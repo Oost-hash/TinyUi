@@ -158,6 +158,32 @@ class _FakeStickyLiveConnectorService(_FakeConnectorService):
         return self._active_game
 
 
+class _FakeExitLiveConnectorService(_FakeConnectorService):
+    def __init__(self) -> None:
+        super().__init__()
+        self._active_source = "lmu"
+        self._active_game = "lmu"
+        self._game_phase = 5
+        self._has_player_vehicle = True
+        self._in_realtime = True
+        self.state = _FakeState(True)
+
+    def update(self) -> None:
+        super().update()
+        self._active_source = "lmu"
+        self._active_game = "lmu"
+        self._game_phase = 5
+        self._has_player_vehicle = True
+        self._in_realtime = True
+        self.state = _FakeState(True)
+
+    def active_source(self) -> str:
+        return self._active_source
+
+    def active_game(self) -> str:
+        return self._active_game
+
+
 class _FakeState:
     def __init__(self, active: bool) -> None:
         self._active = active
@@ -850,5 +876,59 @@ def test_connector_handoff_reapplies_family_decision_when_internal_state_changes
     scheduler_write.tick(5020)
     assert read.show_widgets("LMU_RF2_Connector") is False
     assert widget_config_write.global_visible is False
+    lmu_rf2_plugin._service_instance = None
+
+
+def test_connector_live_mode_hides_widgets_when_detected_game_is_lost(monkeypatch) -> None:
+    """Connector live mode should fall back to probe and hide widgets when game detection is lost."""
+
+    service = _FakeExitLiveConnectorService()
+    lmu_rf2_plugin._service_instance = cast(Any, service)
+    process_names = [
+        [type("Proc", (), {"info": {"name": "LeMansUltimate.exe"}})()],
+        [],
+    ]
+
+    monkeypatch.setattr(
+        "runtimeV2.connectors.policy.load_connector_service",
+        lambda module_name, class_name: service,
+    )
+    monkeypatch.setattr(
+        "runtimeV2.connectors.game_detector.psutil.process_iter",
+        lambda attrs=None: process_names.pop(0),
+    )
+
+    runtime, _bus = _make_runtime(
+        {
+            "LMU_RF2_Connector": ConnectorManifest(
+                games=[
+                    ConnectorGameDecl(id="lmu", detect_names=["Le Mans Ultimate"]),
+                    ConnectorGameDecl(id="rf2", detect_names=["rFactor2"]),
+                ],
+                service=ConnectorServiceDecl(
+                    module="plugins.LMU_RF2_Connector.plugin",
+                    class_name="LMURF2Connector",
+                ),
+                runtime=ConnectorRuntimeDecl(game_state_hook="update_game_state"),
+            )
+        }
+    )
+
+    assert startup_connectors(cast(Any, runtime)) == StartupResult(ok=True)
+    scheduler_write = cast(SchedulerWrite, runtime.registered_capabilities["scheduler_write"])
+    scheduler_read = cast(SchedulerRead, runtime.registered_capabilities["scheduler_read"])
+    read = cast(ConnectorRead, runtime.registered_capabilities["connector_read"])
+    widget_config_write = cast(_FakeWidgetConfigWrite, runtime._capabilities["widget_config_write"])
+
+    scheduler_write.tick(5000)
+    assert read.show_widgets("LMU_RF2_Connector") is True
+    assert widget_config_write.global_visible is True
+
+    scheduler_write.tick(5020)
+    assert read.show_widgets("LMU_RF2_Connector") is False
+    assert widget_config_write.global_visible is False
+    jobs = {job.job_id: job for job in scheduler_read.jobs()}
+    assert jobs["connectors.LMU_RF2_Connector.probe_game_state"].enabled is True
+    assert jobs["connectors.LMU_RF2_Connector.live_poll"].enabled is False
     lmu_rf2_plugin._service_instance = None
 

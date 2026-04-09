@@ -73,6 +73,10 @@ class ConnectorSchedulerWrite:
     def sync_scheduler_mode(self, connector_id: str) -> None:
         """Sync one connector between probe and live jobs."""
 
+        detected_game = self._connector_read.detected_game(connector_id)
+        if detected_game is None:
+            self.enable_probe_mode(connector_id)
+            return
         active_source = self._connector_read.active_source(connector_id) or "none"
         if active_source not in {"none", "mock"}:
             self.enable_live_mode(connector_id)
@@ -101,6 +105,11 @@ class ConnectorSchedulerWrite:
         self.sync_scheduler_mode(connector_id)
 
     def _run_live(self, connector_id: str) -> None:
+        detected = self._game_detector_write.sync(connector_id)
+        if detected is None:
+            self._apply_no_game(connector_id)
+            self.sync_scheduler_mode(connector_id)
+            return
         self._poller.update_one(connector_id)
         self._sync_plugin_handoff(connector_id)
         self.sync_scheduler_mode(connector_id)
@@ -114,6 +123,11 @@ class ConnectorSchedulerWrite:
         if self._plugin_handoff is None:
             return False
         return self._plugin_handoff.sync_connector(connector_id)
+
+    def _apply_no_game(self, connector_id: str) -> None:
+        if self._plugin_handoff is None:
+            return
+        self._plugin_handoff.apply_no_game(connector_id)
 
     @staticmethod
     def _probe_job_id(connector_id: str) -> str:
