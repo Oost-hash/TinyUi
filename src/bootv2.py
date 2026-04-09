@@ -31,7 +31,9 @@ from ui_api.qt import create_application, create_engine
 from ui_api.runtime_host import start_runtime_host
 from ui_api.startup_logging import install_startup_diagnostics, log_startup_step, startup_log_path
 from widget_api.startup import startup_widget_api
-from ui_api.windowing import win_window  # eager import: registers QML singletons before engine
+
+if sys.platform == "win32":
+    from ui_api.windowing import win_window  # eager import: registers QML singletons before engine
 
 
 def main() -> int:
