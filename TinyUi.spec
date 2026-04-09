@@ -32,6 +32,7 @@ datas = [
 ]
 
 hiddenimports = [
+    "mmap",
     "plugins.tinyui.plugin",
 ]
 
