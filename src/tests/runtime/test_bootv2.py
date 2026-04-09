@@ -489,6 +489,48 @@ def test_runtime_host_open_action_uses_runtime_window_actions(monkeypatch) -> No
     result.actions.trigger("open:devtools.main")
 
     assert opened == ["tinyui.main", "devtools.main"]
+    assert "devtools.main" in result.window_handles
+
+
+def test_runtime_host_shutdown_closes_secondary_windows(monkeypatch) -> None:
+    """Runtime shutdown should close both the main window and opened secondary windows."""
+
+    app = _FakeApp()
+    runtime = _FakeUiRuntime()
+    close_calls: list[str] = []
+
+    class _FakeWindow:
+        def __init__(self, window_id: str) -> None:
+            self.window_id = window_id
+            self.destroyed = _FakeSignal()
+
+        def close(self) -> None:
+            close_calls.append(self.window_id)
+
+        def raise_(self) -> None:
+            return None
+
+        def requestActivate(self) -> None:
+            return None
+
+    def _open_window(manifest, *_args, **_kwargs):
+        return SimpleNamespace(qml_window=_FakeWindow(manifest.id), keepalive=())
+
+    monkeypatch.setattr("ui_api.runtime_host.open_window", _open_window)
+
+    result, startup_result = start_runtime_host(
+        app=app,
+        engine=object(),
+        runtime=cast(Any, runtime),
+    )
+
+    assert startup_result.ok
+    assert result is not None
+
+    result.actions.trigger("open:devtools.main")
+    runtime.shutdown.begin_shutdown("main_window_close")
+
+    assert close_calls == ["tinyui.main", "devtools.main"]
 
 
 def test_runtime_host_widget_visibility_toggle_uses_runtime_capability(monkeypatch) -> None:

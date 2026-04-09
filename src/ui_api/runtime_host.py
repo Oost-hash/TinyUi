@@ -118,6 +118,7 @@ class RuntimeHostResult:
     actions: AppActions
     theme: Theme
     main_handle: WindowHandle
+    window_handles: dict[str, WindowHandle]
     qml_properties: dict[str, object]
     shutdown: QmlRuntimeHostShutdown
 
@@ -295,16 +296,28 @@ def start_runtime_host(
             theme=theme,
             **qml_properties,
         )
+        open_handles: dict[str, WindowHandle] = {main_window.id: handle}
         manifest_ui_read = runtime.capability("manifest_ui_read", ManifestUiRead)
 
-        def _close_main_window() -> None:
-            handle.qml_window.close()
+        def _drop_handle(window_id: str) -> None:
+            open_handles.pop(window_id, None)
+
+        def _close_host_windows() -> None:
+            for window_id, window_handle in list(open_handles.items()):
+                if window_handle.qml_window is not None:
+                    window_handle.qml_window.close()
+                open_handles.pop(window_id, None)
 
         def _open_runtime_window(window_id: str) -> None:
+            existing = open_handles.get(window_id)
+            if existing is not None:
+                existing.qml_window.raise_()
+                existing.qml_window.requestActivate()
+                return
             manifest = _window_manifest(manifest_ui_read, window_id)
             if manifest is None:
                 return
-            open_window(
+            window_handle = open_window(
                 manifest,
                 engine=engine,
                 app=app,
@@ -312,19 +325,23 @@ def start_runtime_host(
                 theme=theme,
                 **qml_properties,
             )
+            open_handles[window_id] = window_handle
+            window_handle.qml_window.destroyed.connect(lambda *_args, wid=window_id: _drop_handle(wid))
 
         host_registry.capability("ui_actions", UIActionsCapability).register(
             actions,
             open_window=_open_runtime_window,
         )
         handle.qml_window.destroyed.connect(app.quit)
-        shutdown = QmlRuntimeHostShutdown(runtime, _close_main_window)
+        handle.qml_window.destroyed.connect(lambda *_args: _drop_handle(main_window.id))
+        shutdown = QmlRuntimeHostShutdown(runtime, _close_host_windows)
         shutdown.attach(app)
 
         result = RuntimeHostResult(
             actions=actions,
             theme=theme,
             main_handle=handle,
+            window_handles=open_handles,
             qml_properties=qml_properties,
             shutdown=shutdown,
         )
