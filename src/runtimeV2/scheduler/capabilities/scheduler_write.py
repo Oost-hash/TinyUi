@@ -91,6 +91,11 @@ class SchedulerWrite:
     def set_enabled(self, job_id: str, enabled: bool) -> bool:
         """Enable or disable one registered job."""
 
+        current = self._registry.job(job_id)
+        if current is None:
+            return False
+        if current.enabled == enabled:
+            return True
         record = self._registry.set_enabled(job_id, enabled)
         if record is None:
             return False
@@ -100,6 +105,12 @@ class SchedulerWrite:
     def set_interval(self, job_id: str, interval_ms: int) -> bool:
         """Update one registered job interval."""
 
+        current = self._registry.job(job_id)
+        if current is None:
+            return False
+        safe_interval = max(1, int(interval_ms))
+        if current.interval_ms == safe_interval:
+            return True
         record = self._registry.set_interval(job_id, interval_ms)
         if record is None:
             return False

@@ -70,20 +70,24 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
             events=events.bus,
         )
         poller = ConnectorServicePoller(registry, events.bus)
-        capabilities = register_connector_capabilities(registry, poller, events.bus)
-        runtime.register_capability("connector_read", capabilities.read)
-        runtime.register_capability("connector_write", capabilities.write)
-        register_connector_globals(runtime)
         scheduler_write = runtime.capability("scheduler_write", SchedulerWrite)
         settings_read = runtime.capability("settings_read", SettingsRead)
         interval_value = settings_read.get("tinyui", "connector_poll_interval_ms")
         interval_ms = int(interval_value) if isinstance(interval_value, int) else 20
-        scheduler_write.register_job(
-            job_id="connectors.update_all",
-            owner_domain="connectors",
-            interval_ms=interval_ms,
-            callback=poller.update_all,
+        capabilities = register_connector_capabilities(
+            registry,
+            poller,
+            scheduler_write,
+            interval_ms,
+            events.bus,
         )
+        runtime.register_capability("connector_read", capabilities.read)
+        runtime.register_capability("connector_write", capabilities.write)
+        runtime.register_capability("connector_scheduler_write", capabilities.scheduler_write)
+        register_connector_globals(runtime)
+        for connector_id in registry.ids():
+            capabilities.scheduler_write.register_connector(connector_id)
+            capabilities.scheduler_write.sync_scheduler_mode(connector_id)
         runtime.register_domain_result("connectors", ConnectorsStartupResult(
             registry=registry,
             poller=poller,

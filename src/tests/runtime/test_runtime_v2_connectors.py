@@ -33,7 +33,6 @@ from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.connectors.contracts import ConnectorSourceChangedData
 from runtimeV2.connectors.policy import unregister_connector_service
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest, ConnectorServiceDecl
-from runtimeV2.persistence.capabilities.settings_read import SettingsRead
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.scheduler.capabilities.scheduler_read import SchedulerRead
 from runtimeV2.scheduler.driver import SchedulerDriver
@@ -71,12 +70,36 @@ class _FakeConnectorService:
     def inspect_snapshot(self) -> list[tuple[str, str]]:
         return [("speed", "321")]
 
+    def active_source(self) -> str:
+        return "mock"
+
+    def active_game(self) -> str:
+        return "mock"
+
     def release_source(self, owner: str) -> bool:
         self.released.append(owner)
         return True
 
     def close(self) -> None:
         self.closed = True
+
+
+class _FakeLiveConnectorService(_FakeConnectorService):
+    def __init__(self) -> None:
+        super().__init__()
+        self._active_source = "mock"
+        self._active_game = "mock"
+
+    def update(self) -> None:
+        super().update()
+        self._active_source = "lmu"
+        self._active_game = "lmu"
+
+    def active_source(self) -> str:
+        return self._active_source
+
+    def active_game(self) -> str:
+        return self._active_game
 
 
 class _FakeState:
@@ -194,6 +217,7 @@ def _make_runtime(declarations: dict[str, ConnectorManifest]) -> tuple[_FakeRunt
     scheduler_registry = SchedulerRegistry()
     scheduler_driver = SchedulerDriver(scheduler_registry, bus)
     registered_capabilities["scheduler_write"] = SchedulerWrite(scheduler_registry, scheduler_driver, bus)
+    registered_capabilities["scheduler_read"] = SchedulerRead(scheduler_registry)
     return runtime, bus
 
 
@@ -236,10 +260,25 @@ def test_startup_connectors_registers_declared_services(monkeypatch) -> None:
     scheduler_write = cast(SchedulerWrite, runtime.registered_capabilities["scheduler_write"])
     scheduler_write.tick(20)
     assert service.update_calls == 1
+    scheduler_write.tick(1000)
+    assert service.update_calls == 1
+    scheduler_write.tick(1020)
+    assert service.update_calls == 2
+    scheduler_jobs = cast(SchedulerRead, runtime.registered_capabilities["scheduler_read"]).jobs()
+    assert [job.job_id for job in scheduler_jobs] == [
+        "connectors.iracing.probe_game_state",
+        "connectors.iracing.live_poll",
+    ]
+    assert scheduler_jobs[0].enabled is True
+    assert scheduler_jobs[1].enabled is False
     assert [event.type for event in bus.get_history()] == [
         EventType.CONNECTOR_SERVICE_REGISTERED,
         EventType.CONNECTOR_SERVICE_UPDATED,
         EventType.SCHEDULER_JOB_REGISTERED,
+        EventType.SCHEDULER_JOB_REGISTERED,
+        EventType.CONNECTOR_SERVICE_UPDATED,
+        EventType.SCHEDULER_TICK,
+        EventType.SCHEDULER_TICK,
         EventType.CONNECTOR_SERVICE_UPDATED,
         EventType.SCHEDULER_TICK,
     ]
@@ -276,6 +315,39 @@ def test_connector_write_can_update_all_services(monkeypatch) -> None:
     assert services["acc"].update_calls == 1
     assert read.service("iracing") is not None
     assert len(bus.get_history(EventType.CONNECTOR_SERVICE_UPDATED)) == 4
+
+
+def test_connector_scheduler_switches_from_probe_to_live_mode(monkeypatch) -> None:
+    """Connectors should enable live polling after probe detects a real source."""
+
+    service = _FakeLiveConnectorService()
+    monkeypatch.setattr(
+        "runtimeV2.connectors.policy.load_connector_service",
+        lambda module_name, class_name: service,
+    )
+    runtime, _bus = _make_runtime(
+        {
+            "iracing": ConnectorManifest(
+                service=ConnectorServiceDecl(module="plugins.iracing", class_name="IRacingService")
+            )
+        }
+    )
+
+    assert startup_connectors(cast(Any, runtime)) == StartupResult(ok=True)
+
+    scheduler_write = cast(SchedulerWrite, runtime.registered_capabilities["scheduler_write"])
+    scheduler_read = cast(SchedulerRead, runtime.registered_capabilities["scheduler_read"])
+
+    scheduler_write.tick(20)
+
+    jobs = {job.job_id: job for job in scheduler_read.jobs()}
+    assert jobs["connectors.iracing.probe_game_state"].enabled is False
+    assert jobs["connectors.iracing.live_poll"].enabled is True
+    assert service.active_source() == "lmu"
+    assert service.update_calls == 1
+
+    scheduler_write.tick(40)
+    assert service.update_calls == 2
 
 
 def test_connector_write_emits_source_change_events(monkeypatch) -> None:

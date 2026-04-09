@@ -29,6 +29,8 @@ class QmlRuntimeSchedulerDriver:
         self._timer.setParent(app)
         events = self._runtime.domain_result("events", EventsStartupResult)
         events.bus.on(EventType.RUNTIME_SHUTDOWN, self._on_runtime_shutdown)
+        events.bus.on(EventType.SCHEDULER_JOB_REGISTERED, self._on_scheduler_jobs_changed)
+        events.bus.on(EventType.SCHEDULER_JOB_UPDATED, self._on_scheduler_jobs_changed)
         self._retime()
         self._timer.start()
         app.aboutToQuit.connect(self.stop)
@@ -44,9 +46,13 @@ class QmlRuntimeSchedulerDriver:
             self.stop()
             return
         self._runtime.capability("scheduler_write", SchedulerWrite).tick(_monotonic_ms())
+        self._retime()
 
     def _on_runtime_shutdown(self, _event) -> None:
         self.stop()
+
+    def _on_scheduler_jobs_changed(self, _event) -> None:
+        self._retime()
 
     def _retime(self) -> None:
         interval_ms = self._runtime.capability("scheduler_read", SchedulerRead).minimum_interval_ms()

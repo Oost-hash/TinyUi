@@ -63,16 +63,16 @@ def test_scheduler_tick_runs_due_job_and_emits_events() -> None:
     calls: list[str] = []
 
     write.register_job(
-        job_id="connectors.update_all",
-        owner_domain="connectors",
+        job_id="scheduler.test_job",
+        owner_domain="tests",
         interval_ms=20,
         callback=lambda: calls.append("tick"),
     )
 
     assert read.minimum_interval_ms() == 20
-    assert write.tick(0) == ["connectors.update_all"]
+    assert write.tick(0) == ["scheduler.test_job"]
     assert write.tick(10) == []
-    assert write.tick(20) == ["connectors.update_all"]
+    assert write.tick(20) == ["scheduler.test_job"]
     assert calls == ["tick", "tick"]
 
     history = runtime.events.bus.get_history()

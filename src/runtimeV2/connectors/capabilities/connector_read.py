@@ -67,3 +67,19 @@ class ConnectorRead:
         """Return one inspection value by key."""
 
         return self.inspection_map(connector_id).get(key)
+
+    def active_source(self, connector_id: str) -> str | None:
+        """Return the active source name for one connector service when available."""
+
+        service = self._registry.get(connector_id)
+        if service is None or not hasattr(service, "active_source"):
+            return None
+        return str(service.active_source())
+
+    def active_game(self, connector_id: str) -> str | None:
+        """Return the active game name for one connector service when available."""
+
+        service = self._registry.get(connector_id)
+        if service is None or not hasattr(service, "active_game"):
+            return None
+        return str(service.active_game())
