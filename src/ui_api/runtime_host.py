@@ -84,6 +84,7 @@ from shared_runtime_host.capabilities.ui_api import (
 )
 from ui_api.api.app_actions import AppActions
 from ui_api.register_runtime_host import register_ui_runtime_host
+from ui_api.startup_logging import log_startup_step
 from ui_api.theme import Theme
 from ui_api.window import WindowHandle, open_window
 
@@ -273,9 +274,11 @@ def start_runtime_host(
     """Open the runtime V2 main window through ui_api."""
 
     try:
+        log_startup_step("runtime host startup begin")
         ui_result = runtime.domain_result("ui", UIStartupResult)
         if not ui_result.render_status.render_ready:
             blocker = ui_result.render_status.render_blocker or "unknown blocker"
+            log_startup_step(f"runtime host blocked: {blocker}", level=40)
             return None, startup_error(f"Runtime V2 UI is not render-ready: {blocker}")
 
         if theme is None:
@@ -294,6 +297,7 @@ def start_runtime_host(
             qml_properties["pluginPanelUrl"] = plugin_panel_url
         if plugin_panel_component is not None:
             qml_properties["pluginPanelComponent"] = plugin_panel_component
+        log_startup_step(f"opening main runtime window: {main_window.id}")
         handle = open_window(
             main_window,
             engine=engine,
@@ -316,6 +320,7 @@ def start_runtime_host(
                 open_handles.pop(window_id, None)
 
         def _open_runtime_window(window_id: str) -> None:
+            log_startup_step(f"requested runtime window: {window_id}")
             existing = open_handles.get(window_id)
             if existing is not None:
                 existing.qml_window.raise_()
@@ -354,8 +359,10 @@ def start_runtime_host(
             shutdown=shutdown,
         )
         app.setProperty("_runtimeV2Host", result)
+        log_startup_step("runtime host startup completed")
         return result, startup_ok()
     except Exception as exc:
+        log_startup_step(f"runtime host startup exception: {exc}", level=40, exc_info=True)
         return None, startup_error(f"Runtime V2 ui_api host startup failed: {exc}")
 
 

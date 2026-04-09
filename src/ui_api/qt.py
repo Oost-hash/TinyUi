@@ -30,6 +30,7 @@ from pathlib import Path
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 from PySide6.QtQml import QQmlEngine
+from ui_api.startup_logging import install_qt_message_logging, log_startup_step
 
 _QML_IMPORT_PATH = Path(__file__).parent.parent  # src/
 _APP_ICON_PATH = _QML_IMPORT_PATH / "plugins" / "tinyui" / "assets" / "images" / "logo" / "logo.png"
@@ -47,14 +48,19 @@ def create_application(argv: list[str] | None = None) -> QApplication:
     if argv is None:
         argv = sys.argv
     _apply_windows_app_id()
+    log_startup_step("creating QApplication")
     app = QApplication(argv)
     app.setApplicationName("TinyUI")
     if _APP_ICON_PATH.exists():
         app.setWindowIcon(QIcon(str(_APP_ICON_PATH)))
+    install_qt_message_logging()
+    log_startup_step("QApplication created")
     return app
 
 
 def create_engine() -> QQmlEngine:
+    log_startup_step("creating QQmlEngine")
     engine = QQmlEngine()
     engine.addImportPath(str(_QML_IMPORT_PATH))
+    log_startup_step(f"QQmlEngine import path added: {_QML_IMPORT_PATH}")
     return engine

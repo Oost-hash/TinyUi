@@ -40,7 +40,7 @@ def _smoke_env() -> dict[str, str]:
 def main() -> int:
     args = _parse_args()
     proc = subprocess.Popen(
-        [sys.executable, "-m", "boot"],
+        [sys.executable, "-m", "bootv2"],
         cwd=str(ROOT),
         env=_smoke_env(),
         stdout=subprocess.PIPE,

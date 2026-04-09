@@ -38,26 +38,19 @@ def detect_runtime_paths() -> RuntimePaths:
         frozen_root = Path(meipass).resolve() if isinstance(meipass, str) else app_root / "tinyui"
         runtime_paths = RuntimePaths(
             app_root=app_root,
-            config_dir=app_root / "config",
             host_dir=frozen_root / "plugins" / "tinyui",
             plugins_dir=app_root / "plugins",
-            data_dir=app_root / "data",
             source_root=None,
             frozen_root=frozen_root,
         )
     else:
         source_root = Path(__file__).resolve().parents[2]
-        repo_root = source_root.parent
         runtime_paths = RuntimePaths(
             app_root=source_root,
-            config_dir=repo_root / "data" / "config",
             host_dir=source_root / "plugins" / "tinyui",
             plugins_dir=source_root / "plugins",
-            data_dir=repo_root / "data" / "state",
             source_root=source_root,
             frozen_root=None,
         )
 
-    runtime_paths.config_dir.mkdir(parents=True, exist_ok=True)
-    runtime_paths.data_dir.mkdir(parents=True, exist_ok=True)
     return runtime_paths

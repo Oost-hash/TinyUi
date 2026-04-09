@@ -19,29 +19,13 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Contracts for the runtime V2 paths domain."""
+"""Host packaged runtime artifacts behind a runtime-friendly interface."""
 
-from __future__ import annotations
+from pkg_runtime_host.contracts import MountedPkgRuntime
+from pkg_runtime_host.mount import is_packaged_plugin_dir, mount_packaged_plugin
 
-from dataclasses import dataclass
-from pathlib import Path
-
-
-@dataclass(frozen=True)
-class RuntimePaths:
-    """Runtime V2 app/resource paths."""
-
-    app_root: Path
-    host_dir: Path
-    plugins_dir: Path
-    source_root: Path | None = None
-    frozen_root: Path | None = None
-
-    def qml_dir(self, package: str) -> Path:
-        """Return the QML directory for a package."""
-
-        if self.frozen_root is not None:
-            return self.frozen_root / package / "qml"
-        if self.source_root is None:
-            raise RuntimeError(f"No source root available for package '{package}'")
-        return self.source_root / package / "qml"
+__all__ = [
+    "MountedPkgRuntime",
+    "is_packaged_plugin_dir",
+    "mount_packaged_plugin",
+]

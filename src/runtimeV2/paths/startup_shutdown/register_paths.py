@@ -33,10 +33,8 @@ def register_app_paths(runtime_paths: RuntimePaths) -> dict[str, Path]:
 
     named_paths: dict[str, Path] = {
         "app_root": runtime_paths.app_root,
-        "config_dir": runtime_paths.config_dir,
         "host_dir": runtime_paths.host_dir,
         "plugins_dir": runtime_paths.plugins_dir,
-        "data_dir": runtime_paths.data_dir,
     }
     if runtime_paths.source_root is not None:
         named_paths["source_root"] = runtime_paths.source_root

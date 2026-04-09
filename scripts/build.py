@@ -25,7 +25,6 @@ IS_WINDOWS = platform.system() == "Windows"
 EXE_NAME = "TinyUi.exe" if IS_WINDOWS else "TinyUi"
 
 USER_DIRS = {
-    "config": ROOT / "data" / "config",
     "themes": ROOT / "assets" / "themes",
 }
 
@@ -108,11 +107,6 @@ def _build_external_plugins() -> None:
         build_compiled_plugin(plugin_dir, plugins_dst, clean=True, create_zip=False)
 
 
-def _ensure_user_dir(name: str) -> None:
-    """Create a canonical user-facing directory next to the executable."""
-    (APP_DIR / name).mkdir(parents=True, exist_ok=True)
-
-
 def _pyinstaller_cmd() -> list[str]:
     return [
         sys.executable,
@@ -139,8 +133,6 @@ def _print_structure() -> None:
     print("Structure:")
     print("  TinyUi/")
     print(f"  +-- {EXE_NAME}")
-    print("  +-- config/")
-    print("  +-- data/")
     print("  +-- themes/")
     print("  +-- tinyui/")
     print("  +-- plugins/")
@@ -166,7 +158,6 @@ def build(*, skip_clean: bool) -> int:
     for name, src in USER_DIRS.items():
         _copy_user_dir(name, src)
     _build_external_plugins()
-    _ensure_user_dir("data")
     _print_structure()
     return 0
 

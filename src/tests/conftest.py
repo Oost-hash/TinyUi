@@ -47,16 +47,12 @@ def _coerce_runtime_paths(paths: object) -> RuntimePaths:
     else:
         runtime_paths = RuntimePaths(
             app_root=Path(getattr(paths, "app_root")),
-            config_dir=Path(getattr(paths, "config_dir")),
             host_dir=Path(getattr(paths, "host_dir")),
             plugins_dir=Path(getattr(paths, "plugins_dir")),
-            data_dir=Path(getattr(paths, "data_dir")),
             source_root=_optional_path(paths, "source_root"),
             frozen_root=_optional_path(paths, "frozen_root"),
         )
 
-    runtime_paths.config_dir.mkdir(parents=True, exist_ok=True)
-    runtime_paths.data_dir.mkdir(parents=True, exist_ok=True)
     return runtime_paths
 
 

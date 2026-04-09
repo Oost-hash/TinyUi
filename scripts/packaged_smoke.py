@@ -10,6 +10,8 @@ import time
 import tempfile
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run a minimal packaged smoke for TinyUi.")
@@ -36,8 +38,6 @@ def _validate_layout(dist_dir: Path) -> Path:
     _require_path(dist_dir / "tinyui" / "plugins" / "tinyui" / "manifest.toml", "bundled host manifest")
     _require_path(dist_dir / "plugins", "external plugins directory")
     _require_path(dist_dir / "themes", "themes directory")
-    _require_path(dist_dir / "config", "config directory")
-    _require_path(dist_dir / "data", "data directory")
     return exe_path
 
 
@@ -73,7 +73,8 @@ def _emit_relevant_output(stdout: str, stderr: str) -> None:
 
 def main() -> int:
     args = _parse_args()
-    dist_dir = Path(args.dist).resolve()
+    dist_arg = Path(args.dist)
+    dist_dir = dist_arg if dist_arg.is_absolute() else (ROOT / dist_arg).resolve()
     exe_path = _validate_layout(dist_dir)
 
     proc = subprocess.Popen(

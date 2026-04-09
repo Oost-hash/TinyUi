@@ -27,6 +27,7 @@ def collect_non_python_files(source: Path, target_prefix: str) -> list[tuple[str
 
 datas = [
     *collect_non_python_files(SRC / "ui_api" / "qml", "ui_api/qml"),
+    *collect_non_python_files(SRC / "widget_api" / "qml", "widget_api/qml"),
     *collect_non_python_files(SRC / "plugins" / "tinyui", "plugins/tinyui"),
 ]
 
@@ -35,7 +36,7 @@ hiddenimports = [
 ]
 
 a = Analysis(
-    [str(SRC / "boot.py")],
+    [str(SRC / "bootv2.py")],
     pathex=[str(SRC)],
     binaries=[],
     datas=datas,
@@ -58,7 +59,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=False,
     contents_directory="tinyui",
 )
@@ -68,7 +69,7 @@ coll = COLLECT(
     a.binaries,
     a.datas,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     name="TinyUi",
 )

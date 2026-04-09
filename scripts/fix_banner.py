@@ -59,7 +59,18 @@ _EXT_CONFIG: dict[str, tuple[str, str]] = {
 }
 
 # Directories that contain our own source (relative to repo root)
-SRC_DIRS = ("src/runtime", "src/runtime_schema", "src/app_schema", "src/ui_api", "src/widget_api", "src/capabilities", "src/plugins")
+SRC_DIRS = (
+    "src/runtime",
+    "src/runtimeV2",
+    "src/runtime_schema",
+    "src/app_schema",
+    "src/ui_api",
+    "src/widget_api",
+    "src/shared_runtime_host",
+    "src/pkg_runtime_host",
+    "src/capabilities",
+    "src/plugins",
+)
 
 # Fingerprints: if any of these appear in the first 30 lines, it's a banner.
 _FINGERPRINTS = [

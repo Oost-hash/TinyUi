@@ -32,6 +32,7 @@ from PySide6.QtQml import QQmlComponent, QQmlEngine
 from PySide6.QtQuick import QQuickWindow
 
 from ui_api.api.app_actions import AppActions
+from ui_api.startup_logging import log_startup_step
 from ui_api.theme import Theme
 from runtimeV2.ui.schemas.manifest import AppManifest
 from ui_api.windowing import attach_windowing
@@ -54,11 +55,24 @@ def open_window(
     theme: Theme,
     **extra_properties: object,
 ) -> WindowHandle:
+    log_startup_step(f"opening hosted window: {manifest.id}")
     url = QUrl.fromLocalFile(str(_HOSTED_WINDOW_QML))
     component = QQmlComponent(engine, url)
     obj = component.create()
-    assert obj is not None, component.errorString()
-    assert isinstance(obj, QQuickWindow), component.errorString()
+    if obj is None:
+        error_message = component.errorString()
+        log_startup_step(
+            f"hosted window root failed for {manifest.id}: {error_message}",
+            level=40,
+        )
+        raise RuntimeError(error_message)
+    if not isinstance(obj, QQuickWindow):
+        error_message = component.errorString() or f"Expected QQuickWindow, got {type(obj).__name__}"
+        log_startup_step(
+            f"hosted window type failed for {manifest.id}: {error_message}",
+            level=40,
+        )
+        raise TypeError(error_message)
     window = cast(QQuickWindow, obj)
 
     # Extract chrome component override first (before iterating extra_properties)
@@ -78,12 +92,14 @@ def open_window(
     surface_component = None
     if manifest.surface:
         surface_url = QUrl.fromLocalFile(str(manifest.surface))
+        log_startup_step(f"loading surface for {manifest.id}: {manifest.surface}")
         surface_component = QQmlComponent(engine, surface_url)
         window.setProperty("surfaceComponent", surface_component)
 
     # Load custom chrome from manifest if specified and no override provided
     if chrome_component is None and manifest.chrome.custom_chrome:
         chrome_url = QUrl.fromLocalFile(str(manifest.chrome.custom_chrome))
+        log_startup_step(f"loading custom chrome for {manifest.id}: {manifest.chrome.custom_chrome}")
         chrome_component = QQmlComponent(engine, chrome_url)
     
     # Apply custom chrome component if specified
@@ -99,5 +115,6 @@ def open_window(
         keepalive.append(surface_component)
     if chrome_component:
         keepalive.append(chrome_component)
+    log_startup_step(f"hosted window ready: {manifest.id}")
     return WindowHandle(qml_window=window, keepalive=tuple(keepalive))
 

@@ -23,9 +23,11 @@
 
 from __future__ import annotations
 
+import importlib
 import sys
 from pathlib import Path
 
+from pkg_runtime_host import is_packaged_plugin_dir, mount_packaged_plugin
 from runtimeV2.manifest.capabilities.load import ManifestLoad
 from runtimeV2.paths.contracts import RuntimePaths
 from runtimeV2.plugins.registry import PluginRegistry
@@ -79,8 +81,19 @@ def _load_external_plugin(registry: PluginRegistry, plugin_dir: Path, manifest_l
         registry.register_import_root(plugin_dir.parent.parent)
         return
 
-    if (plugin_dir / "_internal" / "manifest.toml").exists():
-        registry.register_skipped_packaged_plugin(plugin_dir.name)
+    if is_packaged_plugin_dir(plugin_dir):
+        mounted = mount_packaged_plugin(plugin_dir)
+        manifest = manifest_load.load_manifest(
+            mounted.manifest_path,
+            resource_root=mounted.plugin_root,
+            source="packaged",
+        )
+        registry.register_plugin(
+            plugin_id=manifest.plugin_id,
+            plugin_root=mounted.plugin_root,
+            source="packaged",
+        )
+        registry.register_import_root(mounted.import_root)
 
 
 def _ensure_import_roots(registry: PluginRegistry) -> None:
@@ -88,3 +101,26 @@ def _ensure_import_roots(registry: PluginRegistry) -> None:
         import_root_text = str(import_root)
         if import_root_text not in sys.path:
             sys.path.insert(0, import_root_text)
+        _extend_plugins_package_path(import_root / "plugins")
+
+
+def _extend_plugins_package_path(package_root: Path) -> None:
+    """Expose discovered plugin package roots to an already-imported plugins package."""
+
+    if not package_root.exists():
+        return
+
+    plugins_package = sys.modules.get("plugins")
+    if plugins_package is None:
+        try:
+            plugins_package = importlib.import_module("plugins")
+        except ModuleNotFoundError:
+            return
+
+    package_path = getattr(plugins_package, "__path__", None)
+    if package_path is None:
+        return
+
+    package_root_text = str(package_root)
+    if package_root_text not in package_path:
+        package_path.append(package_root_text)
