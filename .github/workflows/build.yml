@@ -197,7 +197,7 @@ jobs:
           version = os.environ["RELEASE_VERSION"]
           version_pattern = re.compile(r'^(version\s*=\s*")[^"]+(")', re.MULTILINE)
 
-          for path in (Path("pyproject.toml"), Path("src/plugins/tinyui/manifest.toml")):
+          for path in (Path("src/plugins/tinyui/manifest.toml"), Path("pyproject.toml")):
               text = path.read_text(encoding="utf-8")
               updated = version_pattern.sub(rf'\g<1>{version}\2', text)
               path.write_text(updated, encoding="utf-8")

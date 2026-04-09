@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT         = Path(__file__).parent.parent
 PYPROJECT    = ROOT / "pyproject.toml"
+HOST_MANIFEST = ROOT / "src" / "plugins" / "tinyui" / "manifest.toml"
 CHANGELOG    = ROOT / "docs" / "CHANGELOG.md"
 UNRELEASED   = ROOT / "docs" / "unreleased_changelog.md"
 
@@ -39,10 +40,10 @@ SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 
 
 def _read_version() -> tuple[int, int, int]:
-    text = PYPROJECT.read_text(encoding="utf-8")
+    text = HOST_MANIFEST.read_text(encoding="utf-8")
     m = re.search(r'^version\s*=\s*"(\d+)\.(\d+)\.(\d+)"', text, re.MULTILINE)
     if not m:
-        raise SystemExit("ERROR: version not found in pyproject.toml")
+        raise SystemExit("ERROR: version not found in src/plugins/tinyui/manifest.toml")
     return int(m.group(1)), int(m.group(2)), int(m.group(3))
 
 
@@ -90,14 +91,24 @@ def _auto_version_from_latest_tag(mode: str) -> str:
 
 def _write_version(version: tuple[int, int, int]):
     new_ver = "%d.%d.%d" % version
-    text = PYPROJECT.read_text(encoding="utf-8")
-    text = re.sub(
+
+    host_text = HOST_MANIFEST.read_text(encoding="utf-8")
+    host_text = re.sub(
         r'^(version\s*=\s*)"[\d.]+"',
         f'\\1"{new_ver}"',
-        text,
+        host_text,
         flags=re.MULTILINE,
     )
-    PYPROJECT.write_text(text, encoding="utf-8")
+    HOST_MANIFEST.write_text(host_text, encoding="utf-8")
+
+    pyproject_text = PYPROJECT.read_text(encoding="utf-8")
+    pyproject_text = re.sub(
+        r'^(version\s*=\s*)"[\d.]+"',
+        f'\\1"{new_ver}"',
+        pyproject_text,
+        flags=re.MULTILINE,
+    )
+    PYPROJECT.write_text(pyproject_text, encoding="utf-8")
     return new_ver
 
 
@@ -128,7 +139,7 @@ def _run(cmd: list[str]):
 
 def _commit_and_tag(version_str: str):
     tag = f"v{version_str}"
-    _run(["git", "add", str(PYPROJECT), str(CHANGELOG), str(UNRELEASED)])
+    _run(["git", "add", str(HOST_MANIFEST), str(PYPROJECT), str(CHANGELOG), str(UNRELEASED)])
     _run(["git", "commit", "-m", f"chore: release {tag}"])
     _run(["git", "tag", "-f", tag])
     print(f"\nTagged {tag}. Push with:")
