@@ -21,7 +21,12 @@
 
 """Manifest schema registration for connectors."""
 
-from runtimeV2.connectors.schemas.manifest import ConnectorGameDecl, ConnectorManifest, ConnectorServiceDecl
+from runtimeV2.connectors.schemas.manifest import (
+    ConnectorGameDecl,
+    ConnectorManifest,
+    ConnectorRuntimeDecl,
+    ConnectorServiceDecl,
+)
 from runtimeV2.manifest.schema_registry import ManifestSchemaRegistry
 
 
@@ -31,3 +36,4 @@ def register_connector_schemas(registry: ManifestSchemaRegistry) -> None:
     registry.register_schema("connector", owner_domain="connectors", schema_type=ConnectorManifest)
     registry.register_schema("connector.game", owner_domain="connectors", schema_type=ConnectorGameDecl)
     registry.register_schema("connector.service", owner_domain="connectors", schema_type=ConnectorServiceDecl)
+    registry.register_schema("connector.runtime", owner_domain="connectors", schema_type=ConnectorRuntimeDecl)

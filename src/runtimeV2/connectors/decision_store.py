@@ -19,18 +19,25 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""TinyUi-owned connector family for LMU, rF2, and mock telemetry."""
+"""Connector-owned game-state decision store."""
 
-from .service import (
-    LMURF2ConnectorService,
-    create_family_service,
-    create_lmu_service,
-    create_lmu_rf2_service,
-)
+from __future__ import annotations
 
-__all__ = [
-    "LMURF2ConnectorService",
-    "create_family_service",
-    "create_lmu_service",
-    "create_lmu_rf2_service",
-]
+from runtimeV2.connectors.contracts import ConnectorGameStateDecision
+
+
+class ConnectorGameStateDecisionStore:
+    """Store connector policy decisions derived from plugin game-state hooks."""
+
+    def __init__(self) -> None:
+        self._decisions: dict[str, ConnectorGameStateDecision] = {}
+
+    def set(self, connector_id: str, decision: ConnectorGameStateDecision) -> None:
+        """Store the latest decision for one connector."""
+
+        self._decisions[connector_id] = decision
+
+    def get(self, connector_id: str) -> ConnectorGameStateDecision | None:
+        """Return the latest decision for one connector when available."""
+
+        return self._decisions.get(connector_id)

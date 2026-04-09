@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime entrypoint and source orchestration for the consolidated connector family."""
+"""Connector family service and source orchestration for the LMU/rF2 family."""
 
 from __future__ import annotations
 
@@ -103,8 +103,8 @@ def _render_join(values: object) -> str:
     return str(values)
 
 
-class ConnectorRuntime(TelemetryReader):
-    """Host-facing connector runtime that owns source selection and telemetry exposure."""
+class LMURF2ConnectorService(TelemetryReader):
+    """Connector-family service that owns source selection and telemetry exposure."""
 
     family_name = "LMU_RF2_Connector"
 
@@ -421,13 +421,13 @@ class ConnectorRuntime(TelemetryReader):
         return cast(ConfigurableMockSource, source)
 
 
-def create_connector_service(*sources: ConnectorSource) -> ConnectorRuntime:
-    return ConnectorRuntime(*sources)
+def create_family_service(*sources: ConnectorSource) -> LMURF2ConnectorService:
+    return LMURF2ConnectorService(*sources)
 
 
-def create_lmu_connector_service() -> ConnectorRuntime:
-    return create_connector_service(LMULiveSource())
+def create_lmu_service() -> LMURF2ConnectorService:
+    return create_family_service(LMULiveSource())
 
 
-def create_lmu_rf2_connector_service() -> ConnectorRuntime:
-    return create_connector_service(LMULiveSource(), RF2LiveSource())
+def create_lmu_rf2_service() -> LMURF2ConnectorService:
+    return create_family_service(LMULiveSource(), RF2LiveSource())

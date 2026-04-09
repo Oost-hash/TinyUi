@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
+from runtimeV2.connectors.plugin_handoff import ConnectorGameStateHookDispatcher
 from runtimeV2.connectors.poller import ConnectorServicePoller
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 
@@ -38,12 +39,14 @@ class ConnectorSchedulerWrite:
         connector_read: ConnectorRead,
         scheduler_write: SchedulerWrite,
         poller: ConnectorServicePoller,
+        plugin_handoff: ConnectorGameStateHookDispatcher | None = None,
         *,
         live_interval_ms: int,
     ) -> None:
         self._connector_read = connector_read
         self._scheduler_write = scheduler_write
         self._poller = poller
+        self._plugin_handoff = plugin_handoff
         self._live_interval_ms = max(1, int(live_interval_ms))
 
     def register_connector(self, connector_id: str) -> None:
@@ -87,11 +90,23 @@ class ConnectorSchedulerWrite:
 
     def _run_probe(self, connector_id: str) -> None:
         self._poller.update_one(connector_id)
+        self._sync_plugin_handoff(connector_id)
         self.sync_scheduler_mode(connector_id)
 
     def _run_live(self, connector_id: str) -> None:
         self._poller.update_one(connector_id)
+        self._sync_plugin_handoff(connector_id)
         self.sync_scheduler_mode(connector_id)
+
+    def sync_plugin_handoff(self, connector_id: str) -> bool:
+        """Publish the current connector game state into the manifest-declared plugin hook."""
+
+        return self._sync_plugin_handoff(connector_id)
+
+    def _sync_plugin_handoff(self, connector_id: str) -> bool:
+        if self._plugin_handoff is None:
+            return False
+        return self._plugin_handoff.sync_connector(connector_id)
 
     @staticmethod
     def _probe_job_id(connector_id: str) -> str:

@@ -29,6 +29,9 @@ detect_names = ["rFactor2", "rFactor2 Mod Mode", "rFactor2 Dedicated"]
 module = "plugins.LMU_RF2_Connector.plugin"
 class = "LMURF2Connector"
 
+[connector_runtime]
+game_state_hook = "update_game_state"
+
 [[setting]]
 key = "enabled"
 label = "Enable connector"

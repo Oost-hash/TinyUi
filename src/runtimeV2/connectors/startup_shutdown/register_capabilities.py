@@ -26,9 +26,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from runtimeV2.connectors.capabilities.connector_scheduler_write import ConnectorSchedulerWrite
+from runtimeV2.connectors.decision_store import ConnectorGameStateDecisionStore
 from runtimeV2.events.contracts import EventBus
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
+from runtimeV2.connectors.plugin_handoff import ConnectorGameStateHookDispatcher
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
+from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.connectors.poller import ConnectorServicePoller
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
@@ -44,6 +47,7 @@ class ConnectorCapabilities:
 
 
 def register_connector_capabilities(
+    declarations: dict[str, ConnectorManifest],
     registry: ConnectorServiceRegistry,
     poller: ConnectorServicePoller,
     scheduler_write: SchedulerWrite,
@@ -52,13 +56,16 @@ def register_connector_capabilities(
 ) -> ConnectorCapabilities:
     """Create connector domain capabilities."""
 
+    decision_store = ConnectorGameStateDecisionStore()
+    connector_read = ConnectorRead(registry, decision_store)
     return ConnectorCapabilities(
-        read=ConnectorRead(registry),
+        read=connector_read,
         write=ConnectorWrite(registry, poller, events),
         scheduler_write=ConnectorSchedulerWrite(
-            ConnectorRead(registry),
+            connector_read,
             scheduler_write,
             poller,
+            ConnectorGameStateHookDispatcher(declarations, connector_read, decision_store),
             live_interval_ms=live_interval_ms,
         ),
     )

@@ -74,3 +74,21 @@ class ConnectorSourceChangedData:
     owner: str
     source_name: str
     action: str
+
+
+@dataclass(frozen=True)
+class ConnectorGameStateUpdate:
+    """Small connector game-state handoff for plugin.py hooks."""
+
+    connector_id: str
+    plugin_id: str
+    active_source: str
+    active_game: str
+    is_live: bool
+
+
+@dataclass(frozen=True)
+class ConnectorGameStateDecision:
+    """Connector-owned policy switches derived from game-state updates."""
+
+    show_widgets: bool | None = None

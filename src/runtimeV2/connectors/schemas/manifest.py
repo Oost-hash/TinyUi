@@ -43,9 +43,17 @@ class ConnectorServiceDecl:
 
 
 @dataclass(frozen=True)
+class ConnectorRuntimeDecl:
+    """Connector runtime handoff declaration from a plugin manifest."""
+
+    game_state_hook: str = ""
+
+
+@dataclass(frozen=True)
 class ConnectorManifest:
     """Connector-specific manifest declarations."""
 
     provides: list[str] = field(default_factory=list)
     games: list[ConnectorGameDecl] = field(default_factory=list)
     service: ConnectorServiceDecl | None = None
+    runtime: ConnectorRuntimeDecl | None = None

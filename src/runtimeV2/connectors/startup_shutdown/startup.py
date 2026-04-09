@@ -75,6 +75,7 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
         interval_value = settings_read.get("tinyui", "connector_poll_interval_ms")
         interval_ms = int(interval_value) if isinstance(interval_value, int) else 20
         capabilities = register_connector_capabilities(
+            declarations,
             registry,
             poller,
             scheduler_write,
@@ -88,6 +89,7 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
         for connector_id in registry.ids():
             capabilities.scheduler_write.register_connector(connector_id)
             capabilities.scheduler_write.sync_scheduler_mode(connector_id)
+            capabilities.scheduler_write.sync_plugin_handoff(connector_id)
         runtime.register_domain_result("connectors", ConnectorsStartupResult(
             registry=registry,
             poller=poller,

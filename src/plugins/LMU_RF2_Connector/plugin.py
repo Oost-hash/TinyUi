@@ -19,15 +19,52 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Connector service entrypoint for the consolidated LMU/rF2 connector family."""
+"""Connector family entrypoints and hooks for the consolidated LMU/rF2 family."""
 
 from __future__ import annotations
 
-from .runtime import create_lmu_rf2_connector_service
+from typing import TYPE_CHECKING
+
+from .service import create_lmu_rf2_service
+
+if TYPE_CHECKING:
+    from runtimeV2.connectors.contracts import ConnectorGameStateUpdate
+
+
+_LIVE_GAMES = frozenset({"lmu", "rf2"})
+_LIVE_SOURCES = frozenset({"lmu", "rf2"})
+_last_game_state: dict[str, str | bool] = {
+    "active_source": "none",
+    "active_game": "none",
+    "is_live": False,
+}
 
 
 class LMURF2Connector:
-    """Host-side connector service entrypoint for the new connector family."""
+    """Host-side connector service entrypoint for the LMU/rF2 family."""
 
     def __new__(cls):
-        return create_lmu_rf2_connector_service()
+        return create_lmu_rf2_service()
+
+
+def update_game_state(update: "ConnectorGameStateUpdate") -> dict[str, bool]:
+    """Receive manifest-declared game-state updates from runtime V2 connectors."""
+
+    _last_game_state["active_source"] = update.active_source
+    _last_game_state["active_game"] = update.active_game
+    _last_game_state["is_live"] = update.is_live
+    return {
+        "show_widgets": _should_show_widgets(update),
+    }
+
+
+def _should_show_widgets(update: "ConnectorGameStateUpdate") -> bool:
+    """Return True when the family is attached to a real supported game source."""
+
+    if not update.is_live:
+        return False
+    if update.active_source not in _LIVE_SOURCES:
+        return False
+    if update.active_game not in _LIVE_GAMES:
+        return False
+    return True

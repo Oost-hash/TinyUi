@@ -24,15 +24,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
+from types import ModuleType
 from typing import Any, cast
 
-from plugins.LMU_RF2_Connector.runtime import ConnectorRuntime
+from plugins.LMU_RF2_Connector import plugin as lmu_rf2_plugin
+from plugins.LMU_RF2_Connector.service import LMURF2ConnectorService
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.connectors.contracts import ConnectorSourceChangedData
 from runtimeV2.connectors.policy import unregister_connector_service
-from runtimeV2.connectors.schemas.manifest import ConnectorManifest, ConnectorServiceDecl
+from runtimeV2.connectors.schemas.manifest import ConnectorManifest, ConnectorRuntimeDecl, ConnectorServiceDecl
+from runtimeV2.manifest.parser import load_plugin_manifest
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.scheduler.capabilities.scheduler_read import SchedulerRead
 from runtimeV2.scheduler.driver import SchedulerDriver
@@ -422,13 +426,13 @@ def test_unregister_connector_service_releases_source_and_closes(monkeypatch) ->
     assert bus.get_history()[-1].type == EventType.CONNECTOR_SERVICE_UNREGISTERED
 
 
-def test_connector_runtime_prefers_active_real_source_over_mock() -> None:
-    """Connector runtime should switch to a live source when it reports active state."""
+def test_connector_service_prefers_active_real_source_over_mock() -> None:
+    """Connector family service should switch to a live source when it reports active state."""
 
     lmu = _FakeSource("lmu", kind="shared-memory", game="lmu", active=True)
     rf2 = _FakeSource("rf2", kind="shared-memory", game="rf2", active=False)
 
-    runtime = ConnectorRuntime(cast(Any, lmu), cast(Any, rf2))
+    runtime = LMURF2ConnectorService(cast(Any, lmu), cast(Any, rf2))
 
     runtime.open()
     runtime.update()
@@ -437,17 +441,119 @@ def test_connector_runtime_prefers_active_real_source_over_mock() -> None:
     assert runtime.active_game() == "lmu"
 
 
-def test_connector_runtime_falls_back_to_mock_without_active_real_source() -> None:
-    """Connector runtime should keep mock active when no live source reports activity."""
+def test_connector_service_falls_back_to_mock_without_active_real_source() -> None:
+    """Connector family service should keep mock active when no live source reports activity."""
 
     lmu = _FakeSource("lmu", kind="shared-memory", game="lmu", active=False)
     rf2 = _FakeSource("rf2", kind="shared-memory", game="rf2", active=False)
 
-    runtime = ConnectorRuntime(cast(Any, lmu), cast(Any, rf2))
+    runtime = LMURF2ConnectorService(cast(Any, lmu), cast(Any, rf2))
 
     runtime.open()
     runtime.update()
 
     assert runtime.active_source() == "mock"
     assert runtime.active_game() == "mock"
+
+
+def test_connector_manifest_parses_runtime_game_state_hook(tmp_path: Path) -> None:
+    """Connector manifests should parse connector_runtime.game_state_hook."""
+
+    manifest_path = tmp_path / "manifest.toml"
+    manifest_path.write_text(
+        "\n".join([
+            "[plugin]",
+            'id = "LMU_RF2_Connector"',
+            'type = "connector"',
+            "",
+            "[connector_service]",
+            'module = "plugins.LMU_RF2_Connector.plugin"',
+            'class = "LMURF2Connector"',
+            "",
+            "[connector_runtime]",
+            'game_state_hook = "update_game_state"',
+            "",
+        ]),
+        encoding="utf-8",
+    )
+
+    manifest = load_plugin_manifest(manifest_path)
+
+    assert manifest.connector is not None
+    assert manifest.connector.runtime == ConnectorRuntimeDecl(game_state_hook="update_game_state")
+
+
+def test_connector_scheduler_dispatches_manifest_declared_game_state_hook(monkeypatch) -> None:
+    """Connectors should dispatch game-state changes into the declared plugin.py hook."""
+
+    service = _FakeLiveConnectorService()
+    updates: list[tuple[str, str, bool]] = []
+    module = ModuleType("plugins.iracing.plugin")
+
+    def update_game_state(update) -> object:
+        updates.append((update.active_source, update.active_game, update.is_live))
+        return {"show_widgets": update.is_live}
+
+    setattr(module, "update_game_state", update_game_state)
+
+    monkeypatch.setattr(
+        "runtimeV2.connectors.policy.load_connector_service",
+        lambda module_name, class_name: service,
+    )
+    monkeypatch.setattr(
+        "runtimeV2.connectors.plugin_handoff.importlib.import_module",
+        lambda name: module,
+    )
+
+    runtime, _bus = _make_runtime(
+        {
+            "iracing": ConnectorManifest(
+                service=ConnectorServiceDecl(module="plugins.iracing", class_name="IRacingService"),
+                runtime=ConnectorRuntimeDecl(game_state_hook="update_game_state"),
+            )
+        }
+    )
+
+    assert startup_connectors(cast(Any, runtime)) == StartupResult(ok=True)
+
+    scheduler_write = cast(SchedulerWrite, runtime.registered_capabilities["scheduler_write"])
+
+    assert updates == [("mock", "mock", False)]
+    read = cast(ConnectorRead, runtime.registered_capabilities["connector_read"])
+    assert read.show_widgets("iracing") is False
+
+    scheduler_write.tick(20)
+
+    assert updates[-1] == ("lmu", "lmu", True)
+    assert read.show_widgets("iracing") is True
+
+
+def test_lmu_rf2_plugin_game_state_hook_accepts_both_live_games() -> None:
+    """The LMU/RF2 connector plugin should enable widgets for both supported live games."""
+
+    lmu_decision = lmu_rf2_plugin.update_game_state(
+        cast(Any, type("Update", (), {
+            "active_source": "lmu",
+            "active_game": "lmu",
+            "is_live": True,
+        })())
+    )
+    rf2_decision = lmu_rf2_plugin.update_game_state(
+        cast(Any, type("Update", (), {
+            "active_source": "rf2",
+            "active_game": "rf2",
+            "is_live": True,
+        })())
+    )
+    mock_decision = lmu_rf2_plugin.update_game_state(
+        cast(Any, type("Update", (), {
+            "active_source": "mock",
+            "active_game": "mock",
+            "is_live": False,
+        })())
+    )
+
+    assert lmu_decision == {"show_widgets": True}
+    assert rf2_decision == {"show_widgets": True}
+    assert mock_decision == {"show_widgets": False}
 

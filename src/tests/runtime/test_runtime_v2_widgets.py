@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
+from runtimeV2.connectors.contracts import ConnectorGameStateDecision
+from runtimeV2.connectors.decision_store import ConnectorGameStateDecisionStore
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
@@ -49,11 +51,18 @@ class _FakeActiveRead:
 
 
 class _FakeConnectorService:
-    def __init__(self, snapshot: list[tuple[str, str]]) -> None:
+    def __init__(self, snapshot: list[tuple[str, str]], *, active_source: str = "mock") -> None:
         self._snapshot = snapshot
+        self._active_source = active_source
 
     def inspect_snapshot(self) -> list[tuple[str, str]]:
         return list(self._snapshot)
+
+    def active_source(self) -> str:
+        return self._active_source
+
+    def active_game(self) -> str:
+        return "none" if self._active_source in {"none", "mock"} else self._active_source
 
 
 def _widget_config_read(tmp_path, overlay_id: str, widget_id: str) -> WidgetConfigRead:
@@ -170,7 +179,7 @@ def test_widget_runtime_poller_marks_ready_when_active_and_connected(tmp_path) -
                 )
             }
         ),
-        connector_read=ConnectorRead(connector_services),
+    connector_read=ConnectorRead(connector_services),
         active_read=_FakeActiveRead(overlay_id),
         widget_config_read=widget_config,
         events=EventBus(),
@@ -213,6 +222,65 @@ def test_widget_records_read_exposes_store_projection(tmp_path) -> None:
     assert record is not None
     assert read.records_for_overlay(overlay_id) == [record]
     assert read.all_widget_records() == [record]
+
+
+def test_widget_runtime_poller_marks_ready_when_connector_is_live_without_overlay_selection(tmp_path) -> None:
+    """Widget refresh should make an overlay runtime-active when its connector is live."""
+
+    overlay_id = "demo_overlay"
+    connector_service = _FakeConnectorService([("car.speed", "321 km/h")], active_source="lmu")
+    connector_services = ConnectorServiceRegistry()
+    decision_store = ConnectorGameStateDecisionStore()
+    decision_store.set("iracing", ConnectorGameStateDecision(show_widgets=True))
+    connector_services.register(
+        "iracing",
+        "iracing",
+        "IRacing",
+        connector_service,
+    )
+    base_dir = tmp_path / "TinyUi"
+    config_root = base_dir / "config"
+    widget_config = WidgetConfigRead(
+        WidgetConfigStore(
+            PersistencePaths(
+                base_dir=base_dir,
+                config_root=config_root,
+                cache_dir=base_dir / "cache",
+                logs_dir=base_dir / "logs",
+                bootstrap_path=base_dir / "bootstrap.toml",
+                config_sets_path=config_root / "config_sets.json",
+            ),
+            "default",
+        )
+    )
+    store = WidgetRecordsStore()
+    poller = WidgetRuntimePoller(
+        store=store,
+        overlay_read=_FakeOverlayRead(
+            {
+                overlay_id: OverlayManifest(
+                    connectors=["iracing"],
+                    widgets=[OverlayWidgetDecl(id="speed", widget="gauge", bindings={"source": "car.speed"})],
+                )
+            }
+        ),
+        connector_decl_read=_FakeConnectorDeclRead(
+            {
+                "iracing": ConnectorManifest(
+                    service=ConnectorServiceDecl(module="plugins.iracing", class_name="IRacingService")
+                )
+            }
+        ),
+        connector_read=ConnectorRead(connector_services, decision_store),
+        active_read=_FakeActiveRead(None),
+        widget_config_read=widget_config,
+        events=EventBus(),
+    )
+
+    record = poller.refresh()[0]
+
+    assert record.status == WidgetStatus.READY
+    assert record.resolved_value == "321 km/h"
 
 
 def test_widget_visibility_capabilities_project_and_persist_visibility(tmp_path) -> None:

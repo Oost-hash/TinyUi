@@ -107,10 +107,30 @@ def _widget_status(
     global_visible: bool,
     enabled: bool,
 ) -> WidgetStatus:
-    if active_plugin != overlay_id:
+    if not _overlay_runtime_active(
+        active_plugin=active_plugin,
+        overlay_id=overlay_id,
+        connector_ids=connector_ids,
+        connector_read=connector_read,
+    ):
         return WidgetStatus.IDLE
     if not global_visible or not enabled:
         return WidgetStatus.HIDDEN
     if any(not connector_read.has(connector_id) for connector_id in connector_ids):
         return WidgetStatus.WAITING_FOR_CONNECTOR
     return WidgetStatus.READY
+
+
+def _overlay_runtime_active(
+    *,
+    active_plugin: str | None,
+    overlay_id: str,
+    connector_ids: tuple[str, ...],
+    connector_read: ConnectorRead,
+) -> bool:
+    if active_plugin == overlay_id:
+        return True
+    for connector_id in connector_ids:
+        if connector_read.show_widgets(connector_id) is True:
+            return True
+    return False

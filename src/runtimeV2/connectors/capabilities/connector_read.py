@@ -23,6 +23,7 @@
 
 from __future__ import annotations
 
+from runtimeV2.connectors.decision_store import ConnectorGameStateDecisionStore
 from runtimeV2.connectors.contracts import ConnectorInspectionSnapshot, ConnectorServiceRecord
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 
@@ -30,8 +31,13 @@ from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 class ConnectorRead:
     """Read connector service registry state."""
 
-    def __init__(self, registry: ConnectorServiceRegistry) -> None:
+    def __init__(
+        self,
+        registry: ConnectorServiceRegistry,
+        decision_store: ConnectorGameStateDecisionStore | None = None,
+    ) -> None:
         self._registry = registry
+        self._decision_store = decision_store
 
     def services(self) -> list[ConnectorServiceRecord]:
         """Return active connector service records."""
@@ -83,3 +89,13 @@ class ConnectorRead:
         if service is None or not hasattr(service, "active_game"):
             return None
         return str(service.active_game())
+
+    def show_widgets(self, connector_id: str) -> bool | None:
+        """Return the connector-owned widget visibility decision when available."""
+
+        if self._decision_store is None:
+            return None
+        decision = self._decision_store.get(connector_id)
+        if decision is None:
+            return None
+        return decision.show_widgets

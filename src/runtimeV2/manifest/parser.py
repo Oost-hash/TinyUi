@@ -26,7 +26,12 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
-from runtimeV2.connectors.schemas.manifest import ConnectorGameDecl, ConnectorManifest, ConnectorServiceDecl
+from runtimeV2.connectors.schemas.manifest import (
+    ConnectorGameDecl,
+    ConnectorManifest,
+    ConnectorRuntimeDecl,
+    ConnectorServiceDecl,
+)
 from runtimeV2.persistence.schemas.settings import SettingDecl
 from runtimeV2.plugins.schemas.manifest import PluginManifest
 from runtimeV2.ui.schemas.manifest import (
@@ -243,15 +248,18 @@ def _load_widgets_from_dir(widgets_dir: Path) -> list[OverlayWidgetDecl]:
 def _parse_connector_manifest(data: dict) -> ConnectorManifest | None:
     connector = data.get("connector", {})
     connector_service = data.get("connector_service", {})
+    connector_runtime = data.get("connector_runtime", {})
     provides = list(connector.get("provides", []))
     games = _parse_connector_games(connector)
     service = _parse_connector_service(connector_service)
-    if not provides and not games and service is None:
+    runtime = _parse_connector_runtime(connector_runtime)
+    if not provides and not games and service is None and runtime is None:
         return None
     return ConnectorManifest(
         provides=provides,
         games=games,
         service=service,
+        runtime=runtime,
     )
 
 
@@ -271,3 +279,10 @@ def _parse_connector_service(connector_service: dict) -> ConnectorServiceDecl | 
     if not module or not class_name:
         return None
     return ConnectorServiceDecl(module=module, class_name=class_name)
+
+
+def _parse_connector_runtime(connector_runtime: dict) -> ConnectorRuntimeDecl | None:
+    game_state_hook = connector_runtime.get("game_state_hook")
+    if not game_state_hook:
+        return None
+    return ConnectorRuntimeDecl(game_state_hook=str(game_state_hook))
