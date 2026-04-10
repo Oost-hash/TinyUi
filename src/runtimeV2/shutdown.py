@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from runtimeV2.domains import DomainStatus
-from runtimeV2.events.contracts import EventType
+from runtimeV2.contracts import EventType
 from runtimeV2.schemas.events import RuntimeShutdownData
 
 if TYPE_CHECKING:

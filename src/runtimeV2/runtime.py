@@ -27,7 +27,7 @@ from collections.abc import Callable
 from typing import TypeVar
 
 from runtimeV2.domains import DomainRecord, DomainRegistration, DomainStartup, DomainStatus
-from runtimeV2.events.contracts import EventType
+from runtimeV2.contracts import EventType
 from runtimeV2.globals import GlobalRegistration
 from runtimeV2.schemas.events import DomainStatusChangedData
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok

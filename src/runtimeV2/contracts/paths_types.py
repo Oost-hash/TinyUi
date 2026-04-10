@@ -19,22 +19,8 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Cross-domain global state registry for runtime V2."""
+"""Public paths types used outside the paths domain."""
 
-from __future__ import annotations
+from runtimeV2.paths.contracts import RuntimePaths
 
-from dataclasses import dataclass
-
-from runtimeV2.contracts import EventType
-
-
-@dataclass(frozen=True)
-class GlobalRegistration:
-    """A runtime-visible cross-domain global state registration."""
-
-    name: str
-    owner_domain: str
-    description: str = ""
-    read_capability: str = ""
-    write_capability: str = ""
-    event_type: EventType | None = None
+__all__ = ["RuntimePaths"]

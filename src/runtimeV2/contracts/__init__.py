@@ -51,6 +51,10 @@ from runtimeV2.contracts.host import (
     HostShellReader,
     MainWindowReader,
 )
+from runtimeV2.contracts.host_types import (
+    HostAppIdentity,
+    HostShell,
+)
 from runtimeV2.contracts.manifest import (
     ManifestConnectorReader,
     ManifestLoader,
@@ -59,6 +63,7 @@ from runtimeV2.contracts.manifest import (
     ManifestSettingsReader,
     ManifestUiReader,
 )
+from runtimeV2.contracts.paths_types import RuntimePaths
 from runtimeV2.contracts.persistence import (
     ConfigSetReader,
     ConfigSetWriter,
@@ -66,6 +71,12 @@ from runtimeV2.contracts.persistence import (
     SettingsWriter,
     WidgetConfigReader,
     WidgetConfigWriter,
+)
+from runtimeV2.contracts.persistence_types import (
+    BootstrapConfig,
+    ConfigSet,
+    PersistencePaths,
+    WidgetInstanceConfig,
 )
 from runtimeV2.contracts.plugins import (
     PluginActiveReader,
@@ -77,6 +88,15 @@ from runtimeV2.contracts.plugins import (
 )
 from runtimeV2.contracts.plugins_types import PluginContext
 from runtimeV2.contracts.scheduler import SchedulerClockReader
+from runtimeV2.contracts.scheduler_types import (
+    ScheduledJobRecord,
+    SchedulerClockMode,
+    SchedulerClockState,
+    SchedulerClockUpdatedData,
+    SchedulerJobRegisteredData,
+    SchedulerJobUpdatedData,
+    SchedulerTickData,
+)
 from runtimeV2.contracts.ui import (
     UIChromeModelReader,
     PanelStateReader,
@@ -134,10 +154,13 @@ __all__ = [
     "EventBus",
     "EventCallback",
     "EventType",
-    # Host
+    # Host (capabilities)
     "MainWindowReader",
     "AppIdentityReader",
     "HostShellReader",
+    # Host (types)
+    "HostAppIdentity",
+    "HostShell",
     # Manifest
     "ManifestReader",
     "ManifestLoader",
@@ -145,13 +168,20 @@ __all__ = [
     "ManifestOverlayReader",
     "ManifestSettingsReader",
     "ManifestUiReader",
-    # Persistence
+    # Paths (types)
+    "RuntimePaths",
+    # Persistence (capabilities)
     "SettingsReader",
     "SettingsWriter",
     "WidgetConfigReader",
     "WidgetConfigWriter",
     "ConfigSetReader",
     "ConfigSetWriter",
+    # Persistence (types)
+    "BootstrapConfig",
+    "ConfigSet",
+    "PersistencePaths",
+    "WidgetInstanceConfig",
     # Plugins (capabilities)
     "PluginDiscovery",
     "PluginActiveReader",
@@ -161,8 +191,16 @@ __all__ = [
     "PluginIconResolver",
     # Plugins (types)
     "PluginContext",
-    # Scheduler
+    # Scheduler (capabilities)
     "SchedulerClockReader",
+    # Scheduler (types)
+    "ScheduledJobRecord",
+    "SchedulerClockMode",
+    "SchedulerClockState",
+    "SchedulerClockUpdatedData",
+    "SchedulerJobRegisteredData",
+    "SchedulerJobUpdatedData",
+    "SchedulerTickData",
     # UI (capabilities)
     "UIChromeModelReader",
     "PanelStateReader",

@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.events.contracts import EventBus, EventType
+from runtimeV2.contracts import EventBus, EventType
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 from runtimeV2.widgets.contracts import WidgetVisibilityChangedData
