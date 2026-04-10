@@ -25,6 +25,7 @@ from widget_api.capabilities import ThresholdCapability
 from widget_api.capabilities.threshold import threshold_entries
 from widget_api.register_runtime_host import register_widget_runtime_host
 from widget_api.runtime_host import create_widget_window_host, start_widget_host
+from widget_api.window_host import WidgetWindowHost
 
 
 class _FakeSignal:
@@ -323,6 +324,72 @@ def test_widget_data_adapter_uses_runtime_v2_record_shape() -> None:
     assert widget_data["x"] == 12
     assert widget_data["y"] == 34
     assert "widgetEffects" not in widget_data
+
+
+def test_widget_window_host_updates_data_without_resetting_position() -> None:
+    """Existing widget windows should not receive an empty widgetData during refresh."""
+
+    initial = WidgetRecord(
+        overlay_id="demo_overlay",
+        widget_id="speed",
+        widget_type="gauge",
+        label="Speed",
+        source="car.speed",
+        bindings={"source": "car.speed"},
+        status=WidgetStatus.READY,
+        connector_ids=("iracing",),
+        position=(120, 240),
+    )
+    updated = WidgetRecord(
+        overlay_id="demo_overlay",
+        widget_id="speed",
+        widget_type="gauge",
+        label="Speed",
+        source="car.speed",
+        bindings={"source": "car.speed"},
+        status=WidgetStatus.READY,
+        connector_ids=("iracing",),
+        position=(120, 240),
+        resolved_value="123",
+    )
+    store = WidgetRecordsStore()
+    store.set_records([updated])
+
+    class _FakeEffects:
+        def __init__(self) -> None:
+            self.updated: list[dict[str, object]] = []
+
+        def update_widget(self, widget_data: dict[str, object]) -> None:
+            self.updated.append(widget_data)
+
+        def remove_widget(self, _overlay_id: str, _widget_id: str) -> None:
+            return None
+
+    class _FakeWindow:
+        def __init__(self) -> None:
+            self.properties: list[tuple[str, object]] = []
+            self.visible_calls: list[bool] = []
+
+        def setProperty(self, name: str, value: object) -> None:
+            self.properties.append((name, value))
+
+        def setVisible(self, visible: bool) -> None:
+            self.visible_calls.append(visible)
+
+    host = WidgetWindowHost.__new__(WidgetWindowHost)
+    cast(Any, host)._widget_host = WidgetHostCapability(WidgetRecordsRead(store))
+    cast(Any, host)._widget_effects = _FakeEffects()
+    fake_window = _FakeWindow()
+    cast(Any, host)._windows = {
+        "demo_overlay:speed": SimpleNamespace(record=initial, window=fake_window),
+    }
+
+    host.sync_records([updated])
+
+    assert fake_window.properties == [
+        ("widgetData", widget_window_data(cast(Any, host)._widget_host, updated)),
+    ]
+    assert fake_window.visible_calls == [True]
 
 
 def test_threshold_capability_uses_upper_bound_rules() -> None:

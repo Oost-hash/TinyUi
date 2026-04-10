@@ -111,12 +111,7 @@ class WidgetWindowHost:
                 continue
 
             hosted.record = record
-            # Force QML to detect property change by using QQmlProperty
-            # First set to empty object to force refresh, then set actual data
-            from PySide6.QtQml import QQmlProperty
-            qml_prop = QQmlProperty(hosted.window, "widgetData")
-            qml_prop.write({})  # Force property change detection (empty dict)
-            qml_prop.write(widget_data)  # Set actual data
+            hosted.window.setProperty("widgetData", widget_data)
             hosted.window.setVisible(record.status != WidgetStatus.HIDDEN)
 
     def windows(self) -> tuple[QQuickWindow, ...]:
