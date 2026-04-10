@@ -27,7 +27,7 @@ from dataclasses import dataclass
 
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
-from shared_runtime_host.register_capabilities import register_event_registration_host
+from shared_runtime_host.register_capabilities import register_event_registration_host, register_widget_host
 from shared_runtime_host.registry import SharedRuntimeHostRegistry, create_shared_runtime_host_registry
 from shared_runtime_host.scheduler import QmlRuntimeSchedulerDriver, start_runtime_scheduler_clock
 from ui_api.register_runtime_host import register_ui_runtime_host
@@ -48,6 +48,12 @@ class SharedRuntimeHostStartupResult:
     widget_host: WidgetRuntimeHostResult
 
 
+def _stop_scheduler_driver(driver: QmlRuntimeSchedulerDriver | None) -> None:
+    if driver is None or not hasattr(driver, "stop"):
+        return
+    driver.stop()
+
+
 def startup_shared_runtime_host(
     app,
     engine,
@@ -55,10 +61,15 @@ def startup_shared_runtime_host(
 ) -> tuple[SharedRuntimeHostStartupResult | None, StartupResult]:
     """Start shared host bridge and API hosts above runtime V2."""
 
+    scheduler_driver: QmlRuntimeSchedulerDriver | None = None
+    ui_host: RuntimeHostResult | None = None
+    widget_host: WidgetRuntimeHostResult | None = None
+
     try:
         log_startup_step("shared runtime host startup begin")
         registry = create_shared_runtime_host_registry(runtime)
         register_event_registration_host(registry)
+        register_widget_host(registry)
         register_ui_runtime_host(registry)
         register_widget_runtime_host(registry)
 
@@ -71,6 +82,7 @@ def startup_shared_runtime_host(
             host_registry=registry,
         )
         if not ui_result.ok or ui_host is None:
+            _stop_scheduler_driver(scheduler_driver)
             return None, startup_error(ui_result.error_message or "ui_api host startup failed")
 
         widget_host, widget_result = startup_widget_api(
@@ -79,6 +91,8 @@ def startup_shared_runtime_host(
             host_registry=registry,
         )
         if not widget_result.ok or widget_host is None:
+            ui_host.shutdown.close_host()
+            _stop_scheduler_driver(scheduler_driver)
             return None, startup_error(widget_result.error_message or "widget_api host startup failed")
 
         result = SharedRuntimeHostStartupResult(
@@ -91,5 +105,10 @@ def startup_shared_runtime_host(
         log_startup_step("shared runtime host startup completed")
         return result, startup_ok()
     except Exception as exc:
+        if widget_host is not None:
+            widget_host.shutdown.close_host()
+        if ui_host is not None:
+            ui_host.shutdown.close_host()
+        _stop_scheduler_driver(scheduler_driver)
         log_startup_step(f"shared runtime host startup exception: {exc}", level=40, exc_info=True)
         return None, startup_error(f"Shared runtime host startup failed: {exc}")

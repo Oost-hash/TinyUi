@@ -26,7 +26,6 @@ from __future__ import annotations
 from shared_runtime_host.register_capabilities import (
     register_ui_actions_host,
     register_ui_host,
-    register_widget_host,
     register_window_host,
 )
 from shared_runtime_host.registry import SharedRuntimeHostRegistry
@@ -35,7 +34,6 @@ from shared_runtime_host.registry import SharedRuntimeHostRegistry
 def register_ui_runtime_host(registry: SharedRuntimeHostRegistry) -> None:
     """Register ui_api-specific host projections when needed."""
 
-    register_widget_host(registry)
     register_ui_host(registry)
     register_window_host(registry)
     register_ui_actions_host(registry)

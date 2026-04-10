@@ -30,6 +30,7 @@ from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapabili
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from shared_runtime_host.registry import SharedRuntimeHostRegistry
 from shared_runtime_host.shutdown import QmlRuntimeHostShutdown
+from runtimeV2.events.capabilities.event_registration_write import EventSubscription
 from runtimeV2.events.contracts import EventType
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.runtime import RuntimeV2
@@ -59,11 +60,12 @@ class WidgetWindowHostController:
         self._widget_host = widget_host
         self._event_registration = event_registration
         self._host = host
+        self._subscription: EventSubscription | None = None
 
     def attach(self, app) -> None:
         """Subscribe to runtime V2 events that change widget runtime records."""
 
-        self._event_registration.subscribe(
+        self._subscription = self._event_registration.subscribe(
             owner_domain="widget_api",
             event_type=EventType.WIDGET_RUNTIME_UPDATED,
             callback=self._on_widgets_updated,
@@ -77,6 +79,14 @@ class WidgetWindowHostController:
 
     def _on_widgets_updated(self, _event) -> None:
         self.sync()
+
+    def close(self) -> None:
+        """Release runtime event subscriptions owned by the widget host."""
+
+        if self._subscription is None:
+            return
+        self._subscription.close()
+        self._subscription = None
 
 
 def create_widget_window_host(
@@ -101,7 +111,11 @@ def create_widget_window_host(
     )
     controller.sync()
     controller.attach(app)
-    shutdown = QmlRuntimeHostShutdown(runtime, host.close_all)
+    def _close_widget_host() -> None:
+        controller.close()
+        host.close_all()
+
+    shutdown = QmlRuntimeHostShutdown(runtime, _close_widget_host)
     shutdown.attach(app)
     result = WidgetRuntimeHostResult(controller=controller, host=host, shutdown=shutdown)
     app.setProperty("_widgetRuntimeHost", result)

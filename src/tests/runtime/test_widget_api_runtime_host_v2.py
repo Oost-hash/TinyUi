@@ -8,7 +8,7 @@ from typing import Any, cast
 
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.events.capabilities.event_read import EventRead
-from runtimeV2.events.capabilities.event_registration_write import EventRegistrationWrite
+from runtimeV2.events.capabilities.event_registration_write import EventRegistrationWrite, EventSubscription
 from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
@@ -18,7 +18,7 @@ from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 from runtimeV2.widgets.store import WidgetRecordsStore
 from runtimeV2.widgets.startup_shutdown.startup import WidgetsStartupResult
-from shared_runtime_host.register_capabilities import register_event_registration_host
+from shared_runtime_host.register_capabilities import register_event_registration_host, register_widget_host
 from shared_runtime_host.registry import SharedRuntimeHostRegistry, create_shared_runtime_host_registry
 from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapability, widget_window_data
 from widget_api.capabilities import ThresholdCapability
@@ -139,6 +139,7 @@ class _FakeShutdown:
 def _host_registry(runtime: _FakeRuntime) -> SharedRuntimeHostRegistry:
     registry = create_shared_runtime_host_registry(cast(Any, runtime))
     register_event_registration_host(registry)
+    register_widget_host(registry)
     register_widget_runtime_host(registry)
     return registry
 
@@ -293,6 +294,42 @@ def test_widget_runtime_host_requests_runtime_shutdown_on_app_quit(monkeypatch) 
         callback()
 
     assert runtime.shutdown_calls == ["app_quit"]
+
+
+def test_widget_runtime_host_closes_event_subscription_on_shutdown(monkeypatch) -> None:
+    """Widget runtime host should close its event subscription when the host shuts down."""
+
+    app = _FakeApp()
+    runtime = _FakeRuntime([], _FakeWidgetConfigWrite())
+    subscription_calls: list[str] = []
+
+    class _FakeSubscription:
+        def close(self) -> None:
+            subscription_calls.append("closed")
+
+    def _subscribe(*_args, **_kwargs) -> EventSubscription:
+        return cast(Any, _FakeSubscription())
+
+    monkeypatch.setattr(
+        "shared_runtime_host.events.SharedRuntimeHostEvents.subscribe",
+        _subscribe,
+    )
+    monkeypatch.setattr(
+        "widget_api.runtime_host.WidgetWindowHost",
+        lambda _widget_host, _widget_config_write, _widget_effects: SimpleNamespace(
+            sync_records=lambda _records: None,
+            close_all=lambda: None,
+        ),
+    )
+
+    create_widget_window_host(app, cast(Any, runtime), _host_registry(runtime))
+    runtime.domain_result("events", EventsStartupResult).bus.emit_typed(
+        EventType.RUNTIME_SHUTDOWN,
+        data=None,
+        source="runtime",
+    )
+
+    assert subscription_calls == ["closed"]
 
 
 def test_widget_data_adapter_uses_runtime_v2_record_shape() -> None:
