@@ -248,7 +248,7 @@ def _adapt_qml_property(
         discovery = runtime.capability("plugin_discovery", PluginDiscovery)
         host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return PluginStateQmlCapability(
-            cast(PluginStateRead, capability),
+            cast(PluginStateReader, capability),
             discovery.plugin_ids(),
             host_events,
         )

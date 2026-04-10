@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.contracts import (
+from runtimeV2.scheduler.contracts import (
     SCHEDULER_CLOCK_INTERVALS_MS,
     SchedulerClockMode,
     SchedulerClockState,
