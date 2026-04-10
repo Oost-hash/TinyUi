@@ -23,8 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.contracts.events import EventRegistrationWriter, EventSubscriptionHandle
-from runtimeV2.events.contracts import EventCallback, EventType
+from runtimeV2.contracts import EventCallback, EventRegistrationWriter, EventSubscriptionHandle, EventType
 
 
 class SharedRuntimeHostEvents:

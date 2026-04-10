@@ -19,15 +19,8 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""TinyUI host plugin — logic only, settings and menu items are in manifest.toml."""
+"""Public plugin types used outside the plugins domain."""
 
-from __future__ import annotations
+from runtimeV2.plugins.contracts import PluginContext
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from runtimeV2.contracts import PluginContext
-
-
-def activate(ctx: PluginContext) -> None:
-    pass  # settings and menu declared in manifest.toml
+__all__ = ["PluginContext"]

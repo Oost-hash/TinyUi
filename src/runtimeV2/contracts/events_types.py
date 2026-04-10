@@ -19,15 +19,18 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""TinyUI host plugin — logic only, settings and menu items are in manifest.toml."""
+"""Public events types used outside the events domain."""
 
-from __future__ import annotations
+from runtimeV2.events.contracts import (
+    Event,
+    EventBus,
+    EventCallback,
+    EventType,
+)
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from runtimeV2.contracts import PluginContext
-
-
-def activate(ctx: PluginContext) -> None:
-    pass  # settings and menu declared in manifest.toml
+__all__ = [
+    "Event",
+    "EventBus",
+    "EventCallback",
+    "EventType",
+]

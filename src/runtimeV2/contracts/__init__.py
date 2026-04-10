@@ -40,6 +40,12 @@ from runtimeV2.contracts.connectors_types import (
     ConnectorSourceChangedData,
 )
 from runtimeV2.contracts.events import EventRegistrationWriter, EventSubscriptionHandle
+from runtimeV2.contracts.events_types import (
+    Event,
+    EventBus,
+    EventCallback,
+    EventType,
+)
 from runtimeV2.contracts.host import (
     AppIdentityReader,
     HostShellReader,
@@ -69,6 +75,7 @@ from runtimeV2.contracts.plugins import (
     PluginStateReader,
     PluginStateWriter,
 )
+from runtimeV2.contracts.plugins_types import PluginContext
 from runtimeV2.contracts.scheduler import SchedulerClockReader
 from runtimeV2.contracts.ui import (
     UIChromeModelReader,
@@ -119,9 +126,14 @@ __all__ = [
     "ConnectorServiceUnregisteredData",
     "ConnectorServiceUpdatedData",
     "ConnectorSourceChangedData",
-    # Events
+    # Events (capabilities)
     "EventRegistrationWriter",
     "EventSubscriptionHandle",
+    # Events (types)
+    "Event",
+    "EventBus",
+    "EventCallback",
+    "EventType",
     # Host
     "MainWindowReader",
     "AppIdentityReader",
@@ -140,13 +152,15 @@ __all__ = [
     "WidgetConfigWriter",
     "ConfigSetReader",
     "ConfigSetWriter",
-    # Plugins
+    # Plugins (capabilities)
     "PluginDiscovery",
     "PluginActiveReader",
     "PluginActiveWriter",
     "PluginStateReader",
     "PluginStateWriter",
     "PluginIconResolver",
+    # Plugins (types)
+    "PluginContext",
     # Scheduler
     "SchedulerClockReader",
     # UI (capabilities)

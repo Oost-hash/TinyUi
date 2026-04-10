@@ -30,8 +30,7 @@ from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapabili
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from shared_runtime_host.registry import SharedRuntimeHostRegistry
 from shared_runtime_host.shutdown import QmlRuntimeHostShutdown
-from runtimeV2.contracts import EventSubscriptionHandle, WidgetConfigWriter
-from runtimeV2.events.contracts import EventType
+from runtimeV2.contracts import EventSubscriptionHandle, EventType, WidgetConfigWriter
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from widget_api.window_host import WidgetWindowHost

@@ -28,8 +28,7 @@ import time
 from PySide6.QtCore import Qt, QTimer
 
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
-from runtimeV2.contracts.scheduler import SchedulerClockReader
-from runtimeV2.events.contracts import EventType
+from runtimeV2.contracts import EventType, SchedulerClockReader
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite

@@ -34,6 +34,7 @@ from shared_runtime_host.events import SharedRuntimeHostEvents
 from runtimeV2.contracts import (
     ConnectorInspectionSnapshot,
     ConnectorReader,
+    EventType,
     ConnectorWriter,
     ManifestReader,
     PanelStateReader,
@@ -49,7 +50,6 @@ from runtimeV2.contracts import (
     WidgetVisibilityReader,
     WidgetVisibilityWriter,
 )
-from runtimeV2.events.contracts import EventType
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
 _QVARIANT_LIST: Any = "QVariantList"
 _QVARIANT_MAP: Any = "QVariantMap"
