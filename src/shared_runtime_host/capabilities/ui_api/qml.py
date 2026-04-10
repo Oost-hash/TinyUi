@@ -31,21 +31,25 @@ from shared_runtime_host.capabilities.ui_host import UIHostCapability
 from shared_runtime_host.capabilities.window_host import WindowHostCapability
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from shared_runtime_host.events import SharedRuntimeHostEvents
-from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
-from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.connectors.contracts import ConnectorInspectionSnapshot
-from runtimeV2.contracts.ui import PanelStateReader, PanelStateWriter
-from runtimeV2.contracts.widgets import WidgetVisibilityReader, WidgetVisibilityWriter
+from runtimeV2.contracts import (
+    ConnectorReader,
+    ConnectorWriter,
+    ManifestReader,
+    PanelStateReader,
+    PanelStateWriter,
+    PluginActiveReader,
+    PluginActiveWriter,
+    PluginIconResolver,
+    PluginStateReader,
+    SettingsReader,
+    SettingsWriter,
+    WidgetConfigReader,
+    WidgetConfigWriter,
+    WidgetVisibilityReader,
+    WidgetVisibilityWriter,
+)
 from runtimeV2.events.contracts import EventType
-from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
-from runtimeV2.persistence.capabilities.settings_read import SettingsRead
-from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
-from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
-from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
-from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
-from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
-from runtimeV2.plugins.capabilities.icon import PluginIconCapability
-from runtimeV2.plugins.capabilities.state_read import PluginStateRead
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
 _QVARIANT_LIST: Any = "QVariantList"
 _QVARIANT_MAP: Any = "QVariantMap"
@@ -58,8 +62,8 @@ class ManifestQmlCapability(QObject):
 
     def __init__(
         self,
-        manifest_read: ManifestRead,
-        plugin_icon: PluginIconCapability,
+        manifest_read: ManifestReader,
+        plugin_icon: PluginIconResolver,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
@@ -93,7 +97,7 @@ class SettingsQmlCapability(QObject):
 
     settingsChanged = Signal()
 
-    def __init__(self, settings_read: SettingsRead, parent: QObject | None = None) -> None:
+    def __init__(self, settings_read: SettingsReader, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._settings_read = settings_read
 
@@ -122,7 +126,7 @@ class SettingsQmlCapability(QObject):
 class SettingsWriteQmlCapability(QObject):
     """Expose settings write actions to QML."""
 
-    def __init__(self, settings_write: SettingsWrite, parent: QObject | None = None) -> None:
+    def __init__(self, settings_write: SettingsWriter, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._settings_write = settings_write
 
@@ -153,7 +157,7 @@ class ConnectorReadQmlCapability(QObject):
 
     def __init__(
         self,
-        connector_read: ConnectorRead,
+        connector_read: ConnectorReader,
         events: SharedRuntimeHostEvents | None = None,
         parent: QObject | None = None,
     ) -> None:
@@ -210,7 +214,7 @@ class ConnectorReadQmlCapability(QObject):
 class ConnectorWriteQmlCapability(QObject):
     """Expose connector write actions to QML."""
 
-    def __init__(self, connector_write: ConnectorWrite, parent: QObject | None = None) -> None:
+    def __init__(self, connector_write: ConnectorWriter, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._connector_write = connector_write
 
@@ -242,7 +246,7 @@ class ConnectorWriteQmlCapability(QObject):
 class WidgetConfigReadQmlCapability(QObject):
     """Expose widget config reads to QML."""
 
-    def __init__(self, widget_config_read: WidgetConfigRead, parent: QObject | None = None) -> None:
+    def __init__(self, widget_config_read: WidgetConfigReader, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._widget_config_read = widget_config_read
 
@@ -263,7 +267,7 @@ class WidgetConfigReadQmlCapability(QObject):
 class WidgetConfigWriteQmlCapability(QObject):
     """Expose widget config writes to QML."""
 
-    def __init__(self, widget_config_write: WidgetConfigWrite, parent: QObject | None = None) -> None:
+    def __init__(self, widget_config_write: WidgetConfigWriter, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._widget_config_write = widget_config_write
 
@@ -412,8 +416,8 @@ class PluginActiveQmlCapability(QObject):
 
     def __init__(
         self,
-        active_read: PluginActiveRead,
-        active_write: PluginActiveWrite,
+        active_read: PluginActiveReader,
+        active_write: PluginActiveWriter,
         events: SharedRuntimeHostEvents,
         parent: QObject | None = None,
     ) -> None:
@@ -451,7 +455,7 @@ class PluginStateQmlCapability(QObject):
 
     def __init__(
         self,
-        state_read: PluginStateRead,
+        state_read: PluginStateReader,
         plugin_ids: list[str],
         events: SharedRuntimeHostEvents,
         parent: QObject | None = None,

@@ -21,7 +21,42 @@
 
 """Public runtime V2 contracts used across domain boundaries."""
 
+from runtimeV2.contracts.connectors import (
+    ConnectorGameDetectorReader,
+    ConnectorGameDetectorWriter,
+    ConnectorReader,
+    ConnectorWriter,
+)
 from runtimeV2.contracts.events import EventRegistrationWriter, EventSubscriptionHandle
+from runtimeV2.contracts.host import (
+    AppIdentityReader,
+    HostShellReader,
+    MainWindowReader,
+)
+from runtimeV2.contracts.manifest import (
+    ManifestConnectorReader,
+    ManifestLoader,
+    ManifestOverlayReader,
+    ManifestReader,
+    ManifestSettingsReader,
+    ManifestUiReader,
+)
+from runtimeV2.contracts.persistence import (
+    ConfigSetReader,
+    ConfigSetWriter,
+    SettingsReader,
+    SettingsWriter,
+    WidgetConfigReader,
+    WidgetConfigWriter,
+)
+from runtimeV2.contracts.plugins import (
+    PluginActiveReader,
+    PluginActiveWriter,
+    PluginDiscovery,
+    PluginIconResolver,
+    PluginStateReader,
+    PluginStateWriter,
+)
 from runtimeV2.contracts.scheduler import SchedulerClockReader
 from runtimeV2.contracts.ui import (
     UIChromeModelReader,
@@ -37,14 +72,48 @@ from runtimeV2.contracts.widgets import (
 )
 
 __all__ = [
-    "SchedulerClockReader",
+    # Connectors
+    "ConnectorReader",
+    "ConnectorWriter",
+    "ConnectorGameDetectorReader",
+    "ConnectorGameDetectorWriter",
+    # Events
     "EventRegistrationWriter",
     "EventSubscriptionHandle",
+    # Host
+    "MainWindowReader",
+    "AppIdentityReader",
+    "HostShellReader",
+    # Manifest
+    "ManifestReader",
+    "ManifestLoader",
+    "ManifestConnectorReader",
+    "ManifestOverlayReader",
+    "ManifestSettingsReader",
+    "ManifestUiReader",
+    # Persistence
+    "SettingsReader",
+    "SettingsWriter",
+    "WidgetConfigReader",
+    "WidgetConfigWriter",
+    "ConfigSetReader",
+    "ConfigSetWriter",
+    # Plugins
+    "PluginDiscovery",
+    "PluginActiveReader",
+    "PluginActiveWriter",
+    "PluginStateReader",
+    "PluginStateWriter",
+    "PluginIconResolver",
+    # Scheduler
+    "SchedulerClockReader",
+    # UI
     "UIChromeModelReader",
     "PanelStateReader",
     "PanelStateWriter",
     "WindowActionsWriter",
     "WindowRecordsReader",
+    # Widgets
     "WidgetRecordsReader",
     "WidgetVisibilityReader",
     "WidgetVisibilityWriter",

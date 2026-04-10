@@ -28,15 +28,19 @@ from collections.abc import Callable
 from ui_api.api.app_actions import AppActions
 
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
-from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
-from runtimeV2.contracts.ui import PanelStateWriter, WindowActionsWriter
-from runtimeV2.contracts.widgets import WidgetVisibilityReader, WidgetVisibilityWriter
-from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
-from runtimeV2.persistence.capabilities.config_set_read import ConfigSetRead
-from runtimeV2.persistence.capabilities.config_set_write import ConfigSetWrite
-from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
-from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
-from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
+from runtimeV2.contracts import (
+    ConfigSetReader,
+    ConfigSetWriter,
+    ConnectorWriter,
+    ManifestConnectorReader,
+    PanelStateWriter,
+    PluginActiveWriter,
+    PluginDiscovery,
+    SettingsWriter,
+    WidgetVisibilityReader,
+    WidgetVisibilityWriter,
+    WindowActionsWriter,
+)
 from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 
 class UIActionsCapability:
@@ -46,16 +50,16 @@ class UIActionsCapability:
         self,
         *,
         window_actions: WindowActionsWriter,
-        manifest_connector_read: ManifestConnectorRead,
-        connector_write: ConnectorWrite,
+        manifest_connector_read: ManifestConnectorReader,
+        connector_write: ConnectorWriter,
         widget_visibility_read: WidgetVisibilityReader,
         widget_visibility_write: WidgetVisibilityWriter,
         widget_manual_override: WidgetManualOverride,
-        plugin_discovery: PluginDiscoveryCapability,
-        plugin_active_write: PluginActiveWrite,
-        config_set_read: ConfigSetRead,
-        config_set_write: ConfigSetWrite,
-        settings_write: SettingsWrite,
+        plugin_discovery: PluginDiscovery,
+        plugin_active_write: PluginActiveWriter,
+        config_set_read: ConfigSetReader,
+        config_set_write: ConfigSetWriter,
+        settings_write: SettingsWriter,
         panel_state_write: PanelStateWriter,
         shutdown: RuntimeShutdown,
     ) -> None:

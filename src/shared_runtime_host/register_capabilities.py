@@ -23,26 +23,25 @@
 
 from __future__ import annotations
 
-from runtimeV2.contracts.events import EventRegistrationWriter
-from runtimeV2.contracts.ui import (
-    UIChromeModelReader,
+from runtimeV2.contracts import (
+    ConfigSetReader,
+    ConfigSetWriter,
+    ConnectorWriter,
+    EventRegistrationWriter,
+    ManifestConnectorReader,
     PanelStateWriter,
-    WindowActionsWriter,
-    WindowRecordsReader,
-)
-from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
-from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
-from runtimeV2.persistence.capabilities.config_set_read import ConfigSetRead
-from runtimeV2.persistence.capabilities.config_set_write import ConfigSetWrite
-from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
-from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
-from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
-from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
-from runtimeV2.contracts.widgets import (
+    PluginActiveWriter,
+    PluginDiscovery,
+    SettingsWriter,
+    UIChromeModelReader,
     WidgetRecordsReader,
     WidgetVisibilityReader,
     WidgetVisibilityWriter,
+    WindowActionsWriter,
+    WindowRecordsReader,
 )
+from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
+from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from shared_runtime_host.capabilities.ui_api import UIActionsCapability
@@ -112,16 +111,16 @@ def register_ui_actions_host(registry: SharedRuntimeHostRegistry) -> None:
         "ui_actions",
         UIActionsCapability(
             window_actions=runtime.capability("window_actions_write", WindowActionsWriter),
-            manifest_connector_read=runtime.capability("manifest_connector_read", ManifestConnectorRead),
-            connector_write=runtime.capability("connector_write", ConnectorWrite),
+            manifest_connector_read=runtime.capability("manifest_connector_read", ManifestConnectorReader),
+            connector_write=runtime.capability("connector_write", ConnectorWriter),
             widget_visibility_read=runtime.capability("widget_visibility_read", WidgetVisibilityReader),
             widget_visibility_write=runtime.capability("widget_visibility_write", WidgetVisibilityWriter),
             widget_manual_override=runtime.capability("widget_manual_override", WidgetManualOverride),
-            plugin_discovery=runtime.capability("plugin_discovery", PluginDiscoveryCapability),
-            plugin_active_write=runtime.capability("plugin_active_write", PluginActiveWrite),
-            config_set_read=runtime.capability("config_set_read", ConfigSetRead),
-            config_set_write=runtime.capability("config_set_write", ConfigSetWrite),
-            settings_write=runtime.capability("settings_write", SettingsWrite),
+            plugin_discovery=runtime.capability("plugin_discovery", PluginDiscovery),
+            plugin_active_write=runtime.capability("plugin_active_write", PluginActiveWriter),
+            config_set_read=runtime.capability("config_set_read", ConfigSetReader),
+            config_set_write=runtime.capability("config_set_write", ConfigSetWriter),
+            settings_write=runtime.capability("settings_write", SettingsWriter),
             panel_state_write=runtime.capability("panel_state_write", PanelStateWriter),
             shutdown=runtime.capability("shutdown", RuntimeShutdown),
         ),
