@@ -1,3 +1,24 @@
+#  TinyUI
+#  Copyright (C) 2026 Oost-hash
+#
+#  This file is part of TinyUI.
+#
+#  TinyUI is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  TinyUI is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
+#  licensed under GPLv3.
+
 """ui_api action projection above runtimeV2."""
 
 from __future__ import annotations
@@ -7,6 +28,8 @@ from collections.abc import Callable
 from ui_api.api.app_actions import AppActions
 
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
+from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
+from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.persistence.capabilities.config_set_read import ConfigSetRead
 from runtimeV2.persistence.capabilities.config_set_write import ConfigSetWrite
 from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
@@ -14,6 +37,7 @@ from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
 from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
 from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
+from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 
@@ -25,8 +49,11 @@ class UIActionsCapability:
         self,
         *,
         window_actions: WindowActionsWrite,
+        manifest_connector_read: ManifestConnectorRead,
+        connector_write: ConnectorWrite,
         widget_visibility_read: WidgetVisibilityRead,
         widget_visibility_write: WidgetVisibilityWrite,
+        widget_manual_override: WidgetManualOverride,
         plugin_discovery: PluginDiscoveryCapability,
         plugin_active_write: PluginActiveWrite,
         config_set_read: ConfigSetRead,
@@ -36,8 +63,11 @@ class UIActionsCapability:
         shutdown: RuntimeShutdown,
     ) -> None:
         self._window_actions = window_actions
+        self._manifest_connector_read = manifest_connector_read
+        self._connector_write = connector_write
         self._widget_visibility_read = widget_visibility_read
         self._widget_visibility_write = widget_visibility_write
+        self._widget_manual_override = widget_manual_override
         self._plugin_discovery = plugin_discovery
         self._plugin_active_write = plugin_active_write
         self._config_set_read = config_set_read
@@ -77,8 +107,25 @@ class UIActionsCapability:
         self._shutdown.begin_shutdown("main_window_close")
 
     def _toggle_widget_visibility(self) -> None:
-        current = self._widget_visibility_read.global_visible()
-        self._widget_visibility_write.set_global_visible(not current)
+        if self._widget_manual_override.is_manually_enabled():
+            self._widget_visibility_write.set_global_visible(False)
+            self._release_manifest_mock_sources()
+            return
+
+        self._widget_visibility_write.set_global_visible(True)
+        self._request_manifest_mock_sources()
+
+    def _request_manifest_mock_sources(self) -> None:
+        for connector_id, declaration in self._manifest_connector_read.connector_declarations().items():
+            mock_source = "" if declaration.runtime is None else declaration.runtime.mock_source
+            if mock_source:
+                self._connector_write.request_source(connector_id, "tinyui.statusbar.widgets", mock_source)
+
+    def _release_manifest_mock_sources(self) -> None:
+        for connector_id, declaration in self._manifest_connector_read.connector_declarations().items():
+            mock_source = "" if declaration.runtime is None else declaration.runtime.mock_source
+            if mock_source:
+                self._connector_write.release_source(connector_id, "tinyui.statusbar.widgets")
 
     def _toggle_plugin_panel(self) -> None:
         self._panel_state_write.toggle_plugin_panel()

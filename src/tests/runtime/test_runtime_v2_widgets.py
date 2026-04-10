@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.contracts import ConnectorGameStateDecision
@@ -16,12 +18,18 @@ from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRe
 from runtimeV2.persistence.contracts import PersistencePaths
 from runtimeV2.persistence.widget_config import WidgetConfigStore
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
+from runtimeV2.scheduler.capabilities.scheduler_clock_read import SchedulerClockRead
+from runtimeV2.scheduler.capabilities.scheduler_clock_write import SchedulerClockWrite
+from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
+from runtimeV2.scheduler.clock import SchedulerClock
+from runtimeV2.scheduler.driver import SchedulerDriver
+from runtimeV2.scheduler.registry import SchedulerRegistry
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.capabilities.widget_records_refresh import WidgetRecordsRefresh
+from runtimeV2.widgets.capabilities.widget_refresh_policy import WidgetRefreshPolicy
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.widgets.contracts import WidgetVisibilityChangedData
-from runtimeV2.widgets.poller import WidgetRuntimePoller
 from runtimeV2.widgets.store import WidgetRecordsStore
 from runtimeV2.widgets.schemas.manifest import OverlayManifest, OverlayWidgetDecl, WidgetDefaults
 from runtimeV2.widgets.contracts import WidgetStatus
@@ -84,14 +92,35 @@ def _widget_config_read(tmp_path, overlay_id: str, widget_id: str) -> WidgetConf
     return WidgetConfigRead(store)
 
 
-def test_widget_runtime_poller_merges_config_and_emits_update(tmp_path) -> None:
+def _widget_records_refresh(
+    *,
+    store: WidgetRecordsStore,
+    overlay_read,
+    connector_decl_read,
+    connector_read,
+    active_read,
+    widget_config_read,
+    events: EventBus,
+) -> WidgetRecordsRefresh:
+    return WidgetRecordsRefresh(
+        store=store,
+        overlay_read=overlay_read,
+        connector_decl_read=connector_decl_read,
+        connector_read=connector_read,
+        active_read=active_read,
+        widget_config_read=widget_config_read,
+        events=events,
+    )
+
+
+def test_widget_records_refresh_merges_config_and_emits_update(tmp_path) -> None:
     """Widget refresh should merge widget config into widget runtime records."""
 
     overlay_id = "demo_overlay"
     widget_id = "speed"
     store = WidgetRecordsStore()
     bus = EventBus()
-    poller = WidgetRuntimePoller(
+    refresh = _widget_records_refresh(
         store=store,
         overlay_read=_FakeOverlayRead(
             {
@@ -122,7 +151,7 @@ def test_widget_runtime_poller_merges_config_and_emits_update(tmp_path) -> None:
         events=bus,
     )
 
-    records = poller.refresh()
+    records = refresh.refresh()
 
     assert len(records) == 1
     record = records[0]
@@ -135,7 +164,7 @@ def test_widget_runtime_poller_merges_config_and_emits_update(tmp_path) -> None:
     assert bus.get_history()[-1].type == EventType.WIDGET_RUNTIME_UPDATED
 
 
-def test_widget_runtime_poller_marks_ready_when_active_and_connected(tmp_path) -> None:
+def test_widget_records_refresh_marks_ready_when_active_and_connected(tmp_path) -> None:
     """Widget refresh should mark widgets ready when connector services are present."""
 
     overlay_id = "demo_overlay"
@@ -163,7 +192,7 @@ def test_widget_runtime_poller_marks_ready_when_active_and_connected(tmp_path) -
         )
     )
     store = WidgetRecordsStore()
-    poller = WidgetRuntimePoller(
+    refresh = _widget_records_refresh(
         store=store,
         overlay_read=_FakeOverlayRead(
             {
@@ -180,13 +209,13 @@ def test_widget_runtime_poller_marks_ready_when_active_and_connected(tmp_path) -
                 )
             }
         ),
-    connector_read=ConnectorRead(connector_services),
+        connector_read=ConnectorRead(connector_services),
         active_read=_FakeActiveRead(overlay_id),
         widget_config_read=widget_config,
         events=EventBus(),
     )
 
-    record = poller.refresh()[0]
+    record = refresh.refresh()[0]
 
     assert record.status == WidgetStatus.READY
     assert record.enabled is True
@@ -200,7 +229,7 @@ def test_widget_records_read_exposes_store_projection(tmp_path) -> None:
     overlay_id = "demo_overlay"
     widget_id = "speed"
     store = WidgetRecordsStore()
-    poller = WidgetRuntimePoller(
+    refresh = _widget_records_refresh(
         store=store,
         overlay_read=_FakeOverlayRead(
             {
@@ -216,7 +245,7 @@ def test_widget_records_read_exposes_store_projection(tmp_path) -> None:
         events=EventBus(),
     )
 
-    poller.refresh()
+    refresh.refresh()
     read = WidgetRecordsRead(store)
     record = read.widget_record(overlay_id, widget_id)
 
@@ -225,13 +254,13 @@ def test_widget_records_read_exposes_store_projection(tmp_path) -> None:
     assert read.all_widget_records() == [record]
 
 
-def test_widget_records_refresh_uses_widget_runtime_poller(tmp_path) -> None:
-    """Widget refresh capability should delegate to the widgets-owned poller."""
+def test_widget_records_refresh_updates_widget_store(tmp_path) -> None:
+    """Widget refresh capability should project records into the widgets-owned store."""
 
     overlay_id = "demo_overlay"
     widget_id = "speed"
     store = WidgetRecordsStore()
-    poller = WidgetRuntimePoller(
+    refresh = _widget_records_refresh(
         store=store,
         overlay_read=_FakeOverlayRead(
             {
@@ -246,15 +275,126 @@ def test_widget_records_refresh_uses_widget_runtime_poller(tmp_path) -> None:
         widget_config_read=_widget_config_read(tmp_path, overlay_id, widget_id),
         events=EventBus(),
     )
-    refresh = WidgetRecordsRefresh(poller)
-
     records = refresh.refresh()
 
     assert records == store.all_widget_records()
     assert len(records) == 1
 
 
-def test_widget_runtime_poller_marks_ready_when_connector_is_live_without_overlay_selection(tmp_path) -> None:
+def test_widget_refresh_policy_refreshes_on_connector_updates_when_visible() -> None:
+    """Widget refresh policy should use scheduler ticks when the central clock is live."""
+
+    bus = EventBus()
+    calls: list[str] = []
+    scheduler_registry = SchedulerRegistry()
+    scheduler_write = SchedulerWrite(scheduler_registry, SchedulerDriver(scheduler_registry, bus), bus)
+    scheduler_clock = SchedulerClock()
+    scheduler_clock_write = SchedulerClockWrite(scheduler_clock, bus)
+
+    class _FakeRefresh:
+        def refresh(self) -> list[object]:
+            calls.append("refresh")
+            return []
+
+    class _FakeVisibilityRead:
+        def global_visible(self) -> bool:
+            return True
+
+    policy = WidgetRefreshPolicy(
+        records_refresh=cast(Any, _FakeRefresh()),
+        visibility_read=cast(Any, _FakeVisibilityRead()),
+        scheduler_write=scheduler_write,
+        scheduler_clock_read=SchedulerClockRead(scheduler_clock),
+        events=bus,
+    )
+
+    policy.attach()
+    scheduler_write.tick(0)  # First refresh (always when visible)
+    scheduler_clock_write.request_clock_mode("tests", "live")
+    scheduler_write.tick(20)  # Second refresh
+
+    # Widgets now refresh always when visible, regardless of clock mode
+    assert calls == ["refresh", "refresh"]
+
+
+def test_widget_refresh_policy_skips_connector_updates_when_hidden() -> None:
+    """Widget refresh policy should avoid live refreshes while widgets are hidden."""
+
+    bus = EventBus()
+    calls: list[str] = []
+    scheduler_registry = SchedulerRegistry()
+    scheduler_write = SchedulerWrite(scheduler_registry, SchedulerDriver(scheduler_registry, bus), bus)
+    scheduler_clock = SchedulerClock()
+    scheduler_clock_write = SchedulerClockWrite(scheduler_clock, bus)
+
+    class _FakeRefresh:
+        def refresh(self) -> list[object]:
+            calls.append("refresh")
+            return []
+
+    class _FakeVisibilityRead:
+        def __init__(self) -> None:
+            self.visible = False
+
+        def global_visible(self) -> bool:
+            return self.visible
+
+    visibility = _FakeVisibilityRead()
+    policy = WidgetRefreshPolicy(
+        records_refresh=cast(Any, _FakeRefresh()),
+        visibility_read=cast(Any, visibility),
+        scheduler_write=scheduler_write,
+        scheduler_clock_read=SchedulerClockRead(scheduler_clock),
+        events=bus,
+    )
+
+    policy.attach()
+    scheduler_clock_write.request_clock_mode("tests", "live")
+    scheduler_write.tick(0)
+    bus.emit_typed(EventType.WIDGET_VISIBILITY_CHANGED, data=None, source="widgets")
+    visibility.visible = True
+    bus.emit_typed(EventType.WIDGET_VISIBILITY_CHANGED, data=None, source="widgets")
+    scheduler_write.tick(20)
+
+    assert calls == ["refresh", "refresh", "refresh"]
+
+
+def test_widget_refresh_policy_can_unsubscribe() -> None:
+    """Widget refresh policy should remove its runtime event listeners on close."""
+
+    bus = EventBus()
+    calls: list[str] = []
+    scheduler_registry = SchedulerRegistry()
+    scheduler_write = SchedulerWrite(scheduler_registry, SchedulerDriver(scheduler_registry, bus), bus)
+    scheduler_clock = SchedulerClock()
+    scheduler_clock_write = SchedulerClockWrite(scheduler_clock, bus)
+
+    class _FakeRefresh:
+        def refresh(self) -> list[object]:
+            calls.append("refresh")
+            return []
+
+    class _FakeVisibilityRead:
+        def global_visible(self) -> bool:
+            return True
+
+    policy = WidgetRefreshPolicy(
+        records_refresh=cast(Any, _FakeRefresh()),
+        visibility_read=cast(Any, _FakeVisibilityRead()),
+        scheduler_write=scheduler_write,
+        scheduler_clock_read=SchedulerClockRead(scheduler_clock),
+        events=bus,
+    )
+
+    policy.attach()
+    policy.close()
+    scheduler_clock_write.request_clock_mode("tests", "live")
+    scheduler_write.tick(0)
+
+    assert calls == []
+
+
+def test_widget_records_refresh_marks_ready_when_connector_is_live_without_overlay_selection(tmp_path) -> None:
     """Widget refresh should make an overlay runtime-active when its connector is live."""
 
     overlay_id = "demo_overlay"
@@ -284,7 +424,7 @@ def test_widget_runtime_poller_marks_ready_when_connector_is_live_without_overla
         )
     )
     store = WidgetRecordsStore()
-    poller = WidgetRuntimePoller(
+    refresh = _widget_records_refresh(
         store=store,
         overlay_read=_FakeOverlayRead(
             {
@@ -307,7 +447,7 @@ def test_widget_runtime_poller_marks_ready_when_connector_is_live_without_overla
         events=EventBus(),
     )
 
-    record = poller.refresh()[0]
+    record = refresh.refresh()[0]
 
     assert record.status == WidgetStatus.READY
     assert record.resolved_value == "321 km/h"
@@ -329,10 +469,12 @@ def test_widget_visibility_capabilities_project_and_persist_visibility(tmp_path)
         ),
         "default",
     )
+    from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
     config_write = WidgetConfigWrite(store)
     visibility_read = WidgetVisibilityRead(WidgetConfigRead(store))
     bus = EventBus()
-    visibility_write = WidgetVisibilityWrite(config_write, bus)
+    manual_override = WidgetManualOverride()
+    visibility_write = WidgetVisibilityWrite(config_write, manual_override, bus)
 
     assert visibility_read.global_visible() is True
     visibility_write.set_global_visible(False)

@@ -15,7 +15,6 @@ from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.schemas.startup import StartupResult
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
-from runtimeV2.widgets.capabilities.widget_records_refresh import WidgetRecordsRefresh
 from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 from runtimeV2.widgets.store import WidgetRecordsStore
 from runtimeV2.widgets.startup_shutdown.startup import WidgetsStartupResult
@@ -85,26 +84,14 @@ class _FakeSchedulerWrite:
         return True
 
 
-class _FakePoller:
-    def __init__(self, records: list[WidgetRecord] | None = None) -> None:
-        self.refresh_calls = 0
-        self._records = [] if records is None else records
-
-    def refresh(self) -> list[WidgetRecord]:
-        self.refresh_calls += 1
-        return self._records
-
-
 class _FakeRuntime:
     def __init__(self, records: list[WidgetRecord], widget_config_write: object) -> None:
         self._bus = EventBus()
         self._store = WidgetRecordsStore()
         self._store.set_records(records)
-        poller = _FakePoller(records)
         self._widgets = WidgetsStartupResult(
             store=self._store,
             records=records,
-            poller=cast(Any, poller),
             capabilities=cast(Any, object()),
         )
         registry = EventRegistry()
@@ -130,8 +117,6 @@ class _FakeRuntime:
             return self._widget_config_write
         if name == "widget_records_read":
             return WidgetRecordsRead(self._store)
-        if name == "widget_records_refresh":
-            return WidgetRecordsRefresh(self._widgets.poller)
         if name == "scheduler_write":
             return self.scheduler_write
         if name == "event_registration_write":
@@ -200,8 +185,8 @@ def test_widget_runtime_host_syncs_runtime_v2_widget_records(monkeypatch) -> Non
     assert "_widgetRuntimeHost" in app.properties
 
 
-def test_widget_runtime_host_refreshes_on_connector_events(monkeypatch) -> None:
-    """Connector changes should refresh widgets through the V2 widgets poller."""
+def test_widget_runtime_host_waits_for_widget_runtime_update_events(monkeypatch) -> None:
+    """The widget_api host should sync records after widgets domain refreshes."""
 
     records = [
         WidgetRecord(
@@ -233,55 +218,12 @@ def test_widget_runtime_host_refreshes_on_connector_events(monkeypatch) -> None:
 
     create_widget_window_host(app, cast(Any, runtime), _host_registry(runtime))
     runtime.domain_result("events", EventsStartupResult).bus.emit_typed(
-        EventType.CONNECTOR_SERVICE_UPDATED,
-        data=None,
-        source="connectors",
-    )
-
-    assert sync_calls == [records, records]
-    assert cast(_FakePoller, runtime.domain_result("widgets", WidgetsStartupResult).poller).refresh_calls == 1
-
-
-def test_widget_runtime_host_refreshes_on_widget_visibility_events(monkeypatch) -> None:
-    """Widget visibility changes should refresh widgets through the V2 widgets poller."""
-
-    records = [
-        WidgetRecord(
-            overlay_id="demo_overlay",
-            widget_id="speed",
-            widget_type="gauge",
-            label="Speed",
-            source="car.speed",
-            bindings={"source": "car.speed"},
-            status=WidgetStatus.READY,
-            connector_ids=("iracing",),
-        )
-    ]
-    app = _FakeApp()
-    runtime = _FakeRuntime(records, _FakeWidgetConfigWrite())
-    sync_calls: list[list[WidgetRecord]] = []
-
-    class _FakeHost:
-        def __init__(self, _widget_host, _widget_config_write, _widget_effects) -> None:
-            pass
-
-        def sync_records(self, runtime_records) -> None:
-            sync_calls.append(list(runtime_records))
-
-        def close_all(self) -> None:
-            return None
-
-    monkeypatch.setattr("widget_api.runtime_host.WidgetWindowHost", _FakeHost)
-
-    create_widget_window_host(app, cast(Any, runtime), _host_registry(runtime))
-    runtime.domain_result("events", EventsStartupResult).bus.emit_typed(
-        EventType.WIDGET_VISIBILITY_CHANGED,
+        EventType.WIDGET_RUNTIME_UPDATED,
         data=None,
         source="widgets",
     )
 
     assert sync_calls == [records, records]
-    assert cast(_FakePoller, runtime.domain_result("widgets", WidgetsStartupResult).poller).refresh_calls == 1
 
 
 def test_start_widget_host_returns_typed_success(monkeypatch) -> None:

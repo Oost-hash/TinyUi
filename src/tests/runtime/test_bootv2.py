@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import bootv2
-from runtimeV2.connectors.schemas.manifest import ConnectorManifest
+from runtimeV2.connectors.schemas.manifest import ConnectorManifest, ConnectorRuntimeDecl
 from shared_runtime_host.capabilities.ui_api import (
     ConnectorWriteQmlCapability,
     ManifestQmlCapability,
@@ -209,11 +209,18 @@ class _FakeUiRuntime:
             ),
             "default",
         )
+        from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
         self._widget_visibility_read = WidgetVisibilityRead(WidgetConfigRead(widget_store))
-        self._widget_visibility_write = WidgetVisibilityWrite(WidgetConfigWrite(widget_store))
-        self._widget_visibility_write.set_global_visible(True)
+        self._widget_manual_override = WidgetManualOverride()
+        widget_config_write = WidgetConfigWrite(widget_store)
+        widget_config_write.set_global_widgets_visible(True)
+        self._widget_visibility_write = WidgetVisibilityWrite(
+            widget_config_write, self._widget_manual_override
+        )
         self._plugin_active_calls: list[str] = []
         self._settings_save_all_calls = 0
+        self._connector_source_requests: list[tuple[str, str, str]] = []
+        self._connector_source_releases: list[tuple[str, str]] = []
         self._active_config_set = "default"
         self._plugin_panel_visible = False
         self._plugin_active_read = SimpleNamespace(get_active_plugin=lambda: "")
@@ -274,6 +281,27 @@ class _FakeUiRuntime:
             def toggle_plugin_panel(self) -> bool:
                 return self.set_plugin_panel_visible(not self._outer._plugin_panel_visible)
 
+        class _FakeManifestConnectorRead:
+            def connector_declarations(self) -> dict[str, ConnectorManifest]:
+                return {
+                    "LMU_RF2_Connector": ConnectorManifest(
+                        runtime=ConnectorRuntimeDecl(mock_source="mock"),
+                    ),
+                    "no_mock_connector": ConnectorManifest(),
+                }
+
+        class _FakeConnectorWrite:
+            def __init__(self, outer: "_FakeUiRuntime") -> None:
+                self._outer = outer
+
+            def request_source(self, connector_id: str, owner: str, source_name: str) -> bool:
+                self._outer._connector_source_requests.append((connector_id, owner, source_name))
+                return True
+
+            def release_source(self, connector_id: str, owner: str) -> bool:
+                self._outer._connector_source_releases.append((connector_id, owner))
+                return True
+
         self._plugin_discovery = _FakePluginDiscovery()
         self._plugin_active_write = _FakePluginActiveWrite(self._plugin_active_calls)
         self._config_set_read = _FakeConfigSetRead(self)
@@ -281,6 +309,8 @@ class _FakeUiRuntime:
         self._settings_write = _FakeSettingsWrite(self)
         self._panel_state_read = _FakePanelStateRead(self)
         self._panel_state_write = _FakePanelStateWrite(self)
+        self._manifest_connector_read = _FakeManifestConnectorRead()
+        self._connector_write = _FakeConnectorWrite(self)
         self._globals = SimpleNamespace(
             read_global=lambda name, _capability_type: self._plugin_active_read
             if name == "active_plugin"
@@ -316,6 +346,10 @@ class _FakeUiRuntime:
             return self._ui_chrome
         if name == "manifest_ui_read":
             return self._manifest_ui
+        if name == "manifest_connector_read":
+            return self._manifest_connector_read
+        if name == "connector_write":
+            return self._connector_write
         if name == "plugin_discovery":
             return self._plugin_discovery
         if name == "plugin_active_write":
@@ -334,6 +368,8 @@ class _FakeUiRuntime:
             return self._widget_visibility_read
         if name == "widget_visibility_write":
             return self._widget_visibility_write
+        if name == "widget_manual_override":
+            return self._widget_manual_override
         raise KeyError(name)
 
 
@@ -648,7 +684,7 @@ def test_runtime_host_reopens_secondary_window_after_close(monkeypatch) -> None:
 
 
 def test_runtime_host_widget_visibility_toggle_uses_runtime_capability(monkeypatch) -> None:
-    """The ui_api host should toggle widget visibility through runtime-owned capabilities."""
+    """The ui_api host should toggle widget visibility and manifest mock sources."""
 
     app = _FakeApp()
     runtime = _FakeUiRuntime()
@@ -675,10 +711,24 @@ def test_runtime_host_widget_visibility_toggle_uses_runtime_capability(monkeypat
     assert startup_result.ok
     assert result is not None
     assert runtime._widget_visibility_read.global_visible() is True
+    assert runtime._widget_manual_override.is_manually_enabled() is False
+
+    result.actions.trigger("widgetVisibility.toggle")
+
+    assert runtime._widget_visibility_read.global_visible() is True
+    assert runtime._widget_manual_override.is_manually_enabled() is True
+    assert runtime._connector_source_requests == [
+        ("LMU_RF2_Connector", "tinyui.statusbar.widgets", "mock"),
+    ]
+    assert runtime._connector_source_releases == []
 
     result.actions.trigger("widgetVisibility.toggle")
 
     assert runtime._widget_visibility_read.global_visible() is False
+    assert runtime._widget_manual_override.is_manually_enabled() is False
+    assert runtime._connector_source_releases == [
+        ("LMU_RF2_Connector", "tinyui.statusbar.widgets"),
+    ]
 
 
 def test_runtime_host_plugin_activate_action_uses_runtime_capability(monkeypatch) -> None:

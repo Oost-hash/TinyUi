@@ -283,6 +283,10 @@ def _parse_connector_service(connector_service: dict) -> ConnectorServiceDecl | 
 
 def _parse_connector_runtime(connector_runtime: dict) -> ConnectorRuntimeDecl | None:
     game_state_hook = connector_runtime.get("game_state_hook")
-    if not game_state_hook:
+    mock_source = connector_runtime.get("mock_source")
+    if not game_state_hook and not mock_source:
         return None
-    return ConnectorRuntimeDecl(game_state_hook=str(game_state_hook))
+    return ConnectorRuntimeDecl(
+        game_state_hook=str(game_state_hook or ""),
+        mock_source=str(mock_source or ""),
+    )

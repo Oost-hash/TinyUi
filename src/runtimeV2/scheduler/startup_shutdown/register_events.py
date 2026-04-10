@@ -41,6 +41,11 @@ def register_scheduler_events(registry: EventRegistry) -> None:
         description="A recurring scheduler job changed cadence or enabled-state.",
     )
     registry.register(
+        EventType.SCHEDULER_CLOCK_UPDATED,
+        domain="scheduler",
+        description="The central scheduler clock changed mode, cadence, or lock owner.",
+    )
+    registry.register(
         EventType.SCHEDULER_TICK,
         domain="scheduler",
         description="The scheduler processed one runtime tick.",

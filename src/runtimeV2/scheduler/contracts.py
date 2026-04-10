@@ -24,6 +24,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
+
+
+class SchedulerClockMode(StrEnum):
+    """Scheduler-owned central clock modes."""
+
+    IDLE = "idle"
+    NORMAL = "normal"
+    LIVE = "live"
+
+
+SCHEDULER_CLOCK_INTERVALS_MS: dict[SchedulerClockMode, int] = {
+    SchedulerClockMode.IDLE: 5000,
+    SchedulerClockMode.NORMAL: 1000,
+    SchedulerClockMode.LIVE: 20,
+}
 
 
 @dataclass(frozen=True)
@@ -63,3 +79,23 @@ class SchedulerTickData:
 
     now_ms: int
     ran_jobs: list[str]
+
+
+@dataclass(frozen=True)
+class SchedulerClockState:
+    """Observable state for the scheduler-owned central clock."""
+
+    mode: SchedulerClockMode
+    interval_ms: int
+    locked_by: str | None = None
+    running: bool = True
+
+
+@dataclass(frozen=True)
+class SchedulerClockUpdatedData:
+    """Event payload for central scheduler clock state changes."""
+
+    mode: str
+    interval_ms: int
+    locked_by: str | None
+    running: bool

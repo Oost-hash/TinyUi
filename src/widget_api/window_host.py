@@ -105,11 +105,18 @@ class WidgetWindowHost:
                 assert obj is not None, self._component.errorString()
                 assert isinstance(obj, QQuickWindow), self._component.errorString()
                 self._windows[record_key] = _HostedWidgetWindow(record=record, window=obj)
-                obj.show()
+                # Only show if the widget should be visible (respects global visibility toggle)
+                if record.status != WidgetStatus.HIDDEN:
+                    obj.show()
                 continue
 
             hosted.record = record
-            hosted.window.setProperty("widgetData", widget_data)
+            # Force QML to detect property change by using QQmlProperty
+            # First set to empty object to force refresh, then set actual data
+            from PySide6.QtQml import QQmlProperty
+            qml_prop = QQmlProperty(hosted.window, "widgetData")
+            qml_prop.write({})  # Force property change detection (empty dict)
+            qml_prop.write(widget_data)  # Set actual data
             hosted.window.setVisible(record.status != WidgetStatus.HIDDEN)
 
     def windows(self) -> tuple[QQuickWindow, ...]:

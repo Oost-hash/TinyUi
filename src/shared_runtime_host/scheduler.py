@@ -1,3 +1,24 @@
+#  TinyUI
+#  Copyright (C) 2026 Oost-hash
+#
+#  This file is part of TinyUI.
+#
+#  TinyUI is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  TinyUI is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
+#  licensed under GPLv3.
+
 """Shared Qt clock driver for the runtime V2 scheduler."""
 
 from __future__ import annotations
@@ -10,8 +31,8 @@ from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.events.contracts import EventType
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.runtime import RuntimeV2
-from runtimeV2.scheduler.capabilities.scheduler_read import SchedulerRead
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
+from runtimeV2.scheduler.capabilities.scheduler_clock_read import SchedulerClockRead
 
 
 class QmlRuntimeSchedulerDriver:
@@ -31,6 +52,7 @@ class QmlRuntimeSchedulerDriver:
         events.bus.on(EventType.RUNTIME_SHUTDOWN, self._on_runtime_shutdown)
         events.bus.on(EventType.SCHEDULER_JOB_REGISTERED, self._on_scheduler_jobs_changed)
         events.bus.on(EventType.SCHEDULER_JOB_UPDATED, self._on_scheduler_jobs_changed)
+        events.bus.on(EventType.SCHEDULER_CLOCK_UPDATED, self._on_scheduler_jobs_changed)
         self._retime()
         self._timer.start()
         app.aboutToQuit.connect(self.stop)
@@ -55,8 +77,8 @@ class QmlRuntimeSchedulerDriver:
         self._retime()
 
     def _retime(self) -> None:
-        interval_ms = self._runtime.capability("scheduler_read", SchedulerRead).minimum_interval_ms()
-        self._timer.setInterval(max(5, interval_ms or 20))
+        interval_ms = self._runtime.capability("scheduler_clock_read", SchedulerClockRead).clock_interval_ms()
+        self._timer.setInterval(max(5, interval_ms))
 
 
 def start_runtime_scheduler_clock(app, runtime: RuntimeV2) -> QmlRuntimeSchedulerDriver:

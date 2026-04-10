@@ -38,7 +38,9 @@ from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.connectors.poller import ConnectorServicePoller
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
+from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
+from runtimeV2.scheduler.capabilities.scheduler_clock_write import SchedulerClockWrite
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 
 
@@ -58,9 +60,11 @@ def register_connector_capabilities(
     registry: ConnectorServiceRegistry,
     poller: ConnectorServicePoller,
     scheduler_write: SchedulerWrite,
+    scheduler_clock_write: SchedulerClockWrite,
     live_interval_ms: int,
     events: EventBus | None = None,
     widget_visibility_write: WidgetVisibilityWrite | None = None,
+    widget_manual_override: WidgetManualOverride | None = None,
 ) -> ConnectorCapabilities:
     """Create connector domain capabilities."""
 
@@ -71,22 +75,25 @@ def register_connector_capabilities(
         ConnectorGameDetector(declarations, detector_store, events),
     )
     connector_read = ConnectorRead(registry, decision_store, detector_store)
+    connector_scheduler_write = ConnectorSchedulerWrite(
+        connector_read,
+        scheduler_write,
+        scheduler_clock_write,
+        poller,
+        game_detector_write,
+        ConnectorGameStateHookDispatcher(
+            declarations,
+            connector_read,
+            decision_store,
+            widget_visibility_write,
+            widget_manual_override,
+        ),
+        live_interval_ms=live_interval_ms,
+    )
     return ConnectorCapabilities(
         read=connector_read,
-        write=ConnectorWrite(registry, poller, events),
+        write=ConnectorWrite(registry, poller, events, connector_scheduler_write),
         game_detector_read=ConnectorGameDetectorRead(detector_store),
         game_detector_write=game_detector_write,
-        scheduler_write=ConnectorSchedulerWrite(
-            connector_read,
-            scheduler_write,
-            poller,
-            game_detector_write,
-            ConnectorGameStateHookDispatcher(
-                declarations,
-                connector_read,
-                decision_store,
-                widget_visibility_write,
-            ),
-            live_interval_ms=live_interval_ms,
-        ),
+        scheduler_write=connector_scheduler_write,
     )

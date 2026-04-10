@@ -23,6 +23,7 @@
 
 from __future__ import annotations
 
+from runtimeV2.connectors.capabilities.connector_scheduler_write import ConnectorSchedulerWrite
 from runtimeV2.connectors.contracts import ConnectorSourceChangedData
 from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.connectors.poller import ConnectorServicePoller
@@ -37,10 +38,12 @@ class ConnectorWrite:
         registry: ConnectorServiceRegistry,
         poller: ConnectorServicePoller,
         events: EventBus | None = None,
+        scheduler_write: ConnectorSchedulerWrite | None = None,
     ) -> None:
         self._registry = registry
         self._poller = poller
         self._events = events
+        self._scheduler_write = scheduler_write
 
     def request_source(self, connector_id: str, owner: str, source_name: str) -> bool:
         """Request a connector source."""
@@ -53,6 +56,8 @@ class ConnectorWrite:
                 source_name=source_name,
                 action="request",
             )
+            if source_name == "mock" and self._scheduler_write is not None:
+                self._scheduler_write.enable_preview_mode(connector_id)
         return changed
 
     def release_source(self, connector_id: str, owner: str) -> bool:
@@ -66,6 +71,8 @@ class ConnectorWrite:
                 source_name="",
                 action="release",
             )
+            if self._scheduler_write is not None:
+                self._scheduler_write.sync_scheduler_mode(connector_id)
         return changed
 
     def update(self, connector_id: str) -> bool:

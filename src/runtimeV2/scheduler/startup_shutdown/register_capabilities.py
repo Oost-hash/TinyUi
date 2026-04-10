@@ -26,8 +26,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from runtimeV2.events.contracts import EventBus
+from runtimeV2.scheduler.capabilities.scheduler_clock_read import SchedulerClockRead
+from runtimeV2.scheduler.capabilities.scheduler_clock_write import SchedulerClockWrite
 from runtimeV2.scheduler.capabilities.scheduler_read import SchedulerRead
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
+from runtimeV2.scheduler.clock import SchedulerClock
 from runtimeV2.scheduler.driver import SchedulerDriver
 from runtimeV2.scheduler.registry import SchedulerRegistry
 
@@ -38,11 +41,14 @@ class SchedulerCapabilities:
 
     read: SchedulerRead
     write: SchedulerWrite
+    clock_read: SchedulerClockRead
+    clock_write: SchedulerClockWrite
 
 
 def register_scheduler_capabilities(
     registry: SchedulerRegistry,
     driver: SchedulerDriver,
+    clock: SchedulerClock,
     events: EventBus | None = None,
 ) -> SchedulerCapabilities:
     """Create scheduler domain capabilities."""
@@ -50,4 +56,6 @@ def register_scheduler_capabilities(
     return SchedulerCapabilities(
         read=SchedulerRead(registry),
         write=SchedulerWrite(registry, driver, events),
+        clock_read=SchedulerClockRead(clock),
+        clock_write=SchedulerClockWrite(clock, events),
     )

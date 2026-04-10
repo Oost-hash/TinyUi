@@ -34,7 +34,6 @@ from runtimeV2.events.contracts import EventType
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
-from runtimeV2.widgets.capabilities.widget_records_refresh import WidgetRecordsRefresh
 from widget_api.window_host import WidgetWindowHost
 
 
@@ -54,56 +53,29 @@ class WidgetWindowHostController:
         self,
         *,
         widget_host: WidgetHostCapability,
-        records_refresh: WidgetRecordsRefresh,
         event_registration: SharedRuntimeHostEvents,
         host: WidgetWindowHost,
     ) -> None:
         self._widget_host = widget_host
-        self._records_refresh = records_refresh
         self._event_registration = event_registration
         self._host = host
-        self._refreshing = False
 
     def attach(self, app) -> None:
         """Subscribe to runtime V2 events that change widget runtime records."""
 
-        for event_type in (
-            EventType.PLUGIN_STATE_CHANGED,
-            EventType.PLUGIN_ERROR,
-            EventType.CONNECTOR_SERVICE_REGISTERED,
-            EventType.CONNECTOR_SERVICE_UNREGISTERED,
-            EventType.CONNECTOR_SERVICE_UPDATED,
-            EventType.WIDGET_VISIBILITY_CHANGED,
-            EventType.WIDGET_RUNTIME_UPDATED,
-        ):
-            self._event_registration.subscribe(
-                owner_domain="widget_api",
-                event_type=event_type,
-                callback=self._on_runtime_change,
-                description="Sync hosted widget windows with runtime widget changes.",
-            )
+        self._event_registration.subscribe(
+            owner_domain="widget_api",
+            event_type=EventType.WIDGET_RUNTIME_UPDATED,
+            callback=self._on_widgets_updated,
+            description="Sync hosted widget windows with runtime widget changes.",
+        )
 
     def sync(self) -> None:
         """Refresh hosted windows from current widget runtime records."""
 
         self._host.sync_records(self._widget_host.records())
 
-    def refresh(self) -> None:
-        """Refresh widgets through the widgets domain and sync the host."""
-
-        self._refreshing = True
-        try:
-            records = self._records_refresh.refresh()
-        finally:
-            self._refreshing = False
-        self._host.sync_records(records)
-
-    def _on_runtime_change(self, event) -> None:
-        if self._refreshing:
-            return
-        if event.type != EventType.WIDGET_RUNTIME_UPDATED:
-            self.refresh()
-            return
+    def _on_widgets_updated(self, _event) -> None:
         self.sync()
 
 
@@ -124,7 +96,6 @@ def create_widget_window_host(
     )
     controller = WidgetWindowHostController(
         widget_host=widget_host,
-        records_refresh=runtime.capability("widget_records_refresh", WidgetRecordsRefresh),
         event_registration=event_registration,
         host=host,
     )

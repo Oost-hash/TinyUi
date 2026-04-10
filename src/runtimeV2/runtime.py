@@ -138,6 +138,11 @@ class RuntimeV2:
             raise KeyError(f"Capability '{name}' is not available as {capability_type.__name__}")
         return capability
 
+    def try_capability(self, name: str) -> object | None:
+        """Return a capability if it exists, otherwise None."""
+
+        return self._capabilities.get(name)
+
     def register_global(
         self,
         name: str,

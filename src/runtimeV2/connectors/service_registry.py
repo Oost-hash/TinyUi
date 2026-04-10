@@ -37,6 +37,7 @@ class ConnectorServiceRegistry:
 
     def __init__(self) -> None:
         self._services: dict[str, ConnectorServiceRecord] = {}
+        self._source_requests: dict[str, dict[str, str]] = {}
 
     def register(self, connector_id: str, plugin_id: str, display_name: str, instance: Any) -> None:
         """Register one connector service instance."""
@@ -51,7 +52,10 @@ class ConnectorServiceRegistry:
     def unregister(self, connector_id: str) -> bool:
         """Unregister one connector service."""
 
-        return self._services.pop(connector_id, None) is not None
+        removed = self._services.pop(connector_id, None) is not None
+        if removed:
+            self._source_requests.pop(connector_id, None)
+        return removed
 
     def has(self, connector_id: str) -> bool:
         """Return True when a connector service is active."""
@@ -94,7 +98,10 @@ class ConnectorServiceRegistry:
         service = self.get(connector_id)
         if service is None or not hasattr(service, "request_source"):
             return False
-        return bool(service.request_source(owner, source_name))
+        requested = bool(service.request_source(owner, source_name))
+        if requested:
+            self._source_requests.setdefault(connector_id, {})[owner] = source_name
+        return requested
 
     def release_source(self, connector_id: str, owner: str) -> bool:
         """Release a connector source claim."""
@@ -102,7 +109,22 @@ class ConnectorServiceRegistry:
         service = self.get(connector_id)
         if service is None or not hasattr(service, "release_source"):
             return False
-        return bool(service.release_source(owner))
+        released = bool(service.release_source(owner))
+        if released:
+            requests = self._source_requests.get(connector_id)
+            if requests is not None:
+                requests.pop(owner, None)
+                if not requests:
+                    self._source_requests.pop(connector_id, None)
+        return released
+
+    def source_requested(self, connector_id: str, source_name: str) -> bool:
+        """Return whether a source has an active runtime request."""
+
+        requests = self._source_requests.get(connector_id)
+        if requests is None:
+            return False
+        return source_name in requests.values()
 
     def update(self, connector_id: str) -> bool:
         """Advance one connector service when supported."""

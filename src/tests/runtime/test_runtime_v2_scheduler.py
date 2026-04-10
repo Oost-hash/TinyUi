@@ -10,6 +10,8 @@ from runtimeV2.events.event_registry import EventRegistry
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.scheduler.capabilities.scheduler_read import SchedulerRead
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
+from runtimeV2.scheduler.capabilities.scheduler_clock_read import SchedulerClockRead
+from runtimeV2.scheduler.capabilities.scheduler_clock_write import SchedulerClockWrite
 from runtimeV2.scheduler.startup_shutdown.startup import SchedulerStartupResult, startup_scheduler
 from runtimeV2.schemas.startup import StartupResult
 
@@ -49,6 +51,8 @@ def test_startup_scheduler_registers_capabilities_and_stop_hook() -> None:
 
     assert isinstance(runtime.capabilities["scheduler_read"], SchedulerRead)
     assert isinstance(runtime.capabilities["scheduler_write"], SchedulerWrite)
+    assert isinstance(runtime.capabilities["scheduler_clock_read"], SchedulerClockRead)
+    assert isinstance(runtime.capabilities["scheduler_clock_write"], SchedulerClockWrite)
     assert "scheduler" in runtime.stop_hooks
     assert isinstance(runtime.results["scheduler"], SchedulerStartupResult)
 
@@ -82,3 +86,38 @@ def test_scheduler_tick_runs_due_job_and_emits_events() -> None:
         EventType.SCHEDULER_TICK,
         EventType.SCHEDULER_TICK,
     ]
+
+
+def test_scheduler_clock_lock_wins_and_unlocked_highest_cadence_wins() -> None:
+    """Scheduler central clock should combine requests and respect locks."""
+
+    runtime = _FakeRuntime()
+    assert startup_scheduler(cast(Any, runtime)) == StartupResult(ok=True)
+    read = cast(SchedulerClockRead, runtime.capabilities["scheduler_clock_read"])
+    write = cast(SchedulerClockWrite, runtime.capabilities["scheduler_clock_write"])
+
+    assert read.clock_mode() == "idle"
+    assert read.clock_interval_ms() == 5000
+
+    assert write.request_clock_mode("ui", "normal") is True
+    assert read.clock_mode() == "normal"
+    assert read.clock_interval_ms() == 1000
+
+    assert write.request_clock_mode("mock", "live") is True
+    assert read.clock_mode() == "live"
+    assert read.clock_interval_ms() == 20
+    assert read.clock_locked_by() is None
+
+    assert write.request_clock_mode("connectors", "idle", lock=True) is True
+    assert read.clock_mode() == "idle"
+    assert read.clock_locked_by() == "connectors"
+
+    assert write.request_clock_mode("mock", "live") is False
+    assert read.clock_mode() == "idle"
+
+    assert write.release_clock_lock("mock") is False
+    assert write.release_clock_lock("connectors") is True
+    assert read.clock_mode() == "live"
+
+    history = runtime.events.bus.get_history(EventType.SCHEDULER_CLOCK_UPDATED)
+    assert [event.data.mode for event in history] == ["normal", "live", "idle", "live"]
