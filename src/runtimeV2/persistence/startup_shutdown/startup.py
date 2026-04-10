@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.host.capabilities.app_identity_read import AppIdentityRead
 from runtimeV2.persistence.config_sets import ConfigSetCatalog
-from runtimeV2.persistence.contracts import PersistencePaths
+from runtimeV2.contracts import PersistencePaths
 from runtimeV2.persistence.paths import resolve_persistence_paths
 from runtimeV2.persistence.startup_shutdown.register_capabilities import (
     PersistenceCapabilities,

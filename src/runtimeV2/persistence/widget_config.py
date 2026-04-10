@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import json
 
-from runtimeV2.persistence.contracts import PersistencePaths, WidgetInstanceConfig
+from runtimeV2.contracts import PersistencePaths, WidgetInstanceConfig
 
 
 class WidgetConfigStore:

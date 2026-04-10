@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.widgets.contracts import WidgetRecord
+from runtimeV2.contracts import WidgetRecord
 
 
 class WidgetRecordsStore:

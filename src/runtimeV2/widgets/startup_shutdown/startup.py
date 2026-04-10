@@ -37,7 +37,7 @@ from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.manifest.capabilities.overlay_read import ManifestOverlayRead
 from runtimeV2.runtime import RuntimeV2
-from runtimeV2.widgets.contracts import WidgetRecord
+from runtimeV2.contracts import WidgetRecord
 from runtimeV2.widgets.startup_shutdown.register_events import register_widget_events
 from runtimeV2.widgets.startup_shutdown.register_capabilities import WidgetCapabilities, register_widget_capabilities
 from runtimeV2.widgets.startup_shutdown.register_globals import register_widget_globals

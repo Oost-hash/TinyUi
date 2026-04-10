@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.ui.contracts import UIRenderStatus
+from runtimeV2.contracts import UIRenderStatus
 
 
 class RenderStatusRead:

@@ -24,7 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.persistence.config_sets import ConfigSetCatalog
-from runtimeV2.persistence.contracts import ConfigSet
+from runtimeV2.contracts import ConfigSet
 
 
 class ConfigSetWrite:

@@ -26,7 +26,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from runtimeV2.persistence.contracts import PersistencePaths
+from runtimeV2.contracts import PersistencePaths
 from runtimeV2.persistence.schemas.settings import SettingDecl
 
 

@@ -29,7 +29,7 @@ from pathlib import Path
 
 from runtimeV2.host.capabilities.app_identity_read import AppIdentityRead
 from runtimeV2.persistence.bootstrap import load_bootstrap
-from runtimeV2.persistence.contracts import PersistencePaths
+from runtimeV2.contracts import PersistencePaths
 
 
 def resolve_persistence_paths(identity_read: AppIdentityRead) -> PersistencePaths:
