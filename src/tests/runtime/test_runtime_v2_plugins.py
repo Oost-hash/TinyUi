@@ -17,12 +17,12 @@ from runtimeV2.connectors.poller import ConnectorServicePoller
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 from runtimeV2.connectors.startup_shutdown.startup import ConnectorsStartupResult
 from runtimeV2.events.capabilities.event_read import EventRead
-from runtimeV2.contracts import EventBus, EventType
+from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.manifest.registry import ManifestRegistry
-from runtimeV2.contracts import PersistencePaths
+from runtimeV2.persistence.contracts import PersistencePaths
 from runtimeV2.persistence.schemas.settings import SettingDecl
 from runtimeV2.persistence.settings import SettingsStore
 from runtimeV2.plugins.activation import PluginActivationStore

@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 from runtimeV2.events.capabilities.event_registration_write import EventRegistrationWrite
-from runtimeV2.contracts import EventBus
+from runtimeV2.events.contracts import EventBus
 from runtimeV2.events.event_registry import EventRegistry
 from runtimeV2.schemas.startup import StartupResult
 from shared_runtime_host.registry import SharedRuntimeHostRegistry, create_shared_runtime_host_registry

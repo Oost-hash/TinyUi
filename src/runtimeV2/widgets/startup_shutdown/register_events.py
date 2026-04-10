@@ -24,7 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.events import EventRegistry
-from runtimeV2.contracts import EventType
+from runtimeV2.events.contracts import EventType
 
 
 def register_widget_events(registry: EventRegistry) -> None:

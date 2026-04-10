@@ -31,7 +31,7 @@ from runtimeV2.connectors.capabilities.connector_scheduler_write import Connecto
 from runtimeV2.connectors.decision_store import ConnectorGameStateDecisionStore
 from runtimeV2.connectors.game_detector import ConnectorGameDetector, validate_connector_detection_declarations
 from runtimeV2.connectors.game_detector_store import ConnectorGameDetectorStore
-from runtimeV2.contracts import EventBus
+from runtimeV2.events.contracts import EventBus
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.plugin_handoff import ConnectorGameStateHookDispatcher
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite

@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from runtimeV2.contracts import ConnectorInspectionSnapshot, ConnectorServiceRecord
+from runtimeV2.connectors.contracts import ConnectorInspectionSnapshot, ConnectorServiceRecord
 
 
 def _empty_snapshot() -> ConnectorInspectionSnapshot:

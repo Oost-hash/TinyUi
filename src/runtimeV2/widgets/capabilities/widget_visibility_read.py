@@ -24,7 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
-from runtimeV2.contracts import WidgetVisibilityState
+from runtimeV2.widgets.contracts import WidgetVisibilityState
 
 
 class WidgetVisibilityRead:

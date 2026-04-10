@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.contracts import HostAppIdentity, HostShell
+from runtimeV2.host.contracts import HostAppIdentity, HostShell
 
 
 class AppIdentityRead:

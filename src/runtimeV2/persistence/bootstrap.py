@@ -26,7 +26,7 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
-from runtimeV2.contracts import BootstrapConfig
+from runtimeV2.persistence.contracts import BootstrapConfig
 
 
 def load_bootstrap(path: Path) -> BootstrapConfig:

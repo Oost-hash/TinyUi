@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.contracts import UIWindowRecord
+from runtimeV2.ui.contracts import UIWindowRecord
 
 
 class WindowRecordsRead:

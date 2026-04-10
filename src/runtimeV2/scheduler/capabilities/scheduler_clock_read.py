@@ -24,7 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.scheduler.clock import SchedulerClock
-from runtimeV2.contracts import SchedulerClockState
+from runtimeV2.scheduler.contracts import SchedulerClockState
 
 
 class SchedulerClockRead:

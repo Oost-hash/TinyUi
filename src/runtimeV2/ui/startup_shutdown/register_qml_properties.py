@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.contracts import QmlPropertyPlan
+from runtimeV2.ui.contracts import QmlPropertyPlan
 
 
 def register_qml_property_plan() -> list[QmlPropertyPlan]:

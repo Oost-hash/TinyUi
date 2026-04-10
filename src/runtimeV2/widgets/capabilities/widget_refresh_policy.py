@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.contracts import Event, EventBus, EventType
+from runtimeV2.events.contracts import Event, EventBus, EventType
 from runtimeV2.contracts.scheduler import SchedulerClockReader
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.widgets.capabilities.widget_records_refresh import WidgetRecordsRefresh

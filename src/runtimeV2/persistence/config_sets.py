@@ -28,7 +28,7 @@ import shutil
 from dataclasses import asdict
 
 from runtimeV2.persistence.bootstrap import BootstrapConfig, load_bootstrap, save_bootstrap
-from runtimeV2.contracts import ConfigSet, PersistencePaths
+from runtimeV2.persistence.contracts import ConfigSet, PersistencePaths
 
 
 class ConfigSetCatalog:

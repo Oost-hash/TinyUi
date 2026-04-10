@@ -18,20 +18,20 @@ from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.events.capabilities.event_read import EventRead
 from runtimeV2.events.capabilities.event_registration_write import EventRegistrationWrite
-from runtimeV2.contracts import EventBus, EventType
+from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from shared_runtime_host.register_capabilities import register_event_registration_host
 from shared_runtime_host.registry import SharedRuntimeHostRegistry, create_shared_runtime_host_registry
 from ui_api.register_runtime_host import register_ui_runtime_host
-from runtimeV2.contracts import HostAppIdentity
+from runtimeV2.host.contracts import HostAppIdentity
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead
-from runtimeV2.contracts import HostShell
+from runtimeV2.host.contracts import HostShell
 from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
 from runtimeV2.manifest.registry import ManifestRegistry
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
-from runtimeV2.contracts import ConfigSet, PersistencePaths
+from runtimeV2.persistence.contracts import ConfigSet, PersistencePaths
 from runtimeV2.persistence.widget_config import WidgetConfigStore
 from runtimeV2.schemas.startup import StartupResult
 from runtimeV2.contracts import (

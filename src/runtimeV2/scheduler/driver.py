@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.contracts import EventBus, EventType, SchedulerTickData
+from runtimeV2.events.contracts import EventBus, EventType, SchedulerTickData
 from runtimeV2.scheduler.registry import SchedulerRegistry
 
 

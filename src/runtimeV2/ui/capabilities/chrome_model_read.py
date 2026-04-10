@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.contracts import UIChromeModel, UIMenuItem, UIStatusbarItem, UITabItem
+from runtimeV2.ui.contracts import UIChromeModel, UIMenuItem, UIStatusbarItem, UITabItem
 
 
 class UIChromeModelRead:

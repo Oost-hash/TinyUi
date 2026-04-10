@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead
-from runtimeV2.contracts import HostAppIdentity, HostShell
+from runtimeV2.host.contracts import HostAppIdentity, HostShell
 from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
 from runtimeV2.manifest.registry import ManifestRegistry
 from runtimeV2.plugins.schemas.manifest import PluginManifest

@@ -28,7 +28,7 @@ from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.manifest.capabilities.overlay_read import ManifestOverlayRead
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
-from runtimeV2.contracts import WidgetRecord, WidgetStatus
+from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 
 
 def project_widget_records(

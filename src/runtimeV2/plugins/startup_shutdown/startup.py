@@ -26,7 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from runtimeV2.connectors.startup_shutdown.startup import ConnectorsStartupResult
-from runtimeV2.contracts import Event, EventType
+from runtimeV2.events.contracts import Event, EventType
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.manifest.capabilities.load import ManifestLoad
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead

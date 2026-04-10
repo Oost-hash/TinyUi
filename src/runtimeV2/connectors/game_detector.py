@@ -29,10 +29,10 @@ import re
 
 import psutil
 
-from runtimeV2.contracts import ConnectorGameDetectedData, ConnectorGameLostData
+from runtimeV2.connectors.contracts import ConnectorGameDetectedData, ConnectorGameLostData
 from runtimeV2.connectors.game_detector_store import ConnectorGameDetectorStore, DetectedConnectorGame
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
-from runtimeV2.contracts import EventBus, EventType
+from runtimeV2.events.contracts import EventBus, EventType
 
 
 @dataclass(frozen=True)

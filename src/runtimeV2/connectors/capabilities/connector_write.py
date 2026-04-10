@@ -24,8 +24,8 @@
 from __future__ import annotations
 
 from runtimeV2.connectors.capabilities.connector_scheduler_write import ConnectorSchedulerWrite
-from runtimeV2.contracts import ConnectorSourceChangedData
-from runtimeV2.contracts import EventBus, EventType
+from runtimeV2.connectors.contracts import ConnectorSourceChangedData
+from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.connectors.poller import ConnectorServicePoller
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 

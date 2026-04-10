@@ -29,7 +29,7 @@ from pathlib import Path
 
 from pkg_runtime_host import is_packaged_plugin_dir, mount_packaged_plugin
 from runtimeV2.manifest.capabilities.load import ManifestLoad
-from runtimeV2.contracts import RuntimePaths
+from runtimeV2.paths.contracts import RuntimePaths
 from runtimeV2.plugins.registry import PluginRegistry
 
 

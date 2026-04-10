@@ -27,7 +27,7 @@ import importlib
 from collections.abc import Callable
 
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
-from runtimeV2.contracts import ConnectorGameStateDecision, ConnectorGameStateUpdate
+from runtimeV2.connectors.contracts import ConnectorGameStateDecision, ConnectorGameStateUpdate
 from runtimeV2.connectors.decision_store import ConnectorGameStateDecisionStore
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.contracts import WidgetVisibilityWriter

@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.contracts import PersistencePaths
+from runtimeV2.persistence.contracts import PersistencePaths
 from runtimeV2.persistence.paths import ensure_persistence_dirs
 
 

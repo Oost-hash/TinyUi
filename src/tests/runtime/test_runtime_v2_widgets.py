@@ -9,13 +9,13 @@ from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.contracts import ConnectorGameStateDecision
 from runtimeV2.connectors.decision_store import ConnectorGameStateDecisionStore
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
-from runtimeV2.contracts import EventBus, EventType
+from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.manifest.capabilities.overlay_read import ManifestOverlayRead
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.connectors.schemas.manifest import ConnectorServiceDecl
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
-from runtimeV2.contracts import PersistencePaths
+from runtimeV2.persistence.contracts import PersistencePaths
 from runtimeV2.persistence.widget_config import WidgetConfigStore
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.scheduler.capabilities.scheduler_clock_read import SchedulerClockRead

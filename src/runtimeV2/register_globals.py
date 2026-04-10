@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.contracts import EventType
+from runtimeV2.events.contracts import EventType
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.runtime import RuntimeV2
 

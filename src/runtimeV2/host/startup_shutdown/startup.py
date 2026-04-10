@@ -26,7 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
-from runtimeV2.contracts import HostShell
+from runtimeV2.host.contracts import HostShell
 from runtimeV2.host.policy import build_host_shell
 from runtimeV2.host.startup_shutdown.register_capabilities import HostCapabilities, register_host_capabilities
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead

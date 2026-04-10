@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from runtimeV2.contracts import EventBus, EventType, SchedulerJobRegisteredData, SchedulerJobUpdatedData
+from runtimeV2.events.contracts import EventBus, EventType, SchedulerJobRegisteredData, SchedulerJobUpdatedData
 from runtimeV2.scheduler.driver import SchedulerDriver
 from runtimeV2.scheduler.registry import SchedulerRegistry
 

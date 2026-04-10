@@ -26,7 +26,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from runtimeV2.paths.capabilities.path import PathCapability
-from runtimeV2.contracts import RuntimePaths
+from runtimeV2.paths.contracts import RuntimePaths
 
 
 def register_path_capabilities(

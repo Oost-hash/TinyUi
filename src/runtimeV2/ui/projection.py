@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead
 from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
-from runtimeV2.contracts import UIWindowRecord, UIWindowStatus
+from runtimeV2.ui.contracts import UIWindowRecord, UIWindowStatus
 
 
 def _window_render_target(window_role: str, surface: str, chrome_surface: str) -> str:

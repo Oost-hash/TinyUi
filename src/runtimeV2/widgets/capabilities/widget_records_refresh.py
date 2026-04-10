@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.contracts import EventBus, EventType, WidgetRecord, WidgetRuntimeUpdatedData
+from runtimeV2.events.contracts import EventBus, EventType, WidgetRecord, WidgetRuntimeUpdatedData
 from runtimeV2.widgets.projection import project_widget_records
 from runtimeV2.widgets.store import WidgetRecordsStore
 

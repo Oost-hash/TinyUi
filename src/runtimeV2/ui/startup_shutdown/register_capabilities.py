@@ -31,7 +31,7 @@ from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
 from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
-from runtimeV2.contracts import UIChromeModel, UIRenderStatus, UIWindowRecord
+from runtimeV2.ui.contracts import UIChromeModel, UIRenderStatus, UIWindowRecord
 from runtimeV2.ui.panel_state import UIPanelStateStore
 
 

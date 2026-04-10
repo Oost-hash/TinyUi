@@ -24,7 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead
-from runtimeV2.contracts import UIRenderStatus, UIWindowRecord
+from runtimeV2.ui.contracts import UIRenderStatus, UIWindowRecord
 
 
 def determine_render_status(

@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.contracts import WidgetInstanceConfig
+from runtimeV2.persistence.contracts import WidgetInstanceConfig
 from runtimeV2.persistence.widget_config import WidgetConfigStore
 
 
