@@ -27,6 +27,7 @@ Window {
 
     property var widgetData: ({})
     property var widgetConfigWrite: null
+    property var widgetEffects: null
 
     x: widgetData && widgetData.x !== undefined ? widgetData.x : 0
     y: widgetData && widgetData.y !== undefined ? widgetData.y : 0
@@ -42,6 +43,7 @@ Window {
     TextWidget {
         anchors.fill: parent
         widgetData: root.widgetData
+        widgetEffects: root.widgetEffects
     }
 
     // Drag the window by clicking anywhere on it — OS handles the move natively.

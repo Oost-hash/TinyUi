@@ -17,7 +17,9 @@ from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 from runtimeV2.widgets.store import WidgetRecordsStore
 from runtimeV2.widgets.startup_shutdown.startup import WidgetsStartupResult
-from shared_runtime_host.capabilities.widget_api import widget_window_data
+from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapability, widget_window_data
+from widget_api.capabilities import ThresholdCapability
+from widget_api.capabilities.threshold import threshold_entries
 from widget_api.runtime_host import create_widget_window_host, start_widget_host
 
 
@@ -56,6 +58,28 @@ class _FakeWidgetConfigWrite:
         return True
 
 
+class _FakeSchedulerWrite:
+    def __init__(self) -> None:
+        self.jobs: dict[str, dict[str, object]] = {}
+
+    def register_job(
+        self,
+        *,
+        job_id: str,
+        owner_domain: str,
+        interval_ms: int,
+        callback: Callable[[], object],
+        enabled: bool = True,
+    ) -> bool:
+        self.jobs[job_id] = {
+            "owner_domain": owner_domain,
+            "interval_ms": interval_ms,
+            "callback": callback,
+            "enabled": enabled,
+        }
+        return True
+
+
 class _FakePoller:
     def __init__(self) -> None:
         self.refresh_calls = 0
@@ -82,6 +106,7 @@ class _FakeRuntime:
             event_read=EventRead(EventRegistry()),
         )
         self._widget_config_write = widget_config_write
+        self.scheduler_write = _FakeSchedulerWrite()
         self.shutdown_calls: list[str] = []
 
     def domain_result(self, name: str, _result_type: type[Any]) -> Any:
@@ -96,6 +121,8 @@ class _FakeRuntime:
             return self._widget_config_write
         if name == "widget_records_read":
             return WidgetRecordsRead(self._store)
+        if name == "scheduler_write":
+            return self.scheduler_write
         if name == "shutdown":
             return cast(Any, _FakeShutdown(self.shutdown_calls))
         raise KeyError(name)
@@ -133,8 +160,9 @@ def test_widget_runtime_host_syncs_runtime_v2_widget_records(monkeypatch) -> Non
     created: dict[str, object] = {}
 
     class _FakeHost:
-        def __init__(self, _widget_host, _widget_config_write) -> None:
+        def __init__(self, _widget_host, _widget_config_write, _widget_effects) -> None:
             created["host"] = self
+            created["widget_effects"] = _widget_effects
 
         def sync_records(self, runtime_records) -> None:
             created["records"] = runtime_records
@@ -148,6 +176,7 @@ def test_widget_runtime_host_syncs_runtime_v2_widget_records(monkeypatch) -> Non
 
     assert result.host is created["host"]
     assert created["records"] == records
+    assert isinstance(created["widget_effects"], WidgetEffectsQmlCapability)
     assert "_widgetRuntimeHost" in app.properties
 
 
@@ -171,7 +200,7 @@ def test_widget_runtime_host_refreshes_on_connector_events(monkeypatch) -> None:
     sync_calls: list[list[WidgetRecord]] = []
 
     class _FakeHost:
-        def __init__(self, _widget_host, _widget_config_write) -> None:
+        def __init__(self, _widget_host, _widget_config_write, _widget_effects) -> None:
             pass
 
         def sync_records(self, runtime_records) -> None:
@@ -213,7 +242,7 @@ def test_widget_runtime_host_refreshes_on_widget_visibility_events(monkeypatch) 
     sync_calls: list[list[WidgetRecord]] = []
 
     class _FakeHost:
-        def __init__(self, _widget_host, _widget_config_write) -> None:
+        def __init__(self, _widget_host, _widget_config_write, _widget_effects) -> None:
             pass
 
         def sync_records(self, runtime_records) -> None:
@@ -242,7 +271,10 @@ def test_start_widget_host_returns_typed_success(monkeypatch) -> None:
     runtime = _FakeRuntime([], _FakeWidgetConfigWrite())
     monkeypatch.setattr(
         "widget_api.runtime_host.WidgetWindowHost",
-        lambda _widget_host, _widget_config_write: SimpleNamespace(sync_records=lambda _records: None, close_all=lambda: None),
+        lambda _widget_host, _widget_config_write, _widget_effects: SimpleNamespace(
+            sync_records=lambda _records: None,
+            close_all=lambda: None,
+        ),
     )
 
     _result, startup_result = start_widget_host(app, cast(Any, runtime))
@@ -258,7 +290,7 @@ def test_widget_runtime_host_closes_on_runtime_shutdown(monkeypatch) -> None:
     calls: list[str] = []
 
     class _FakeHost:
-        def __init__(self, _widget_host, _widget_config_write) -> None:
+        def __init__(self, _widget_host, _widget_config_write, _widget_effects) -> None:
             pass
 
         def sync_records(self, _runtime_records) -> None:
@@ -287,7 +319,10 @@ def test_widget_runtime_host_requests_runtime_shutdown_on_app_quit(monkeypatch) 
 
     monkeypatch.setattr(
         "widget_api.runtime_host.WidgetWindowHost",
-        lambda _widget_host, _widget_config_write: SimpleNamespace(sync_records=lambda _records: None, close_all=lambda: None),
+        lambda _widget_host, _widget_config_write, _widget_effects: SimpleNamespace(
+            sync_records=lambda _records: None,
+            close_all=lambda: None,
+        ),
     )
 
     create_widget_window_host(app, cast(Any, runtime))
@@ -325,4 +360,67 @@ def test_widget_data_adapter_uses_runtime_v2_record_shape() -> None:
     assert widget_data["visible"] is False
     assert widget_data["x"] == 12
     assert widget_data["y"] == 34
+    assert "widgetEffects" not in widget_data
+
+
+def test_threshold_capability_uses_upper_bound_rules() -> None:
+    """Threshold rules should select the first sorted upper bound."""
+
+    thresholds = threshold_entries(
+        [
+            {"value": 10, "color": "#FFB000", "flash": True, "flash_speed": 2, "flash_target": "text"},
+            {"value": 2, "color": "#FF4040", "flash": True, "flashSpeed": 1, "flashTarget": "value"},
+        ]
+    )
+    capability = ThresholdCapability()
+
+    critical = capability.evaluate(thresholds, 1.5)
+    warning = capability.evaluate(thresholds, 5.0)
+    inactive = capability.evaluate(thresholds, 20.0)
+
+    assert critical.active is True
+    assert critical.color == "#FF4040"
+    assert critical.flash is True
+    assert critical.flash_speed == 1
+    assert critical.flash_target == "value"
+    assert warning.active is True
+    assert warning.color == "#FFB000"
+    assert warning.flash_target == "text"
+    assert inactive.active is False
+
+
+def test_widget_effects_adapter_uses_persisted_threshold_values() -> None:
+    """Widget effects should expose persisted threshold flash state to QML."""
+
+    scheduler_write = _FakeSchedulerWrite()
+    effects = WidgetEffectsQmlCapability(cast(Any, scheduler_write))
+
+    effects.update_widget(
+        {
+            "overlayId": "demo_overlay",
+            "widgetId": "fuel",
+            "resolvedValue": "1.5",
+            "displayText": "1.5",
+            "values": {
+                "thresholds": [
+                    {
+                        "value": 2,
+                        "color": "#FF4040",
+                        "flash": True,
+                        "flashSpeed": 1,
+                        "flashTarget": "value",
+                    }
+                ]
+            },
+        }
+    )
+
+    assert scheduler_write.jobs["widget_api.effects.flash"]["owner_domain"] == "widget_api"
+    assert effects.textColor("demo_overlay", "fuel", "#E0E0E0") == "#FF4040"
+    assert effects.flashTarget("demo_overlay", "fuel") == "value"
+    assert effects.flashVisible("demo_overlay", "fuel") is True
+
+    effects.tick()
+
+    assert effects.flashVisible("demo_overlay", "fuel") is False
 

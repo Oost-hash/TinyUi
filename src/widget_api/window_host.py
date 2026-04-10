@@ -34,6 +34,7 @@ from PySide6.QtQuick import QQuickWindow
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from shared_runtime_host.capabilities.widget_api import (
     WidgetConfigWriteQmlCapability,
+    WidgetEffectsQmlCapability,
     widget_window_data,
 )
 from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
@@ -57,9 +58,15 @@ class WidgetWindowHost:
     through a small adapter so widget windows can persist their own position.
     """
 
-    def __init__(self, widget_host: WidgetHostCapability, widget_config_write) -> None:
+    def __init__(
+        self,
+        widget_host: WidgetHostCapability,
+        widget_config_write,
+        widget_effects: WidgetEffectsQmlCapability,
+    ) -> None:
         self._widget_host = widget_host
         self._widget_config_write = WidgetConfigWriteQmlCapability(widget_config_write)
+        self._widget_effects = widget_effects
         self._engine = create_engine()
         self._component = QQmlComponent(
             self._engine,
@@ -79,17 +86,20 @@ class WidgetWindowHost:
         for record_key in tuple(self._windows):
             if record_key not in desired:
                 hosted = self._windows.pop(record_key)
+                self._widget_effects.remove_widget(hosted.record.overlay_id, hosted.record.widget_id)
                 hosted.window.close()
                 hosted.window.deleteLater()
 
         for record_key, record in desired.items():
             widget_data = widget_window_data(self._widget_host, record)
+            self._widget_effects.update_widget(widget_data)
             hosted = self._windows.get(record_key)
             if hosted is None:
                 obj = self._component.createWithInitialProperties(
                     {
                         "widgetData": widget_data,
                         "widgetConfigWrite": self._widget_config_write,
+                        "widgetEffects": self._widget_effects,
                     }
                 )
                 assert obj is not None, self._component.errorString()

@@ -26,6 +26,7 @@ Window {
     id: root
 
     property var widgets: []
+    property var widgetEffects: null
     readonly property int widgetCount: widgets ? widgets.length : 0
 
     width: 420
@@ -49,6 +50,7 @@ Window {
 
             delegate: TextWidget {
                 widgetData: modelData
+                widgetEffects: root.widgetEffects
             }
         }
     }

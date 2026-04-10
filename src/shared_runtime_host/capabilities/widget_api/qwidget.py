@@ -1,14 +1,38 @@
+#  TinyUI
+#  Copyright (C) 2026 Oost-hash
+#
+#  This file is part of TinyUI.
+#
+#  TinyUI is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  TinyUI is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
+#  licensed under GPLv3.
+
 """Widget-facing host capabilities above runtimeV2."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from PySide6.QtCore import QObject, Slot
+from PySide6.QtCore import QObject, Signal, Slot
 
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
+from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.widgets.contracts import WidgetRecord
+from widget_api.capabilities import FlashCapability, ThresholdCapability
+from widget_api.capabilities.threshold import numeric_value, threshold_entries
 
 
 class WidgetConfigWriteQmlCapability(QObject):
@@ -43,7 +67,116 @@ class WidgetConfigWriteQmlCapability(QObject):
         return self._widget_config_write.reset_widget_values(overlay_id, widget_id)
 
 
+class WidgetEffectsQmlCapability(QObject):
+    """Expose widget host effect state to QML."""
+
+    effectsChanged = Signal(str, str)
+
+    def __init__(
+        self,
+        scheduler_write: SchedulerWrite,
+        parent: QObject | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self._flash = FlashCapability()
+        self._threshold = ThresholdCapability()
+        self._colors: dict[str, str] = {}
+        self._keys: dict[str, tuple[str, str]] = {}
+        scheduler_write.register_job(
+            job_id="widget_api.effects.flash",
+            owner_domain="widget_api",
+            interval_ms=100,
+            callback=self.tick,
+            enabled=True,
+        )
+
+    def update_widget(self, widget_data: dict[str, object]) -> None:
+        """Refresh effect state from one widget data payload."""
+
+        overlay_id = str(widget_data.get("overlayId", ""))
+        widget_id = str(widget_data.get("widgetId", ""))
+        if not overlay_id or not widget_id:
+            return
+        widget_key = _widget_key(overlay_id, widget_id)
+        self._keys[widget_key] = (overlay_id, widget_id)
+
+        values = widget_data.get("values", {})
+        raw_thresholds = values.get("thresholds") if isinstance(values, dict) else []
+        thresholds = threshold_entries(raw_thresholds)
+        threshold_state = self._threshold.evaluate(
+            thresholds,
+            numeric_value(widget_data.get("resolvedValue", widget_data.get("displayText", ""))),
+        )
+
+        old_color = self._colors.get(widget_key)
+        if threshold_state.color:
+            self._colors[widget_key] = threshold_state.color
+        else:
+            self._colors.pop(widget_key, None)
+
+        flash_changed = self._flash.set_flash(
+            widget_key,
+            active=threshold_state.active and threshold_state.flash,
+            interval_ticks=threshold_state.flash_speed,
+            target=threshold_state.flash_target,
+        )
+        if flash_changed or old_color != self._colors.get(widget_key):
+            self.effectsChanged.emit(overlay_id, widget_id)
+
+    @Slot("QVariantMap")
+    def updateWidget(self, widget_data: dict[str, object]) -> None:
+        """Refresh effect state from QML."""
+
+        self.update_widget(widget_data)
+
+    def remove_widget(self, overlay_id: str, widget_id: str) -> None:
+        """Remove effect state for one widget."""
+
+        widget_key = _widget_key(overlay_id, widget_id)
+        removed = self._flash.remove(widget_key)
+        removed = self._colors.pop(widget_key, None) is not None or removed
+        self._keys.pop(widget_key, None)
+        if removed:
+            self.effectsChanged.emit(overlay_id, widget_id)
+
+    @Slot(str, str)
+    def removeWidget(self, overlay_id: str, widget_id: str) -> None:
+        """Remove effect state from QML."""
+
+        self.remove_widget(overlay_id, widget_id)
+
+    @Slot(str, str, result=bool)
+    def flashVisible(self, overlay_id: str, widget_id: str) -> bool:
+        """Return whether the flashed widget part should be visible."""
+
+        return self._flash.state(_widget_key(overlay_id, widget_id)).visible
+
+    @Slot(str, str, result=str)
+    def flashTarget(self, overlay_id: str, widget_id: str) -> str:
+        """Return the active flash target."""
+
+        return self._flash.state(_widget_key(overlay_id, widget_id)).target
+
+    @Slot(str, str, str, result=str)
+    def textColor(self, overlay_id: str, widget_id: str, fallback: str) -> str:
+        """Return threshold color or fallback widget text color."""
+
+        return self._colors.get(_widget_key(overlay_id, widget_id), fallback)
+
+    def tick(self) -> None:
+        """Advance effect clocks through the runtime scheduler."""
+
+        for widget_key in self._flash.tick():
+            overlay_id, widget_id = self._keys.get(widget_key, ("", ""))
+            if overlay_id and widget_id:
+                self.effectsChanged.emit(overlay_id, widget_id)
+
+
 def widget_window_data(widget_host: WidgetHostCapability, record: WidgetRecord) -> dict[str, Any]:
     """Build the widgetData payload expected by widget QML windows."""
 
     return widget_host.window_data(record)
+
+
+def _widget_key(overlay_id: str, widget_id: str) -> str:
+    return f"{overlay_id}:{widget_id}"

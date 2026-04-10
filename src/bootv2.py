@@ -30,7 +30,7 @@ from shared_runtime_host.scheduler import start_runtime_scheduler_clock
 from ui_api.qt import create_application, create_engine
 from ui_api.runtime_host import start_runtime_host
 from ui_api.startup_logging import install_startup_diagnostics, log_startup_step, startup_log_path
-from widget_api.startup import startup_widget_api
+from widget_api.startup_shutdown.startup import startup_widget_api
 
 if sys.platform == "win32":
     from ui_api.windowing import win_window  # eager import: registers QML singletons before engine

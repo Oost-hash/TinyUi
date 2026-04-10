@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapability
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from shared_runtime_host.registry import create_shared_runtime_host_registry
 from shared_runtime_host.shutdown import QmlRuntimeHostShutdown
@@ -93,7 +94,12 @@ def create_widget_window_host(app, runtime: RuntimeV2) -> WidgetRuntimeHostResul
     host_registry = create_shared_runtime_host_registry(runtime)
     register_widget_runtime_host(host_registry)
     widget_host = host_registry.capability("widget_host", WidgetHostCapability)
-    host = WidgetWindowHost(widget_host, runtime.capability("widget_config_write", WidgetConfigWrite))
+    widget_effects = host_registry.capability("widget_effects", WidgetEffectsQmlCapability)
+    host = WidgetWindowHost(
+        widget_host,
+        runtime.capability("widget_config_write", WidgetConfigWrite),
+        widget_effects,
+    )
     controller = WidgetWindowHostController(runtime, host)
     controller.sync()
     controller.attach(app)
