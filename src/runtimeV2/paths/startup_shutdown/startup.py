@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from runtimeV2.paths.capabilities.path import PathCapability
-from runtimeV2.paths.contracts import RuntimePaths
+from runtimeV2.contracts import RuntimePaths
 from runtimeV2.paths.detection import detect_runtime_paths
 from runtimeV2.paths.startup_shutdown.register_capabilities import register_path_capabilities
 from runtimeV2.paths.startup_shutdown.register_paths import register_app_paths

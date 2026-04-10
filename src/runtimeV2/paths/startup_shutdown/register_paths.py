@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from runtimeV2.paths.contracts import RuntimePaths
+from runtimeV2.contracts import RuntimePaths
 
 
 def register_app_paths(runtime_paths: RuntimePaths) -> dict[str, Path]:

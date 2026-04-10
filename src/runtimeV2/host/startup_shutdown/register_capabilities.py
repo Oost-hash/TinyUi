@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from runtimeV2.host.capabilities.app_identity_read import AppIdentityRead
 from runtimeV2.host.capabilities.host_shell_read import HostShellRead
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead
-from runtimeV2.host.contracts import HostShell
+from runtimeV2.contracts import HostShell
 
 
 @dataclass(frozen=True)
