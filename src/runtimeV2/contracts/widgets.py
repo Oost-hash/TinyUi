@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from runtimeV2.widgets.contracts import WidgetRecord
+from runtimeV2.widgets.contracts import WidgetRecord, WidgetVisibilityState
 
 
 @runtime_checkable
@@ -42,4 +42,21 @@ class WidgetRecordsReader(Protocol):
 
     def widget_record(self, overlay_id: str, widget_id: str) -> WidgetRecord | None:
         """Return one widget runtime record."""
+        ...
+
+
+@runtime_checkable
+class WidgetVisibilityReader(Protocol):
+    """Public contract for reading widget visibility outside the widgets domain."""
+
+    def state(self) -> WidgetVisibilityState:
+        """Return widget visibility state."""
+        ...
+
+    def global_visible(self) -> bool:
+        """Return global widget visibility."""
+        ...
+
+    def is_widget_enabled(self, overlay_id: str, widget_id: str) -> bool:
+        """Return whether one widget is enabled."""
         ...

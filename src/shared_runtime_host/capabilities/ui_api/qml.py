@@ -34,6 +34,7 @@ from shared_runtime_host.events import SharedRuntimeHostEvents
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.connectors.contracts import ConnectorInspectionSnapshot
+from runtimeV2.contracts.widgets import WidgetVisibilityReader
 from runtimeV2.events.contracts import EventType
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.persistence.capabilities.settings_read import SettingsRead
@@ -47,7 +48,6 @@ from runtimeV2.plugins.capabilities.state_read import PluginStateRead
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
 from runtimeV2.ui.capabilities.panel_state_read import PanelStateRead
 from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
-from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 
 
@@ -372,7 +372,7 @@ class WidgetVisibilityQmlCapability(QObject):
 
     def __init__(
         self,
-        visibility_read: WidgetVisibilityRead,
+        visibility_read: WidgetVisibilityReader,
         visibility_write: WidgetVisibilityWrite,
         events: SharedRuntimeHostEvents,
         parent: QObject | None = None,

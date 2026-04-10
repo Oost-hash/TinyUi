@@ -35,9 +35,8 @@ from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
-from runtimeV2.contracts.widgets import WidgetRecordsReader
+from runtimeV2.contracts.widgets import WidgetRecordsReader, WidgetVisibilityReader
 from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
-from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.events.capabilities.event_registration_write import EventRegistrationWrite
@@ -111,7 +110,7 @@ def register_ui_actions_host(registry: SharedRuntimeHostRegistry) -> None:
             window_actions=runtime.capability("window_actions_write", WindowActionsWrite),
             manifest_connector_read=runtime.capability("manifest_connector_read", ManifestConnectorRead),
             connector_write=runtime.capability("connector_write", ConnectorWrite),
-            widget_visibility_read=runtime.capability("widget_visibility_read", WidgetVisibilityRead),
+            widget_visibility_read=runtime.capability("widget_visibility_read", WidgetVisibilityReader),
             widget_visibility_write=runtime.capability("widget_visibility_write", WidgetVisibilityWrite),
             widget_manual_override=runtime.capability("widget_manual_override", WidgetManualOverride),
             plugin_discovery=runtime.capability("plugin_discovery", PluginDiscoveryCapability),
