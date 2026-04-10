@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, cast
 
 from runtimeV2.events.capabilities.event_read import EventRead
-from runtimeV2.events.contracts import EventBus, EventType
+from runtimeV2.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.scheduler.capabilities.scheduler_read import SchedulerRead

@@ -7,12 +7,12 @@ import plugins
 from pkg_runtime_host import is_packaged_plugin_dir, mount_packaged_plugin
 from runtimeV2.manifest.capabilities.load import ManifestLoad
 from runtimeV2.manifest.registry import ManifestRegistry
-from runtimeV2.paths.contracts import RuntimePaths
+from runtimeV2.contracts import RuntimePaths
 from runtimeV2.plugins.activation import PluginActivationStore
 from runtimeV2.plugins.discovery import discover_plugins
 from runtimeV2.plugins.registry import PluginRegistry
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
-from runtimeV2.persistence.contracts import PersistencePaths
+from runtimeV2.contracts import PersistencePaths
 from runtimeV2.persistence.schemas.settings import SettingDecl
 from runtimeV2.persistence.settings import SettingsStore
 from scripts.build_plugin import build_plugin

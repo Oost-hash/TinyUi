@@ -54,7 +54,7 @@ from runtimeV2.scheduler.clock import SchedulerClock
 from runtimeV2.scheduler.driver import SchedulerDriver
 from runtimeV2.scheduler.registry import SchedulerRegistry
 from runtimeV2.connectors.startup_shutdown.startup import startup_connectors, ConnectorsStartupResult
-from runtimeV2.events.contracts import EventBus, EventType
+from runtimeV2.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.globals import GlobalRegistration

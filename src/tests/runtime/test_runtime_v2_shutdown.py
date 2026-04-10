@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
-from runtimeV2.events.contracts import EventType
+from runtimeV2.contracts import EventType
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult, startup_events
 from runtimeV2.register_capabilities import register_runtime_capabilities
 from runtimeV2.register_globals import register_runtime_globals

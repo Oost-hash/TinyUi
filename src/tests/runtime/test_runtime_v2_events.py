@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from runtimeV2.events.capabilities.event_registration_write import EventRegistrationWrite
-from runtimeV2.events.contracts import EventBus, EventType
+from runtimeV2.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry
 from runtimeV2.events.capabilities.event_read import EventRead
 

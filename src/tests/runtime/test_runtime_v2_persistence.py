@@ -30,7 +30,7 @@ from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.persistence.config_sets import ConfigSetCatalog
-from runtimeV2.persistence.contracts import PersistencePaths
+from runtimeV2.contracts import PersistencePaths
 from runtimeV2.persistence.schemas.settings import SettingDecl
 from runtimeV2.persistence.settings import SettingsStore
 from runtimeV2.persistence.widget_config import WidgetConfigStore

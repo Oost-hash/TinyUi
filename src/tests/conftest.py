@@ -30,7 +30,7 @@ from unittest.mock import patch
 
 import pytest
 
-from runtimeV2.paths.contracts import RuntimePaths
+from runtimeV2.contracts import RuntimePaths
 from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.startup import get_runtime_v2_result, startup_runtime_v2
