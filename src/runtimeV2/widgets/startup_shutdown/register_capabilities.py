@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from runtimeV2.events.contracts import EventBus
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
-from runtimeV2.scheduler.capabilities.scheduler_clock_read import SchedulerClockRead
+from runtimeV2.contracts.scheduler import SchedulerClockReader
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
@@ -61,7 +61,7 @@ def register_widget_capabilities(
     widget_config_read: WidgetConfigRead,
     widget_config_write: WidgetConfigWrite,
     scheduler_write: SchedulerWrite,
-    scheduler_clock_read: SchedulerClockRead,
+    scheduler_clock_read: SchedulerClockReader,
     events: EventBus,
 ) -> WidgetCapabilities:
     """Create widgets domain capabilities."""

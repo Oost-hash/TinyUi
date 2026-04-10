@@ -21,8 +21,10 @@
 
 """Public runtime V2 contracts used across domain boundaries."""
 
+from runtimeV2.contracts.scheduler import SchedulerClockReader
 from runtimeV2.contracts.widgets import WidgetRecordsReader
 
 __all__ = [
+    "SchedulerClockReader",
     "WidgetRecordsReader",
 ]

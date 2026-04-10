@@ -24,7 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.events.contracts import Event, EventBus, EventType
-from runtimeV2.scheduler.capabilities.scheduler_clock_read import SchedulerClockRead
+from runtimeV2.contracts.scheduler import SchedulerClockReader
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.widgets.capabilities.widget_records_refresh import WidgetRecordsRefresh
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
@@ -46,7 +46,7 @@ class WidgetRefreshPolicy:
         records_refresh: WidgetRecordsRefresh,
         visibility_read: WidgetVisibilityRead,
         scheduler_write: SchedulerWrite,
-        scheduler_clock_read: SchedulerClockRead,
+        scheduler_clock_read: SchedulerClockReader,
         events: EventBus,
     ) -> None:
         self._records_refresh = records_refresh

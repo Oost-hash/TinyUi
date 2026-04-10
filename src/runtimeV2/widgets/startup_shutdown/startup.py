@@ -28,11 +28,11 @@ from dataclasses import dataclass
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
+from runtimeV2.contracts.scheduler import SchedulerClockReader
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
-from runtimeV2.scheduler.capabilities.scheduler_clock_read import SchedulerClockRead
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.manifest.capabilities.overlay_read import ManifestOverlayRead
@@ -67,7 +67,7 @@ def startup_widgets(runtime: RuntimeV2) -> StartupResult:
         widget_config_read = runtime.capability("widget_config_read", WidgetConfigRead)
         widget_config_write = runtime.capability("widget_config_write", WidgetConfigWrite)
         scheduler_write = runtime.capability("scheduler_write", SchedulerWrite)
-        scheduler_clock_read = runtime.capability("scheduler_clock_read", SchedulerClockRead)
+        scheduler_clock_read = runtime.capability("scheduler_clock_read", SchedulerClockReader)
         store = WidgetRecordsStore()
         capabilities = register_widget_capabilities(
             store=store,

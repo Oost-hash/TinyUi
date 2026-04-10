@@ -28,11 +28,11 @@ import time
 from PySide6.QtCore import Qt, QTimer
 
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
+from runtimeV2.contracts.scheduler import SchedulerClockReader
 from runtimeV2.events.contracts import EventType
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
-from runtimeV2.scheduler.capabilities.scheduler_clock_read import SchedulerClockRead
 
 
 class QmlRuntimeSchedulerDriver:
@@ -77,7 +77,7 @@ class QmlRuntimeSchedulerDriver:
         self._retime()
 
     def _retime(self) -> None:
-        interval_ms = self._runtime.capability("scheduler_clock_read", SchedulerClockRead).clock_interval_ms()
+        interval_ms = self._runtime.capability("scheduler_clock_read", SchedulerClockReader).clock_interval_ms()
         self._timer.setInterval(max(5, interval_ms))
 
 
