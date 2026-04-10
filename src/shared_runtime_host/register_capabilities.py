@@ -35,12 +35,12 @@ from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
+from runtimeV2.contracts.widgets import WidgetRecordsReader
 from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.events.capabilities.event_registration_write import EventRegistrationWrite
-from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 
 from shared_runtime_host.capabilities.ui_api import UIActionsCapability
 from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapability
@@ -67,7 +67,7 @@ def register_widget_host(registry: SharedRuntimeHostRegistry) -> None:
     runtime = registry.runtime
     registry.register_capability(
         "widget_host",
-        WidgetHostCapability(runtime.capability("widget_records_read", WidgetRecordsRead)),
+        WidgetHostCapability(runtime.capability("widget_records_read", WidgetRecordsReader)),
     )
 
 

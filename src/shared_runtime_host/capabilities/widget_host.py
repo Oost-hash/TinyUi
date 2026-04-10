@@ -25,14 +25,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
+from runtimeV2.contracts.widgets import WidgetRecordsReader
 from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 
 
 class WidgetHostCapability:
     """Project widget runtime records into host-facing shapes."""
 
-    def __init__(self, widget_records_read: WidgetRecordsRead) -> None:
+    def __init__(self, widget_records_read: WidgetRecordsReader) -> None:
         self._widget_records_read = widget_records_read
 
     def panel_records(self) -> list[dict[str, object]]:
