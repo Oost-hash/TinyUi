@@ -23,8 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.contracts.ui import WindowRecordsReader
-from runtimeV2.ui.contracts import UIWindowRecord
+from runtimeV2.contracts import UIWindowRecord, WindowRecordsReader
 
 
 class WindowHostCapability:

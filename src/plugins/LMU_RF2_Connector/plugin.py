@@ -29,7 +29,7 @@ from .shared_memory._rFactor2_data import rF2GamePhase
 from .service import LMURF2ConnectorService, create_lmu_rf2_service
 
 if TYPE_CHECKING:
-    from runtimeV2.connectors.contracts import ConnectorGameStateUpdate
+    from runtimeV2.contracts import ConnectorGameStateUpdate
 
 
 _SUPPORTED_LIVE_GAMES = frozenset({"lmu", "rf2"})

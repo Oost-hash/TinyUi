@@ -15,7 +15,7 @@ from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.schemas.startup import StartupResult
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
-from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
+from runtimeV2.contracts import WidgetRecord, WidgetStatus
 from runtimeV2.widgets.store import WidgetRecordsStore
 from runtimeV2.widgets.startup_shutdown.startup import WidgetsStartupResult
 from shared_runtime_host.register_capabilities import register_event_registration_host, register_widget_host

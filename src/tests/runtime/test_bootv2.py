@@ -34,8 +34,12 @@ from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigW
 from runtimeV2.persistence.contracts import ConfigSet, PersistencePaths
 from runtimeV2.persistence.widget_config import WidgetConfigStore
 from runtimeV2.schemas.startup import StartupResult
-from runtimeV2.ui.contracts import QmlPropertyPlan, UIChromeModel, UIRenderStatus
-from runtimeV2.ui.contracts import UIWindowRecordsChangedData
+from runtimeV2.contracts import (
+    QmlPropertyPlan,
+    UIChromeModel,
+    UIRenderStatus,
+    UIWindowRecordsChangedData,
+)
 from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
 from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead

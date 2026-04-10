@@ -25,8 +25,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from runtimeV2.contracts.widgets import WidgetRecordsReader
-from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
+from runtimeV2.contracts import WidgetRecord, WidgetRecordsReader, WidgetStatus
 
 
 class WidgetHostCapability:

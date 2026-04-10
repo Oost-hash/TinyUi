@@ -15,7 +15,7 @@ from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
 from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
 from runtimeV2.ui.chrome_model import build_ui_chrome_model
-from runtimeV2.ui.contracts import UIWindowStatus
+from runtimeV2.contracts import UIWindowStatus
 from runtimeV2.ui.projection import project_ui_window_records
 from runtimeV2.ui.readiness import determine_render_status
 from runtimeV2.ui.schemas.manifest import AppManifest, ChromePolicy, MenuItem, StatusbarItemDecl, TabDecl, UiManifest

@@ -6,7 +6,7 @@ from typing import Any, cast
 
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
-from runtimeV2.connectors.contracts import ConnectorGameStateDecision
+from runtimeV2.contracts import ConnectorGameStateDecision
 from runtimeV2.connectors.decision_store import ConnectorGameStateDecisionStore
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 from runtimeV2.events.contracts import EventBus, EventType
@@ -29,10 +29,9 @@ from runtimeV2.widgets.capabilities.widget_records_refresh import WidgetRecordsR
 from runtimeV2.widgets.capabilities.widget_refresh_policy import WidgetRefreshPolicy
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
-from runtimeV2.widgets.contracts import WidgetVisibilityChangedData
+from runtimeV2.contracts import WidgetStatus, WidgetVisibilityChangedData
 from runtimeV2.widgets.store import WidgetRecordsStore
 from runtimeV2.widgets.schemas.manifest import OverlayManifest, OverlayWidgetDecl, WidgetDefaults
-from runtimeV2.widgets.contracts import WidgetStatus
 
 
 class _FakeOverlayRead:

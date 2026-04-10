@@ -26,7 +26,7 @@ from __future__ import annotations
 from numbers import Real
 from typing import Protocol, cast
 
-from runtimeV2.connectors.contracts import ConnectorInspectionSnapshot
+from runtimeV2.contracts import ConnectorInspectionSnapshot
 from .contracts.source import ConnectorSource
 from .contracts.telemetry import TelemetryReader
 from .sources.lmu import LMULiveSource

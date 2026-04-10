@@ -33,7 +33,11 @@ from plugins.LMU_RF2_Connector.service import LMURF2ConnectorService
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
-from runtimeV2.connectors.contracts import ConnectorGameDetectedData, ConnectorGameLostData, ConnectorSourceChangedData
+from runtimeV2.contracts import (
+    ConnectorGameDetectedData,
+    ConnectorGameLostData,
+    ConnectorSourceChangedData,
+)
 from runtimeV2.connectors.policy import unregister_connector_service
 from runtimeV2.connectors.schemas.manifest import (
     ConnectorGameDecl,

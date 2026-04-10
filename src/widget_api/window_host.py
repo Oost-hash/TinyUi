@@ -32,12 +32,12 @@ from PySide6.QtQml import QQmlComponent
 from PySide6.QtQuick import QQuickWindow
 
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
+from runtimeV2.contracts import WidgetRecord, WidgetStatus
 from shared_runtime_host.capabilities.widget_api import (
     WidgetConfigWriteQmlCapability,
     WidgetEffectsQmlCapability,
     widget_window_data,
 )
-from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 from ui_api.qt import create_engine
 
 _QML_DIR = Path(__file__).resolve().parent / "qml"
