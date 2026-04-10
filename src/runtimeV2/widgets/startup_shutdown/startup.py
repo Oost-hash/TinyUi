@@ -79,11 +79,13 @@ def startup_widgets(runtime: RuntimeV2) -> StartupResult:
         records = poller.refresh()
         capabilities = register_widget_capabilities(
             store=store,
+            poller=poller,
             widget_config_read=widget_config_read,
             widget_config_write=widget_config_write,
             events=events.bus,
         )
         runtime.register_capability("widget_records_read", capabilities.records_read)
+        runtime.register_capability("widget_records_refresh", capabilities.records_refresh)
         runtime.register_capability("widget_visibility_read", capabilities.visibility_read)
         runtime.register_capability("widget_visibility_write", capabilities.visibility_write)
         register_widget_globals(runtime)

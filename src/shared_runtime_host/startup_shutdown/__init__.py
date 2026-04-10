@@ -19,17 +19,4 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Runtime V2 events domain."""
-
-from runtimeV2.events.capabilities.event_read import EventRead
-from runtimeV2.events.capabilities.event_registration_write import EventRegistrationWrite, EventSubscription
-from runtimeV2.events.event_registry import EventContract, EventListenerRegistration, EventRegistry
-
-__all__ = [
-    "EventContract",
-    "EventListenerRegistration",
-    "EventRead",
-    "EventRegistrationWrite",
-    "EventSubscription",
-    "EventRegistry",
-]
+"""Startup and shutdown entrypoints for shared_runtime_host."""

@@ -37,11 +37,23 @@ class EventContract:
     description: str = ""
 
 
+@dataclass(frozen=True)
+class EventListenerRegistration:
+    """Registered event listener owned by one domain or host bridge."""
+
+    listener_id: int
+    event_type: EventType
+    domain: str
+    description: str = ""
+
+
 class EventRegistry:
     """Registry of known runtime V2 event contracts."""
 
     def __init__(self) -> None:
         self._contracts: dict[EventType, EventContract] = {}
+        self._listeners: dict[int, EventListenerRegistration] = {}
+        self._next_listener_id = 1
 
     def register(
         self,
@@ -72,3 +84,43 @@ class EventRegistry:
         """Return one event contract if it is registered."""
 
         return self._contracts.get(event_type)
+
+    def register_listener(
+        self,
+        event_type: EventType,
+        *,
+        domain: str,
+        description: str = "",
+    ) -> EventListenerRegistration:
+        """Register one event listener and return its registry record."""
+
+        listener_id = self._next_listener_id
+        self._next_listener_id += 1
+        registration = EventListenerRegistration(
+            listener_id=listener_id,
+            event_type=event_type,
+            domain=domain,
+            description=description,
+        )
+        self._listeners[listener_id] = registration
+        return registration
+
+    def unregister_listener(self, listener_id: int) -> None:
+        """Remove one event listener registration."""
+
+        self._listeners.pop(listener_id, None)
+
+    def listeners(self) -> list[EventListenerRegistration]:
+        """Return registered event listeners."""
+
+        return list(self._listeners.values())
+
+    def listeners_for_event(self, event_type: EventType) -> list[EventListenerRegistration]:
+        """Return registered listeners for one event type."""
+
+        return [listener for listener in self._listeners.values() if listener.event_type == event_type]
+
+    def listeners_for_domain(self, domain: str) -> list[EventListenerRegistration]:
+        """Return registered listeners for one owner domain."""
+
+        return [listener for listener in self._listeners.values() if listener.domain == domain]

@@ -19,33 +19,21 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""widget_api startup entrypoints above the runtime host implementation."""
+"""Widget runtime record refresh capability."""
 
 from __future__ import annotations
 
-from runtimeV2.runtime import RuntimeV2
-from runtimeV2.schemas.startup import StartupResult
-from shared_runtime_host.registry import SharedRuntimeHostRegistry
-from widget_api.runtime_host import (
-    WidgetRuntimeHostResult,
-    create_widget_window_host,
-    start_widget_host,
-)
+from runtimeV2.widgets.contracts import WidgetRecord
+from runtimeV2.widgets.poller import WidgetRuntimePoller
 
 
-def startup_widget_api(
-    app,
-    runtime: RuntimeV2,
-    host_registry: SharedRuntimeHostRegistry,
-) -> tuple[WidgetRuntimeHostResult | None, StartupResult]:
-    """Start the widget_api runtime host for runtime V2."""
+class WidgetRecordsRefresh:
+    """Refresh projected widget records through the widgets domain poller."""
 
-    return start_widget_host(app=app, runtime=runtime, host_registry=host_registry)
+    def __init__(self, poller: WidgetRuntimePoller) -> None:
+        self._poller = poller
 
+    def refresh(self) -> list[WidgetRecord]:
+        """Refresh and return current widget runtime records."""
 
-__all__ = [
-    "WidgetRuntimeHostResult",
-    "create_widget_window_host",
-    "start_widget_host",
-    "startup_widget_api",
-]
+        return self._poller.refresh()

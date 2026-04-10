@@ -30,11 +30,11 @@ from PySide6.QtCore import QObject, Property, Signal, Slot
 from shared_runtime_host.capabilities.ui_host import UIHostCapability
 from shared_runtime_host.capabilities.window_host import WindowHostCapability
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
+from shared_runtime_host.events import SharedRuntimeHostEvents
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.connectors.contracts import ConnectorInspectionSnapshot
 from runtimeV2.events.contracts import EventType
-from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.persistence.capabilities.settings_read import SettingsRead
 from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
@@ -158,17 +158,17 @@ class ConnectorReadQmlCapability(QObject):
     def __init__(
         self,
         connector_read: ConnectorRead,
-        events: EventsStartupResult | None = None,
+        events: SharedRuntimeHostEvents | None = None,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._connector_read = connector_read
         if events is not None:
-            events.bus.on(EventType.CONNECTOR_SERVICE_REGISTERED, self._on_services_changed)
-            events.bus.on(EventType.CONNECTOR_SERVICE_UNREGISTERED, self._on_services_changed)
-            events.bus.on(EventType.CONNECTOR_SERVICE_UPDATED, self._on_connector_runtime_changed)
-            events.bus.on(EventType.CONNECTOR_GAME_DETECTED, self._on_connector_runtime_changed)
-            events.bus.on(EventType.CONNECTOR_GAME_LOST, self._on_connector_runtime_changed)
+            events.subscribe(owner_domain="ui_api", event_type=EventType.CONNECTOR_SERVICE_REGISTERED, callback=self._on_services_changed)
+            events.subscribe(owner_domain="ui_api", event_type=EventType.CONNECTOR_SERVICE_UNREGISTERED, callback=self._on_services_changed)
+            events.subscribe(owner_domain="ui_api", event_type=EventType.CONNECTOR_SERVICE_UPDATED, callback=self._on_connector_runtime_changed)
+            events.subscribe(owner_domain="ui_api", event_type=EventType.CONNECTOR_GAME_DETECTED, callback=self._on_connector_runtime_changed)
+            events.subscribe(owner_domain="ui_api", event_type=EventType.CONNECTOR_GAME_LOST, callback=self._on_connector_runtime_changed)
 
     @Property(_QVARIANT_LIST, notify=servicesChanged)
     def services(self) -> list[dict[str, object]]:
@@ -330,12 +330,12 @@ class WidgetRecordsQmlCapability(QObject):
     def __init__(
         self,
         widget_host: WidgetHostCapability,
-        events: EventsStartupResult,
+        events: SharedRuntimeHostEvents,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._widget_host = widget_host
-        events.bus.on(EventType.WIDGET_RUNTIME_UPDATED, self._on_widgets_changed)
+        events.subscribe(owner_domain="ui_api", event_type=EventType.WIDGET_RUNTIME_UPDATED, callback=self._on_widgets_changed)
 
     @Property(_QVARIANT_LIST, notify=widgetsChanged)
     def widgets(self) -> list[dict[str, object]]:
@@ -374,13 +374,13 @@ class WidgetVisibilityQmlCapability(QObject):
         self,
         visibility_read: WidgetVisibilityRead,
         visibility_write: WidgetVisibilityWrite,
-        events: EventsStartupResult,
+        events: SharedRuntimeHostEvents,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._visibility_read = visibility_read
         self._visibility_write = visibility_write
-        events.bus.on(EventType.WIDGET_VISIBILITY_CHANGED, self._on_visibility_changed)
+        events.subscribe(owner_domain="ui_api", event_type=EventType.WIDGET_VISIBILITY_CHANGED, callback=self._on_visibility_changed)
 
     @Property(bool, notify=globalVisibleChanged)
     def globalVisible(self) -> bool:
@@ -418,14 +418,14 @@ class PluginActiveQmlCapability(QObject):
         self,
         active_read: PluginActiveRead,
         active_write: PluginActiveWrite,
-        events: EventsStartupResult,
+        events: SharedRuntimeHostEvents,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._active_read = active_read
         self._active_write = active_write
-        events.bus.on(EventType.PLUGIN_ACTIVATED, self._on_plugin_activity_changed)
-        events.bus.on(EventType.PLUGIN_DEACTIVATED, self._on_plugin_activity_changed)
+        events.subscribe(owner_domain="ui_api", event_type=EventType.PLUGIN_ACTIVATED, callback=self._on_plugin_activity_changed)
+        events.subscribe(owner_domain="ui_api", event_type=EventType.PLUGIN_DEACTIVATED, callback=self._on_plugin_activity_changed)
 
     @Slot(str, result=bool)
     def setActivePlugin(self, plugin_id: str) -> bool:
@@ -457,16 +457,16 @@ class PluginStateQmlCapability(QObject):
         self,
         state_read: PluginStateRead,
         plugin_ids: list[str],
-        events: EventsStartupResult,
+        events: SharedRuntimeHostEvents,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._state_read = state_read
         self._plugin_ids = plugin_ids
-        events.bus.on(EventType.PLUGIN_STATE_CHANGED, self._on_state_changed)
-        events.bus.on(EventType.PLUGIN_ERROR, self._on_state_changed)
-        events.bus.on(EventType.PLUGIN_ACTIVATED, self._on_state_changed)
-        events.bus.on(EventType.PLUGIN_DEACTIVATED, self._on_state_changed)
+        events.subscribe(owner_domain="ui_api", event_type=EventType.PLUGIN_STATE_CHANGED, callback=self._on_state_changed)
+        events.subscribe(owner_domain="ui_api", event_type=EventType.PLUGIN_ERROR, callback=self._on_state_changed)
+        events.subscribe(owner_domain="ui_api", event_type=EventType.PLUGIN_ACTIVATED, callback=self._on_state_changed)
+        events.subscribe(owner_domain="ui_api", event_type=EventType.PLUGIN_DEACTIVATED, callback=self._on_state_changed)
 
     @Property(_QVARIANT_MAP, notify=stateDataChanged)
     def states(self) -> dict[str, str]:
@@ -510,13 +510,13 @@ class PanelStateQmlCapability(QObject):
         self,
         panel_state_read: PanelStateRead,
         panel_state_write: PanelStateWrite,
-        events: EventsStartupResult,
+        events: SharedRuntimeHostEvents,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._panel_state_read = panel_state_read
         self._panel_state_write = panel_state_write
-        events.bus.on(EventType.UI_PANEL_VISIBILITY_CHANGED, self._on_panel_visibility_changed)
+        events.subscribe(owner_domain="ui_api", event_type=EventType.UI_PANEL_VISIBILITY_CHANGED, callback=self._on_panel_visibility_changed)
 
     @Property(bool, notify=visibleChanged)
     def visible(self) -> bool:

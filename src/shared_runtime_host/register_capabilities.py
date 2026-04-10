@@ -36,6 +36,7 @@ from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
+from runtimeV2.events.capabilities.event_registration_write import EventRegistrationWrite
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 
 from shared_runtime_host.capabilities.ui_api import UIActionsCapability
@@ -43,7 +44,18 @@ from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapabili
 from shared_runtime_host.capabilities.ui_host import UIHostCapability
 from shared_runtime_host.capabilities.window_host import WindowHostCapability
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
+from shared_runtime_host.events import SharedRuntimeHostEvents
 from shared_runtime_host.registry import SharedRuntimeHostRegistry
+
+
+def register_event_registration_host(registry: SharedRuntimeHostRegistry) -> None:
+    """Register the shared host event registration bridge."""
+
+    runtime = registry.runtime
+    registry.register_capability(
+        "event_registration",
+        SharedRuntimeHostEvents(runtime.capability("event_registration_write", EventRegistrationWrite)),
+    )
 
 
 def register_widget_host(registry: SharedRuntimeHostRegistry) -> None:

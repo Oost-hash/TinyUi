@@ -17,6 +17,7 @@ from runtimeV2.persistence.contracts import PersistencePaths
 from runtimeV2.persistence.widget_config import WidgetConfigStore
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
+from runtimeV2.widgets.capabilities.widget_records_refresh import WidgetRecordsRefresh
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.widgets.contracts import WidgetVisibilityChangedData
@@ -222,6 +223,35 @@ def test_widget_records_read_exposes_store_projection(tmp_path) -> None:
     assert record is not None
     assert read.records_for_overlay(overlay_id) == [record]
     assert read.all_widget_records() == [record]
+
+
+def test_widget_records_refresh_uses_widget_runtime_poller(tmp_path) -> None:
+    """Widget refresh capability should delegate to the widgets-owned poller."""
+
+    overlay_id = "demo_overlay"
+    widget_id = "speed"
+    store = WidgetRecordsStore()
+    poller = WidgetRuntimePoller(
+        store=store,
+        overlay_read=_FakeOverlayRead(
+            {
+                overlay_id: OverlayManifest(
+                    widgets=[OverlayWidgetDecl(id=widget_id, widget="gauge", bindings={"source": "car.speed"})]
+                )
+            }
+        ),
+        connector_decl_read=_FakeConnectorDeclRead({}),
+        connector_read=ConnectorRead(ConnectorServiceRegistry()),
+        active_read=_FakeActiveRead(None),
+        widget_config_read=_widget_config_read(tmp_path, overlay_id, widget_id),
+        events=EventBus(),
+    )
+    refresh = WidgetRecordsRefresh(poller)
+
+    records = refresh.refresh()
+
+    assert records == store.all_widget_records()
+    assert len(records) == 1
 
 
 def test_widget_runtime_poller_marks_ready_when_connector_is_live_without_overlay_selection(tmp_path) -> None:

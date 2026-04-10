@@ -25,12 +25,12 @@ from __future__ import annotations
 
 import sys
 
-from runtimeV2.startup import get_runtime_v2_result, startup_runtime_v2
-from shared_runtime_host.scheduler import start_runtime_scheduler_clock
+from runtimeV2.runtime import RuntimeV2
+from runtimeV2.schemas.startup import StartupResult
+from runtimeV2.startup import startup_runtime_v2
+from shared_runtime_host.startup_shutdown.startup import startup_shared_runtime_host
 from ui_api.qt import create_application, create_engine
-from ui_api.runtime_host import start_runtime_host
 from ui_api.startup_logging import install_startup_diagnostics, log_startup_step, startup_log_path
-from widget_api.startup_shutdown.startup import startup_widget_api
 
 if sys.platform == "win32":
     from ui_api.windowing import win_window  # eager import: registers QML singletons before engine
@@ -44,47 +44,22 @@ def main() -> int:
     app = create_application()
     engine = create_engine()
     log_startup_step("starting runtime V2")
-    startup_result = startup_runtime_v2()
+
+    def _start_host_bridge(runtime: RuntimeV2) -> StartupResult:
+        _host_result, host_result = startup_shared_runtime_host(
+            app=app,
+            engine=engine,
+            runtime=runtime,
+        )
+        return host_result
+
+    startup_result = startup_runtime_v2(host_bridge_startup=_start_host_bridge)
     if not startup_result.ok:
         log_startup_step(
             f"runtime V2 startup failed: {startup_result.error_message}",
             level=40,
         )
         print(startup_result.error_message, file=sys.stderr)
-        return 1
-
-    runtime_result = get_runtime_v2_result()
-    if runtime_result is None:
-        log_startup_step("runtime V2 result missing after startup", level=40)
-        print("Runtime V2 startup did not expose a runtime result", file=sys.stderr)
-        return 1
-
-    log_startup_step("starting runtime scheduler clock")
-    _scheduler_driver = start_runtime_scheduler_clock(app, runtime_result.runtime)
-    _host_result, ui_api_result = start_runtime_host(
-        app=app,
-        engine=engine,
-        runtime=runtime_result.runtime,
-    )
-    if not ui_api_result.ok:
-        log_startup_step(
-            f"ui_api host startup failed: {ui_api_result.error_message}",
-            level=40,
-        )
-        print(ui_api_result.error_message, file=sys.stderr)
-        return 1
-
-    log_startup_step("starting widget_api host")
-    _widget_host_result, widget_api_result = startup_widget_api(
-        app=app,
-        runtime=runtime_result.runtime,
-    )
-    if not widget_api_result.ok:
-        log_startup_step(
-            f"widget_api host startup failed: {widget_api_result.error_message}",
-            level=40,
-        )
-        print(widget_api_result.error_message, file=sys.stderr)
         return 1
 
     log_startup_step(f"entering QApplication event loop; log_path={startup_log_path()}")

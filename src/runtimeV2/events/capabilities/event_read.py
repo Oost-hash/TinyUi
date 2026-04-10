@@ -24,7 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.events.contracts import EventType
-from runtimeV2.events.event_registry import EventContract, EventRegistry
+from runtimeV2.events.event_registry import EventContract, EventListenerRegistration, EventRegistry
 
 
 class EventRead:
@@ -47,3 +47,18 @@ class EventRead:
         """Return one event contract if it is registered."""
 
         return self._registry.event(event_type)
+
+    def listeners(self) -> list[EventListenerRegistration]:
+        """Return registered event listeners."""
+
+        return self._registry.listeners()
+
+    def listeners_for_event(self, event_type: EventType) -> list[EventListenerRegistration]:
+        """Return registered listeners for one event type."""
+
+        return self._registry.listeners_for_event(event_type)
+
+    def listeners_for_domain(self, domain: str) -> list[EventListenerRegistration]:
+        """Return registered listeners for one owner domain."""
+
+        return self._registry.listeners_for_domain(domain)

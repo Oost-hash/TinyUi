@@ -17,9 +17,13 @@ from shared_runtime_host.capabilities.ui_api import (
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.events.capabilities.event_read import EventRead
+from runtimeV2.events.capabilities.event_registration_write import EventRegistrationWrite
 from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
+from shared_runtime_host.register_capabilities import register_event_registration_host
+from shared_runtime_host.registry import SharedRuntimeHostRegistry, create_shared_runtime_host_registry
+from ui_api.register_runtime_host import register_ui_runtime_host
 from runtimeV2.host.contracts import HostAppIdentity
 from runtimeV2.host.capabilities.main_window_read import MainWindowRead
 from runtimeV2.host.contracts import HostShell
@@ -112,10 +116,18 @@ class _FakeShutdown:
 
 class _FakeUiRuntime:
     def __init__(self) -> None:
+        registry = EventRegistry()
         self._events = EventsStartupResult(
             bus=EventBus(),
-            registry=EventRegistry(),
-            event_read=EventRead(EventRegistry()),
+            registry=registry,
+            event_read=EventRead(registry),
+            event_registration_write=None,
+        )
+        self._events = EventsStartupResult(
+            bus=self._events.bus,
+            registry=registry,
+            event_read=self._events.event_read,
+            event_registration_write=EventRegistrationWrite(registry, self._events.bus),
         )
         self.shutdown = _FakeShutdown(self._events)
         self._ui_result = UIStartupResult(
@@ -292,6 +304,8 @@ class _FakeUiRuntime:
             return self._globals
         if name == "shutdown":
             return self.shutdown
+        if name == "event_registration_write":
+            return self._events.event_registration_write
         if name == "widget_records_read":
             return self._widget_records
         if name == "window_records_read":
@@ -323,34 +337,45 @@ class _FakeUiRuntime:
         raise KeyError(name)
 
 
+def _ui_host_registry(runtime: object) -> SharedRuntimeHostRegistry:
+    registry = create_shared_runtime_host_registry(cast(Any, runtime))
+    register_event_registration_host(registry)
+    register_ui_runtime_host(registry)
+    return registry
+
+
 def test_bootv2_returns_zero_when_runtime_v2_is_render_ready(monkeypatch) -> None:
     """bootv2 should succeed once runtime V2 exposes a render-ready UI handoff."""
 
     app = _FakeApp()
-    monkeypatch.setattr(bootv2, "startup_runtime_v2", lambda: StartupResult(ok=True))
-    monkeypatch.setattr(bootv2, "get_runtime_v2_result", lambda: _FakeRuntimeResult(object()))
+    host_calls: list[str] = []
+
+    def _startup_runtime_v2(*, host_bridge_startup) -> StartupResult:
+        host_calls.append("runtime")
+        return host_bridge_startup(object())
+
+    monkeypatch.setattr(bootv2, "startup_runtime_v2", _startup_runtime_v2)
     monkeypatch.setattr(bootv2, "create_application", lambda: app)
     monkeypatch.setattr(bootv2, "create_engine", lambda: object())
-    monkeypatch.setattr(bootv2, "start_runtime_scheduler_clock", lambda *_args, **_kwargs: SimpleNamespace())
     monkeypatch.setattr(
         bootv2,
-        "start_runtime_host",
-        lambda **_kwargs: (SimpleNamespace(), StartupResult(ok=True)),
-    )
-    monkeypatch.setattr(
-        bootv2,
-        "startup_widget_api",
+        "startup_shared_runtime_host",
         lambda **_kwargs: (SimpleNamespace(), StartupResult(ok=True)),
     )
 
     assert bootv2.main() == 0
     assert app.exec_called
+    assert host_calls == ["runtime"]
 
 
 def test_bootv2_returns_error_when_runtime_v2_startup_fails(monkeypatch, capsys) -> None:
     """bootv2 should report startup failures from runtime V2."""
 
-    monkeypatch.setattr(bootv2, "startup_runtime_v2", lambda: StartupResult(ok=False, error_message="broken"))
+    monkeypatch.setattr(
+        bootv2,
+        "startup_runtime_v2",
+        lambda **_kwargs: StartupResult(ok=False, error_message="broken"),
+    )
     monkeypatch.setattr(bootv2, "create_application", lambda: _FakeApp())
     monkeypatch.setattr(bootv2, "create_engine", lambda: object())
 
@@ -358,50 +383,23 @@ def test_bootv2_returns_error_when_runtime_v2_startup_fails(monkeypatch, capsys)
     assert "broken" in capsys.readouterr().err
 
 
-def test_bootv2_returns_error_when_ui_api_host_fails(monkeypatch, capsys) -> None:
-    """bootv2 should report ui_api host failures."""
+def test_bootv2_returns_error_when_shared_runtime_host_fails(monkeypatch, capsys) -> None:
+    """bootv2 should report shared runtime host failures."""
 
-    monkeypatch.setattr(bootv2, "startup_runtime_v2", lambda: StartupResult(ok=True))
-    monkeypatch.setattr(bootv2, "get_runtime_v2_result", lambda: _FakeRuntimeResult(object()))
+    def _startup_runtime_v2(*, host_bridge_startup) -> StartupResult:
+        return host_bridge_startup(object())
+
+    monkeypatch.setattr(bootv2, "startup_runtime_v2", _startup_runtime_v2)
     monkeypatch.setattr(bootv2, "create_application", lambda: _FakeApp())
     monkeypatch.setattr(bootv2, "create_engine", lambda: object())
-    monkeypatch.setattr(bootv2, "start_runtime_scheduler_clock", lambda *_args, **_kwargs: SimpleNamespace())
     monkeypatch.setattr(
         bootv2,
-        "start_runtime_host",
-        lambda **_kwargs: (None, StartupResult(ok=False, error_message="missing main window")),
-    )
-    monkeypatch.setattr(
-        bootv2,
-        "startup_widget_api",
-        lambda **_kwargs: (SimpleNamespace(), StartupResult(ok=True)),
+        "startup_shared_runtime_host",
+        lambda **_kwargs: (None, StartupResult(ok=False, error_message="host bridge failed")),
     )
 
     assert bootv2.main() == 1
-    assert "missing main window" in capsys.readouterr().err
-
-
-def test_bootv2_returns_error_when_widget_api_host_fails(monkeypatch, capsys) -> None:
-    """bootv2 should report widget_api host failures."""
-
-    monkeypatch.setattr(bootv2, "startup_runtime_v2", lambda: StartupResult(ok=True))
-    monkeypatch.setattr(bootv2, "get_runtime_v2_result", lambda: _FakeRuntimeResult(object()))
-    monkeypatch.setattr(bootv2, "create_application", lambda: _FakeApp())
-    monkeypatch.setattr(bootv2, "create_engine", lambda: object())
-    monkeypatch.setattr(bootv2, "start_runtime_scheduler_clock", lambda *_args, **_kwargs: SimpleNamespace())
-    monkeypatch.setattr(
-        bootv2,
-        "start_runtime_host",
-        lambda **_kwargs: (SimpleNamespace(), StartupResult(ok=True)),
-    )
-    monkeypatch.setattr(
-        bootv2,
-        "startup_widget_api",
-        lambda **_kwargs: (None, StartupResult(ok=False, error_message="widget host failed")),
-    )
-
-    assert bootv2.main() == 1
-    assert "widget host failed" in capsys.readouterr().err
+    assert "host bridge failed" in capsys.readouterr().err
 
 
 def test_runtime_host_builds_qml_properties_from_ui_schema() -> None:
@@ -414,7 +412,11 @@ def test_runtime_host_builds_qml_properties_from_ui_schema() -> None:
         QmlPropertyPlan("connector_write", "connectorActions"),
     ]))
 
-    properties = build_runtime_qml_properties(cast(Any, runtime), cast(UIStartupResult, ui_result))
+    properties = build_runtime_qml_properties(
+        cast(Any, runtime),
+        cast(UIStartupResult, ui_result),
+        create_shared_runtime_host_registry(cast(Any, runtime)),
+    )
 
     assert isinstance(properties["manifestRead"], ManifestQmlCapability)
     assert isinstance(properties["settingsRead"], SettingsQmlCapability)
@@ -450,6 +452,7 @@ def test_runtime_host_close_action_requests_runtime_shutdown(monkeypatch) -> Non
         app=app,
         engine=object(),
         runtime=cast(Any, runtime),
+        host_registry=_ui_host_registry(runtime),
     )
 
     assert startup_result.ok
@@ -485,6 +488,7 @@ def test_runtime_host_open_action_uses_runtime_window_actions(monkeypatch) -> No
         app=app,
         engine=object(),
         runtime=cast(Any, runtime),
+        host_registry=_ui_host_registry(runtime),
     )
 
     assert startup_result.ok
@@ -526,6 +530,7 @@ def test_runtime_host_shutdown_closes_secondary_windows(monkeypatch) -> None:
         app=app,
         engine=object(),
         runtime=cast(Any, runtime),
+        host_registry=_ui_host_registry(runtime),
     )
 
     assert startup_result.ok
@@ -575,6 +580,7 @@ def test_runtime_host_secondary_window_close_does_not_request_runtime_shutdown(m
         app=app,
         engine=object(),
         runtime=cast(Any, runtime),
+        host_registry=_ui_host_registry(runtime),
     )
 
     assert startup_result.ok
@@ -628,6 +634,7 @@ def test_runtime_host_reopens_secondary_window_after_close(monkeypatch) -> None:
         app=app,
         engine=object(),
         runtime=cast(Any, runtime),
+        host_registry=_ui_host_registry(runtime),
     )
 
     assert startup_result.ok
@@ -662,6 +669,7 @@ def test_runtime_host_widget_visibility_toggle_uses_runtime_capability(monkeypat
         app=app,
         engine=object(),
         runtime=cast(Any, runtime),
+        host_registry=_ui_host_registry(runtime),
     )
 
     assert startup_result.ok
@@ -695,6 +703,7 @@ def test_runtime_host_plugin_activate_action_uses_runtime_capability(monkeypatch
         app=app,
         engine=object(),
         runtime=cast(Any, runtime),
+        host_registry=_ui_host_registry(runtime),
     )
 
     assert startup_result.ok
@@ -727,6 +736,7 @@ def test_runtime_host_settings_save_all_action_uses_runtime_capability(monkeypat
         app=app,
         engine=object(),
         runtime=cast(Any, runtime),
+        host_registry=_ui_host_registry(runtime),
     )
 
     assert startup_result.ok
@@ -759,6 +769,7 @@ def test_runtime_host_config_set_activate_action_uses_runtime_capability(monkeyp
         app=app,
         engine=object(),
         runtime=cast(Any, runtime),
+        host_registry=_ui_host_registry(runtime),
     )
 
     assert startup_result.ok
@@ -791,6 +802,7 @@ def test_runtime_host_plugin_panel_toggle_uses_runtime_capability(monkeypatch) -
         app=app,
         engine=object(),
         runtime=cast(Any, runtime),
+        host_registry=_ui_host_registry(runtime),
     )
 
     assert startup_result.ok

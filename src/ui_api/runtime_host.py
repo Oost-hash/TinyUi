@@ -33,7 +33,8 @@ from PySide6.QtQml import QQmlComponent
 from shared_runtime_host.capabilities.ui_host import UIHostCapability
 from shared_runtime_host.capabilities.window_host import WindowHostCapability
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
-from shared_runtime_host.registry import SharedRuntimeHostRegistry, create_shared_runtime_host_registry
+from shared_runtime_host.events import SharedRuntimeHostEvents
+from shared_runtime_host.registry import SharedRuntimeHostRegistry
 from shared_runtime_host.shutdown import QmlRuntimeHostShutdown
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
@@ -59,7 +60,6 @@ from runtimeV2.runtime import RuntimeV2
 from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
 from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
-from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.ui.startup_shutdown.startup import UIStartupResult
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
@@ -83,7 +83,6 @@ from shared_runtime_host.capabilities.ui_api import (
     WidgetVisibilityQmlCapability,
 )
 from ui_api.api.app_actions import AppActions
-from ui_api.register_runtime_host import register_ui_runtime_host
 from ui_api.startup_logging import log_startup_step
 from ui_api.theme import Theme
 from ui_api.window import WindowHandle, open_window
@@ -127,7 +126,7 @@ class RuntimeHostResult:
 def build_runtime_qml_properties(
     runtime: RuntimeV2,
     ui_result: UIStartupResult,
-    host_registry: SharedRuntimeHostRegistry | None = None,
+    host_registry: SharedRuntimeHostRegistry,
 ) -> dict[str, object]:
     """Build QML properties from the runtime V2 UI property schema."""
 
@@ -148,6 +147,7 @@ def build_runtime_qml_properties(
 
 def _normalize_qml_properties(
     runtime: RuntimeV2,
+    host_registry: SharedRuntimeHostRegistry,
     properties: dict[str, object],
 ) -> dict[str, object]:
     """Defensively normalize host properties to QML-facing wrappers."""
@@ -158,9 +158,10 @@ def _normalize_qml_properties(
 
     connector_read = properties.get("connectorRead")
     if isinstance(connector_read, ConnectorRead):
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         properties["connectorRead"] = ConnectorReadQmlCapability(
             connector_read,
-            runtime.domain_result("events", EventsStartupResult),
+            host_events,
         )
 
     settings_read = properties.get("settingsRead")
@@ -177,11 +178,11 @@ def _normalize_qml_properties(
     plugin_state = properties.get("pluginState")
     if isinstance(plugin_state, PluginStateRead):
         discovery = runtime.capability("plugin_discovery", PluginDiscoveryCapability)
-        events = runtime.domain_result("events", EventsStartupResult)
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         properties["pluginState"] = PluginStateQmlCapability(
             plugin_state,
             discovery.plugin_ids(),
-            events,
+            host_events,
         )
 
     return properties
@@ -189,16 +190,13 @@ def _normalize_qml_properties(
 
 def _adapt_qml_property(
     runtime: RuntimeV2,
-    host_registry: SharedRuntimeHostRegistry | None,
+    host_registry: SharedRuntimeHostRegistry,
     capability_name: str,
     capability: object,
 ) -> object:
     """Adapt selected runtime V2 capabilities to QML-facing objects."""
 
     if capability_name == "ui_chrome_model_read":
-        if host_registry is None:
-            host_registry = create_shared_runtime_host_registry(runtime)
-            register_ui_runtime_host(host_registry)
         return UIChromeQmlCapability(host_registry.capability("ui_host", UIHostCapability))
     if capability_name == "manifest_read":
         return ManifestQmlCapability(
@@ -210,9 +208,10 @@ def _adapt_qml_property(
     if capability_name == "settings_write":
         return SettingsWriteQmlCapability(cast(SettingsWrite, capability))
     if capability_name == "connector_read":
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return ConnectorReadQmlCapability(
             cast(ConnectorRead, capability),
-            runtime.domain_result("events", EventsStartupResult),
+            host_events,
         )
     if capability_name == "connector_write":
         return ConnectorWriteQmlCapability(cast(ConnectorWrite, capability))
@@ -221,43 +220,42 @@ def _adapt_qml_property(
     if capability_name == "widget_config_write":
         return WidgetConfigWriteQmlCapability(cast(WidgetConfigWrite, capability))
     if capability_name == "widget_records_read":
-        if host_registry is None:
-            host_registry = create_shared_runtime_host_registry(runtime)
-            register_ui_runtime_host(host_registry)
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return WidgetRecordsQmlCapability(
             host_registry.capability("widget_host", WidgetHostCapability),
-            runtime.domain_result("events", EventsStartupResult),
+            host_events,
         )
     if capability_name == "window_records_read":
-        if host_registry is None:
-            host_registry = create_shared_runtime_host_registry(runtime)
-            register_ui_runtime_host(host_registry)
         return WindowRecordsQmlCapability(host_registry.capability("window_host", WindowHostCapability))
     if capability_name == "widget_visibility_read":
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return WidgetVisibilityQmlCapability(
             cast(WidgetVisibilityRead, capability),
             runtime.capability("widget_visibility_write", WidgetVisibilityWrite),
-            runtime.domain_result("events", EventsStartupResult),
+            host_events,
         )
     if capability_name == "plugin_active_read":
         globals_capability = runtime.capability("globals", RuntimeGlobals)
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return PluginActiveQmlCapability(
             globals_capability.read_global("active_plugin", PluginActiveRead),
             globals_capability.write_global("active_plugin", PluginActiveWrite),
-            runtime.domain_result("events", EventsStartupResult),
+            host_events,
         )
     if capability_name == "plugin_state_read":
         discovery = runtime.capability("plugin_discovery", PluginDiscoveryCapability)
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return PluginStateQmlCapability(
             cast(PluginStateRead, capability),
             discovery.plugin_ids(),
-            runtime.domain_result("events", EventsStartupResult),
+            host_events,
         )
     if capability_name == "panel_state_read":
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return PanelStateQmlCapability(
             cast(PanelStateRead, capability),
             runtime.capability("panel_state_write", PanelStateWrite),
-            runtime.domain_result("events", EventsStartupResult),
+            host_events,
         )
     if capability_name == "render_status_read":
         return RenderStatusQmlCapability(cast(RenderStatusRead, capability))
@@ -269,6 +267,7 @@ def start_runtime_host(
     app,
     engine,
     runtime: RuntimeV2,
+    host_registry: SharedRuntimeHostRegistry,
     theme: Theme | None = None,
 ) -> tuple[RuntimeHostResult | None, StartupResult]:
     """Open the runtime V2 main window through ui_api."""
@@ -284,13 +283,12 @@ def start_runtime_host(
         if theme is None:
             theme = Theme("dark")
 
-        host_registry = create_shared_runtime_host_registry(runtime)
-        register_ui_runtime_host(host_registry)
         actions = AppActions()
         main_window = runtime.capability("main_window_read", MainWindowRead).main_window()
         plugin_panel_url, plugin_panel_component = _resolve_plugin_panel(engine, runtime)
         qml_properties = _normalize_qml_properties(
             runtime,
+            host_registry,
             build_runtime_qml_properties(runtime, ui_result, host_registry),
         )
         if plugin_panel_url:

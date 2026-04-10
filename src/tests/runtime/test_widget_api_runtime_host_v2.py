@@ -8,18 +8,23 @@ from typing import Any, cast
 
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.events.capabilities.event_read import EventRead
+from runtimeV2.events.capabilities.event_registration_write import EventRegistrationWrite
 from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.events.event_registry import EventRegistry
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.schemas.startup import StartupResult
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
+from runtimeV2.widgets.capabilities.widget_records_refresh import WidgetRecordsRefresh
 from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 from runtimeV2.widgets.store import WidgetRecordsStore
 from runtimeV2.widgets.startup_shutdown.startup import WidgetsStartupResult
+from shared_runtime_host.register_capabilities import register_event_registration_host
+from shared_runtime_host.registry import SharedRuntimeHostRegistry, create_shared_runtime_host_registry
 from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapability, widget_window_data
 from widget_api.capabilities import ThresholdCapability
 from widget_api.capabilities.threshold import threshold_entries
+from widget_api.register_runtime_host import register_widget_runtime_host
 from widget_api.runtime_host import create_widget_window_host, start_widget_host
 
 
@@ -81,12 +86,13 @@ class _FakeSchedulerWrite:
 
 
 class _FakePoller:
-    def __init__(self) -> None:
+    def __init__(self, records: list[WidgetRecord] | None = None) -> None:
         self.refresh_calls = 0
+        self._records = [] if records is None else records
 
     def refresh(self) -> list[WidgetRecord]:
         self.refresh_calls += 1
-        return []
+        return self._records
 
 
 class _FakeRuntime:
@@ -94,16 +100,19 @@ class _FakeRuntime:
         self._bus = EventBus()
         self._store = WidgetRecordsStore()
         self._store.set_records(records)
+        poller = _FakePoller(records)
         self._widgets = WidgetsStartupResult(
             store=self._store,
             records=records,
-            poller=cast(Any, _FakePoller()),
+            poller=cast(Any, poller),
             capabilities=cast(Any, object()),
         )
+        registry = EventRegistry()
         self._events = EventsStartupResult(
             bus=self._bus,
-            registry=EventRegistry(),
-            event_read=EventRead(EventRegistry()),
+            registry=registry,
+            event_read=EventRead(registry),
+            event_registration_write=EventRegistrationWrite(registry, self._bus),
         )
         self._widget_config_write = widget_config_write
         self.scheduler_write = _FakeSchedulerWrite()
@@ -121,8 +130,12 @@ class _FakeRuntime:
             return self._widget_config_write
         if name == "widget_records_read":
             return WidgetRecordsRead(self._store)
+        if name == "widget_records_refresh":
+            return WidgetRecordsRefresh(self._widgets.poller)
         if name == "scheduler_write":
             return self.scheduler_write
+        if name == "event_registration_write":
+            return self._events.event_registration_write
         if name == "shutdown":
             return cast(Any, _FakeShutdown(self.shutdown_calls))
         raise KeyError(name)
@@ -135,6 +148,13 @@ class _FakeShutdown:
     def begin_shutdown(self, reason: str = "app_quit") -> bool:
         self._calls.append(reason)
         return True
+
+
+def _host_registry(runtime: _FakeRuntime) -> SharedRuntimeHostRegistry:
+    registry = create_shared_runtime_host_registry(cast(Any, runtime))
+    register_event_registration_host(registry)
+    register_widget_runtime_host(registry)
+    return registry
 
 
 def test_widget_runtime_host_syncs_runtime_v2_widget_records(monkeypatch) -> None:
@@ -172,7 +192,7 @@ def test_widget_runtime_host_syncs_runtime_v2_widget_records(monkeypatch) -> Non
 
     monkeypatch.setattr("widget_api.runtime_host.WidgetWindowHost", _FakeHost)
 
-    result = create_widget_window_host(app, cast(Any, runtime))
+    result = create_widget_window_host(app, cast(Any, runtime), _host_registry(runtime))
 
     assert result.host is created["host"]
     assert created["records"] == records
@@ -211,7 +231,7 @@ def test_widget_runtime_host_refreshes_on_connector_events(monkeypatch) -> None:
 
     monkeypatch.setattr("widget_api.runtime_host.WidgetWindowHost", _FakeHost)
 
-    create_widget_window_host(app, cast(Any, runtime))
+    create_widget_window_host(app, cast(Any, runtime), _host_registry(runtime))
     runtime.domain_result("events", EventsStartupResult).bus.emit_typed(
         EventType.CONNECTOR_SERVICE_UPDATED,
         data=None,
@@ -253,7 +273,7 @@ def test_widget_runtime_host_refreshes_on_widget_visibility_events(monkeypatch) 
 
     monkeypatch.setattr("widget_api.runtime_host.WidgetWindowHost", _FakeHost)
 
-    create_widget_window_host(app, cast(Any, runtime))
+    create_widget_window_host(app, cast(Any, runtime), _host_registry(runtime))
     runtime.domain_result("events", EventsStartupResult).bus.emit_typed(
         EventType.WIDGET_VISIBILITY_CHANGED,
         data=None,
@@ -277,7 +297,7 @@ def test_start_widget_host_returns_typed_success(monkeypatch) -> None:
         ),
     )
 
-    _result, startup_result = start_widget_host(app, cast(Any, runtime))
+    _result, startup_result = start_widget_host(app, cast(Any, runtime), _host_registry(runtime))
 
     assert startup_result == StartupResult(ok=True)
 
@@ -301,7 +321,7 @@ def test_widget_runtime_host_closes_on_runtime_shutdown(monkeypatch) -> None:
 
     monkeypatch.setattr("widget_api.runtime_host.WidgetWindowHost", _FakeHost)
 
-    create_widget_window_host(app, cast(Any, runtime))
+    create_widget_window_host(app, cast(Any, runtime), _host_registry(runtime))
     runtime.domain_result("events", EventsStartupResult).bus.emit_typed(
         EventType.RUNTIME_SHUTDOWN,
         data=None,
@@ -325,7 +345,7 @@ def test_widget_runtime_host_requests_runtime_shutdown_on_app_quit(monkeypatch) 
         ),
     )
 
-    create_widget_window_host(app, cast(Any, runtime))
+    create_widget_window_host(app, cast(Any, runtime), _host_registry(runtime))
     for callback in app.aboutToQuit._callbacks:
         callback()
 

@@ -25,17 +25,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from shared_runtime_host.events import SharedRuntimeHostEvents
 from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapability
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
-from shared_runtime_host.registry import create_shared_runtime_host_registry
+from shared_runtime_host.registry import SharedRuntimeHostRegistry
 from shared_runtime_host.shutdown import QmlRuntimeHostShutdown
 from runtimeV2.events.contracts import EventType
-from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
-from runtimeV2.widgets.startup_shutdown.startup import WidgetsStartupResult
-from widget_api.register_runtime_host import register_widget_runtime_host
+from runtimeV2.widgets.capabilities.widget_records_refresh import WidgetRecordsRefresh
 from widget_api.window_host import WidgetWindowHost
 
 
@@ -51,11 +50,19 @@ class WidgetRuntimeHostResult:
 class WidgetWindowHostController:
     """Keep the widget window host synchronized with runtime changes."""
 
-    def __init__(self, runtime: RuntimeV2, host: WidgetWindowHost) -> None:
-        self._runtime = runtime
-        self._events = runtime.domain_result("events", EventsStartupResult)
-        self._widgets = runtime.domain_result("widgets", WidgetsStartupResult)
+    def __init__(
+        self,
+        *,
+        widget_host: WidgetHostCapability,
+        records_refresh: WidgetRecordsRefresh,
+        event_registration: SharedRuntimeHostEvents,
+        host: WidgetWindowHost,
+    ) -> None:
+        self._widget_host = widget_host
+        self._records_refresh = records_refresh
+        self._event_registration = event_registration
         self._host = host
+        self._refreshing = False
 
     def attach(self, app) -> None:
         """Subscribe to runtime V2 events that change widget runtime records."""
@@ -69,38 +76,58 @@ class WidgetWindowHostController:
             EventType.WIDGET_VISIBILITY_CHANGED,
             EventType.WIDGET_RUNTIME_UPDATED,
         ):
-            self._events.bus.on(event_type, self._on_runtime_change)
+            self._event_registration.subscribe(
+                owner_domain="widget_api",
+                event_type=event_type,
+                callback=self._on_runtime_change,
+                description="Sync hosted widget windows with runtime widget changes.",
+            )
 
     def sync(self) -> None:
         """Refresh hosted windows from current widget runtime records."""
 
-        self._host.sync_records(self._widgets.store.all_widget_records())
+        self._host.sync_records(self._widget_host.records())
 
     def refresh(self) -> None:
         """Refresh widgets through the widgets domain and sync the host."""
 
-        self._widgets.poller.refresh()
-        self.sync()
+        self._refreshing = True
+        try:
+            records = self._records_refresh.refresh()
+        finally:
+            self._refreshing = False
+        self._host.sync_records(records)
 
     def _on_runtime_change(self, event) -> None:
+        if self._refreshing:
+            return
         if event.type != EventType.WIDGET_RUNTIME_UPDATED:
-            self._widgets.poller.refresh()
+            self.refresh()
+            return
         self.sync()
 
 
-def create_widget_window_host(app, runtime: RuntimeV2) -> WidgetRuntimeHostResult:
+def create_widget_window_host(
+    app,
+    runtime: RuntimeV2,
+    host_registry: SharedRuntimeHostRegistry,
+) -> WidgetRuntimeHostResult:
     """Create the widget_api host bridge for runtime V2 widget records."""
 
-    host_registry = create_shared_runtime_host_registry(runtime)
-    register_widget_runtime_host(host_registry)
     widget_host = host_registry.capability("widget_host", WidgetHostCapability)
     widget_effects = host_registry.capability("widget_effects", WidgetEffectsQmlCapability)
+    event_registration = host_registry.capability("event_registration", SharedRuntimeHostEvents)
     host = WidgetWindowHost(
         widget_host,
         runtime.capability("widget_config_write", WidgetConfigWrite),
         widget_effects,
     )
-    controller = WidgetWindowHostController(runtime, host)
+    controller = WidgetWindowHostController(
+        widget_host=widget_host,
+        records_refresh=runtime.capability("widget_records_refresh", WidgetRecordsRefresh),
+        event_registration=event_registration,
+        host=host,
+    )
     controller.sync()
     controller.attach(app)
     shutdown = QmlRuntimeHostShutdown(runtime, host.close_all)
@@ -110,11 +137,15 @@ def create_widget_window_host(app, runtime: RuntimeV2) -> WidgetRuntimeHostResul
     return result
 
 
-def start_widget_host(app, runtime: RuntimeV2) -> tuple[WidgetRuntimeHostResult | None, StartupResult]:
+def start_widget_host(
+    app,
+    runtime: RuntimeV2,
+    host_registry: SharedRuntimeHostRegistry,
+) -> tuple[WidgetRuntimeHostResult | None, StartupResult]:
     """Start the widget_api host bridge for runtime V2 widget records."""
 
     try:
-        return create_widget_window_host(app, runtime), startup_ok()
+        return create_widget_window_host(app, runtime, host_registry), startup_ok()
     except Exception as exc:
         return None, startup_error(f"widget_api runtime host startup failed: {exc}")
 

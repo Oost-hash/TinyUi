@@ -29,8 +29,10 @@ from runtimeV2.events.contracts import EventBus
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
+from runtimeV2.widgets.capabilities.widget_records_refresh import WidgetRecordsRefresh
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
+from runtimeV2.widgets.poller import WidgetRuntimePoller
 from runtimeV2.widgets.store import WidgetRecordsStore
 
 
@@ -39,6 +41,7 @@ class WidgetCapabilities:
     """Widgets domain capabilities."""
 
     records_read: WidgetRecordsRead
+    records_refresh: WidgetRecordsRefresh
     visibility_read: WidgetVisibilityRead
     visibility_write: WidgetVisibilityWrite
 
@@ -46,6 +49,7 @@ class WidgetCapabilities:
 def register_widget_capabilities(
     *,
     store: WidgetRecordsStore,
+    poller: WidgetRuntimePoller,
     widget_config_read: WidgetConfigRead,
     widget_config_write: WidgetConfigWrite,
     events: EventBus | None = None,
@@ -54,6 +58,7 @@ def register_widget_capabilities(
 
     return WidgetCapabilities(
         records_read=WidgetRecordsRead(store),
+        records_refresh=WidgetRecordsRefresh(poller),
         visibility_read=WidgetVisibilityRead(widget_config_read),
         visibility_write=WidgetVisibilityWrite(widget_config_write, events),
     )

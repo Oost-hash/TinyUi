@@ -23,11 +23,26 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
+from runtimeV2.events.capabilities.event_registration_write import EventRegistrationWrite
+from runtimeV2.events.contracts import EventBus
 from runtimeV2.events.capabilities.event_read import EventRead
 from runtimeV2.events.event_registry import EventRegistry
 
 
-def register_event_capabilities(registry: EventRegistry) -> EventRead:
+@dataclass(frozen=True)
+class EventCapabilities:
+    """Events domain capabilities."""
+
+    read: EventRead
+    registration_write: EventRegistrationWrite
+
+
+def register_event_capabilities(registry: EventRegistry, bus: EventBus) -> EventCapabilities:
     """Create events domain capabilities."""
 
-    return EventRead(registry)
+    return EventCapabilities(
+        read=EventRead(registry),
+        registration_write=EventRegistrationWrite(registry, bus),
+    )
