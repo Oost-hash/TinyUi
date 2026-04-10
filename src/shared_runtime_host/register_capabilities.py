@@ -1,3 +1,24 @@
+#  TinyUI
+#  Copyright (C) 2026 Oost-hash
+#
+#  This file is part of TinyUI.
+#
+#  TinyUI is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  TinyUI is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
+#  licensed under GPLv3.
+
 """Register shared runtime host projection capabilities."""
 
 from __future__ import annotations
@@ -10,6 +31,7 @@ from runtimeV2.persistence.capabilities.config_set_write import ConfigSetWrite
 from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
 from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
+from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
@@ -17,6 +39,7 @@ from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 
 from shared_runtime_host.capabilities.ui_api import UIActionsCapability
+from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapability
 from shared_runtime_host.capabilities.ui_host import UIHostCapability
 from shared_runtime_host.capabilities.window_host import WindowHostCapability
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
@@ -30,6 +53,16 @@ def register_widget_host(registry: SharedRuntimeHostRegistry) -> None:
     registry.register_capability(
         "widget_host",
         WidgetHostCapability(runtime.capability("widget_records_read", WidgetRecordsRead)),
+    )
+
+
+def register_widget_effects_host(registry: SharedRuntimeHostRegistry) -> None:
+    """Register the shared widget effects projection."""
+
+    runtime = registry.runtime
+    registry.register_capability(
+        "widget_effects",
+        WidgetEffectsQmlCapability(runtime.capability("scheduler_write", SchedulerWrite)),
     )
 
 

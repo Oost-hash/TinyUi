@@ -25,6 +25,7 @@ Rectangle {
     id: root
 
     property var widgetData: ({})
+    property var widgetEffects: null
 
     width: 180
     height: 72
@@ -32,15 +33,50 @@ Rectangle {
     color: widgetData && widgetData.backgroundColor ? widgetData.backgroundColor : "#CC000000"
     visible: widgetData && widgetData.visible !== undefined ? widgetData.visible : true
 
+    property bool flashVisible: true
+    property string flashTarget: "value"
+    property string thresholdColor: ""
+
     readonly property string labelText: widgetData && widgetData.label ? widgetData.label : ""
     readonly property string sourceText: widgetData && widgetData.source ? widgetData.source : ""
     readonly property string displayText: widgetData && widgetData.displayText ? widgetData.displayText : ""
     readonly property string valueColor: widgetData && widgetData.textColor ? widgetData.textColor : "#E0E0E0"
+    readonly property string effectiveValueColor: thresholdColor !== "" ? thresholdColor : valueColor
+
+    opacity: flashTarget === "widget" ? (flashVisible ? 1.0 : 0.0) : 1.0
+
+    function refreshEffects() {
+        if (!widgetEffects || !widgetData || !widgetData.overlayId || !widgetData.widgetId) {
+            flashVisible = true
+            flashTarget = "value"
+            thresholdColor = ""
+            return
+        }
+        flashVisible = widgetEffects.flashVisible(widgetData.overlayId, widgetData.widgetId)
+        flashTarget = widgetEffects.flashTarget(widgetData.overlayId, widgetData.widgetId)
+        thresholdColor = widgetEffects.textColor(widgetData.overlayId, widgetData.widgetId, "")
+    }
+
+    onWidgetDataChanged: refreshEffects()
+    onWidgetEffectsChanged: refreshEffects()
+    Component.onCompleted: refreshEffects()
+
+    Connections {
+        target: root.widgetEffects
+        function onEffectsChanged(overlayId, widgetId) {
+            if (root.widgetData
+                    && root.widgetData.overlayId === overlayId
+                    && root.widgetData.widgetId === widgetId) {
+                root.refreshEffects()
+            }
+        }
+    }
 
     Column {
         anchors.fill: parent
         anchors.margins: 10
         spacing: 4
+        opacity: root.flashTarget === "text" ? (root.flashVisible ? 1.0 : 0.0) : 1.0
 
         Text {
             text: root.labelText
@@ -51,7 +87,8 @@ Rectangle {
 
         Text {
             text: root.displayText
-            color: root.valueColor
+            color: root.effectiveValueColor
+            opacity: root.flashTarget === "value" ? (root.flashVisible ? 1.0 : 0.0) : 1.0
             font.pixelSize: 24
             font.bold: true
             font.family: "Segoe UI"
