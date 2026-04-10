@@ -29,6 +29,7 @@ from ui_api.api.app_actions import AppActions
 
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
+from runtimeV2.contracts.ui import PanelStateWriter, WindowActionsWriter
 from runtimeV2.contracts.widgets import WidgetVisibilityReader, WidgetVisibilityWriter
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.persistence.capabilities.config_set_read import ConfigSetRead
@@ -36,8 +37,6 @@ from runtimeV2.persistence.capabilities.config_set_write import ConfigSetWrite
 from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
 from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
-from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
-from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 
 class UIActionsCapability:
@@ -46,7 +45,7 @@ class UIActionsCapability:
     def __init__(
         self,
         *,
-        window_actions: WindowActionsWrite,
+        window_actions: WindowActionsWriter,
         manifest_connector_read: ManifestConnectorRead,
         connector_write: ConnectorWrite,
         widget_visibility_read: WidgetVisibilityReader,
@@ -57,7 +56,7 @@ class UIActionsCapability:
         config_set_read: ConfigSetRead,
         config_set_write: ConfigSetWrite,
         settings_write: SettingsWrite,
-        panel_state_write: PanelStateWrite,
+        panel_state_write: PanelStateWriter,
         shutdown: RuntimeShutdown,
     ) -> None:
         self._window_actions = window_actions

@@ -34,6 +34,7 @@ from shared_runtime_host.events import SharedRuntimeHostEvents
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.connectors.contracts import ConnectorInspectionSnapshot
+from runtimeV2.contracts.ui import PanelStateReader, PanelStateWriter
 from runtimeV2.contracts.widgets import WidgetVisibilityReader, WidgetVisibilityWriter
 from runtimeV2.events.contracts import EventType
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
@@ -46,9 +47,6 @@ from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.plugins.capabilities.icon import PluginIconCapability
 from runtimeV2.plugins.capabilities.state_read import PluginStateRead
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
-from runtimeV2.ui.capabilities.panel_state_read import PanelStateRead
-from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
-
 _QVARIANT_LIST: Any = "QVariantList"
 _QVARIANT_MAP: Any = "QVariantMap"
 
@@ -506,8 +504,8 @@ class PanelStateQmlCapability(QObject):
 
     def __init__(
         self,
-        panel_state_read: PanelStateRead,
-        panel_state_write: PanelStateWrite,
+        panel_state_read: PanelStateReader,
+        panel_state_write: PanelStateWriter,
         events: SharedRuntimeHostEvents,
         parent: QObject | None = None,
     ) -> None:

@@ -24,18 +24,20 @@
 from __future__ import annotations
 
 from runtimeV2.contracts.events import EventRegistrationWriter
-from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
-from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
+from runtimeV2.contracts.ui import (
+    UIChromeModelReader,
+    PanelStateWriter,
+    WindowActionsWriter,
+    WindowRecordsReader,
+)
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
-from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
 from runtimeV2.persistence.capabilities.config_set_read import ConfigSetRead
 from runtimeV2.persistence.capabilities.config_set_write import ConfigSetWrite
 from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
 from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
 from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
-from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
 from runtimeV2.contracts.widgets import (
     WidgetRecordsReader,
     WidgetVisibilityReader,
@@ -88,7 +90,7 @@ def register_ui_host(registry: SharedRuntimeHostRegistry) -> None:
     runtime = registry.runtime
     registry.register_capability(
         "ui_host",
-        UIHostCapability(runtime.capability("ui_chrome_model_read", UIChromeModelRead)),
+        UIHostCapability(runtime.capability("ui_chrome_model_read", UIChromeModelReader)),
     )
 
 
@@ -98,7 +100,7 @@ def register_window_host(registry: SharedRuntimeHostRegistry) -> None:
     runtime = registry.runtime
     registry.register_capability(
         "window_host",
-        WindowHostCapability(runtime.capability("window_records_read", WindowRecordsRead)),
+        WindowHostCapability(runtime.capability("window_records_read", WindowRecordsReader)),
     )
 
 
@@ -109,7 +111,7 @@ def register_ui_actions_host(registry: SharedRuntimeHostRegistry) -> None:
     registry.register_capability(
         "ui_actions",
         UIActionsCapability(
-            window_actions=runtime.capability("window_actions_write", WindowActionsWrite),
+            window_actions=runtime.capability("window_actions_write", WindowActionsWriter),
             manifest_connector_read=runtime.capability("manifest_connector_read", ManifestConnectorRead),
             connector_write=runtime.capability("connector_write", ConnectorWrite),
             widget_visibility_read=runtime.capability("widget_visibility_read", WidgetVisibilityReader),
@@ -120,7 +122,7 @@ def register_ui_actions_host(registry: SharedRuntimeHostRegistry) -> None:
             config_set_read=runtime.capability("config_set_read", ConfigSetRead),
             config_set_write=runtime.capability("config_set_write", ConfigSetWrite),
             settings_write=runtime.capability("settings_write", SettingsWrite),
-            panel_state_write=runtime.capability("panel_state_write", PanelStateWrite),
+            panel_state_write=runtime.capability("panel_state_write", PanelStateWriter),
             shutdown=runtime.capability("shutdown", RuntimeShutdown),
         ),
     )

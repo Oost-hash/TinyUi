@@ -23,6 +23,13 @@
 
 from runtimeV2.contracts.events import EventRegistrationWriter, EventSubscriptionHandle
 from runtimeV2.contracts.scheduler import SchedulerClockReader
+from runtimeV2.contracts.ui import (
+    UIChromeModelReader,
+    PanelStateReader,
+    PanelStateWriter,
+    WindowActionsWriter,
+    WindowRecordsReader,
+)
 from runtimeV2.contracts.widgets import (
     WidgetRecordsReader,
     WidgetVisibilityReader,
@@ -33,6 +40,11 @@ __all__ = [
     "SchedulerClockReader",
     "EventRegistrationWriter",
     "EventSubscriptionHandle",
+    "UIChromeModelReader",
+    "PanelStateReader",
+    "PanelStateWriter",
+    "WindowActionsWriter",
+    "WindowRecordsReader",
     "WidgetRecordsReader",
     "WidgetVisibilityReader",
     "WidgetVisibilityWriter",

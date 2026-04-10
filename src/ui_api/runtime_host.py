@@ -37,6 +37,13 @@ from shared_runtime_host.events import SharedRuntimeHostEvents
 from shared_runtime_host.registry import SharedRuntimeHostRegistry
 from shared_runtime_host.shutdown import QmlRuntimeHostShutdown
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
+from runtimeV2.contracts.ui import (
+    UIChromeModelReader,
+    PanelStateReader,
+    PanelStateWriter,
+    WindowActionsWriter,
+    WindowRecordsReader,
+)
 from runtimeV2.contracts.widgets import (
     WidgetRecordsReader,
     WidgetVisibilityReader,
@@ -58,13 +65,8 @@ from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
 from runtimeV2.plugins.capabilities.icon import PluginIconCapability
 from runtimeV2.plugins.capabilities.state_read import PluginStateRead
 from runtimeV2.plugins.capabilities.state_write import PluginStateWrite
-from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
-from runtimeV2.ui.capabilities.panel_state_read import PanelStateRead
-from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
 from runtimeV2.runtime import RuntimeV2
-from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
-from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
 from runtimeV2.ui.startup_shutdown.startup import UIStartupResult
 from shared_runtime_host.capabilities.ui_api import (
     ConnectorReadQmlCapability,
@@ -105,11 +107,11 @@ _QML_CAPABILITY_TYPES: dict[str, type[Any]] = {
     "widget_records_read": WidgetRecordsReader,
     "widget_visibility_read": WidgetVisibilityReader,
     "widget_visibility_write": WidgetVisibilityWriter,
-    "window_records_read": WindowRecordsRead,
-    "panel_state_read": PanelStateRead,
-    "window_actions_write": WindowActionsWrite,
+    "window_records_read": WindowRecordsReader,
+    "panel_state_read": PanelStateReader,
+    "window_actions_write": WindowActionsWriter,
     "render_status_read": RenderStatusRead,
-    "ui_chrome_model_read": UIChromeModelRead,
+    "ui_chrome_model_read": UIChromeModelReader,
 }
 
 
@@ -255,8 +257,8 @@ def _adapt_qml_property(
     if capability_name == "panel_state_read":
         host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return PanelStateQmlCapability(
-            cast(PanelStateRead, capability),
-            runtime.capability("panel_state_write", PanelStateWrite),
+            cast(PanelStateReader, capability),
+            runtime.capability("panel_state_write", PanelStateWriter),
             host_events,
         )
     if capability_name == "render_status_read":
