@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtimeV2.events.contracts import EventBus, EventCallback, EventType
+from runtimeV2.contracts import EventBus, EventCallback, EventType
 from runtimeV2.events.event_registry import EventRegistry
 
 

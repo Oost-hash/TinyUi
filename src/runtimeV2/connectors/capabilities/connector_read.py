@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from runtimeV2.connectors.decision_store import ConnectorGameStateDecisionStore
 from runtimeV2.connectors.game_detector_store import ConnectorGameDetectorStore
-from runtimeV2.connectors.contracts import ConnectorInspectionSnapshot, ConnectorServiceRecord
+from runtimeV2.contracts import ConnectorInspectionSnapshot, ConnectorServiceRecord
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 
 

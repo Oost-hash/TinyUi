@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from runtimeV2.events.contracts import EventBus
+from runtimeV2.contracts import EventBus
 from runtimeV2.scheduler.capabilities.scheduler_clock_read import SchedulerClockRead
 from runtimeV2.scheduler.capabilities.scheduler_clock_write import SchedulerClockWrite
 from runtimeV2.scheduler.capabilities.scheduler_read import SchedulerRead

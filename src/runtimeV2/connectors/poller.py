@@ -23,9 +23,9 @@
 
 from __future__ import annotations
 
-from runtimeV2.connectors.contracts import ConnectorServiceUpdatedData
+from runtimeV2.contracts import ConnectorServiceUpdatedData
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
-from runtimeV2.events.contracts import EventBus, EventType
+from runtimeV2.contracts import EventBus, EventType
 
 
 class ConnectorServicePoller:

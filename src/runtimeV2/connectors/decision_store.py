@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.connectors.contracts import ConnectorGameStateDecision
+from runtimeV2.contracts import ConnectorGameStateDecision
 
 
 class ConnectorGameStateDecisionStore:

@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.scheduler.contracts import ScheduledJobRecord
+from runtimeV2.contracts import ScheduledJobRecord
 from runtimeV2.scheduler.registry import SchedulerRegistry
 
 

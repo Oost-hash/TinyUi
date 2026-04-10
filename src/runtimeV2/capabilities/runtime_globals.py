@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeVar
 
-from runtimeV2.events.contracts import EventType
+from runtimeV2.contracts import EventType
 from runtimeV2.globals import GlobalRegistration
 
 if TYPE_CHECKING:

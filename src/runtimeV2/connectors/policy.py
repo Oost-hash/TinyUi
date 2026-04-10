@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.connectors.contracts import (
+from runtimeV2.contracts import (
     ConnectorServiceRegisteredData,
     ConnectorServiceUnregisteredData,
     ConnectorServiceUpdatedData,
@@ -31,7 +31,7 @@ from runtimeV2.connectors.contracts import (
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.connectors.service_loader import load_connector_service
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
-from runtimeV2.events.contracts import EventBus, EventType
+from runtimeV2.contracts import EventBus, EventType
 
 
 def register_connector_service(
