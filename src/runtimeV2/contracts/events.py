@@ -19,46 +19,45 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Host bridge wrapper for runtime V2 event registration."""
+"""Public event contracts used outside the events domain."""
 
 from __future__ import annotations
 
-from runtimeV2.contracts.events import EventRegistrationWriter, EventSubscriptionHandle
+from typing import Protocol, runtime_checkable
+
 from runtimeV2.events.contracts import EventCallback, EventType
 
 
-class SharedRuntimeHostEvents:
-    """Expose runtime event registration in host-facing terms."""
+@runtime_checkable
+class EventSubscriptionHandle(Protocol):
+    """Public contract for closing one runtime event subscription."""
 
-    def __init__(self, event_registration_write: EventRegistrationWriter) -> None:
-        self._event_registration_write = event_registration_write
+    def close(self) -> None:
+        """Release one runtime event subscription."""
+        ...
+
+
+@runtime_checkable
+class EventRegistrationWriter(Protocol):
+    """Public contract for runtime event registration and subscriptions."""
 
     def register_event(
         self,
-        *,
         owner_domain: str,
         event_type: EventType,
         description: str = "",
     ) -> None:
-        """Register one host/API event contract with the runtime events domain."""
-
-        self._event_registration_write.register_event(owner_domain, event_type, description)
+        """Register one runtime event contract."""
+        ...
 
     def subscribe(
         self,
-        *,
         owner_domain: str,
         event_type: EventType,
         callback: EventCallback,
+        *,
         replay_history: bool = False,
         description: str = "",
     ) -> EventSubscriptionHandle:
-        """Subscribe one host/API callback to a runtime event."""
-
-        return self._event_registration_write.subscribe(
-            owner_domain,
-            event_type,
-            callback,
-            replay_history=replay_history,
-            description=description,
-        )
+        """Subscribe one callback to a runtime event."""
+        ...

@@ -38,8 +38,8 @@ from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.connectors.poller import ConnectorServicePoller
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
+from runtimeV2.contracts.widgets import WidgetVisibilityWriter
 from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
-from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.scheduler.capabilities.scheduler_clock_write import SchedulerClockWrite
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 
@@ -63,7 +63,7 @@ def register_connector_capabilities(
     scheduler_clock_write: SchedulerClockWrite,
     live_interval_ms: int,
     events: EventBus | None = None,
-    widget_visibility_write: WidgetVisibilityWrite | None = None,
+    widget_visibility_write: WidgetVisibilityWriter | None = None,
     widget_manual_override: WidgetManualOverride | None = None,
 ) -> ConnectorCapabilities:
     """Create connector domain capabilities."""

@@ -21,11 +21,19 @@
 
 """Public runtime V2 contracts used across domain boundaries."""
 
+from runtimeV2.contracts.events import EventRegistrationWriter, EventSubscriptionHandle
 from runtimeV2.contracts.scheduler import SchedulerClockReader
-from runtimeV2.contracts.widgets import WidgetRecordsReader, WidgetVisibilityReader
+from runtimeV2.contracts.widgets import (
+    WidgetRecordsReader,
+    WidgetVisibilityReader,
+    WidgetVisibilityWriter,
+)
 
 __all__ = [
     "SchedulerClockReader",
+    "EventRegistrationWriter",
+    "EventSubscriptionHandle",
     "WidgetRecordsReader",
     "WidgetVisibilityReader",
+    "WidgetVisibilityWriter",
 ]

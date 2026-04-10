@@ -29,7 +29,7 @@ from ui_api.api.app_actions import AppActions
 
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
-from runtimeV2.contracts.widgets import WidgetVisibilityReader
+from runtimeV2.contracts.widgets import WidgetVisibilityReader, WidgetVisibilityWriter
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.persistence.capabilities.config_set_read import ConfigSetRead
 from runtimeV2.persistence.capabilities.config_set_write import ConfigSetWrite
@@ -39,8 +39,6 @@ from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
 from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
 from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
-from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
-
 
 class UIActionsCapability:
     """Register ui_api host actions from runtime-owned capabilities."""
@@ -52,7 +50,7 @@ class UIActionsCapability:
         manifest_connector_read: ManifestConnectorRead,
         connector_write: ConnectorWrite,
         widget_visibility_read: WidgetVisibilityReader,
-        widget_visibility_write: WidgetVisibilityWrite,
+        widget_visibility_write: WidgetVisibilityWriter,
         widget_manual_override: WidgetManualOverride,
         plugin_discovery: PluginDiscoveryCapability,
         plugin_active_write: PluginActiveWrite,

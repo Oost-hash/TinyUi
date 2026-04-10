@@ -30,7 +30,7 @@ from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapabili
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from shared_runtime_host.registry import SharedRuntimeHostRegistry
 from shared_runtime_host.shutdown import QmlRuntimeHostShutdown
-from runtimeV2.events.capabilities.event_registration_write import EventSubscription
+from runtimeV2.contracts.events import EventSubscriptionHandle
 from runtimeV2.events.contracts import EventType
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.runtime import RuntimeV2
@@ -60,7 +60,7 @@ class WidgetWindowHostController:
         self._widget_host = widget_host
         self._event_registration = event_registration
         self._host = host
-        self._subscription: EventSubscription | None = None
+        self._subscription: EventSubscriptionHandle | None = None
 
     def attach(self, app) -> None:
         """Subscribe to runtime V2 events that change widget runtime records."""

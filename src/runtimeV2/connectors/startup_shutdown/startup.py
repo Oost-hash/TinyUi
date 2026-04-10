@@ -39,11 +39,11 @@ from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.persistence.capabilities.settings_read import SettingsRead
 from runtimeV2.runtime import RuntimeV2
+from runtimeV2.contracts.widgets import WidgetVisibilityWriter
 from runtimeV2.scheduler.capabilities.scheduler_clock_write import SchedulerClockWrite
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
-from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 
 
 @dataclass(frozen=True)
@@ -82,7 +82,7 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
         widget_manual_override_candidate = runtime.try_capability("widget_manual_override")
         widget_visibility_write = (
             widget_visibility_write_candidate
-            if isinstance(widget_visibility_write_candidate, WidgetVisibilityWrite)
+            if isinstance(widget_visibility_write_candidate, WidgetVisibilityWriter)
             else None
         )
         widget_manual_override = (

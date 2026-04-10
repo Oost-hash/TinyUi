@@ -37,7 +37,11 @@ from shared_runtime_host.events import SharedRuntimeHostEvents
 from shared_runtime_host.registry import SharedRuntimeHostRegistry
 from shared_runtime_host.shutdown import QmlRuntimeHostShutdown
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
-from runtimeV2.contracts.widgets import WidgetRecordsReader, WidgetVisibilityReader
+from runtimeV2.contracts.widgets import (
+    WidgetRecordsReader,
+    WidgetVisibilityReader,
+    WidgetVisibilityWriter,
+)
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
@@ -62,7 +66,6 @@ from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
 from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
 from runtimeV2.ui.startup_shutdown.startup import UIStartupResult
-from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from shared_runtime_host.capabilities.ui_api import (
     ConnectorReadQmlCapability,
     ConnectorWriteQmlCapability,
@@ -101,7 +104,7 @@ _QML_CAPABILITY_TYPES: dict[str, type[Any]] = {
     "plugin_state_write": PluginStateWrite,
     "widget_records_read": WidgetRecordsReader,
     "widget_visibility_read": WidgetVisibilityReader,
-    "widget_visibility_write": WidgetVisibilityWrite,
+    "widget_visibility_write": WidgetVisibilityWriter,
     "window_records_read": WindowRecordsRead,
     "panel_state_read": PanelStateRead,
     "window_actions_write": WindowActionsWrite,
@@ -230,7 +233,7 @@ def _adapt_qml_property(
         host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return WidgetVisibilityQmlCapability(
             cast(WidgetVisibilityReader, capability),
-            runtime.capability("widget_visibility_write", WidgetVisibilityWrite),
+            runtime.capability("widget_visibility_write", WidgetVisibilityWriter),
             host_events,
         )
     if capability_name == "plugin_active_read":

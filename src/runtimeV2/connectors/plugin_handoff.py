@@ -30,8 +30,8 @@ from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.contracts import ConnectorGameStateDecision, ConnectorGameStateUpdate
 from runtimeV2.connectors.decision_store import ConnectorGameStateDecisionStore
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
+from runtimeV2.contracts.widgets import WidgetVisibilityWriter
 from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
-from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 
 
 class ConnectorGameStateHookDispatcher:
@@ -42,7 +42,7 @@ class ConnectorGameStateHookDispatcher:
         declarations: dict[str, ConnectorManifest],
         connector_read: ConnectorRead,
         decision_store: ConnectorGameStateDecisionStore,
-        widget_visibility_write: WidgetVisibilityWrite | None = None,
+        widget_visibility_write: WidgetVisibilityWriter | None = None,
         widget_manual_override: WidgetManualOverride | None = None,
     ) -> None:
         self._declarations = declarations

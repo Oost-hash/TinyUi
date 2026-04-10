@@ -60,3 +60,20 @@ class WidgetVisibilityReader(Protocol):
     def is_widget_enabled(self, overlay_id: str, widget_id: str) -> bool:
         """Return whether one widget is enabled."""
         ...
+
+
+@runtime_checkable
+class WidgetVisibilityWriter(Protocol):
+    """Public contract for mutating widget visibility outside the widgets domain."""
+
+    def set_global_visible(self, visible: bool) -> None:
+        """Set global widget visibility from user-facing callers."""
+        ...
+
+    def set_global_visible_from_connector(self, visible: bool) -> bool:
+        """Set global widget visibility from connector policy."""
+        ...
+
+    def set_widget_enabled(self, overlay_id: str, widget_id: str, enabled: bool) -> bool:
+        """Set one widget enabled state."""
+        ...
