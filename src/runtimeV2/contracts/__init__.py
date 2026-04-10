@@ -27,6 +27,18 @@ from runtimeV2.contracts.connectors import (
     ConnectorReader,
     ConnectorWriter,
 )
+from runtimeV2.contracts.connectors_types import (
+    ConnectorGameDetectedData,
+    ConnectorGameLostData,
+    ConnectorGameStateDecision,
+    ConnectorGameStateUpdate,
+    ConnectorInspectionSnapshot,
+    ConnectorServiceRecord,
+    ConnectorServiceRegisteredData,
+    ConnectorServiceUnregisteredData,
+    ConnectorServiceUpdatedData,
+    ConnectorSourceChangedData,
+)
 from runtimeV2.contracts.events import EventRegistrationWriter, EventSubscriptionHandle
 from runtimeV2.contracts.host import (
     AppIdentityReader,
@@ -65,18 +77,48 @@ from runtimeV2.contracts.ui import (
     WindowActionsWriter,
     WindowRecordsReader,
 )
+from runtimeV2.contracts.ui_types import (
+    QmlPropertyPlan,
+    UIChromeModel,
+    UIMenuItem,
+    UIPanelVisibilityChangedData,
+    UIRenderStatus,
+    UIStatusbarItem,
+    UITabItem,
+    UIWindowRecord,
+    UIWindowRecordsChangedData,
+    UIWindowStatus,
+)
 from runtimeV2.contracts.widgets import (
     WidgetRecordsReader,
     WidgetVisibilityReader,
     WidgetVisibilityWriter,
 )
+from runtimeV2.contracts.widgets_types import (
+    WidgetRecord,
+    WidgetRuntimeUpdatedData,
+    WidgetStatus,
+    WidgetVisibilityChangedData,
+    WidgetVisibilityState,
+)
 
 __all__ = [
-    # Connectors
+    # Connectors (capabilities)
     "ConnectorReader",
     "ConnectorWriter",
     "ConnectorGameDetectorReader",
     "ConnectorGameDetectorWriter",
+    # Connectors (types)
+    "ConnectorGameDetectedData",
+    "ConnectorGameLostData",
+    "ConnectorGameStateDecision",
+    "ConnectorGameStateUpdate",
+    "ConnectorInspectionSnapshot",
+    "ConnectorServiceRecord",
+    "ConnectorServiceRegisteredData",
+    "ConnectorServiceUnregisteredData",
+    "ConnectorServiceUpdatedData",
+    "ConnectorSourceChangedData",
     # Events
     "EventRegistrationWriter",
     "EventSubscriptionHandle",
@@ -107,14 +149,31 @@ __all__ = [
     "PluginIconResolver",
     # Scheduler
     "SchedulerClockReader",
-    # UI
+    # UI (capabilities)
     "UIChromeModelReader",
     "PanelStateReader",
     "PanelStateWriter",
     "WindowActionsWriter",
     "WindowRecordsReader",
-    # Widgets
+    # UI (types)
+    "QmlPropertyPlan",
+    "UIChromeModel",
+    "UIMenuItem",
+    "UIPanelVisibilityChangedData",
+    "UIRenderStatus",
+    "UIStatusbarItem",
+    "UITabItem",
+    "UIWindowRecord",
+    "UIWindowRecordsChangedData",
+    "UIWindowStatus",
+    # Widgets (capabilities)
     "WidgetRecordsReader",
     "WidgetVisibilityReader",
     "WidgetVisibilityWriter",
+    # Widgets (types)
+    "WidgetRecord",
+    "WidgetRuntimeUpdatedData",
+    "WidgetStatus",
+    "WidgetVisibilityChangedData",
+    "WidgetVisibilityState",
 ]
