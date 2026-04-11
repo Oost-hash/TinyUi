@@ -54,7 +54,9 @@ def project_widget_records(
             config = widget_config_read.get_widget(overlay_id, widget.id)
             enabled = widget.defaults.enabled if config is None else config.enabled
             position = widget.defaults.position if config is None else config.position
-            values = {} if config is None else dict(config.values)
+            values = dict(widget.values)
+            if config is not None:
+                values.update(config.values)
             status = _widget_status(
                 active_plugin=active_plugin,
                 overlay_id=overlay_id,
@@ -72,7 +74,7 @@ def project_widget_records(
                 overlay_id=overlay_id,
                 widget_id=widget.id,
                 widget_type=widget.widget,
-                label=widget.label or widget.id,
+                label=_widget_label(widget.label, widget.id, values),
                 source=source,
                 bindings=dict(widget.bindings),
                 status=status,
@@ -83,6 +85,11 @@ def project_widget_records(
                 resolved_value=resolved_value,
             ))
     return records
+
+
+def _widget_label(default_label: str, widget_id: str, values: dict[str, object]) -> str:
+    label = values.get("label", default_label or widget_id)
+    return str(label) if label is not None else widget_id
 
 
 def _resolve_widget_value(

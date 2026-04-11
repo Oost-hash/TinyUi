@@ -27,9 +27,13 @@ Rectangle {
     property var widgetData: ({})
     property var widgetEffects: null
 
-    width: 180
-    height: 72
-    radius: 8
+    readonly property bool showSource: widgetData
+            && widgetData.values
+            && widgetData.values.showSource === true
+
+    width: 120
+    height: showSource ? 72 : 56
+    radius: 6
     color: widgetData && widgetData.backgroundColor ? widgetData.backgroundColor : "#CC000000"
     visible: widgetData && widgetData.visible !== undefined ? widgetData.visible : true
 
@@ -39,7 +43,7 @@ Rectangle {
 
     // Use regular properties instead of readonly so they update when widgetData changes
     property string labelText: widgetData && widgetData.label ? widgetData.label : ""
-    property string sourceText: widgetData && widgetData.source ? widgetData.source : ""
+    property string sourceText: widgetData && widgetData.source && showSource ? widgetData.source : ""
     property string displayText: widgetData && widgetData.displayText ? widgetData.displayText : ""
     property string valueColor: widgetData && widgetData.textColor ? widgetData.textColor : "#E0E0E0"
     property string effectiveValueColor: thresholdColor !== "" ? thresholdColor : valueColor
@@ -62,7 +66,7 @@ Rectangle {
     onWidgetDataChanged: {
         // Explicitly update text properties to force re-evaluation
         labelText = widgetData && widgetData.label ? widgetData.label : ""
-        sourceText = widgetData && widgetData.source ? widgetData.source : ""
+        sourceText = widgetData && widgetData.source && showSource ? widgetData.source : ""
         displayText = widgetData && widgetData.displayText ? widgetData.displayText : ""
         valueColor = widgetData && widgetData.textColor ? widgetData.textColor : "#E0E0E0"
         refreshEffects()
@@ -82,28 +86,30 @@ Rectangle {
     }
 
     Column {
-        anchors.fill: parent
-        anchors.margins: 10
-        spacing: 4
+        anchors.centerIn: parent
+        spacing: 2
         opacity: root.flashTarget === "text" ? (root.flashVisible ? 1.0 : 0.0) : 1.0
 
         Text {
+            anchors.horizontalCenter: parent.horizontalCenter
             text: root.labelText
-            color: "#8F8F8F"
-            font.pixelSize: 11
+            color: "#888888"
+            font.pixelSize: 10
             font.family: "Segoe UI"
         }
 
         Text {
+            anchors.horizontalCenter: parent.horizontalCenter
             text: root.displayText
             color: root.effectiveValueColor
             opacity: root.flashTarget === "value" ? (root.flashVisible ? 1.0 : 0.0) : 1.0
-            font.pixelSize: 24
+            font.pixelSize: 22
             font.bold: true
             font.family: "Segoe UI"
         }
 
         Text {
+            anchors.horizontalCenter: parent.horizontalCenter
             text: root.sourceText
             color: "#6E6E6E"
             font.pixelSize: 10

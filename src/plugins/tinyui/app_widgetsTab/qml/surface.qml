@@ -25,12 +25,21 @@ import QtQuick.Window
 Item {
     id: widgetTab
 
-    readonly property var hostWindow: Window.window
-    readonly property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
-    readonly property var widgetRecords: hostWindow && hostWindow.widgetRecords ? hostWindow.widgetRecords : null
-    readonly property var widgetConfigRead: hostWindow && hostWindow.widgetConfigRead ? hostWindow.widgetConfigRead : null
-    readonly property var widgetConfigWrite: hostWindow && hostWindow.widgetConfigWrite ? hostWindow.widgetConfigWrite : null
-    readonly property var widgetVisibility: hostWindow && hostWindow.widgetVisibility ? hostWindow.widgetVisibility : null
+    property var hostWindow: Window.window
+    property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
+    property var widgetRecords: hostWindow && hostWindow.widgetRecords ? hostWindow.widgetRecords : null
+    property var widgetConfigRead: hostWindow && hostWindow.widgetConfigRead ? hostWindow.widgetConfigRead : null
+    property var widgetConfigWrite: hostWindow && hostWindow.widgetConfigWrite ? hostWindow.widgetConfigWrite : null
+    property var widgetVisibility: hostWindow && hostWindow.widgetVisibility ? hostWindow.widgetVisibility : null
+    property var widgetItems: []
+    readonly property int widgetCount: widgetItems ? widgetItems.length : 0
+    readonly property string diagnosticsMessage: !hostWindow
+        ? "WidgetTab cannot see the host window."
+        : (!widgetRecords
+            ? "Widget records are not attached to this window."
+            : (widgetCount === 0
+                ? "Widget records are attached, but no widgets are available."
+                : ""))
 
     readonly property int colName: 200
     readonly property int colToggle: 56
@@ -38,6 +47,7 @@ Item {
 
     property string selectedWidgetId: ""
     property string selectedOverlayId: ""
+    property bool showAdvanced: false
 
     anchors.fill: parent
 
@@ -50,7 +60,7 @@ Item {
     }
 
     function widgets() {
-        return widgetRecords ? widgetRecords.widgets : []
+        return widgetItems
     }
 
     function selectedWidgetRecord() {
@@ -67,8 +77,7 @@ Item {
             return
 
         if (selectedWidgetId === widget.widgetId && selectedOverlayId === widget.overlayId) {
-            selectedWidgetId = ""
-            selectedOverlayId = ""
+            clearSelection()
             return
         }
 
@@ -85,15 +94,31 @@ Item {
             && selectedOverlayId === widget.overlayId
     }
 
+    function clearSelection() {
+        selectedWidgetId = ""
+        selectedOverlayId = ""
+    }
+
     function widgetTitle(widget) {
         if (!widget)
             return ""
-        return widget.label || widget.widgetId || ""
+        var values = widgetValues(widget)
+        return values.title || widget.label || widget.widgetId || ""
+    }
+
+    function widgetLabel(widget) {
+        if (!widget)
+            return ""
+        var values = widgetValues(widget)
+        return values.label || widget.label || widget.widgetId || ""
     }
 
     function widgetDescription(widget) {
         if (!widget)
             return ""
+        var values = widgetValues(widget)
+        if (values.description)
+            return values.description
         if (widget.resolvedValue)
             return widget.resolvedValue
         if (widget.source)
@@ -117,14 +142,81 @@ Item {
         return widget && widget.position ? widget.position.y : 0
     }
 
+    function widgetValues(widget) {
+        return widget && widget.values ? widget.values : ({})
+    }
+
+    function widgetValue(widget, key, fallback) {
+        var values = widgetValues(widget)
+        return values[key] !== undefined ? values[key] : fallback
+    }
+
+    function setWidgetValue(key, value) {
+        if (!widgetConfigWrite || selectedOverlayId === "" || selectedWidgetId === "")
+            return false
+        var values = {}
+        values[key] = value
+        return widgetConfigWrite.setWidgetValues(selectedOverlayId, selectedWidgetId, values)
+    }
+
+    function dumpDiagnostics(reason) {
+        console.warn(
+            "[WidgetTab] " + reason
+            + " hostWindow=" + (hostWindow !== null)
+            + " widgetRecords=" + (widgetRecords !== null)
+            + " widgetCount=" + widgetCount
+            + " widgetConfigRead=" + (widgetConfigRead !== null)
+            + " widgetConfigWrite=" + (widgetConfigWrite !== null)
+            + " widgetVisibility=" + (widgetVisibility !== null)
+        )
+        if (diagnosticsMessage !== "")
+            console.warn("[WidgetTab] " + diagnosticsMessage)
+    }
+
+    function refreshWidgetItems(reason) {
+        widgetItems = widgetRecords ? widgetRecords.widgets : []
+        dumpDiagnostics(reason)
+    }
+
+    Component.onCompleted: refreshWidgetItems("completed")
+    onWidgetRecordsChanged: refreshWidgetItems("widgetRecords changed")
+    onWidgetItemsChanged: dumpDiagnostics("widgetItems changed")
+
     Rectangle {
         anchors.fill: parent
         color: widgetTab.c("surface", "#17181c")
     }
 
+    Rectangle {
+        id: debugStrip
+        z: 100
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.margins: 8
+        width: debugText.implicitWidth + 16
+        height: 24
+        radius: 4
+        color: "#AA20242b"
+        border.width: 1
+        border.color: widgetTab.c("border", "#464b57")
+
+        Text {
+            id: debugText
+            anchors.centerIn: parent
+            text: "WidgetTab records="
+                + (widgetTab.widgetRecords !== null)
+                + " count=" + widgetTab.widgetCount
+                + " cfgW=" + (widgetTab.widgetConfigWrite !== null)
+            color: widgetTab.c("text", "#dce0e5")
+            font.pixelSize: widgetTab.f("fontSizeSmall", 11)
+            font.family: widgetTab.f("fontFamily", "sans-serif")
+        }
+    }
+
     Connections {
         target: widgetTab.widgetRecords
         function onWidgetsChanged() {
+            widgetTab.refreshWidgetItems("widgetsChanged")
             if (widgetTab.selectedWidgetId !== "" && widgetTab.selectedWidgetRecord() === null) {
                 widgetTab.selectedWidgetId = ""
                 widgetTab.selectedOverlayId = ""
@@ -134,6 +226,7 @@ Item {
 
     Item {
         id: listPane
+        z: 2
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.bottom: parent.bottom
@@ -200,7 +293,7 @@ Item {
             anchors.right: parent.right
             anchors.bottom: parent.bottom
             clip: true
-            model: widgetTab.widgets()
+            model: widgetTab.widgetItems
             spacing: 0
 
             delegate: Rectangle {
@@ -253,7 +346,7 @@ Item {
                         width: widgetTab.colName
                         height: parent.height
                         verticalAlignment: Text.AlignVCenter
-                        text: widgetTab.widgetTitle(row.modelData)
+                        text: widgetTab.widgetLabel(row.modelData)
                         color: row.isSelected ? widgetTab.c("accent", "#4a9eff") : widgetTab.c("text", "#dce0e5")
                         font.pixelSize: widgetTab.f("fontSizeBase", 13)
                         font.family: widgetTab.f("fontFamily", "sans-serif")
@@ -307,9 +400,45 @@ Item {
                 HoverHandler { id: rowHover }
             }
         }
+
+        Rectangle {
+            anchors.top: tableHeader.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            visible: widgetTab.diagnosticsMessage !== ""
+            color: "transparent"
+
+            Column {
+                anchors.centerIn: parent
+                width: Math.min(parent.width - 32, 420)
+                spacing: 8
+
+                Text {
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    text: "No widgets found"
+                    color: widgetTab.c("text", "#dce0e5")
+                    font.pixelSize: widgetTab.f("fontSizeBase", 13)
+                    font.family: widgetTab.f("fontFamily", "sans-serif")
+                    font.weight: Font.DemiBold
+                }
+
+                Text {
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    text: widgetTab.diagnosticsMessage
+                    color: widgetTab.c("textMuted", "#878a98")
+                    font.pixelSize: widgetTab.f("fontSizeSmall", 11)
+                    font.family: widgetTab.f("fontFamily", "sans-serif")
+                    wrapMode: Text.WordWrap
+                }
+            }
+        }
     }
 
     Rectangle {
+        z: 3
         visible: widgetTab.selectedWidgetId !== ""
         anchors.top: parent.top
         anchors.bottom: parent.bottom
@@ -320,6 +449,7 @@ Item {
 
     Item {
         id: detailPane
+        z: 1
         visible: widgetTab.selectedWidgetId !== ""
         anchors.top: parent.top
         anchors.left: listPane.right
@@ -342,7 +472,7 @@ Item {
                 anchors.left: parent.left
                 anchors.leftMargin: 16
                 anchors.right: parent.right
-                anchors.rightMargin: 16
+                anchors.rightMargin: 48
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 3
 
@@ -364,6 +494,36 @@ Item {
                     font.family: widgetTab.f("fontFamily", "sans-serif")
                     elide: Text.ElideRight
                 }
+            }
+
+            Rectangle {
+                id: closeButton
+                anchors.right: parent.right
+                anchors.rightMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
+                width: 28
+                height: 28
+                radius: 4
+                color: closeHover.hovered ? widgetTab.c("surfaceRaised", "#3b414d") : "transparent"
+                border.width: 1
+                border.color: closeHover.hovered ? widgetTab.c("accent", "#4a9eff") : widgetTab.c("border", "#464b57")
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "x"
+                    color: widgetTab.c("text", "#dce0e5")
+                    font.pixelSize: widgetTab.f("fontSizeBase", 13)
+                    font.family: widgetTab.f("fontFamily", "sans-serif")
+                    font.weight: Font.DemiBold
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.LeftButton
+                    onClicked: widgetTab.clearSelection()
+                }
+
+                HoverHandler { id: closeHover }
             }
 
             Rectangle {
@@ -393,17 +553,23 @@ Item {
                 EditRow {
                     label: "Label"
                     description: "Short text shown on the widget"
-                    value: widgetTab.widgetTitle(widgetTab.selectedWidgetRecord())
+                    TextInputBox {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        textValue: widgetTab.widgetLabel(widgetTab.selectedWidgetRecord())
+                        enabled: widgetTab.widgetConfigWrite !== null
+                        onCommit: (text) => widgetTab.setWidgetValue("label", text)
+                    }
                 }
 
                 EditRow {
-                    label: "Widget ID"
-                    value: widgetTab.selectedWidgetId
+                    label: "Name"
+                    description: widgetTab.widgetTitle(widgetTab.selectedWidgetRecord())
                 }
 
                 EditRow {
-                    label: "Overlay"
-                    value: widgetTab.selectedOverlayId
+                    label: "Description"
+                    description: widgetTab.widgetDescription(widgetTab.selectedWidgetRecord())
                 }
 
                 SectionHeader { text: "Position" }
@@ -462,9 +628,41 @@ Item {
                         : ""
                 }
 
-                SectionHeader { text: "Runtime" }
+                SectionHeader {
+                    text: widgetTab.showAdvanced ? "Advanced" : "Advanced (hidden)"
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: widgetTab.showAdvanced = !widgetTab.showAdvanced
+                    }
+                }
 
                 EditRow {
+                    visible: widgetTab.showAdvanced
+                    label: "Show source"
+                    description: "Show the connector source key inside the floating widget"
+                    ToggleSwitch {
+                        anchors.centerIn: parent
+                        checked: widgetTab.widgetValue(widgetTab.selectedWidgetRecord(), "showSource", false) === true
+                        enabled: widgetTab.widgetConfigWrite !== null
+                        onToggled: (v) => widgetTab.setWidgetValue("showSource", v)
+                    }
+                }
+
+                EditRow {
+                    visible: widgetTab.showAdvanced
+                    label: "Widget ID"
+                    value: widgetTab.selectedWidgetId
+                }
+
+                EditRow {
+                    visible: widgetTab.showAdvanced
+                    label: "Overlay"
+                    value: widgetTab.selectedOverlayId
+                }
+
+                EditRow {
+                    visible: widgetTab.showAdvanced
                     label: "Type"
                     value: widgetTab.selectedWidgetRecord()
                         ? widgetTab.selectedWidgetRecord().widgetType
@@ -472,6 +670,7 @@ Item {
                 }
 
                 EditRow {
+                    visible: widgetTab.showAdvanced
                     label: "Source"
                     description: widgetTab.selectedWidgetRecord()
                         ? widgetTab.selectedWidgetRecord().source
@@ -479,6 +678,7 @@ Item {
                 }
 
                 EditRow {
+                    visible: widgetTab.showAdvanced
                     label: "Resolved"
                     description: widgetTab.selectedWidgetRecord()
                         ? widgetTab.selectedWidgetRecord().resolvedValue
@@ -497,7 +697,7 @@ Item {
 
         anchors.left: parent ? parent.left : undefined
         anchors.right: parent ? parent.right : undefined
-        implicitHeight: description !== "" || value !== "" ? 52 : 44
+        implicitHeight: visible ? (description !== "" || value !== "" ? 52 : 44) : 0
         color: "transparent"
 
         Rectangle {
@@ -647,6 +847,40 @@ Item {
                     stepperRoot.value = stepperRoot.value + stepperRoot.step
                     stepperRoot.commit(stepperRoot.value)
                 }
+            }
+        }
+    }
+
+    component TextInputBox: Rectangle {
+        id: textInputBoxRoot
+        property string textValue: ""
+        signal commit(string text)
+
+        width: 120
+        height: 28
+        radius: 4
+        color: enabled ? widgetTab.c("surfaceFloating", "#20242b") : widgetTab.c("surfaceAlt", "#2f343e")
+        border.width: 1
+        border.color: textInput.activeFocus ? widgetTab.c("accent", "#4a9eff") : widgetTab.c("border", "#464b57")
+        opacity: enabled ? 1 : 0.6
+        Behavior on border.color { ColorAnimation { duration: 80 } }
+
+        TextInput {
+            id: textInput
+            anchors.fill: parent
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
+            verticalAlignment: TextInput.AlignVCenter
+            text: textInputBoxRoot.textValue
+            color: widgetTab.c("text", "#dce0e5")
+            font.pixelSize: widgetTab.f("fontSizeSmall", 11)
+            font.family: widgetTab.f("fontFamily", "sans-serif")
+            selectByMouse: true
+            enabled: textInputBoxRoot.enabled
+
+            onEditingFinished: {
+                textInputBoxRoot.textValue = text
+                textInputBoxRoot.commit(text)
             }
         }
     }

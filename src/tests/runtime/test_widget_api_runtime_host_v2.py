@@ -363,6 +363,29 @@ def test_widget_data_adapter_uses_runtime_v2_record_shape() -> None:
     assert "widgetEffects" not in widget_data
 
 
+def test_widget_data_adapter_formats_ready_values_from_widget_values() -> None:
+    """Widget host projection should restore v0.4.0-style display formatting."""
+
+    record = WidgetRecord(
+        overlay_id="demo_overlay",
+        widget_id="fuel",
+        widget_type="textWidget",
+        label="Fuel",
+        source="vehicle.fuel",
+        bindings={"source": "vehicle.fuel"},
+        status=WidgetStatus.READY,
+        connector_ids=("LMU_RF2_Connector",),
+        values={"format": "{:.1f} L"},
+        resolved_value="1.50",
+    )
+    store = WidgetRecordsStore()
+    store.set_records([record])
+
+    widget_data = widget_window_data(WidgetHostCapability(WidgetRecordsRead(store)), record)
+
+    assert widget_data["displayText"] == "1.5 L"
+
+
 def test_widget_window_host_updates_data_without_resetting_position() -> None:
     """Existing widget windows should not receive an empty widgetData during refresh."""
 

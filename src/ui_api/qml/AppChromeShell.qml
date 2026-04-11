@@ -426,8 +426,30 @@ Item {
                         required property var modelData
                         
                         Loader {
+                            id: tabSurfaceLoader
                             anchors.fill: parent
                             source: tabContentDelegate.modelData.surface || ""
+
+                            onStatusChanged: {
+                                if (status === Loader.Error)
+                                    console.warn("[AppChromeShell] tab surface failed: " + source)
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            visible: tabSurfaceLoader.status === Loader.Error
+                            color: root.theme ? root.theme.surface : "#17181c"
+
+                            Text {
+                                anchors.centerIn: parent
+                                width: Math.min(parent.width - 32, 520)
+                                horizontalAlignment: Text.AlignHCenter
+                                wrapMode: Text.WordWrap
+                                text: "Tab surface failed to load: " + tabSurfaceLoader.source
+                                color: root.theme ? root.theme.text : "#dce0e5"
+                                font.pixelSize: root.theme ? root.theme.fontSizeBase : 13
+                            }
                         }
                     }
                 }

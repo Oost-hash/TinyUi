@@ -12,6 +12,7 @@ from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.manifest.capabilities.overlay_read import ManifestOverlayRead
+from runtimeV2.manifest.parser import load_plugin_manifest
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.connectors.schemas.manifest import ConnectorServiceDecl
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
@@ -220,6 +221,204 @@ def test_widget_records_refresh_marks_ready_when_active_and_connected(tmp_path) 
     assert record.enabled is True
     assert record.position == (0, 0)
     assert record.resolved_value == "321 km/h"
+
+
+def test_widget_records_refresh_includes_manifest_widget_values(tmp_path) -> None:
+    """Widget refresh should carry manifest-owned functional defaults into runtime records."""
+
+    overlay_id = "demo_overlay"
+    widget_id = "fuel"
+    connector_services = ConnectorServiceRegistry()
+    connector_services.register(
+        "iracing",
+        "iracing",
+        "IRacing",
+        _FakeConnectorService([("vehicle.fuel", "1.50")]),
+    )
+    base_dir = tmp_path / "TinyUi"
+    config_root = base_dir / "config"
+    widget_config = WidgetConfigRead(
+        WidgetConfigStore(
+            PersistencePaths(
+                base_dir=base_dir,
+                config_root=config_root,
+                cache_dir=base_dir / "cache",
+                logs_dir=base_dir / "logs",
+                bootstrap_path=base_dir / "bootstrap.toml",
+                config_sets_path=config_root / "config_sets.json",
+            ),
+            "default",
+        )
+    )
+    store = WidgetRecordsStore()
+    refresh = _widget_records_refresh(
+        store=store,
+        overlay_read=_FakeOverlayRead(
+            {
+                overlay_id: OverlayManifest(
+                    connectors=["iracing"],
+                    widgets=[
+                        OverlayWidgetDecl(
+                            id=widget_id,
+                            widget="textWidget",
+                            bindings={"source": "vehicle.fuel"},
+                            values={
+                                "format": "{:.1f} L",
+                                "thresholds": [
+                                    {
+                                        "value": 2.0,
+                                        "color": "#FF4444",
+                                        "flash": True,
+                                        "flash_speed": 3,
+                                        "flash_target": "value",
+                                    }
+                                ],
+                            },
+                        )
+                    ],
+                )
+            }
+        ),
+        connector_decl_read=_FakeConnectorDeclRead(
+            {
+                "iracing": ConnectorManifest(
+                    service=ConnectorServiceDecl(module="plugins.iracing", class_name="IRacingService")
+                )
+            }
+        ),
+        connector_read=ConnectorRead(connector_services),
+        active_read=_FakeActiveRead(overlay_id),
+        widget_config_read=widget_config,
+        events=EventBus(),
+    )
+
+    record = refresh.refresh()[0]
+
+    assert record.resolved_value == "1.50"
+    assert record.values == {
+        "format": "{:.1f} L",
+        "thresholds": [
+            {
+                "value": 2.0,
+                "color": "#FF4444",
+                "flash": True,
+                "flash_speed": 3,
+                "flash_target": "value",
+            }
+        ],
+    }
+
+
+def test_overlay_widget_files_parse_functional_values(tmp_path) -> None:
+    """Overlay widget TOML should preserve v0.4.0-style format and threshold defaults."""
+
+    plugin_root = tmp_path / "demo_overlay"
+    widgets_dir = plugin_root / "widgets"
+    widgets_dir.mkdir(parents=True)
+    (plugin_root / "manifest.toml").write_text(
+        """
+[plugin]
+id = "demo_overlay"
+type = "overlay"
+
+[overlay]
+connectors = ["iracing"]
+widgets_dir = "widgets"
+""".strip(),
+        encoding="utf-8",
+    )
+    (widgets_dir / "fuel.toml").write_text(
+        """
+[widget]
+id = "fuel"
+widget = "textWidget"
+title = "Fuel"
+description = "Fuel remaining in liters"
+label = "Fuel"
+format = "{:.1f} L"
+
+[bindings]
+source = "vehicle.fuel"
+
+[[thresholds]]
+value = 2.0
+color = "#FF4444"
+flash = true
+flash_speed = 3
+flash_target = "value"
+""".strip(),
+        encoding="utf-8",
+    )
+
+    manifest = load_plugin_manifest(plugin_root / "manifest.toml")
+
+    assert manifest.overlay is not None
+    widget = manifest.overlay.widgets[0]
+    assert widget.values == {
+        "format": "{:.1f} L",
+        "title": "Fuel",
+        "description": "Fuel remaining in liters",
+        "thresholds": [
+            {
+                "value": 2.0,
+                "color": "#FF4444",
+                "flash": True,
+                "flash_speed": 3,
+                "flash_target": "value",
+            }
+        ],
+    }
+
+
+def test_widget_records_refresh_allows_persisted_label_override(tmp_path) -> None:
+    """Widget refresh should let config values override the manifest display label."""
+
+    overlay_id = "demo_overlay"
+    widget_id = "fuel"
+    base_dir = tmp_path / "TinyUi"
+    config_root = base_dir / "config"
+    store = WidgetConfigStore(
+        PersistencePaths(
+            base_dir=base_dir,
+            config_root=config_root,
+            cache_dir=base_dir / "cache",
+            logs_dir=base_dir / "logs",
+            bootstrap_path=base_dir / "bootstrap.toml",
+            config_sets_path=config_root / "config_sets.json",
+        ),
+        "default",
+    )
+    store.set_widget_values(overlay_id, widget_id, {"label": "Fuel Left"})
+    refresh = _widget_records_refresh(
+        store=WidgetRecordsStore(),
+        overlay_read=_FakeOverlayRead(
+            {
+                overlay_id: OverlayManifest(
+                    widgets=[
+                        OverlayWidgetDecl(
+                            id=widget_id,
+                            widget="textWidget",
+                            label="Fuel",
+                            values={"description": "Fuel remaining in liters"},
+                        )
+                    ],
+                )
+            }
+        ),
+        connector_decl_read=_FakeConnectorDeclRead({}),
+        connector_read=ConnectorRead(ConnectorServiceRegistry()),
+        active_read=_FakeActiveRead(overlay_id),
+        widget_config_read=WidgetConfigRead(store),
+        events=EventBus(),
+    )
+
+    record = refresh.refresh()[0]
+
+    assert record.label == "Fuel Left"
+    assert record.values == {
+        "description": "Fuel remaining in liters",
+        "label": "Fuel Left",
+    }
 
 
 def test_widget_records_read_exposes_store_projection(tmp_path) -> None:

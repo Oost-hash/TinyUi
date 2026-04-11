@@ -23,6 +23,7 @@
 
 from __future__ import annotations
 
+from numbers import Real
 from typing import Any
 
 from runtimeV2.contracts import WidgetRecord, WidgetRecordsReader, WidgetStatus
@@ -88,7 +89,7 @@ class WidgetHostCapability:
         """Return widget display text for host surfaces."""
 
         if record.status == WidgetStatus.READY:
-            return record.resolved_value or record.source
+            return _format_display_value(record.resolved_value or record.source, record.values)
         if record.status == WidgetStatus.WAITING_FOR_CONNECTOR:
             return "Waiting for connector"
         if record.status == WidgetStatus.ERROR:
@@ -96,3 +97,32 @@ class WidgetHostCapability:
         if record.status == WidgetStatus.HIDDEN:
             return "Hidden"
         return ""
+
+
+def _format_display_value(value: str, values: dict[str, object] | None) -> str:
+    if not value or values is None:
+        return value
+    raw_format = values.get("format")
+    if not isinstance(raw_format, str) or not raw_format:
+        return value
+    for candidate in (value, _numeric_value(value)):
+        if candidate is None:
+            continue
+        try:
+            return raw_format.format(candidate)
+        except (IndexError, KeyError, TypeError, ValueError):
+            continue
+    return value
+
+
+def _numeric_value(value: object) -> float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, Real):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None

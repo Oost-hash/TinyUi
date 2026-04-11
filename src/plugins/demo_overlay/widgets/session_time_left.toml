@@ -1,6 +1,8 @@
 [widget]
 id = "session_time_left"
 widget = "textWidget"
+title = "Time Left"
+description = "Remaining session time reported by the active connector source."
 label = "Time Left"
 
 [bindings]

@@ -32,8 +32,12 @@ Window {
     x: widgetData && widgetData.x !== undefined ? widgetData.x : 0
     y: widgetData && widgetData.y !== undefined ? widgetData.y : 0
 
-    width: 180
-    height: 72
+    readonly property bool showSource: widgetData
+            && widgetData.values
+            && widgetData.values.showSource === true
+
+    width: 120
+    height: showSource ? 72 : 56
     visible: widgetData && widgetData.visible !== undefined ? widgetData.visible : true
     color: "transparent"
     flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus

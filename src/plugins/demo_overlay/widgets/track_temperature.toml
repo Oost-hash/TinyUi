@@ -1,0 +1,13 @@
+[widget]
+id = "track_temperature"
+widget = "textWidget"
+title = "Track Temperature"
+description = "Current track surface temperature from the active connector source."
+label = "Track Temp"
+
+[bindings]
+source = "track.temperature"
+
+[defaults]
+enabled = true
+position = [420, 260]
