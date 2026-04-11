@@ -1,6 +1,6 @@
 # TinyUi
 
-[![Release](https://img.shields.io/badge/released-0.4.0-green)](https://github.com/Oost-hash/TinyUi/releases/tag/v0.4.0)
+[![Release](https://img.shields.io/badge/released-0.5.6-green)](https://github.com/Oost-hash/TinyUi/releases/tag/v0.5.6)
 [![License](https://img.shields.io/badge/license-GPLv3-green)](LICENSE)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-%23db61a2?logo=github)](https://github.com/sponsors/oost-hash)
 
@@ -65,15 +65,15 @@ For the latest release overview and current direction, see [docs/ROADMAP.md](doc
 | Platform | Status | Notes |
 |----------|--------|-------|
 | Windows 10 / 11 | ✅ Supported | Primary development and test platform |
-| Linux | ⚠️ Will be added in the future | Year of linux desktop is near |
+| Linux | ⚠️ Builds | Untested |
 | macOS | ❌ Not supported | No builds, no hardware to test on |
 
 **Supported games:**
 
-| Game | Connector | Status |
-|------|-----------|--------|
-| Le Mans Ultimate | LMU_RF2_Connector | Not working |
-| rFactor 2 | LMU_RF2_Connector | Not working |
+| Game | Connector | Status | Notes |
+|------|-----------|--------|-------|
+| Le Mans Ultimate | LMU_RF2_Connector | Working | Still needs an update too new api |
+| rFactor 2 | LMU_RF2_Connector | Should work | Untested (I don't own the game) |
 
 ---
 

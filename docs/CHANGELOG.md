@@ -5,7 +5,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-### [0.5.6] Hotfix
+## [0.5.6] Hotfix 2026-04-09
 
 - Dialog windows can be opened again after being closed
 
