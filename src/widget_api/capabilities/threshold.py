@@ -33,6 +33,7 @@ class ThresholdEntry:
 
     value: float
     color: str
+    color_target: str = "value"
     flash: bool = False
     flash_speed: int = 5
     flash_target: str = "value"
@@ -44,6 +45,7 @@ class ThresholdState:
 
     active: bool
     color: str | None = None
+    color_target: str = "value"
     flash: bool = False
     flash_speed: int = 5
     flash_target: str = "value"
@@ -62,6 +64,7 @@ class ThresholdCapability:
                 return ThresholdState(
                     active=True,
                     color=entry.color,
+                    color_target=entry.color_target,
                     flash=entry.flash,
                     flash_speed=entry.flash_speed,
                     flash_target=entry.flash_target,
@@ -105,11 +108,17 @@ def _threshold_entry(raw: dict[str, Any]) -> ThresholdEntry | None:
     except (KeyError, TypeError, ValueError):
         return None
     color = str(raw.get("color", "#E0E0E0"))
+    color_target = str(raw.get("colorTarget", raw.get("color_target", "value")))
     flash_target = str(raw.get("flashTarget", raw.get("flash_target", "value")))
     return ThresholdEntry(
         value=value,
         color=color,
+        color_target=_valid_target(color_target),
         flash=bool(raw.get("flash", False)),
         flash_speed=max(1, int(raw.get("flashSpeed", raw.get("flash_speed", 5)))),
-        flash_target=flash_target if flash_target in ("value", "text", "widget") else "value",
+        flash_target=_valid_target(flash_target),
     )
+
+
+def _valid_target(target: str) -> str:
+    return target if target in ("value", "text", "widget", "border") else "value"

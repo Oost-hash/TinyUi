@@ -178,19 +178,19 @@ def test_widget_records_refresh_marks_ready_when_active_and_connected(tmp_path) 
     )
     base_dir = tmp_path / "TinyUi"
     config_root = base_dir / "config"
-    widget_config = WidgetConfigRead(
-        WidgetConfigStore(
-            PersistencePaths(
-                base_dir=base_dir,
-                config_root=config_root,
-                cache_dir=base_dir / "cache",
-                logs_dir=base_dir / "logs",
-                bootstrap_path=base_dir / "bootstrap.toml",
-                config_sets_path=config_root / "config_sets.json",
-            ),
-            "default",
-        )
+    widget_config_store = WidgetConfigStore(
+        PersistencePaths(
+            base_dir=base_dir,
+            config_root=config_root,
+            cache_dir=base_dir / "cache",
+            logs_dir=base_dir / "logs",
+            bootstrap_path=base_dir / "bootstrap.toml",
+            config_sets_path=config_root / "config_sets.json",
+        ),
+        "default",
     )
+    WidgetConfigWrite(widget_config_store).set_global_widgets_visible(True)
+    widget_config = WidgetConfigRead(widget_config_store)
     store = WidgetRecordsStore()
     refresh = _widget_records_refresh(
         store=store,
@@ -237,19 +237,19 @@ def test_widget_records_refresh_includes_manifest_widget_values(tmp_path) -> Non
     )
     base_dir = tmp_path / "TinyUi"
     config_root = base_dir / "config"
-    widget_config = WidgetConfigRead(
-        WidgetConfigStore(
-            PersistencePaths(
-                base_dir=base_dir,
-                config_root=config_root,
-                cache_dir=base_dir / "cache",
-                logs_dir=base_dir / "logs",
-                bootstrap_path=base_dir / "bootstrap.toml",
-                config_sets_path=config_root / "config_sets.json",
-            ),
-            "default",
-        )
+    widget_config_store = WidgetConfigStore(
+        PersistencePaths(
+            base_dir=base_dir,
+            config_root=config_root,
+            cache_dir=base_dir / "cache",
+            logs_dir=base_dir / "logs",
+            bootstrap_path=base_dir / "bootstrap.toml",
+            config_sets_path=config_root / "config_sets.json",
+        ),
+        "default",
     )
+    WidgetConfigWrite(widget_config_store).set_global_widgets_visible(True)
+    widget_config = WidgetConfigRead(widget_config_store)
     store = WidgetRecordsStore()
     refresh = _widget_records_refresh(
         store=store,
@@ -507,12 +507,11 @@ def test_widget_refresh_policy_refreshes_on_connector_updates_when_visible() -> 
     )
 
     policy.attach()
-    scheduler_write.tick(0)  # First refresh (always when visible)
+    scheduler_write.tick(0)
     scheduler_clock_write.request_clock_mode("tests", "live")
-    scheduler_write.tick(20)  # Second refresh
+    scheduler_write.tick(20)
 
-    # Widgets now refresh always when visible, regardless of clock mode
-    assert calls == ["refresh", "refresh"]
+    assert calls == ["refresh"]
 
 
 def test_widget_refresh_policy_skips_connector_updates_when_hidden() -> None:
@@ -608,19 +607,19 @@ def test_widget_records_refresh_marks_ready_when_connector_is_live_without_overl
     )
     base_dir = tmp_path / "TinyUi"
     config_root = base_dir / "config"
-    widget_config = WidgetConfigRead(
-        WidgetConfigStore(
-            PersistencePaths(
-                base_dir=base_dir,
-                config_root=config_root,
-                cache_dir=base_dir / "cache",
-                logs_dir=base_dir / "logs",
-                bootstrap_path=base_dir / "bootstrap.toml",
-                config_sets_path=config_root / "config_sets.json",
-            ),
-            "default",
-        )
+    widget_config_store = WidgetConfigStore(
+        PersistencePaths(
+            base_dir=base_dir,
+            config_root=config_root,
+            cache_dir=base_dir / "cache",
+            logs_dir=base_dir / "logs",
+            bootstrap_path=base_dir / "bootstrap.toml",
+            config_sets_path=config_root / "config_sets.json",
+        ),
+        "default",
     )
+    WidgetConfigWrite(widget_config_store).set_global_widgets_visible(True)
+    widget_config = WidgetConfigRead(widget_config_store)
     store = WidgetRecordsStore()
     refresh = _widget_records_refresh(
         store=store,
@@ -674,7 +673,7 @@ def test_widget_visibility_capabilities_project_and_persist_visibility(tmp_path)
     manual_override = WidgetManualOverride()
     visibility_write = WidgetVisibilityWrite(config_write, manual_override, bus)
 
-    assert visibility_read.global_visible() is True
+    assert visibility_read.global_visible() is False
     visibility_write.set_global_visible(False)
     assert visibility_read.state().global_visible is False
 

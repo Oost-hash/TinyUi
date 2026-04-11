@@ -85,8 +85,10 @@ class WidgetRefreshPolicy:
     def refresh_if_live_and_visible(self) -> bool:
         """Refresh widgets when the central clock is live and widgets are visible."""
 
-        # Always refresh if widgets are visible, regardless of clock mode
-        # This ensures widgets update during preview mode (mock source)
+        if not self._scheduler_clock_read.clock_running():
+            return False
+        if self._scheduler_clock_read.clock_mode() != "live":
+            return False
         return self.refresh_if_visible()
 
     def refresh_if_visible(self) -> bool:
@@ -109,4 +111,7 @@ class WidgetRefreshPolicy:
         return True
 
     def _on_visibility_event(self, _event: Event) -> None:
-        self.refresh()
+        if not self._visibility_read.global_visible():
+            self.refresh()
+            return
+        self.refresh_if_live_and_visible()

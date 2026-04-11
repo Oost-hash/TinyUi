@@ -44,6 +44,7 @@ from runtimeV2.contracts import (
     WindowRecordsReader,
 )
 from shared_runtime_host.capabilities.ui_api import UIActionsCapability
+from shared_runtime_host.capabilities.ui_api.widget_preview_actions import WidgetPreviewActions
 from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapability
 from shared_runtime_host.capabilities.ui_host import UIHostCapability
 from shared_runtime_host.capabilities.window_host import WindowHostCapability
@@ -106,15 +107,19 @@ def register_ui_actions_host(registry: SharedRuntimeHostRegistry) -> None:
     """Register the shared ui_api action projection."""
 
     runtime = registry.runtime
+    widget_preview_actions = WidgetPreviewActions(
+        manifest_connector_read=runtime.capability("manifest_connector_read", ManifestConnectorReader),
+        connector_write=runtime.capability("connector_write", ConnectorWriter),
+        widget_visibility_read=runtime.capability("widget_visibility_read", WidgetVisibilityReader),
+        widget_visibility_write=runtime.capability("widget_visibility_write", WidgetVisibilityWriter),
+        widget_manual_override=runtime.capability("widget_manual_override", WidgetManualOverrideState),
+    )
+    registry.register_capability("widget_preview_actions", widget_preview_actions)
     registry.register_capability(
         "ui_actions",
         UIActionsCapability(
             window_actions=runtime.capability("window_actions_write", WindowActionsWriter),
-            manifest_connector_read=runtime.capability("manifest_connector_read", ManifestConnectorReader),
-            connector_write=runtime.capability("connector_write", ConnectorWriter),
-            widget_visibility_read=runtime.capability("widget_visibility_read", WidgetVisibilityReader),
-            widget_visibility_write=runtime.capability("widget_visibility_write", WidgetVisibilityWriter),
-            widget_manual_override=runtime.capability("widget_manual_override", WidgetManualOverrideState),
+            widget_preview_actions=widget_preview_actions,
             plugin_discovery=runtime.capability("plugin_discovery", PluginDiscovery),
             plugin_active_write=runtime.capability("plugin_active_write", PluginActiveWriter),
             config_set_read=runtime.capability("config_set_read", ConfigSetReader),

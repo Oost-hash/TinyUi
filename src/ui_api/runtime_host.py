@@ -81,6 +81,7 @@ from shared_runtime_host.capabilities.ui_api import (
     WindowRecordsQmlCapability,
     WidgetConfigReadQmlCapability,
     WidgetConfigWriteQmlCapability,
+    WidgetPreviewActions,
     WidgetRecordsQmlCapability,
     WidgetVisibilityQmlCapability,
 )
@@ -186,6 +187,9 @@ def _normalize_qml_properties(
             discovery.plugin_ids(),
             host_events,
         )
+
+    if "widgetPreviewActions" not in properties and host_registry.has_capability("widget_preview_actions"):
+        properties["widgetPreviewActions"] = host_registry.capability("widget_preview_actions", WidgetPreviewActions)
 
     return properties
 

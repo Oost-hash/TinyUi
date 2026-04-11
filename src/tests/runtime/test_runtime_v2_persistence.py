@@ -169,4 +169,4 @@ def test_widget_config_capabilities_keep_persistence_as_owner(tmp_path) -> None:
     assert config.enabled is False
     assert config.position == (10, 20)
     assert read.widget_values("overlay.main", "speed") == {"units": "kph"}
-    assert read.global_widgets_visible() is True
+    assert read.global_widgets_visible() is False

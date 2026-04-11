@@ -28,21 +28,40 @@ Window {
     property var widgetData: ({})
     property var widgetConfigWrite: null
     property var widgetEffects: null
+    property bool positionInitialized: false
 
-    x: widgetData && widgetData.x !== undefined ? widgetData.x : 0
-    y: widgetData && widgetData.y !== undefined ? widgetData.y : 0
+    function widgetX() {
+        return widgetData && widgetData.x !== undefined ? widgetData.x : 0
+    }
+
+    function widgetY() {
+        return widgetData && widgetData.y !== undefined ? widgetData.y : 0
+    }
+
+    function applyInitialPosition() {
+        if (positionInitialized)
+            return
+        x = widgetX()
+        y = widgetY()
+        positionInitialized = true
+    }
 
     readonly property bool showSource: widgetData
             && widgetData.values
             && widgetData.values.showSource === true
-
     width: 120
     height: showSource ? 72 : 56
     visible: widgetData && widgetData.visible !== undefined ? widgetData.visible : true
     color: "transparent"
-    flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus
+    flags: Qt.Window
+        | Qt.FramelessWindowHint
+        | Qt.WindowStaysOnTopHint
+        | Qt.WindowDoesNotAcceptFocus
     title: widgetData && widgetData.widgetId ? widgetData.widgetId : "widget"
     transientParent: null
+
+    Component.onCompleted: applyInitialPosition()
+    onWidgetDataChanged: applyInitialPosition()
 
     TextWidget {
         anchors.fill: parent
