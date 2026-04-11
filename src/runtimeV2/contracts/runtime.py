@@ -19,30 +19,25 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Capability registration for runtime V2 plugins."""
+"""Public runtime contracts used across domain boundaries."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
-from runtimeV2.contracts import ManifestReader
-from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
-from runtimeV2.plugins.capabilities.icon import PluginIconCapability
-from runtimeV2.plugins.registry import PluginRegistry
+from typing import Protocol, runtime_checkable
 
 
-@dataclass(frozen=True)
-class PluginCapabilities:
-    """Capabilities exposed by the plugins discovery slice."""
+@runtime_checkable
+class RuntimeShutdownController(Protocol):
+    """Public contract for requesting and reading runtime shutdown state."""
 
-    discovery: PluginDiscoveryCapability
-    icon: PluginIconCapability
+    def begin_shutdown(self, reason: str = "app_quit") -> bool:
+        """Request runtime shutdown."""
+        ...
 
+    def shutdown_requested(self) -> bool:
+        """Return whether runtime shutdown has been requested."""
+        ...
 
-def register_plugin_capabilities(registry: PluginRegistry, manifest_read: ManifestReader) -> PluginCapabilities:
-    """Create plugin discovery/read capabilities."""
-
-    return PluginCapabilities(
-        discovery=PluginDiscoveryCapability(registry),
-        icon=PluginIconCapability(registry, manifest_read),
-    )
+    def shutdown_reason(self) -> str:
+        """Return the current runtime shutdown reason."""
+        ...

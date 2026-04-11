@@ -103,3 +103,20 @@ class WindowActionsWriter(Protocol):
     def request_open_window(self, window_id: str) -> bool:
         """Validate an open-window action request."""
         ...
+
+
+@runtime_checkable
+class RenderStatusReader(Protocol):
+    """Public contract for reading UI render readiness."""
+
+    def is_render_ready(self) -> bool:
+        """Return True when UI can render."""
+        ...
+
+    def render_blocker(self) -> str:
+        """Return the render blocker when UI cannot render."""
+        ...
+
+    def main_window_id(self) -> str:
+        """Return the host main window id."""
+        ...

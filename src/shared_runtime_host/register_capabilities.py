@@ -32,17 +32,17 @@ from runtimeV2.contracts import (
     PanelStateWriter,
     PluginActiveWriter,
     PluginDiscovery,
+    RuntimeShutdownController,
     SettingsWriter,
+    SchedulerWriter,
     UIChromeModelReader,
+    WidgetManualOverrideState,
     WidgetRecordsReader,
     WidgetVisibilityReader,
     WidgetVisibilityWriter,
     WindowActionsWriter,
     WindowRecordsReader,
 )
-from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
-from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
-from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from shared_runtime_host.capabilities.ui_api import UIActionsCapability
 from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapability
 from shared_runtime_host.capabilities.ui_host import UIHostCapability
@@ -78,7 +78,7 @@ def register_widget_effects_host(registry: SharedRuntimeHostRegistry) -> None:
     runtime = registry.runtime
     registry.register_capability(
         "widget_effects",
-        WidgetEffectsQmlCapability(runtime.capability("scheduler_write", SchedulerWrite)),
+        WidgetEffectsQmlCapability(runtime.capability("scheduler_write", SchedulerWriter)),
     )
 
 
@@ -114,13 +114,13 @@ def register_ui_actions_host(registry: SharedRuntimeHostRegistry) -> None:
             connector_write=runtime.capability("connector_write", ConnectorWriter),
             widget_visibility_read=runtime.capability("widget_visibility_read", WidgetVisibilityReader),
             widget_visibility_write=runtime.capability("widget_visibility_write", WidgetVisibilityWriter),
-            widget_manual_override=runtime.capability("widget_manual_override", WidgetManualOverride),
+            widget_manual_override=runtime.capability("widget_manual_override", WidgetManualOverrideState),
             plugin_discovery=runtime.capability("plugin_discovery", PluginDiscovery),
             plugin_active_write=runtime.capability("plugin_active_write", PluginActiveWriter),
             config_set_read=runtime.capability("config_set_read", ConfigSetReader),
             config_set_write=runtime.capability("config_set_write", ConfigSetWriter),
             settings_write=runtime.capability("settings_write", SettingsWriter),
             panel_state_write=runtime.capability("panel_state_write", PanelStateWriter),
-            shutdown=runtime.capability("shutdown", RuntimeShutdown),
+            shutdown=runtime.capability("shutdown", RuntimeShutdownController),
         ),
     )

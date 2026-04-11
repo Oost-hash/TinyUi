@@ -77,3 +77,20 @@ class WidgetVisibilityWriter(Protocol):
     def set_widget_enabled(self, overlay_id: str, widget_id: str, enabled: bool) -> bool:
         """Set one widget enabled state."""
         ...
+
+
+@runtime_checkable
+class WidgetManualOverrideState(Protocol):
+    """Public contract for widget manual override state."""
+
+    def is_manually_enabled(self) -> bool:
+        """Return whether the user manually enabled widgets."""
+        ...
+
+    def set_manually_enabled(self, enabled: bool) -> None:
+        """Set whether the user manually enabled widgets."""
+        ...
+
+    def can_connector_hide_widgets(self) -> bool:
+        """Return whether connectors can hide widgets."""
+        ...

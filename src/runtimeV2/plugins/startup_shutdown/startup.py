@@ -26,10 +26,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from runtimeV2.connectors.startup_shutdown.startup import ConnectorsStartupResult
+from runtimeV2.contracts import ManifestLoader, ManifestReader
 from runtimeV2.events.contracts import Event, EventType
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
-from runtimeV2.manifest.capabilities.load import ManifestLoad
-from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.paths.startup_shutdown.startup import PathsStartupResult
 from runtimeV2.persistence.startup_shutdown.startup import PersistenceStartupResult
 from runtimeV2.plugins.activation import PluginActivationStore
@@ -65,8 +64,8 @@ def startup_plugins(runtime: RuntimeV2) -> StartupResult:
         events_result = runtime.domain_result("events", EventsStartupResult)
         register_plugin_events(events_result.registry)
 
-        manifest_load = runtime.capability("manifest_load", ManifestLoad)
-        manifest_read = runtime.capability("manifest_read", ManifestRead)
+        manifest_load = runtime.capability("manifest_load", ManifestLoader)
+        manifest_read = runtime.capability("manifest_read", ManifestReader)
         registry = discover_plugins(paths_result.runtime_paths, manifest_load)
         capabilities = register_plugin_capabilities(registry, manifest_read)
         runtime.register_capability("plugin_discovery", capabilities.discovery)
@@ -99,7 +98,7 @@ def startup_plugins_lifecycle(runtime: RuntimeV2) -> StartupResult:
         )
         lifecycle = PluginLifecycleStore(
             registry=plugins.registry,
-            manifest_read=runtime.capability("manifest_read", ManifestRead),
+            manifest_read=runtime.capability("manifest_read", ManifestReader),
             connectors=connectors,
             events=events,
             activation=activation,
@@ -111,7 +110,7 @@ def startup_plugins_lifecycle(runtime: RuntimeV2) -> StartupResult:
         runtime.register_capability("plugin_state_write", lifecycle_capabilities.state_write)
         register_plugin_globals(runtime)
         initial_active_plugin = _initial_active_plugin_id(
-            manifest_read=runtime.capability("manifest_read", ManifestRead),
+            manifest_read=runtime.capability("manifest_read", ManifestReader),
             persistence=persistence,
         )
         if initial_active_plugin is not None:
@@ -129,7 +128,7 @@ def startup_plugins_lifecycle(runtime: RuntimeV2) -> StartupResult:
 
 def _initial_active_plugin_id(
     *,
-    manifest_read: ManifestRead,
+    manifest_read: ManifestReader,
     persistence: PersistenceStartupResult,
 ) -> str | None:
     """Return the first enabled plugin or overlay to activate at boot."""

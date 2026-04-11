@@ -27,7 +27,6 @@ from collections.abc import Callable
 
 from ui_api.api.app_actions import AppActions
 
-from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.contracts import (
     ConfigSetReader,
     ConfigSetWriter,
@@ -36,12 +35,13 @@ from runtimeV2.contracts import (
     PanelStateWriter,
     PluginActiveWriter,
     PluginDiscovery,
+    RuntimeShutdownController,
     SettingsWriter,
+    WidgetManualOverrideState,
     WidgetVisibilityReader,
     WidgetVisibilityWriter,
     WindowActionsWriter,
 )
-from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 
 class UIActionsCapability:
     """Register ui_api host actions from runtime-owned capabilities."""
@@ -54,14 +54,14 @@ class UIActionsCapability:
         connector_write: ConnectorWriter,
         widget_visibility_read: WidgetVisibilityReader,
         widget_visibility_write: WidgetVisibilityWriter,
-        widget_manual_override: WidgetManualOverride,
+        widget_manual_override: WidgetManualOverrideState,
         plugin_discovery: PluginDiscovery,
         plugin_active_write: PluginActiveWriter,
         config_set_read: ConfigSetReader,
         config_set_write: ConfigSetWriter,
         settings_write: SettingsWriter,
         panel_state_write: PanelStateWriter,
-        shutdown: RuntimeShutdown,
+        shutdown: RuntimeShutdownController,
     ) -> None:
         self._window_actions = window_actions
         self._manifest_connector_read = manifest_connector_read

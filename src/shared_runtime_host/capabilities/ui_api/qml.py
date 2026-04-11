@@ -43,6 +43,7 @@ from runtimeV2.contracts import (
     PluginActiveWriter,
     PluginIconResolver,
     PluginStateReader,
+    RenderStatusReader,
     SettingsReader,
     SettingsWriter,
     WidgetConfigReader,
@@ -50,7 +51,6 @@ from runtimeV2.contracts import (
     WidgetVisibilityReader,
     WidgetVisibilityWriter,
 )
-from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
 _QVARIANT_LIST: Any = "QVariantList"
 _QVARIANT_MAP: Any = "QVariantMap"
 
@@ -299,7 +299,7 @@ class WidgetConfigWriteQmlCapability(QObject):
 class RenderStatusQmlCapability(QObject):
     """Expose UI render status to QML."""
 
-    def __init__(self, render_status_read: RenderStatusRead, parent: QObject | None = None) -> None:
+    def __init__(self, render_status_read: RenderStatusReader, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._render_status_read = render_status_read
 

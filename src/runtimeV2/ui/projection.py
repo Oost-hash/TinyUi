@@ -23,8 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.host.capabilities.main_window_read import MainWindowRead
-from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
+from runtimeV2.contracts import MainWindowReader, ManifestUiReader
 from runtimeV2.ui.contracts import UIWindowRecord, UIWindowStatus
 
 
@@ -38,8 +37,8 @@ def _window_render_target(window_role: str, surface: str, chrome_surface: str) -
 
 def project_ui_window_records(
     *,
-    ui_manifest_read: ManifestUiRead,
-    main_window_read: MainWindowRead,
+    ui_manifest_read: ManifestUiReader,
+    main_window_read: MainWindowReader,
 ) -> list[UIWindowRecord]:
     """Project plugin-declared windows into runtime V2 UI records."""
 

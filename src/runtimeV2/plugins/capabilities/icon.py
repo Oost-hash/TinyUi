@@ -23,14 +23,14 @@
 
 from __future__ import annotations
 
-from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
+from runtimeV2.contracts import ManifestReader
 from runtimeV2.plugins.registry import PluginRegistry
 
 
 class PluginIconCapability:
     """Resolve plugin icon file URLs."""
 
-    def __init__(self, registry: PluginRegistry, manifest_read: ManifestRead) -> None:
+    def __init__(self, registry: PluginRegistry, manifest_read: ManifestReader) -> None:
         self._registry = registry
         self._manifest_read = manifest_read
 

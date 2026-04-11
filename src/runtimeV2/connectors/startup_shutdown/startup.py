@@ -36,14 +36,16 @@ from runtimeV2.connectors.startup_shutdown.register_globals import register_conn
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
-from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
-from runtimeV2.persistence.capabilities.settings_read import SettingsRead
+from runtimeV2.contracts import (
+    ManifestConnectorReader,
+    SchedulerClockWriter,
+    SchedulerWriter,
+    SettingsReader,
+    WidgetManualOverrideState,
+    WidgetVisibilityWriter,
+)
 from runtimeV2.runtime import RuntimeV2
-from runtimeV2.contracts.widgets import WidgetVisibilityWriter
-from runtimeV2.scheduler.capabilities.scheduler_clock_write import SchedulerClockWrite
-from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
-from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 
 
 @dataclass(frozen=True)
@@ -64,7 +66,7 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
         register_connector_events(events.registry)
         declarations = runtime.capability(
             "manifest_connector_read",
-            ManifestConnectorRead,
+            ManifestConnectorReader,
         ).connector_declarations()
         registry = ConnectorServiceRegistry()
         register_declared_connector_services(
@@ -73,9 +75,9 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
             events=events.bus,
         )
         poller = ConnectorServicePoller(registry, events.bus)
-        scheduler_write = runtime.capability("scheduler_write", SchedulerWrite)
-        scheduler_clock_write = runtime.capability("scheduler_clock_write", SchedulerClockWrite)
-        settings_read = runtime.capability("settings_read", SettingsRead)
+        scheduler_write = runtime.capability("scheduler_write", SchedulerWriter)
+        scheduler_clock_write = runtime.capability("scheduler_clock_write", SchedulerClockWriter)
+        settings_read = runtime.capability("settings_read", SettingsReader)
         interval_value = settings_read.get("tinyui", "connector_poll_interval_ms")
         interval_ms = int(interval_value) if isinstance(interval_value, int) else 20
         widget_visibility_write_candidate = runtime.try_capability("widget_visibility_write")
@@ -87,7 +89,7 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
         )
         widget_manual_override = (
             widget_manual_override_candidate
-            if isinstance(widget_manual_override_candidate, WidgetManualOverride)
+            if isinstance(widget_manual_override_candidate, WidgetManualOverrideState)
             else None
         )
         capabilities = register_connector_capabilities(

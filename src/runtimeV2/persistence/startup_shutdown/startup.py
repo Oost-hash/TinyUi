@@ -26,7 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
-from runtimeV2.host.capabilities.app_identity_read import AppIdentityRead
+from runtimeV2.contracts import AppIdentityReader, ManifestSettingsReader
 from runtimeV2.persistence.config_sets import ConfigSetCatalog
 from runtimeV2.persistence.contracts import PersistencePaths
 from runtimeV2.persistence.paths import resolve_persistence_paths
@@ -38,7 +38,6 @@ from runtimeV2.persistence.startup_shutdown.register_paths import register_persi
 from runtimeV2.persistence.startup_shutdown.register_settings import register_settings_specs
 from runtimeV2.persistence.settings import SettingsStore
 from runtimeV2.persistence.widget_config import WidgetConfigStore
-from runtimeV2.manifest.capabilities.settings_read import ManifestSettingsRead
 from runtimeV2.runtime import RuntimeV2
 
 
@@ -57,8 +56,8 @@ def startup_persistence(runtime: RuntimeV2) -> StartupResult:
     """Start runtime V2 persistence."""
 
     try:
-        identity_read = runtime.capability("app_identity_read", AppIdentityRead)
-        settings_spec_read = runtime.capability("manifest_settings_read", ManifestSettingsRead)
+        identity_read = runtime.capability("app_identity_read", AppIdentityReader)
+        settings_spec_read = runtime.capability("manifest_settings_read", ManifestSettingsReader)
         paths = register_persistence_paths(resolve_persistence_paths(identity_read))
         catalog = ConfigSetCatalog(paths)
         active_set = catalog.active_set().id

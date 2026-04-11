@@ -27,11 +27,9 @@ import time
 
 from PySide6.QtCore import Qt, QTimer
 
-from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
-from runtimeV2.contracts import EventType, SchedulerClockReader
+from runtimeV2.contracts import EventType, RuntimeShutdownController, SchedulerClockReader, SchedulerWriter
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.runtime import RuntimeV2
-from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 
 
 class QmlRuntimeSchedulerDriver:
@@ -62,11 +60,11 @@ class QmlRuntimeSchedulerDriver:
         self._timer.stop()
 
     def _on_timeout(self) -> None:
-        shutdown = self._runtime.capability("shutdown", RuntimeShutdown)
+        shutdown = self._runtime.capability("shutdown", RuntimeShutdownController)
         if shutdown.shutdown_requested():
             self.stop()
             return
-        self._runtime.capability("scheduler_write", SchedulerWrite).tick(_monotonic_ms())
+        self._runtime.capability("scheduler_write", SchedulerWriter).tick(_monotonic_ms())
         self._retime()
 
     def _on_runtime_shutdown(self, _event) -> None:

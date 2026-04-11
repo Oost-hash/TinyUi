@@ -51,6 +51,7 @@ from runtimeV2.contracts import (
     PluginIconResolver,
     PluginStateReader,
     PluginStateWriter,
+    RenderStatusReader,
     SettingsReader,
     SettingsWriter,
     UIChromeModelReader,
@@ -64,7 +65,6 @@ from runtimeV2.contracts import (
 )
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.runtime import RuntimeV2
-from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
 from runtimeV2.ui.startup_shutdown.startup import UIStartupResult
 from shared_runtime_host.capabilities.ui_api import (
     ConnectorReadQmlCapability,
@@ -108,7 +108,7 @@ _QML_CAPABILITY_TYPES: dict[str, type[Any]] = {
     "window_records_read": WindowRecordsReader,
     "panel_state_read": PanelStateReader,
     "window_actions_write": WindowActionsWriter,
-    "render_status_read": RenderStatusRead,
+    "render_status_read": RenderStatusReader,
     "ui_chrome_model_read": UIChromeModelReader,
 }
 
@@ -260,7 +260,7 @@ def _adapt_qml_property(
             host_events,
         )
     if capability_name == "render_status_read":
-        return RenderStatusQmlCapability(cast(RenderStatusRead, capability))
+        return RenderStatusQmlCapability(cast(RenderStatusReader, capability))
     return capability
 
 
@@ -393,4 +393,3 @@ def _resolve_plugin_panel(engine, runtime: RuntimeV2) -> tuple[str, QQmlComponen
 
     panel_url = QUrl.fromLocalFile(str(panel_path))
     return panel_url.toString(), QQmlComponent(engine, panel_url)
-

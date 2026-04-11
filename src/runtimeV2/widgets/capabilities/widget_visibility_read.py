@@ -23,14 +23,14 @@
 
 from __future__ import annotations
 
-from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
+from runtimeV2.contracts import WidgetConfigReader
 from runtimeV2.widgets.contracts import WidgetVisibilityState
 
 
 class WidgetVisibilityRead:
     """Read widget visibility state owned by the widgets domain."""
 
-    def __init__(self, widget_config_read: WidgetConfigRead) -> None:
+    def __init__(self, widget_config_read: WidgetConfigReader) -> None:
         self._widget_config_read = widget_config_read
 
     def state(self) -> WidgetVisibilityState:

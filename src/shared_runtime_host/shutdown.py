@@ -25,8 +25,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
-from runtimeV2.contracts import EventType
+from runtimeV2.contracts import EventType, RuntimeShutdownController
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.runtime import RuntimeV2
 
@@ -58,7 +57,7 @@ class QmlRuntimeHostShutdown:
         self.close_host()
 
     def _on_app_about_to_quit(self) -> None:
-        shutdown = self._runtime.capability("shutdown", RuntimeShutdown)
+        shutdown = self._runtime.capability("shutdown", RuntimeShutdownController)
         shutdown.begin_shutdown("app_quit")
         self.close_host()
 

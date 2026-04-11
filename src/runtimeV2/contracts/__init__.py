@@ -87,7 +87,8 @@ from runtimeV2.contracts.plugins import (
     PluginStateWriter,
 )
 from runtimeV2.contracts.plugins_types import PluginContext
-from runtimeV2.contracts.scheduler import SchedulerClockReader
+from runtimeV2.contracts.runtime import RuntimeShutdownController
+from runtimeV2.contracts.scheduler import SchedulerClockReader, SchedulerClockWriter, SchedulerWriter
 from runtimeV2.contracts.scheduler_types import (
     ScheduledJobRecord,
     SchedulerClockMode,
@@ -101,6 +102,7 @@ from runtimeV2.contracts.ui import (
     UIChromeModelReader,
     PanelStateReader,
     PanelStateWriter,
+    RenderStatusReader,
     WindowActionsWriter,
     WindowRecordsReader,
 )
@@ -117,6 +119,7 @@ from runtimeV2.contracts.ui_types import (
     UIWindowStatus,
 )
 from runtimeV2.contracts.widgets import (
+    WidgetManualOverrideState,
     WidgetRecordsReader,
     WidgetVisibilityReader,
     WidgetVisibilityWriter,
@@ -191,8 +194,12 @@ __all__ = [
     "PluginIconResolver",
     # Plugins (types)
     "PluginContext",
+    # Runtime (capabilities)
+    "RuntimeShutdownController",
     # Scheduler (capabilities)
     "SchedulerClockReader",
+    "SchedulerClockWriter",
+    "SchedulerWriter",
     # Scheduler (types)
     "ScheduledJobRecord",
     "SchedulerClockMode",
@@ -205,6 +212,7 @@ __all__ = [
     "UIChromeModelReader",
     "PanelStateReader",
     "PanelStateWriter",
+    "RenderStatusReader",
     "WindowActionsWriter",
     "WindowRecordsReader",
     # UI (types)
@@ -219,6 +227,7 @@ __all__ = [
     "UIWindowRecordsChangedData",
     "UIWindowStatus",
     # Widgets (capabilities)
+    "WidgetManualOverrideState",
     "WidgetRecordsReader",
     "WidgetVisibilityReader",
     "WidgetVisibilityWriter",

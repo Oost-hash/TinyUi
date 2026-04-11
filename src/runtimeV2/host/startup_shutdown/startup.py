@@ -26,10 +26,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
+from runtimeV2.contracts import ManifestReader
 from runtimeV2.host.contracts import HostShell
 from runtimeV2.host.policy import build_host_shell
 from runtimeV2.host.startup_shutdown.register_capabilities import HostCapabilities, register_host_capabilities
-from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.runtime import RuntimeV2
 
 
@@ -45,7 +45,7 @@ def startup_host(runtime: RuntimeV2) -> StartupResult:
     """Start the host domain from plugin read models."""
 
     try:
-        manifest_read = runtime.capability("manifest_read", ManifestRead)
+        manifest_read = runtime.capability("manifest_read", ManifestReader)
         host_shell = build_host_shell(manifest_read.all_manifests())
         capabilities = register_host_capabilities(host_shell)
         runtime.register_capability("app_identity_read", capabilities.app_identity_read)

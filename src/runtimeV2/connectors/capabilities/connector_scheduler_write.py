@@ -27,8 +27,7 @@ from runtimeV2.connectors.capabilities.connector_game_detector_write import Conn
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.plugin_handoff import ConnectorGameStateHookDispatcher
 from runtimeV2.connectors.poller import ConnectorServicePoller
-from runtimeV2.scheduler.capabilities.scheduler_clock_write import SchedulerClockWrite
-from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
+from runtimeV2.contracts import SchedulerClockWriter, SchedulerWriter
 
 
 class ConnectorSchedulerWrite:
@@ -40,8 +39,8 @@ class ConnectorSchedulerWrite:
     def __init__(
         self,
         connector_read: ConnectorRead,
-        scheduler_write: SchedulerWrite,
-        scheduler_clock_write: SchedulerClockWrite,
+        scheduler_write: SchedulerWriter,
+        scheduler_clock_write: SchedulerClockWriter,
         poller: ConnectorServicePoller,
         game_detector_write: ConnectorGameDetectorWrite,
         plugin_handoff: ConnectorGameStateHookDispatcher | None = None,

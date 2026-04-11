@@ -27,12 +27,12 @@ import os
 import sys
 from pathlib import Path
 
-from runtimeV2.host.capabilities.app_identity_read import AppIdentityRead
+from runtimeV2.contracts import AppIdentityReader
 from runtimeV2.persistence.bootstrap import load_bootstrap
 from runtimeV2.persistence.contracts import PersistencePaths
 
 
-def resolve_persistence_paths(identity_read: AppIdentityRead) -> PersistencePaths:
+def resolve_persistence_paths(identity_read: AppIdentityReader) -> PersistencePaths:
     """Resolve persistence paths from host identity and bootstrap."""
 
     base_dir = _os_config_dir(identity_read.app_id())

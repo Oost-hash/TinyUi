@@ -28,12 +28,12 @@ from dataclasses import dataclass
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.events.contracts import Event, EventType
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
-from runtimeV2.host.capabilities.main_window_read import MainWindowRead
-from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
-from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.ui.chrome_model import build_ui_chrome_model
 from runtimeV2.contracts import (
+    MainWindowReader,
+    ManifestUiReader,
+    PluginActiveReader,
     QmlPropertyPlan,
     UIChromeModel,
     UIRenderStatus,
@@ -66,9 +66,9 @@ def startup_ui(runtime: RuntimeV2) -> StartupResult:
     try:
         events = runtime.domain_result("events", EventsStartupResult)
         register_ui_events(events.registry)
-        main_window_read = runtime.capability("main_window_read", MainWindowRead)
+        main_window_read = runtime.capability("main_window_read", MainWindowReader)
         records = project_ui_window_records(
-            ui_manifest_read=runtime.capability("manifest_ui_read", ManifestUiRead),
+            ui_manifest_read=runtime.capability("manifest_ui_read", ManifestUiReader),
             main_window_read=main_window_read,
         )
         render_status = determine_render_status(
@@ -78,8 +78,8 @@ def startup_ui(runtime: RuntimeV2) -> StartupResult:
         globals_capability = runtime.capability("globals", RuntimeGlobals)
         chrome_model = build_ui_chrome_model(
             main_window_read=main_window_read,
-            ui_manifest_read=runtime.capability("manifest_ui_read", ManifestUiRead),
-            active_read=globals_capability.read_global("active_plugin", PluginActiveRead),
+            ui_manifest_read=runtime.capability("manifest_ui_read", ManifestUiReader),
+            active_read=globals_capability.read_global("active_plugin", PluginActiveReader),
         )
         panel_state = UIPanelStateStore(events)
         qml_property_plan = register_qml_property_plan()

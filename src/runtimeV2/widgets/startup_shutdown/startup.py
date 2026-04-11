@@ -27,15 +27,17 @@ from dataclasses import dataclass
 
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
-from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
-from runtimeV2.contracts.scheduler import SchedulerClockReader
+from runtimeV2.contracts import (
+    ConnectorReader,
+    ManifestConnectorReader,
+    ManifestOverlayReader,
+    PluginActiveReader,
+    SchedulerClockReader,
+    SchedulerWriter,
+    WidgetConfigReader,
+    WidgetConfigWriter,
+)
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
-from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
-from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
-from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
-from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
-from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
-from runtimeV2.manifest.capabilities.overlay_read import ManifestOverlayRead
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.widgets.contracts import WidgetRecord
 from runtimeV2.widgets.startup_shutdown.register_events import register_widget_events
@@ -59,14 +61,14 @@ def startup_widgets(runtime: RuntimeV2) -> StartupResult:
     try:
         events = runtime.domain_result("events", EventsStartupResult)
         register_widget_events(events.registry)
-        overlay_read = runtime.capability("manifest_overlay_read", ManifestOverlayRead)
-        connector_decl_read = runtime.capability("manifest_connector_read", ManifestConnectorRead)
+        overlay_read = runtime.capability("manifest_overlay_read", ManifestOverlayReader)
+        connector_decl_read = runtime.capability("manifest_connector_read", ManifestConnectorReader)
         globals_capability = runtime.capability("globals", RuntimeGlobals)
-        connector_read = globals_capability.read_global("connector_runtime", ConnectorRead)
-        active_read = runtime.capability("plugin_active_read", PluginActiveRead)
-        widget_config_read = runtime.capability("widget_config_read", WidgetConfigRead)
-        widget_config_write = runtime.capability("widget_config_write", WidgetConfigWrite)
-        scheduler_write = runtime.capability("scheduler_write", SchedulerWrite)
+        connector_read = globals_capability.read_global("connector_runtime", ConnectorReader)
+        active_read = runtime.capability("plugin_active_read", PluginActiveReader)
+        widget_config_read = runtime.capability("widget_config_read", WidgetConfigReader)
+        widget_config_write = runtime.capability("widget_config_write", WidgetConfigWriter)
+        scheduler_write = runtime.capability("scheduler_write", SchedulerWriter)
         scheduler_clock_read = runtime.capability("scheduler_clock_read", SchedulerClockReader)
         store = WidgetRecordsStore()
         capabilities = register_widget_capabilities(

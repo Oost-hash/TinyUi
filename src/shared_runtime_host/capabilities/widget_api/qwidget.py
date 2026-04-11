@@ -28,9 +28,7 @@ from typing import Any
 from PySide6.QtCore import QObject, Signal, Slot
 
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
-from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
-from runtimeV2.contracts import WidgetRecord
-from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
+from runtimeV2.contracts import SchedulerWriter, WidgetConfigWriter, WidgetRecord
 from widget_api.capabilities import FlashCapability, ThresholdCapability
 from widget_api.capabilities.threshold import numeric_value, threshold_entries
 
@@ -38,7 +36,7 @@ from widget_api.capabilities.threshold import numeric_value, threshold_entries
 class WidgetConfigWriteQmlCapability(QObject):
     """Expose widget config writes in the shape QML expects."""
 
-    def __init__(self, widget_config_write: WidgetConfigWrite, parent: QObject | None = None) -> None:
+    def __init__(self, widget_config_write: WidgetConfigWriter, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._widget_config_write = widget_config_write
 
@@ -74,7 +72,7 @@ class WidgetEffectsQmlCapability(QObject):
 
     def __init__(
         self,
-        scheduler_write: SchedulerWrite,
+        scheduler_write: SchedulerWriter,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)

@@ -28,12 +28,12 @@ import sys
 from pathlib import Path
 
 from pkg_runtime_host import is_packaged_plugin_dir, mount_packaged_plugin
-from runtimeV2.manifest.capabilities.load import ManifestLoad
+from runtimeV2.contracts import ManifestLoader
 from runtimeV2.paths.contracts import RuntimePaths
 from runtimeV2.plugins.registry import PluginRegistry
 
 
-def discover_plugins(runtime_paths: RuntimePaths, manifest_load: ManifestLoad) -> PluginRegistry:
+def discover_plugins(runtime_paths: RuntimePaths, manifest_load: ManifestLoader) -> PluginRegistry:
     """Discover host and source plugins into a registry."""
 
     registry = PluginRegistry()
@@ -43,7 +43,7 @@ def discover_plugins(runtime_paths: RuntimePaths, manifest_load: ManifestLoad) -
     return registry
 
 
-def _load_host_plugin(registry: PluginRegistry, runtime_paths: RuntimePaths, manifest_load: ManifestLoad) -> None:
+def _load_host_plugin(registry: PluginRegistry, runtime_paths: RuntimePaths, manifest_load: ManifestLoader) -> None:
     manifest_path = runtime_paths.host_dir / "manifest.toml"
     if not manifest_path.exists():
         raise RuntimeError(f"Host plugin manifest not found: {manifest_path}")
@@ -57,7 +57,7 @@ def _load_host_plugin(registry: PluginRegistry, runtime_paths: RuntimePaths, man
     registry.register_import_root(runtime_paths.host_dir.parent.parent)
 
 
-def _load_external_plugins(registry: PluginRegistry, runtime_paths: RuntimePaths, manifest_load: ManifestLoad) -> None:
+def _load_external_plugins(registry: PluginRegistry, runtime_paths: RuntimePaths, manifest_load: ManifestLoader) -> None:
     if not runtime_paths.plugins_dir.exists():
         return
 
@@ -69,7 +69,7 @@ def _load_external_plugins(registry: PluginRegistry, runtime_paths: RuntimePaths
         _load_external_plugin(registry, plugin_dir, manifest_load)
 
 
-def _load_external_plugin(registry: PluginRegistry, plugin_dir: Path, manifest_load: ManifestLoad) -> None:
+def _load_external_plugin(registry: PluginRegistry, plugin_dir: Path, manifest_load: ManifestLoader) -> None:
     raw_manifest = plugin_dir / "manifest.toml"
     if raw_manifest.exists():
         manifest = manifest_load.load_manifest(raw_manifest, resource_root=plugin_dir, source="source")

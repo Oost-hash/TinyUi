@@ -23,6 +23,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Protocol, runtime_checkable
 
 from runtimeV2.scheduler.contracts import SchedulerClockState
@@ -50,4 +51,50 @@ class SchedulerClockReader(Protocol):
 
     def clock_running(self) -> bool:
         """Return whether the central clock should run."""
+        ...
+
+
+@runtime_checkable
+class SchedulerWriter(Protocol):
+    """Public contract for registering and driving scheduler jobs."""
+
+    def register_job(
+        self,
+        *,
+        job_id: str,
+        owner_domain: str,
+        interval_ms: int,
+        callback: Callable[[], object | None],
+        enabled: bool = True,
+    ) -> None:
+        """Register one recurring runtime job."""
+        ...
+
+    def set_enabled(self, job_id: str, enabled: bool) -> bool:
+        """Enable or disable one registered job."""
+        ...
+
+    def set_interval(self, job_id: str, interval_ms: int) -> bool:
+        """Update one registered job interval."""
+        ...
+
+    def tick(self, now_ms: int) -> list[str]:
+        """Run due jobs for the current scheduler tick."""
+        ...
+
+    def stop(self) -> None:
+        """Stop the scheduler driver."""
+        ...
+
+
+@runtime_checkable
+class SchedulerClockWriter(Protocol):
+    """Public contract for controlling the scheduler-owned central clock."""
+
+    def request_clock_mode(self, owner_domain: str, mode: str, *, lock: bool = False) -> bool:
+        """Request a clock mode, optionally locking it for the owner."""
+        ...
+
+    def release_clock_lock(self, owner_domain: str) -> bool:
+        """Release the central clock lock for one owner."""
         ...

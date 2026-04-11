@@ -23,13 +23,13 @@
 
 from __future__ import annotations
 
-from runtimeV2.host.capabilities.main_window_read import MainWindowRead
+from runtimeV2.contracts import MainWindowReader
 from runtimeV2.ui.contracts import UIRenderStatus, UIWindowRecord
 
 
 def determine_render_status(
     *,
-    main_window_read: MainWindowRead,
+    main_window_read: MainWindowReader,
     records: list[UIWindowRecord],
 ) -> UIRenderStatus:
     """Determine whether the UI host layer has enough data to render."""

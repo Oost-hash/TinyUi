@@ -26,12 +26,10 @@ from __future__ import annotations
 import importlib
 from collections.abc import Callable
 
-from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
+from runtimeV2.contracts import ConnectorReader, WidgetManualOverrideState, WidgetVisibilityWriter
 from runtimeV2.connectors.contracts import ConnectorGameStateDecision, ConnectorGameStateUpdate
 from runtimeV2.connectors.decision_store import ConnectorGameStateDecisionStore
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
-from runtimeV2.contracts import WidgetVisibilityWriter
-from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 
 
 class ConnectorGameStateHookDispatcher:
@@ -40,10 +38,10 @@ class ConnectorGameStateHookDispatcher:
     def __init__(
         self,
         declarations: dict[str, ConnectorManifest],
-        connector_read: ConnectorRead,
+        connector_read: ConnectorReader,
         decision_store: ConnectorGameStateDecisionStore,
         widget_visibility_write: WidgetVisibilityWriter | None = None,
-        widget_manual_override: WidgetManualOverride | None = None,
+        widget_manual_override: WidgetManualOverrideState | None = None,
     ) -> None:
         self._declarations = declarations
         self._connector_read = connector_read

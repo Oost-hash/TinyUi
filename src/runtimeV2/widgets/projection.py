@@ -23,21 +23,23 @@
 
 from __future__ import annotations
 
-from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
-from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
-from runtimeV2.manifest.capabilities.overlay_read import ManifestOverlayRead
-from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
-from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
+from runtimeV2.contracts import (
+    ConnectorReader,
+    ManifestConnectorReader,
+    ManifestOverlayReader,
+    PluginActiveReader,
+    WidgetConfigReader,
+)
 from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 
 
 def project_widget_records(
     *,
-    overlay_read: ManifestOverlayRead,
-    connector_decl_read: ManifestConnectorRead,
-    connector_read: ConnectorRead,
-    active_read: PluginActiveRead,
-    widget_config_read: WidgetConfigRead,
+    overlay_read: ManifestOverlayReader,
+    connector_decl_read: ManifestConnectorReader,
+    connector_read: ConnectorReader,
+    active_read: PluginActiveReader,
+    widget_config_read: WidgetConfigReader,
 ) -> list[WidgetRecord]:
     """Project overlay declarations into runtime V2 widget records."""
 
@@ -87,7 +89,7 @@ def _resolve_widget_value(
     *,
     source: str,
     connector_ids: tuple[str, ...],
-    connector_read: ConnectorRead,
+    connector_read: ConnectorReader,
 ) -> str:
     if not source:
         return ""
@@ -103,7 +105,7 @@ def _widget_status(
     active_plugin: str | None,
     overlay_id: str,
     connector_ids: tuple[str, ...],
-    connector_read: ConnectorRead,
+    connector_read: ConnectorReader,
     global_visible: bool,
     enabled: bool,
 ) -> WidgetStatus:
@@ -126,7 +128,7 @@ def _overlay_runtime_active(
     active_plugin: str | None,
     overlay_id: str,
     connector_ids: tuple[str, ...],
-    connector_read: ConnectorRead,
+    connector_read: ConnectorReader,
 ) -> bool:
     if active_plugin == overlay_id:
         return True
