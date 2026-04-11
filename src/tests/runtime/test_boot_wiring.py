@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from runtimeV2.domains import DomainStatus
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
@@ -12,6 +13,7 @@ from runtimeV2.register_capabilities import register_runtime_capabilities
 from runtimeV2.register_domains import register_default_domains
 from runtimeV2.register_globals import register_runtime_globals
 from runtimeV2.runtime import RuntimeV2
+from runtimeV2.schemas.startup import StartupResult
 from runtimeV2.startup import get_runtime_v2_result, startup_runtime_v2
 
 
@@ -92,3 +94,31 @@ def test_startup_runtime_v2_exposes_shutdown_plugin_and_connector_globals() -> N
         "widgets",
         "ui",
     ]
+
+
+def test_startup_runtime_v2_runs_host_hook_after_domains_are_ready() -> None:
+    """The optional host hook should run after runtime domains finished startup."""
+
+    observed_statuses: list[DomainStatus] = []
+
+    def _host_bridge(runtime: RuntimeV2) -> StartupResult:
+        observed_statuses.extend(record.status for record in runtime.domain_records())
+        return StartupResult(ok=True)
+
+    result = startup_runtime_v2(host_bridge_startup=_host_bridge)
+
+    assert result.ok
+    assert observed_statuses
+    assert set(observed_statuses) == {DomainStatus.READY}
+    assert get_runtime_v2_result() is not None
+
+
+def test_startup_runtime_v2_clears_runtime_result_when_host_hook_fails() -> None:
+    """A failed host hook should abort startup without exposing a live runtime result."""
+
+    result = startup_runtime_v2(
+        host_bridge_startup=lambda _runtime: StartupResult(ok=False, error_message="host failed"),
+    )
+
+    assert result == StartupResult(ok=False, error_message="host failed")
+    assert get_runtime_v2_result() is None

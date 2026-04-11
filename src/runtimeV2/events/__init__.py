@@ -22,10 +22,14 @@
 """Runtime V2 events domain."""
 
 from runtimeV2.events.capabilities.event_read import EventRead
-from runtimeV2.events.event_registry import EventContract, EventRegistry
+from runtimeV2.events.capabilities.event_registration_write import EventRegistrationWrite, EventSubscription
+from runtimeV2.events.event_registry import EventContract, EventListenerRegistration, EventRegistry
 
 __all__ = [
     "EventContract",
+    "EventListenerRegistration",
     "EventRead",
+    "EventRegistrationWrite",
+    "EventSubscription",
     "EventRegistry",
 ]

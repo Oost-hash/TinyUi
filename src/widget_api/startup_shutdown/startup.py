@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult
+from shared_runtime_host.registry import SharedRuntimeHostRegistry
 from widget_api.runtime_host import (
     WidgetRuntimeHostResult,
     create_widget_window_host,
@@ -32,10 +33,14 @@ from widget_api.runtime_host import (
 )
 
 
-def startup_widget_api(app, runtime: RuntimeV2) -> tuple[WidgetRuntimeHostResult | None, StartupResult]:
+def startup_widget_api(
+    app,
+    runtime: RuntimeV2,
+    host_registry: SharedRuntimeHostRegistry,
+) -> tuple[WidgetRuntimeHostResult | None, StartupResult]:
     """Start the widget_api runtime host for runtime V2."""
 
-    return start_widget_host(app=app, runtime=runtime)
+    return start_widget_host(app=app, runtime=runtime, host_registry=host_registry)
 
 
 __all__ = [

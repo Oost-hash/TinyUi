@@ -23,6 +23,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from runtimeV2.register_capabilities import register_runtime_capabilities
@@ -45,7 +46,7 @@ class RuntimeV2StartupResult:
 _runtime_v2_result: RuntimeV2StartupResult | None = None
 
 
-def startup_runtime_v2() -> StartupResult:
+def startup_runtime_v2(host_bridge_startup: Callable[[RuntimeV2], StartupResult] | None = None) -> StartupResult:
     """Start the runtime V2 prototype and its first domains."""
 
     global _runtime_v2_result
@@ -78,6 +79,11 @@ def startup_runtime_v2() -> StartupResult:
                     return startup_result
 
         _runtime_v2_result = RuntimeV2StartupResult(runtime=runtime)
+        if host_bridge_startup is not None:
+            startup_result = host_bridge_startup(runtime)
+            if not startup_result.ok:
+                _runtime_v2_result = None
+                return startup_result
         return startup_ok()
     except Exception as exc:
         _runtime_v2_result = None

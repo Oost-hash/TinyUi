@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from runtimeV2.events.capabilities.event_registration_write import EventRegistrationWrite
 from runtimeV2.events.contracts import EventBus
 from runtimeV2.events.capabilities.event_read import EventRead
 from runtimeV2.events.event_registry import EventRegistry
@@ -41,6 +42,7 @@ class EventsStartupResult:
     bus: EventBus
     registry: EventRegistry
     event_read: EventRead
+    event_registration_write: EventRegistrationWrite | None = None
 
 
 def startup_events(runtime: RuntimeV2) -> StartupResult:
@@ -50,9 +52,15 @@ def startup_events(runtime: RuntimeV2) -> StartupResult:
         bus = EventBus()
         registry = EventRegistry()
         register_events_domain_events(registry)
-        event_read = register_event_capabilities(registry)
-        result = EventsStartupResult(bus=bus, registry=registry, event_read=event_read)
-        runtime.register_capability("event_read", event_read)
+        capabilities = register_event_capabilities(registry, bus)
+        result = EventsStartupResult(
+            bus=bus,
+            registry=registry,
+            event_read=capabilities.read,
+            event_registration_write=capabilities.registration_write,
+        )
+        runtime.register_capability("event_read", capabilities.read)
+        runtime.register_capability("event_registration_write", capabilities.registration_write)
         runtime.register_domain_result("events", result)
         return startup_ok()
     except Exception as exc:

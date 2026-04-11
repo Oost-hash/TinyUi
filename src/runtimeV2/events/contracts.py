@@ -54,6 +54,7 @@ class EventType(Enum):
     CONNECTOR_GAME_LOST = auto()
     SCHEDULER_JOB_REGISTERED = auto()
     SCHEDULER_JOB_UPDATED = auto()
+    SCHEDULER_CLOCK_UPDATED = auto()
     SCHEDULER_TICK = auto()
     UI_READY = auto()
     UI_RENDER_BLOCKED = auto()

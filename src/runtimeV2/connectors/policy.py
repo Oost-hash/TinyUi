@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.connectors.contracts import (
+from runtimeV2.contracts import (
     ConnectorServiceRegisteredData,
     ConnectorServiceUnregisteredData,
     ConnectorServiceUpdatedData,

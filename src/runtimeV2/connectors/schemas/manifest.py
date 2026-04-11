@@ -47,6 +47,7 @@ class ConnectorRuntimeDecl:
     """Connector runtime handoff declaration from a plugin manifest."""
 
     game_state_hook: str = ""
+    mock_source: str = ""
 
 
 @dataclass(frozen=True)

@@ -30,7 +30,8 @@ from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.contracts import ConnectorGameStateDecision, ConnectorGameStateUpdate
 from runtimeV2.connectors.decision_store import ConnectorGameStateDecisionStore
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
-from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
+from runtimeV2.contracts import WidgetVisibilityWriter
+from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 
 
 class ConnectorGameStateHookDispatcher:
@@ -41,12 +42,14 @@ class ConnectorGameStateHookDispatcher:
         declarations: dict[str, ConnectorManifest],
         connector_read: ConnectorRead,
         decision_store: ConnectorGameStateDecisionStore,
-        widget_visibility_write: WidgetVisibilityWrite | None = None,
+        widget_visibility_write: WidgetVisibilityWriter | None = None,
+        widget_manual_override: WidgetManualOverride | None = None,
     ) -> None:
         self._declarations = declarations
         self._connector_read = connector_read
         self._decision_store = decision_store
         self._widget_visibility_write = widget_visibility_write
+        self._widget_manual_override = widget_manual_override
 
     def sync_connector(self, connector_id: str) -> bool:
         """Dispatch one connector update when the manifest declares a hook."""
@@ -56,6 +59,9 @@ class ConnectorGameStateHookDispatcher:
             return False
         update = self._build_update(connector_id)
         decision = self._normalize_decision(hook(update))
+        # Override decision for mock source: always show widgets when mock is active
+        if update.active_source == "mock":
+            decision = ConnectorGameStateDecision(show_widgets=True)
         if decision is not None:
             self._decision_store.set(connector_id, decision)
             self._apply_decision(decision)
@@ -72,7 +78,10 @@ class ConnectorGameStateHookDispatcher:
         if self._widget_visibility_write is None:
             return
         if decision.show_widgets is not None:
-            self._widget_visibility_write.set_global_visible(decision.show_widgets)
+            # Use connector-specific method that respects manual override.
+            # Connectors can show widgets (when game is live) but cannot hide
+            # them if the user has manually enabled widgets.
+            self._widget_visibility_write.set_global_visible_from_connector(decision.show_widgets)
 
     def _build_update(self, connector_id: str) -> ConnectorGameStateUpdate:
         active_source = self._connector_read.active_source(connector_id) or "none"

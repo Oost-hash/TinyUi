@@ -19,18 +19,18 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Widget runtime refresh orchestration for runtime V2."""
+"""Widget runtime record refresh capability."""
 
 from __future__ import annotations
 
 from runtimeV2.events.contracts import EventBus, EventType
-from runtimeV2.widgets.contracts import WidgetRuntimeUpdatedData
+from runtimeV2.widgets.contracts import WidgetRecord, WidgetRuntimeUpdatedData
 from runtimeV2.widgets.projection import project_widget_records
 from runtimeV2.widgets.store import WidgetRecordsStore
 
 
-class WidgetRuntimePoller:
-    """Refresh widget runtime records when runtime dependencies change."""
+class WidgetRecordsRefresh:
+    """Refresh projected widget records when runtime dependencies change."""
 
     def __init__(
         self,
@@ -51,7 +51,7 @@ class WidgetRuntimePoller:
         self._widget_config_read = widget_config_read
         self._events = events
 
-    def refresh(self) -> list:
+    def refresh(self) -> list[WidgetRecord]:
         """Refresh and return current widget runtime records."""
 
         records = project_widget_records(

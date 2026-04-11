@@ -38,11 +38,12 @@ from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.persistence.capabilities.settings_read import SettingsRead
-from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.runtime import RuntimeV2
+from runtimeV2.contracts.widgets import WidgetVisibilityWriter
+from runtimeV2.scheduler.capabilities.scheduler_clock_write import SchedulerClockWrite
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
-from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
+from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 
 
 @dataclass(frozen=True)
@@ -73,18 +74,32 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
         )
         poller = ConnectorServicePoller(registry, events.bus)
         scheduler_write = runtime.capability("scheduler_write", SchedulerWrite)
+        scheduler_clock_write = runtime.capability("scheduler_clock_write", SchedulerClockWrite)
         settings_read = runtime.capability("settings_read", SettingsRead)
-        widget_config_write = runtime.capability("widget_config_write", WidgetConfigWrite)
         interval_value = settings_read.get("tinyui", "connector_poll_interval_ms")
         interval_ms = int(interval_value) if isinstance(interval_value, int) else 20
+        widget_visibility_write_candidate = runtime.try_capability("widget_visibility_write")
+        widget_manual_override_candidate = runtime.try_capability("widget_manual_override")
+        widget_visibility_write = (
+            widget_visibility_write_candidate
+            if isinstance(widget_visibility_write_candidate, WidgetVisibilityWriter)
+            else None
+        )
+        widget_manual_override = (
+            widget_manual_override_candidate
+            if isinstance(widget_manual_override_candidate, WidgetManualOverride)
+            else None
+        )
         capabilities = register_connector_capabilities(
             declarations,
             registry,
             poller,
             scheduler_write,
+            scheduler_clock_write,
             interval_ms,
             events.bus,
-            WidgetVisibilityWrite(widget_config_write, events.bus),
+            widget_visibility_write,
+            widget_manual_override,
         )
         runtime.register_capability("connector_read", capabilities.read)
         runtime.register_capability("connector_write", capabilities.write)

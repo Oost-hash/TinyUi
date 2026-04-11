@@ -31,6 +31,7 @@ class = "LMURF2Connector"
 
 [connector_runtime]
 game_state_hook = "update_game_state"
+mock_source = "mock"
 
 [[setting]]
 key = "enabled"

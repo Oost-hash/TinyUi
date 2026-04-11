@@ -28,15 +28,16 @@ from dataclasses import dataclass
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
+from runtimeV2.contracts.scheduler import SchedulerClockReader
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
+from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
 from runtimeV2.manifest.capabilities.overlay_read import ManifestOverlayRead
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.widgets.contracts import WidgetRecord
-from runtimeV2.widgets.poller import WidgetRuntimePoller
 from runtimeV2.widgets.startup_shutdown.register_events import register_widget_events
 from runtimeV2.widgets.startup_shutdown.register_capabilities import WidgetCapabilities, register_widget_capabilities
 from runtimeV2.widgets.startup_shutdown.register_globals import register_widget_globals
@@ -49,7 +50,6 @@ class WidgetsStartupResult:
 
     store: WidgetRecordsStore
     records: list[WidgetRecord]
-    poller: WidgetRuntimePoller
     capabilities: WidgetCapabilities
 
 
@@ -66,31 +66,33 @@ def startup_widgets(runtime: RuntimeV2) -> StartupResult:
         active_read = runtime.capability("plugin_active_read", PluginActiveRead)
         widget_config_read = runtime.capability("widget_config_read", WidgetConfigRead)
         widget_config_write = runtime.capability("widget_config_write", WidgetConfigWrite)
+        scheduler_write = runtime.capability("scheduler_write", SchedulerWrite)
+        scheduler_clock_read = runtime.capability("scheduler_clock_read", SchedulerClockReader)
         store = WidgetRecordsStore()
-        poller = WidgetRuntimePoller(
+        capabilities = register_widget_capabilities(
             store=store,
             overlay_read=overlay_read,
             connector_decl_read=connector_decl_read,
             connector_read=connector_read,
             active_read=active_read,
             widget_config_read=widget_config_read,
-            events=events.bus,
-        )
-        records = poller.refresh()
-        capabilities = register_widget_capabilities(
-            store=store,
-            widget_config_read=widget_config_read,
             widget_config_write=widget_config_write,
+            scheduler_write=scheduler_write,
+            scheduler_clock_read=scheduler_clock_read,
             events=events.bus,
         )
+        records = capabilities.records_refresh.refresh()
         runtime.register_capability("widget_records_read", capabilities.records_read)
+        runtime.register_capability("widget_records_refresh", capabilities.records_refresh)
+        capabilities.refresh_policy.attach()
+        runtime.register_stop_hook("widgets", capabilities.refresh_policy.close)
         runtime.register_capability("widget_visibility_read", capabilities.visibility_read)
         runtime.register_capability("widget_visibility_write", capabilities.visibility_write)
+        runtime.register_capability("widget_manual_override", capabilities.manual_override)
         register_widget_globals(runtime)
         runtime.register_domain_result("widgets", WidgetsStartupResult(
             store=store,
             records=records,
-            poller=poller,
             capabilities=capabilities,
         ))
         return startup_ok()

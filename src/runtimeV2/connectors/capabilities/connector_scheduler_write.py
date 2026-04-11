@@ -27,18 +27,21 @@ from runtimeV2.connectors.capabilities.connector_game_detector_write import Conn
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.plugin_handoff import ConnectorGameStateHookDispatcher
 from runtimeV2.connectors.poller import ConnectorServicePoller
+from runtimeV2.scheduler.capabilities.scheduler_clock_write import SchedulerClockWrite
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 
 
 class ConnectorSchedulerWrite:
     """Switch connector jobs between probe mode and live polling."""
 
+    OWNER_DOMAIN = "connectors"
     PROBE_INTERVAL_MS = 5000
 
     def __init__(
         self,
         connector_read: ConnectorRead,
         scheduler_write: SchedulerWrite,
+        scheduler_clock_write: SchedulerClockWrite,
         poller: ConnectorServicePoller,
         game_detector_write: ConnectorGameDetectorWrite,
         plugin_handoff: ConnectorGameStateHookDispatcher | None = None,
@@ -47,6 +50,7 @@ class ConnectorSchedulerWrite:
     ) -> None:
         self._connector_read = connector_read
         self._scheduler_write = scheduler_write
+        self._scheduler_clock_write = scheduler_clock_write
         self._poller = poller
         self._game_detector_write = game_detector_write
         self._plugin_handoff = plugin_handoff
@@ -57,14 +61,14 @@ class ConnectorSchedulerWrite:
 
         self._scheduler_write.register_job(
             job_id=self._probe_job_id(connector_id),
-            owner_domain="connectors",
+            owner_domain=self.OWNER_DOMAIN,
             interval_ms=self.PROBE_INTERVAL_MS,
             callback=lambda connector_id=connector_id: self._run_probe(connector_id),
             enabled=True,
         )
         self._scheduler_write.register_job(
             job_id=self._live_job_id(connector_id),
-            owner_domain="connectors",
+            owner_domain=self.OWNER_DOMAIN,
             interval_ms=self._live_interval_ms,
             callback=lambda connector_id=connector_id: self._run_live(connector_id),
             enabled=False,
@@ -73,11 +77,14 @@ class ConnectorSchedulerWrite:
     def sync_scheduler_mode(self, connector_id: str) -> None:
         """Sync one connector between probe and live jobs."""
 
+        active_source = self._connector_read.active_source(connector_id) or "none"
+        if active_source == "mock" and self._connector_read.source_requested(connector_id, "mock"):
+            self.enable_preview_mode(connector_id)
+            return
         detected_game = self._connector_read.detected_game(connector_id)
         if detected_game is None:
             self.enable_probe_mode(connector_id)
             return
-        active_source = self._connector_read.active_source(connector_id) or "none"
         if active_source not in {"none", "mock"}:
             self.enable_live_mode(connector_id)
             return
@@ -86,12 +93,24 @@ class ConnectorSchedulerWrite:
     def enable_probe_mode(self, connector_id: str) -> None:
         """Enable probe polling and disable live polling for one connector."""
 
+        self._scheduler_clock_write.release_clock_lock(self.OWNER_DOMAIN)
+        self._scheduler_clock_write.request_clock_mode(self.OWNER_DOMAIN, "idle")
         self._scheduler_write.set_enabled(self._probe_job_id(connector_id), True)
         self._scheduler_write.set_enabled(self._live_job_id(connector_id), False)
 
     def enable_live_mode(self, connector_id: str) -> None:
         """Enable live polling and disable probe polling for one connector."""
 
+        self._scheduler_clock_write.request_clock_mode(self.OWNER_DOMAIN, "live", lock=True)
+        self._scheduler_write.set_enabled(self._probe_job_id(connector_id), False)
+        self._scheduler_write.set_enabled(self._live_job_id(connector_id), True)
+
+    def enable_preview_mode(self, connector_id: str) -> None:
+        """Enable live polling without locking the central scheduler clock."""
+
+        accepted = self._scheduler_clock_write.request_clock_mode(self.OWNER_DOMAIN, "live", lock=False)
+        if not accepted:
+            return
         self._scheduler_write.set_enabled(self._probe_job_id(connector_id), False)
         self._scheduler_write.set_enabled(self._live_job_id(connector_id), True)
 
@@ -99,6 +118,10 @@ class ConnectorSchedulerWrite:
         detected = self._game_detector_write.sync(connector_id)
         if detected is None:
             self.sync_scheduler_mode(connector_id)
+            # For mock source, we still need to sync plugin handoff to show widgets
+            active_source = self._connector_read.active_source(connector_id)
+            if active_source == "mock":
+                self._sync_plugin_handoff(connector_id)
             return
         self._poller.update_one(connector_id)
         self._sync_plugin_handoff(connector_id)
@@ -106,7 +129,9 @@ class ConnectorSchedulerWrite:
 
     def _run_live(self, connector_id: str) -> None:
         detected = self._game_detector_write.sync(connector_id)
-        if detected is None:
+        # Check if mock source is active - if so, skip game detection and keep widgets visible
+        active_source = self._connector_read.active_source(connector_id)
+        if detected is None and active_source != "mock":
             self._apply_no_game(connector_id)
             self.sync_scheduler_mode(connector_id)
             return

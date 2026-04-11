@@ -27,6 +27,7 @@ from dataclasses import dataclass
 
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.runtime import RuntimeV2
+from runtimeV2.scheduler.clock import SchedulerClock
 from runtimeV2.scheduler.driver import SchedulerDriver
 from runtimeV2.scheduler.registry import SchedulerRegistry
 from runtimeV2.scheduler.startup_shutdown.register_capabilities import (
@@ -43,6 +44,7 @@ class SchedulerStartupResult:
 
     registry: SchedulerRegistry
     driver: SchedulerDriver
+    clock: SchedulerClock
     capabilities: SchedulerCapabilities
 
 
@@ -54,15 +56,19 @@ def startup_scheduler(runtime: RuntimeV2) -> StartupResult:
         register_scheduler_events(events.registry)
         registry = SchedulerRegistry()
         driver = SchedulerDriver(registry, events.bus)
-        capabilities = register_scheduler_capabilities(registry, driver, events.bus)
+        clock = SchedulerClock()
+        capabilities = register_scheduler_capabilities(registry, driver, clock, events.bus)
         runtime.register_capability("scheduler_read", capabilities.read)
         runtime.register_capability("scheduler_write", capabilities.write)
+        runtime.register_capability("scheduler_clock_read", capabilities.clock_read)
+        runtime.register_capability("scheduler_clock_write", capabilities.clock_write)
         runtime.register_stop_hook("scheduler", capabilities.write.stop)
         runtime.register_domain_result(
             "scheduler",
             SchedulerStartupResult(
                 registry=registry,
                 driver=driver,
+                clock=clock,
                 capabilities=capabilities,
             ),
         )

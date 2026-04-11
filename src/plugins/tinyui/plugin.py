@@ -26,7 +26,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from runtimeV2.plugins.contracts import PluginContext
+    from runtimeV2.contracts import PluginContext
 
 
 def activate(ctx: PluginContext) -> None:

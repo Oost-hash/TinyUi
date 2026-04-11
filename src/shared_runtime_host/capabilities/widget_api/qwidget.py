@@ -29,8 +29,8 @@ from PySide6.QtCore import QObject, Signal, Slot
 
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
+from runtimeV2.contracts import WidgetRecord
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
-from runtimeV2.widgets.contracts import WidgetRecord
 from widget_api.capabilities import FlashCapability, ThresholdCapability
 from widget_api.capabilities.threshold import numeric_value, threshold_entries
 

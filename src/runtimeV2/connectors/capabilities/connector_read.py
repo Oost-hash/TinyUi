@@ -85,6 +85,11 @@ class ConnectorRead:
             return None
         return str(service.active_source())
 
+    def source_requested(self, connector_id: str, source_name: str) -> bool:
+        """Return whether a source has an active runtime request."""
+
+        return self._registry.source_requested(connector_id, source_name)
+
     def active_game(self, connector_id: str) -> str | None:
         """Return the active game name for one connector service when available."""
 

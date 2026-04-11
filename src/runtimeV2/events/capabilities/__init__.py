@@ -22,5 +22,6 @@
 """Events domain capabilities."""
 
 from runtimeV2.events.capabilities.event_read import EventRead
+from runtimeV2.events.capabilities.event_registration_write import EventRegistrationWrite, EventSubscription
 
-__all__ = ["EventRead"]
+__all__ = ["EventRead", "EventRegistrationWrite", "EventSubscription"]

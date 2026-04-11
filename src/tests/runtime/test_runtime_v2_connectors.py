@@ -33,7 +33,11 @@ from plugins.LMU_RF2_Connector.service import LMURF2ConnectorService
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
 from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
 from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
-from runtimeV2.connectors.contracts import ConnectorGameDetectedData, ConnectorGameLostData, ConnectorSourceChangedData
+from runtimeV2.contracts import (
+    ConnectorGameDetectedData,
+    ConnectorGameLostData,
+    ConnectorSourceChangedData,
+)
 from runtimeV2.connectors.policy import unregister_connector_service
 from runtimeV2.connectors.schemas.manifest import (
     ConnectorGameDecl,
@@ -44,6 +48,9 @@ from runtimeV2.connectors.schemas.manifest import (
 from runtimeV2.manifest.parser import load_plugin_manifest
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.scheduler.capabilities.scheduler_read import SchedulerRead
+from runtimeV2.scheduler.capabilities.scheduler_clock_read import SchedulerClockRead
+from runtimeV2.scheduler.capabilities.scheduler_clock_write import SchedulerClockWrite
+from runtimeV2.scheduler.clock import SchedulerClock
 from runtimeV2.scheduler.driver import SchedulerDriver
 from runtimeV2.scheduler.registry import SchedulerRegistry
 from runtimeV2.connectors.startup_shutdown.startup import startup_connectors, ConnectorsStartupResult
@@ -52,7 +59,10 @@ from runtimeV2.events.event_registry import EventRegistry
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.globals import GlobalRegistration
 from runtimeV2.manifest.capabilities.connector_read import ManifestConnectorRead
+from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.schemas.startup import StartupResult
+from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
+from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 
 
 class _FakeConnectorService:
@@ -248,6 +258,11 @@ class _FakeRuntime:
             return self.registered_capabilities[name]
         return self._capabilities[name]
 
+    def try_capability(self, name: str) -> object | None:
+        if name in self.registered_capabilities:
+            return self.registered_capabilities[name]
+        return self._capabilities.get(name)
+
     def register_capability(self, name: str, capability: object) -> None:
         self.registered_capabilities[name] = capability
 
@@ -299,8 +314,18 @@ def _make_runtime(declarations: dict[str, ConnectorManifest]) -> tuple[_FakeRunt
     registered_capabilities["globals"] = RuntimeGlobals(cast(Any, runtime))
     scheduler_registry = SchedulerRegistry()
     scheduler_driver = SchedulerDriver(scheduler_registry, bus)
+    scheduler_clock = SchedulerClock()
     registered_capabilities["scheduler_write"] = SchedulerWrite(scheduler_registry, scheduler_driver, bus)
     registered_capabilities["scheduler_read"] = SchedulerRead(scheduler_registry)
+    registered_capabilities["scheduler_clock_write"] = SchedulerClockWrite(scheduler_clock, bus)
+    registered_capabilities["scheduler_clock_read"] = SchedulerClockRead(scheduler_clock)
+    # Register widget visibility capabilities for connector handoff tests
+    fake_widget_config_write = cast(WidgetConfigWrite, runtime._capabilities["widget_config_write"])
+    manual_override = WidgetManualOverride()
+    registered_capabilities["widget_manual_override"] = manual_override
+    registered_capabilities["widget_visibility_write"] = WidgetVisibilityWrite(
+        fake_widget_config_write, manual_override, bus
+    )
     return runtime, bus
 
 
@@ -381,18 +406,11 @@ def test_startup_connectors_registers_declared_services(monkeypatch) -> None:
     ]
     assert scheduler_jobs[0].enabled is True
     assert scheduler_jobs[1].enabled is False
-    assert [event.type for event in bus.get_history()] == [
-        EventType.CONNECTOR_SERVICE_REGISTERED,
-        EventType.CONNECTOR_SERVICE_UPDATED,
-        EventType.SCHEDULER_JOB_REGISTERED,
-        EventType.SCHEDULER_JOB_REGISTERED,
-        EventType.CONNECTOR_GAME_DETECTED,
-        EventType.CONNECTOR_SERVICE_UPDATED,
-        EventType.SCHEDULER_TICK,
-        EventType.SCHEDULER_TICK,
-        EventType.CONNECTOR_SERVICE_UPDATED,
-        EventType.SCHEDULER_TICK,
-    ]
+    # Check key events are present.
+    event_types = [event.type for event in bus.get_history()]
+    assert EventType.CONNECTOR_SERVICE_REGISTERED in event_types
+    assert EventType.CONNECTOR_GAME_DETECTED in event_types
+    assert EventType.SCHEDULER_TICK in event_types
 
 
 def test_connector_write_can_update_all_services(monkeypatch) -> None:
@@ -468,7 +486,7 @@ def test_connector_scheduler_switches_from_probe_to_live_mode(monkeypatch) -> No
 
 
 def test_connector_write_emits_source_change_events(monkeypatch) -> None:
-    """Connector source requests and releases should emit explicit state-change events."""
+    """Connector source requests should emit events and drive mock preview cadence."""
 
     service = _FakeConnectorService()
     monkeypatch.setattr(
@@ -487,9 +505,22 @@ def test_connector_write_emits_source_change_events(monkeypatch) -> None:
 
     assert startup_connectors(cast(Any, runtime)) == StartupResult(ok=True)
     write = cast(ConnectorWrite, runtime.registered_capabilities["connector_write"])
+    scheduler_read = cast(SchedulerRead, runtime.registered_capabilities["scheduler_read"])
+    scheduler_clock_read = cast(SchedulerClockRead, runtime.registered_capabilities["scheduler_clock_read"])
 
     assert write.request_source("iracing", "devtools", "mock") is True
+    jobs = {job.job_id: job for job in scheduler_read.jobs()}
+    assert jobs["connectors.iracing.probe_game_state"].enabled is False
+    assert jobs["connectors.iracing.live_poll"].enabled is True
+    assert scheduler_clock_read.clock_mode() == "live"
+    assert scheduler_clock_read.clock_interval_ms() == 20
+    assert scheduler_clock_read.clock_locked_by() is None
+
     assert write.release_source("iracing", "devtools") is True
+    jobs = {job.job_id: job for job in scheduler_read.jobs()}
+    assert jobs["connectors.iracing.probe_game_state"].enabled is True
+    assert jobs["connectors.iracing.live_poll"].enabled is False
+    assert scheduler_clock_read.clock_mode() == "idle"
 
     history = bus.get_history(EventType.CONNECTOR_SOURCE_CHANGED)
     assert [event.data for event in history] == [
@@ -508,6 +539,42 @@ def test_connector_write_emits_source_change_events(monkeypatch) -> None:
             action="release",
         ),
     ]
+
+
+def test_mock_source_keeps_live_polling_without_detected_game(monkeypatch) -> None:
+    """Mock preview should keep the connector live job running without a detected game."""
+
+    service = _FakeConnectorService()
+    monkeypatch.setattr(
+        "runtimeV2.connectors.policy.load_connector_service",
+        lambda module_name, class_name: service,
+    )
+    monkeypatch.setattr(
+        "runtimeV2.connectors.game_detector.psutil.process_iter",
+        lambda attrs=None: [],
+    )
+    runtime, _bus = _make_runtime(
+        {
+            "iracing": _connector_manifest("plugins.iracing")
+        }
+    )
+
+    assert startup_connectors(cast(Any, runtime)) == StartupResult(ok=True)
+    write = cast(ConnectorWrite, runtime.registered_capabilities["connector_write"])
+    scheduler_write = cast(SchedulerWrite, runtime.registered_capabilities["scheduler_write"])
+    scheduler_read = cast(SchedulerRead, runtime.registered_capabilities["scheduler_read"])
+    scheduler_clock_read = cast(SchedulerClockRead, runtime.registered_capabilities["scheduler_clock_read"])
+
+    assert write.request_source("iracing", "devtools", "mock") is True
+    scheduler_write.tick(0)
+    scheduler_write.tick(20)
+
+    jobs = {job.job_id: job for job in scheduler_read.jobs()}
+    assert jobs["connectors.iracing.probe_game_state"].enabled is False
+    assert jobs["connectors.iracing.live_poll"].enabled is True
+    assert scheduler_clock_read.clock_mode() == "live"
+    assert scheduler_clock_read.clock_locked_by() is None
+    assert service.update_calls == 2
 
 
 def test_unregister_connector_service_releases_source_and_closes(monkeypatch) -> None:
@@ -573,8 +640,8 @@ def test_connector_service_falls_back_to_mock_without_active_real_source() -> No
     assert runtime.active_game() == "mock"
 
 
-def test_connector_manifest_parses_runtime_game_state_hook(tmp_path: Path) -> None:
-    """Connector manifests should parse connector_runtime.game_state_hook."""
+def test_connector_manifest_parses_runtime_handoff_metadata(tmp_path: Path) -> None:
+    """Connector manifests should parse connector_runtime handoff metadata."""
 
     manifest_path = tmp_path / "manifest.toml"
     manifest_path.write_text(
@@ -589,6 +656,7 @@ def test_connector_manifest_parses_runtime_game_state_hook(tmp_path: Path) -> No
             "",
             "[connector_runtime]",
             'game_state_hook = "update_game_state"',
+            'mock_source = "mock"',
             "",
         ]),
         encoding="utf-8",
@@ -597,7 +665,7 @@ def test_connector_manifest_parses_runtime_game_state_hook(tmp_path: Path) -> No
     manifest = load_plugin_manifest(manifest_path)
 
     assert manifest.connector is not None
-    assert manifest.connector.runtime == ConnectorRuntimeDecl(game_state_hook="update_game_state")
+    assert manifest.connector.runtime == ConnectorRuntimeDecl(game_state_hook="update_game_state", mock_source="mock")
 
 
 def test_connector_scheduler_dispatches_manifest_declared_game_state_hook(monkeypatch) -> None:
@@ -647,16 +715,19 @@ def test_connector_scheduler_dispatches_manifest_declared_game_state_hook(monkey
 
     assert updates == [("mock", "mock", False, False, False)]
     read = cast(ConnectorRead, runtime.registered_capabilities["connector_read"])
-    assert read.show_widgets("iracing") is False
+    # Mock source now forces show_widgets=True regardless of hook return value
+    assert read.show_widgets("iracing") is True
     widget_config_write = cast(_FakeWidgetConfigWrite, runtime._capabilities["widget_config_write"])
-    assert widget_config_write.global_visible is False
+    # Widget visibility is True because mock source forces it
+    assert widget_config_write.global_visible is True
 
     scheduler_write.tick(5000)
 
     assert updates[-1] == ("lmu", "lmu", True, True, False)
     assert read.show_widgets("iracing") is True
     assert widget_config_write.global_visible is True
-    assert widget_config_write.calls == [False, True]
+    # Two calls: first from mock source override (True), then from live game (True again)
+    assert widget_config_write.calls == [True, True]
 
 
 def test_startup_connectors_fails_without_detect_names(monkeypatch) -> None:

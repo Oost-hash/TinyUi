@@ -33,7 +33,7 @@ from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.ui.chrome_model import build_ui_chrome_model
-from runtimeV2.ui.contracts import (
+from runtimeV2.contracts import (
     QmlPropertyPlan,
     UIChromeModel,
     UIRenderStatus,

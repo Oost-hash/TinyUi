@@ -37,11 +37,12 @@ Rectangle {
     property string flashTarget: "value"
     property string thresholdColor: ""
 
-    readonly property string labelText: widgetData && widgetData.label ? widgetData.label : ""
-    readonly property string sourceText: widgetData && widgetData.source ? widgetData.source : ""
-    readonly property string displayText: widgetData && widgetData.displayText ? widgetData.displayText : ""
-    readonly property string valueColor: widgetData && widgetData.textColor ? widgetData.textColor : "#E0E0E0"
-    readonly property string effectiveValueColor: thresholdColor !== "" ? thresholdColor : valueColor
+    // Use regular properties instead of readonly so they update when widgetData changes
+    property string labelText: widgetData && widgetData.label ? widgetData.label : ""
+    property string sourceText: widgetData && widgetData.source ? widgetData.source : ""
+    property string displayText: widgetData && widgetData.displayText ? widgetData.displayText : ""
+    property string valueColor: widgetData && widgetData.textColor ? widgetData.textColor : "#E0E0E0"
+    property string effectiveValueColor: thresholdColor !== "" ? thresholdColor : valueColor
 
     opacity: flashTarget === "widget" ? (flashVisible ? 1.0 : 0.0) : 1.0
 
@@ -57,7 +58,15 @@ Rectangle {
         thresholdColor = widgetEffects.textColor(widgetData.overlayId, widgetData.widgetId, "")
     }
 
-    onWidgetDataChanged: refreshEffects()
+    // Force property update when widgetData changes
+    onWidgetDataChanged: {
+        // Explicitly update text properties to force re-evaluation
+        labelText = widgetData && widgetData.label ? widgetData.label : ""
+        sourceText = widgetData && widgetData.source ? widgetData.source : ""
+        displayText = widgetData && widgetData.displayText ? widgetData.displayText : ""
+        valueColor = widgetData && widgetData.textColor ? widgetData.textColor : "#E0E0E0"
+        refreshEffects()
+    }
     onWidgetEffectsChanged: refreshEffects()
     Component.onCompleted: refreshEffects()
 

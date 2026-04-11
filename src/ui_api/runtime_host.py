@@ -33,37 +33,39 @@ from PySide6.QtQml import QQmlComponent
 from shared_runtime_host.capabilities.ui_host import UIHostCapability
 from shared_runtime_host.capabilities.window_host import WindowHostCapability
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
-from shared_runtime_host.registry import SharedRuntimeHostRegistry, create_shared_runtime_host_registry
+from shared_runtime_host.events import SharedRuntimeHostEvents
+from shared_runtime_host.registry import SharedRuntimeHostRegistry
 from shared_runtime_host.shutdown import QmlRuntimeHostShutdown
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
+from runtimeV2.contracts import (
+    ConnectorReader,
+    ConnectorWriter,
+    MainWindowReader,
+    ManifestReader,
+    ManifestUiReader,
+    PanelStateReader,
+    PanelStateWriter,
+    PluginActiveReader,
+    PluginActiveWriter,
+    PluginDiscovery,
+    PluginIconResolver,
+    PluginStateReader,
+    PluginStateWriter,
+    SettingsReader,
+    SettingsWriter,
+    UIChromeModelReader,
+    WidgetConfigReader,
+    WidgetConfigWriter,
+    WidgetRecordsReader,
+    WidgetVisibilityReader,
+    WidgetVisibilityWriter,
+    WindowActionsWriter,
+    WindowRecordsReader,
+)
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
-from runtimeV2.connectors.capabilities.connector_read import ConnectorRead
-from runtimeV2.connectors.capabilities.connector_write import ConnectorWrite
-from runtimeV2.host.capabilities.main_window_read import MainWindowRead
-from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
-from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
-from runtimeV2.persistence.capabilities.settings_read import SettingsRead
-from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
-from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
-from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
-from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
-from runtimeV2.plugins.capabilities.active_write import PluginActiveWrite
-from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
-from runtimeV2.plugins.capabilities.icon import PluginIconCapability
-from runtimeV2.plugins.capabilities.state_read import PluginStateRead
-from runtimeV2.plugins.capabilities.state_write import PluginStateWrite
-from runtimeV2.ui.capabilities.chrome_model_read import UIChromeModelRead
-from runtimeV2.ui.capabilities.panel_state_read import PanelStateRead
-from runtimeV2.ui.capabilities.panel_state_write import PanelStateWrite
 from runtimeV2.runtime import RuntimeV2
-from runtimeV2.ui.capabilities.window_actions_write import WindowActionsWrite
 from runtimeV2.ui.capabilities.render_status_read import RenderStatusRead
-from runtimeV2.ui.capabilities.window_records_read import WindowRecordsRead
-from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.ui.startup_shutdown.startup import UIStartupResult
-from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
-from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
-from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from shared_runtime_host.capabilities.ui_api import (
     ConnectorReadQmlCapability,
     ConnectorWriteQmlCapability,
@@ -83,32 +85,31 @@ from shared_runtime_host.capabilities.ui_api import (
     WidgetVisibilityQmlCapability,
 )
 from ui_api.api.app_actions import AppActions
-from ui_api.register_runtime_host import register_ui_runtime_host
 from ui_api.startup_logging import log_startup_step
 from ui_api.theme import Theme
 from ui_api.window import WindowHandle, open_window
 
 
 _QML_CAPABILITY_TYPES: dict[str, type[Any]] = {
-    "manifest_read": ManifestRead,
-    "settings_read": SettingsRead,
-    "settings_write": SettingsWrite,
-    "widget_config_read": WidgetConfigRead,
-    "widget_config_write": WidgetConfigWrite,
-    "connector_read": ConnectorRead,
-    "connector_write": ConnectorWrite,
-    "plugin_active_read": PluginActiveRead,
-    "plugin_active_write": PluginActiveWrite,
-    "plugin_state_read": PluginStateRead,
-    "plugin_state_write": PluginStateWrite,
-    "widget_records_read": WidgetRecordsRead,
-    "widget_visibility_read": WidgetVisibilityRead,
-    "widget_visibility_write": WidgetVisibilityWrite,
-    "window_records_read": WindowRecordsRead,
-    "panel_state_read": PanelStateRead,
-    "window_actions_write": WindowActionsWrite,
+    "manifest_read": ManifestReader,
+    "settings_read": SettingsReader,
+    "settings_write": SettingsWriter,
+    "widget_config_read": WidgetConfigReader,
+    "widget_config_write": WidgetConfigWriter,
+    "connector_read": ConnectorReader,
+    "connector_write": ConnectorWriter,
+    "plugin_active_read": PluginActiveReader,
+    "plugin_active_write": PluginActiveWriter,
+    "plugin_state_read": PluginStateReader,
+    "plugin_state_write": PluginStateWriter,
+    "widget_records_read": WidgetRecordsReader,
+    "widget_visibility_read": WidgetVisibilityReader,
+    "widget_visibility_write": WidgetVisibilityWriter,
+    "window_records_read": WindowRecordsReader,
+    "panel_state_read": PanelStateReader,
+    "window_actions_write": WindowActionsWriter,
     "render_status_read": RenderStatusRead,
-    "ui_chrome_model_read": UIChromeModelRead,
+    "ui_chrome_model_read": UIChromeModelReader,
 }
 
 
@@ -127,7 +128,7 @@ class RuntimeHostResult:
 def build_runtime_qml_properties(
     runtime: RuntimeV2,
     ui_result: UIStartupResult,
-    host_registry: SharedRuntimeHostRegistry | None = None,
+    host_registry: SharedRuntimeHostRegistry,
 ) -> dict[str, object]:
     """Build QML properties from the runtime V2 UI property schema."""
 
@@ -148,40 +149,42 @@ def build_runtime_qml_properties(
 
 def _normalize_qml_properties(
     runtime: RuntimeV2,
+    host_registry: SharedRuntimeHostRegistry,
     properties: dict[str, object],
 ) -> dict[str, object]:
     """Defensively normalize host properties to QML-facing wrappers."""
 
     connector_actions = properties.get("connectorActions")
-    if isinstance(connector_actions, ConnectorWrite):
+    if isinstance(connector_actions, ConnectorWriter):
         properties["connectorActions"] = ConnectorWriteQmlCapability(connector_actions)
 
     connector_read = properties.get("connectorRead")
-    if isinstance(connector_read, ConnectorRead):
+    if isinstance(connector_read, ConnectorReader):
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         properties["connectorRead"] = ConnectorReadQmlCapability(
             connector_read,
-            runtime.domain_result("events", EventsStartupResult),
+            host_events,
         )
 
     settings_read = properties.get("settingsRead")
-    if isinstance(settings_read, SettingsRead):
+    if isinstance(settings_read, SettingsReader):
         properties["settingsRead"] = SettingsQmlCapability(settings_read)
 
     manifest_read = properties.get("manifestRead")
-    if isinstance(manifest_read, ManifestRead):
+    if isinstance(manifest_read, ManifestReader):
         properties["manifestRead"] = ManifestQmlCapability(
             manifest_read,
-            runtime.capability("plugin_icon", PluginIconCapability),
+            runtime.capability("plugin_icon", PluginIconResolver),
         )
 
     plugin_state = properties.get("pluginState")
-    if isinstance(plugin_state, PluginStateRead):
-        discovery = runtime.capability("plugin_discovery", PluginDiscoveryCapability)
-        events = runtime.domain_result("events", EventsStartupResult)
+    if isinstance(plugin_state, PluginStateReader):
+        discovery = runtime.capability("plugin_discovery", PluginDiscovery)
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         properties["pluginState"] = PluginStateQmlCapability(
             plugin_state,
             discovery.plugin_ids(),
-            events,
+            host_events,
         )
 
     return properties
@@ -189,75 +192,72 @@ def _normalize_qml_properties(
 
 def _adapt_qml_property(
     runtime: RuntimeV2,
-    host_registry: SharedRuntimeHostRegistry | None,
+    host_registry: SharedRuntimeHostRegistry,
     capability_name: str,
     capability: object,
 ) -> object:
     """Adapt selected runtime V2 capabilities to QML-facing objects."""
 
     if capability_name == "ui_chrome_model_read":
-        if host_registry is None:
-            host_registry = create_shared_runtime_host_registry(runtime)
-            register_ui_runtime_host(host_registry)
         return UIChromeQmlCapability(host_registry.capability("ui_host", UIHostCapability))
     if capability_name == "manifest_read":
         return ManifestQmlCapability(
-            cast(ManifestRead, capability),
-            runtime.capability("plugin_icon", PluginIconCapability),
+            cast(ManifestReader, capability),
+            runtime.capability("plugin_icon", PluginIconResolver),
         )
     if capability_name == "settings_read":
-        return SettingsQmlCapability(cast(SettingsRead, capability))
+        return SettingsQmlCapability(cast(SettingsReader, capability))
     if capability_name == "settings_write":
-        return SettingsWriteQmlCapability(cast(SettingsWrite, capability))
+        return SettingsWriteQmlCapability(cast(SettingsWriter, capability))
     if capability_name == "connector_read":
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return ConnectorReadQmlCapability(
-            cast(ConnectorRead, capability),
-            runtime.domain_result("events", EventsStartupResult),
+            cast(ConnectorReader, capability),
+            host_events,
         )
     if capability_name == "connector_write":
-        return ConnectorWriteQmlCapability(cast(ConnectorWrite, capability))
+        return ConnectorWriteQmlCapability(cast(ConnectorWriter, capability))
     if capability_name == "widget_config_read":
-        return WidgetConfigReadQmlCapability(cast(WidgetConfigRead, capability))
+        return WidgetConfigReadQmlCapability(cast(WidgetConfigReader, capability))
     if capability_name == "widget_config_write":
-        return WidgetConfigWriteQmlCapability(cast(WidgetConfigWrite, capability))
+        return WidgetConfigWriteQmlCapability(cast(WidgetConfigWriter, capability))
     if capability_name == "widget_records_read":
-        if host_registry is None:
-            host_registry = create_shared_runtime_host_registry(runtime)
-            register_ui_runtime_host(host_registry)
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return WidgetRecordsQmlCapability(
             host_registry.capability("widget_host", WidgetHostCapability),
-            runtime.domain_result("events", EventsStartupResult),
+            host_events,
         )
     if capability_name == "window_records_read":
-        if host_registry is None:
-            host_registry = create_shared_runtime_host_registry(runtime)
-            register_ui_runtime_host(host_registry)
         return WindowRecordsQmlCapability(host_registry.capability("window_host", WindowHostCapability))
     if capability_name == "widget_visibility_read":
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return WidgetVisibilityQmlCapability(
-            cast(WidgetVisibilityRead, capability),
-            runtime.capability("widget_visibility_write", WidgetVisibilityWrite),
-            runtime.domain_result("events", EventsStartupResult),
+            cast(WidgetVisibilityReader, capability),
+            runtime.capability("widget_visibility_write", WidgetVisibilityWriter),
+            host_events,
         )
     if capability_name == "plugin_active_read":
         globals_capability = runtime.capability("globals", RuntimeGlobals)
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return PluginActiveQmlCapability(
-            globals_capability.read_global("active_plugin", PluginActiveRead),
-            globals_capability.write_global("active_plugin", PluginActiveWrite),
-            runtime.domain_result("events", EventsStartupResult),
+            globals_capability.read_global("active_plugin", PluginActiveReader),
+            globals_capability.write_global("active_plugin", PluginActiveWriter),
+            host_events,
         )
     if capability_name == "plugin_state_read":
-        discovery = runtime.capability("plugin_discovery", PluginDiscoveryCapability)
+        discovery = runtime.capability("plugin_discovery", PluginDiscovery)
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return PluginStateQmlCapability(
-            cast(PluginStateRead, capability),
+            cast(PluginStateReader, capability),
             discovery.plugin_ids(),
-            runtime.domain_result("events", EventsStartupResult),
+            host_events,
         )
     if capability_name == "panel_state_read":
+        host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return PanelStateQmlCapability(
-            cast(PanelStateRead, capability),
-            runtime.capability("panel_state_write", PanelStateWrite),
-            runtime.domain_result("events", EventsStartupResult),
+            cast(PanelStateReader, capability),
+            runtime.capability("panel_state_write", PanelStateWriter),
+            host_events,
         )
     if capability_name == "render_status_read":
         return RenderStatusQmlCapability(cast(RenderStatusRead, capability))
@@ -269,6 +269,7 @@ def start_runtime_host(
     app,
     engine,
     runtime: RuntimeV2,
+    host_registry: SharedRuntimeHostRegistry,
     theme: Theme | None = None,
 ) -> tuple[RuntimeHostResult | None, StartupResult]:
     """Open the runtime V2 main window through ui_api."""
@@ -284,13 +285,12 @@ def start_runtime_host(
         if theme is None:
             theme = Theme("dark")
 
-        host_registry = create_shared_runtime_host_registry(runtime)
-        register_ui_runtime_host(host_registry)
         actions = AppActions()
-        main_window = runtime.capability("main_window_read", MainWindowRead).main_window()
+        main_window = runtime.capability("main_window_read", MainWindowReader).main_window()
         plugin_panel_url, plugin_panel_component = _resolve_plugin_panel(engine, runtime)
         qml_properties = _normalize_qml_properties(
             runtime,
+            host_registry,
             build_runtime_qml_properties(runtime, ui_result, host_registry),
         )
         if plugin_panel_url:
@@ -308,7 +308,7 @@ def start_runtime_host(
             **qml_properties,
         )
         open_handles: dict[str, WindowHandle] = {main_window.id: handle}
-        manifest_ui_read = runtime.capability("manifest_ui_read", ManifestUiRead)
+        manifest_ui_read = runtime.capability("manifest_ui_read", ManifestUiReader)
 
         def _drop_handle(window_id: str) -> None:
             open_handles.pop(window_id, None)
@@ -369,7 +369,7 @@ def start_runtime_host(
         return None, startup_error(f"Runtime V2 ui_api host startup failed: {exc}")
 
 
-def _window_manifest(ui_read: ManifestUiRead, window_id: str):
+def _window_manifest(ui_read: ManifestUiReader, window_id: str):
     """Resolve one manifest window by id."""
 
     for windows in ui_read.windows().values():
@@ -382,7 +382,7 @@ def _window_manifest(ui_read: ManifestUiRead, window_id: str):
 def _resolve_plugin_panel(engine, runtime: RuntimeV2) -> tuple[str, QQmlComponent | None]:
     """Resolve the optional inline plugin panel component for the main host window."""
 
-    ui_read = runtime.capability("manifest_ui_read", ManifestUiRead)
+    ui_read = runtime.capability("manifest_ui_read", ManifestUiReader)
     panel_manifest = _window_manifest(ui_read, "pluginsPanel.main")
     if panel_manifest is None or panel_manifest.surface is None:
         return "", None
