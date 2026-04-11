@@ -462,10 +462,10 @@ def test_runtime_host_builds_qml_properties_from_ui_schema() -> None:
     assert isinstance(properties["settingsRead"], SettingsQmlCapability)
     assert isinstance(properties["connectorActions"], ConnectorWriteQmlCapability)
     assert runtime.calls == [
-        ("manifest_read", "ManifestRead"),
-        ("plugin_icon", "PluginIconCapability"),
-        ("settings_read", "SettingsRead"),
-        ("connector_write", "ConnectorWrite"),
+        ("manifest_read", "ManifestReader"),
+        ("plugin_icon", "PluginIconResolver"),
+        ("settings_read", "SettingsReader"),
+        ("connector_write", "ConnectorWriter"),
     ]
 
 

@@ -42,7 +42,6 @@ from runtimeV2.contracts import (
 )
 from runtimeV2.scheduler.capabilities.scheduler_write import SchedulerWrite
 from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
-from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from shared_runtime_host.capabilities.ui_api import UIActionsCapability
 from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapability
