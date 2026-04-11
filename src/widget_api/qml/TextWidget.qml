@@ -27,42 +27,60 @@ Rectangle {
     property var widgetData: ({})
     property var widgetEffects: null
 
-    width: 180
-    height: 72
-    radius: 8
-    color: widgetData && widgetData.backgroundColor ? widgetData.backgroundColor : "#CC000000"
+    readonly property bool showSource: widgetData
+            && widgetData.values
+            && widgetData.values.showSource === true
+    readonly property var widgetValues: widgetData && widgetData.values ? widgetData.values : ({})
+    readonly property bool borderEnabled: widgetValues.borderEnabled !== undefined ? widgetValues.borderEnabled === true : true
+    readonly property real configuredBorderWidth: widgetValues.borderWidth !== undefined ? Number(widgetValues.borderWidth) : 1
+    readonly property string configuredBorderColor: widgetValues.borderColor !== undefined ? String(widgetValues.borderColor) : "#40FFFFFF"
+
+    width: 120
+    height: showSource ? 72 : 56
+    radius: 6
     visible: widgetData && widgetData.visible !== undefined ? widgetData.visible : true
 
     property bool flashVisible: true
     property string flashTarget: "value"
     property string thresholdColor: ""
+    property string colorTarget: "value"
 
     // Use regular properties instead of readonly so they update when widgetData changes
     property string labelText: widgetData && widgetData.label ? widgetData.label : ""
-    property string sourceText: widgetData && widgetData.source ? widgetData.source : ""
+    property string sourceText: widgetData && widgetData.source && showSource ? widgetData.source : ""
     property string displayText: widgetData && widgetData.displayText ? widgetData.displayText : ""
     property string valueColor: widgetData && widgetData.textColor ? widgetData.textColor : "#E0E0E0"
-    property string effectiveValueColor: thresholdColor !== "" ? thresholdColor : valueColor
+    property string effectiveValueColor: thresholdColor !== "" && (colorTarget === "value" || colorTarget === "text") ? thresholdColor : valueColor
+    property string effectiveLabelColor: thresholdColor !== "" && colorTarget === "text" ? thresholdColor : "#888888"
+    property string effectiveSourceColor: thresholdColor !== "" && colorTarget === "text" ? thresholdColor : "#6E6E6E"
+    property string effectiveBorderColor: thresholdColor !== "" && colorTarget === "border" ? thresholdColor : (borderEnabled ? configuredBorderColor : "#00000000")
+    property real effectiveBorderWidth: effectiveBorderColor !== "#00000000" || flashTarget === "border" ? Math.max(1, configuredBorderWidth) : 0
+    property string effectiveBackgroundColor: thresholdColor !== "" && colorTarget === "widget" ? thresholdColor : (widgetData && widgetData.backgroundColor ? widgetData.backgroundColor : "#CC000000")
 
     opacity: flashTarget === "widget" ? (flashVisible ? 1.0 : 0.0) : 1.0
+    color: effectiveBackgroundColor
+    border.width: flashTarget === "border" && !flashVisible ? 0 : effectiveBorderWidth
+    border.color: flashTarget === "border" && !flashVisible ? "#00000000" : effectiveBorderColor
 
     function refreshEffects() {
         if (!widgetEffects || !widgetData || !widgetData.overlayId || !widgetData.widgetId) {
             flashVisible = true
             flashTarget = "value"
             thresholdColor = ""
+            colorTarget = "value"
             return
         }
         flashVisible = widgetEffects.flashVisible(widgetData.overlayId, widgetData.widgetId)
         flashTarget = widgetEffects.flashTarget(widgetData.overlayId, widgetData.widgetId)
         thresholdColor = widgetEffects.textColor(widgetData.overlayId, widgetData.widgetId, "")
+        colorTarget = widgetEffects.colorTarget(widgetData.overlayId, widgetData.widgetId)
     }
 
     // Force property update when widgetData changes
     onWidgetDataChanged: {
         // Explicitly update text properties to force re-evaluation
         labelText = widgetData && widgetData.label ? widgetData.label : ""
-        sourceText = widgetData && widgetData.source ? widgetData.source : ""
+        sourceText = widgetData && widgetData.source && showSource ? widgetData.source : ""
         displayText = widgetData && widgetData.displayText ? widgetData.displayText : ""
         valueColor = widgetData && widgetData.textColor ? widgetData.textColor : "#E0E0E0"
         refreshEffects()
@@ -82,30 +100,32 @@ Rectangle {
     }
 
     Column {
-        anchors.fill: parent
-        anchors.margins: 10
-        spacing: 4
+        anchors.centerIn: parent
+        spacing: 2
         opacity: root.flashTarget === "text" ? (root.flashVisible ? 1.0 : 0.0) : 1.0
 
         Text {
+            anchors.horizontalCenter: parent.horizontalCenter
             text: root.labelText
-            color: "#8F8F8F"
-            font.pixelSize: 11
+            color: root.effectiveLabelColor
+            font.pixelSize: 10
             font.family: "Segoe UI"
         }
 
         Text {
+            anchors.horizontalCenter: parent.horizontalCenter
             text: root.displayText
             color: root.effectiveValueColor
             opacity: root.flashTarget === "value" ? (root.flashVisible ? 1.0 : 0.0) : 1.0
-            font.pixelSize: 24
+            font.pixelSize: 22
             font.bold: true
             font.family: "Segoe UI"
         }
 
         Text {
+            anchors.horizontalCenter: parent.horizontalCenter
             text: root.sourceText
-            color: "#6E6E6E"
+            color: root.effectiveSourceColor
             font.pixelSize: 10
             font.family: "Segoe UI"
             visible: root.sourceText.length > 0

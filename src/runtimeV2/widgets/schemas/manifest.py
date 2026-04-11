@@ -43,6 +43,7 @@ class OverlayWidgetDecl:
     widget: str
     label: str = ""
     bindings: dict[str, str] = field(default_factory=dict)
+    values: dict[str, object] = field(default_factory=dict)
     defaults: WidgetDefaults = field(default_factory=WidgetDefaults)
 
 

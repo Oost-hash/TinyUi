@@ -26,20 +26,16 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from ui_api.api.app_actions import AppActions
+from shared_runtime_host.capabilities.ui_api.widget_preview_actions import WidgetPreviewActions
 
 from runtimeV2.contracts import (
     ConfigSetReader,
     ConfigSetWriter,
-    ConnectorWriter,
-    ManifestConnectorReader,
     PanelStateWriter,
     PluginActiveWriter,
     PluginDiscovery,
     RuntimeShutdownController,
     SettingsWriter,
-    WidgetManualOverrideState,
-    WidgetVisibilityReader,
-    WidgetVisibilityWriter,
     WindowActionsWriter,
 )
 
@@ -50,11 +46,7 @@ class UIActionsCapability:
         self,
         *,
         window_actions: WindowActionsWriter,
-        manifest_connector_read: ManifestConnectorReader,
-        connector_write: ConnectorWriter,
-        widget_visibility_read: WidgetVisibilityReader,
-        widget_visibility_write: WidgetVisibilityWriter,
-        widget_manual_override: WidgetManualOverrideState,
+        widget_preview_actions: WidgetPreviewActions,
         plugin_discovery: PluginDiscovery,
         plugin_active_write: PluginActiveWriter,
         config_set_read: ConfigSetReader,
@@ -64,11 +56,7 @@ class UIActionsCapability:
         shutdown: RuntimeShutdownController,
     ) -> None:
         self._window_actions = window_actions
-        self._manifest_connector_read = manifest_connector_read
-        self._connector_write = connector_write
-        self._widget_visibility_read = widget_visibility_read
-        self._widget_visibility_write = widget_visibility_write
-        self._widget_manual_override = widget_manual_override
+        self._widget_preview_actions = widget_preview_actions
         self._plugin_discovery = plugin_discovery
         self._plugin_active_write = plugin_active_write
         self._config_set_read = config_set_read
@@ -108,25 +96,7 @@ class UIActionsCapability:
         self._shutdown.begin_shutdown("main_window_close")
 
     def _toggle_widget_visibility(self) -> None:
-        if self._widget_manual_override.is_manually_enabled():
-            self._widget_visibility_write.set_global_visible(False)
-            self._release_manifest_mock_sources()
-            return
-
-        self._widget_visibility_write.set_global_visible(True)
-        self._request_manifest_mock_sources()
-
-    def _request_manifest_mock_sources(self) -> None:
-        for connector_id, declaration in self._manifest_connector_read.connector_declarations().items():
-            mock_source = "" if declaration.runtime is None else declaration.runtime.mock_source
-            if mock_source:
-                self._connector_write.request_source(connector_id, "tinyui.statusbar.widgets", mock_source)
-
-    def _release_manifest_mock_sources(self) -> None:
-        for connector_id, declaration in self._manifest_connector_read.connector_declarations().items():
-            mock_source = "" if declaration.runtime is None else declaration.runtime.mock_source
-            if mock_source:
-                self._connector_write.release_source(connector_id, "tinyui.statusbar.widgets")
+        self._widget_preview_actions.toggle_preview_visible()
 
     def _toggle_plugin_panel(self) -> None:
         self._panel_state_write.toggle_plugin_panel()

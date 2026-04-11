@@ -124,9 +124,9 @@ class WidgetConfigStore:
 
         path = self._visibility_path()
         if not path.exists():
-            return True
+            return False
         data = json.loads(path.read_text(encoding="utf-8"))
-        return bool(data.get("global_visible", True))
+        return bool(data.get("global_visible", False))
 
     def set_global_visible(self, visible: bool) -> None:
         """Store the global widget visibility flag."""

@@ -42,6 +42,9 @@ Window {
     property var windowRecords: null
     property var widgetRecords: null
     property var widgetVisibility: null
+    property var widgetPreviewActions: null
+    property var widgetConfigRead: null
+    property var widgetConfigWrite: null
     property var renderStatus: null
     property var connectorRead: null
     property var connectorActions: null

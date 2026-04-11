@@ -83,6 +83,7 @@ def startup_widgets(runtime: RuntimeV2) -> StartupResult:
             scheduler_clock_read=scheduler_clock_read,
             events=events.bus,
         )
+        capabilities.visibility_write.set_global_visible(False)
         records = capabilities.records_refresh.refresh()
         runtime.register_capability("widget_records_read", capabilities.records_read)
         runtime.register_capability("widget_records_refresh", capabilities.records_refresh)

@@ -363,6 +363,29 @@ def test_widget_data_adapter_uses_runtime_v2_record_shape() -> None:
     assert "widgetEffects" not in widget_data
 
 
+def test_widget_data_adapter_formats_ready_values_from_widget_values() -> None:
+    """Widget host projection should restore v0.4.0-style display formatting."""
+
+    record = WidgetRecord(
+        overlay_id="demo_overlay",
+        widget_id="fuel",
+        widget_type="textWidget",
+        label="Fuel",
+        source="vehicle.fuel",
+        bindings={"source": "vehicle.fuel"},
+        status=WidgetStatus.READY,
+        connector_ids=("LMU_RF2_Connector",),
+        values={"format": "{:.1f} L"},
+        resolved_value="1.50",
+    )
+    store = WidgetRecordsStore()
+    store.set_records([record])
+
+    widget_data = widget_window_data(WidgetHostCapability(WidgetRecordsRead(store)), record)
+
+    assert widget_data["displayText"] == "1.5 L"
+
+
 def test_widget_window_host_updates_data_without_resetting_position() -> None:
     """Existing widget windows should not receive an empty widgetData during refresh."""
 
@@ -418,7 +441,11 @@ def test_widget_window_host_updates_data_without_resetting_position() -> None:
     cast(Any, host)._widget_effects = _FakeEffects()
     fake_window = _FakeWindow()
     cast(Any, host)._windows = {
-        "demo_overlay:speed": SimpleNamespace(record=initial, window=fake_window),
+        "demo_overlay:speed": SimpleNamespace(
+            record=initial,
+            window=fake_window,
+            widget_data=widget_window_data(cast(Any, host)._widget_host, initial),
+        ),
     }
 
     host.sync_records([updated])
@@ -429,13 +456,86 @@ def test_widget_window_host_updates_data_without_resetting_position() -> None:
     assert fake_window.visible_calls == [True]
 
 
+def test_widget_window_host_ignores_position_only_refreshes() -> None:
+    """Existing widget windows should not receive full data updates for position-only refreshes."""
+
+    initial = WidgetRecord(
+        overlay_id="demo_overlay",
+        widget_id="speed",
+        widget_type="gauge",
+        label="Speed",
+        source="car.speed",
+        bindings={"source": "car.speed"},
+        status=WidgetStatus.READY,
+        connector_ids=("iracing",),
+        position=(120, 240),
+        resolved_value="123",
+    )
+    updated = WidgetRecord(
+        overlay_id="demo_overlay",
+        widget_id="speed",
+        widget_type="gauge",
+        label="Speed",
+        source="car.speed",
+        bindings={"source": "car.speed"},
+        status=WidgetStatus.READY,
+        connector_ids=("iracing",),
+        position=(320, 480),
+        resolved_value="123",
+    )
+    store = WidgetRecordsStore()
+    store.set_records([updated])
+
+    class _FakeEffects:
+        def update_widget(self, _widget_data: dict[str, object]) -> None:
+            return None
+
+        def remove_widget(self, _overlay_id: str, _widget_id: str) -> None:
+            return None
+
+    class _FakeWindow:
+        def __init__(self) -> None:
+            self.properties: list[tuple[str, object]] = []
+            self.visible_calls: list[bool] = []
+
+        def setProperty(self, name: str, value: object) -> None:
+            self.properties.append((name, value))
+
+        def setVisible(self, visible: bool) -> None:
+            self.visible_calls.append(visible)
+
+    host = WidgetWindowHost.__new__(WidgetWindowHost)
+    cast(Any, host)._widget_host = WidgetHostCapability(WidgetRecordsRead(store))
+    cast(Any, host)._widget_effects = _FakeEffects()
+    fake_window = _FakeWindow()
+    cast(Any, host)._windows = {
+        "demo_overlay:speed": SimpleNamespace(
+            record=initial,
+            window=fake_window,
+            widget_data=widget_window_data(cast(Any, host)._widget_host, initial),
+        ),
+    }
+
+    host.sync_records([updated])
+
+    assert fake_window.properties == []
+    assert fake_window.visible_calls == [True]
+
+
 def test_threshold_capability_uses_upper_bound_rules() -> None:
     """Threshold rules should select the first sorted upper bound."""
 
     thresholds = threshold_entries(
         [
             {"value": 10, "color": "#FFB000", "flash": True, "flash_speed": 2, "flash_target": "text"},
-            {"value": 2, "color": "#FF4040", "flash": True, "flashSpeed": 1, "flashTarget": "value"},
+            {
+                "value": 2,
+                "color": "#FF4040",
+                "colorTarget": "border",
+                "flash": True,
+                "flashSpeed": 1,
+                "flashTarget": "border",
+            },
         ]
     )
     capability = ThresholdCapability()
@@ -446,11 +546,13 @@ def test_threshold_capability_uses_upper_bound_rules() -> None:
 
     assert critical.active is True
     assert critical.color == "#FF4040"
+    assert critical.color_target == "border"
     assert critical.flash is True
     assert critical.flash_speed == 1
-    assert critical.flash_target == "value"
+    assert critical.flash_target == "border"
     assert warning.active is True
     assert warning.color == "#FFB000"
+    assert warning.color_target == "value"
     assert warning.flash_target == "text"
     assert inactive.active is False
 
@@ -472,9 +574,10 @@ def test_widget_effects_adapter_uses_persisted_threshold_values() -> None:
                     {
                         "value": 2,
                         "color": "#FF4040",
+                        "colorTarget": "border",
                         "flash": True,
                         "flashSpeed": 1,
-                        "flashTarget": "value",
+                        "flashTarget": "border",
                     }
                 ]
             },
@@ -483,7 +586,8 @@ def test_widget_effects_adapter_uses_persisted_threshold_values() -> None:
 
     assert scheduler_write.jobs["widget_api.effects.flash"]["owner_domain"] == "widget_api"
     assert effects.textColor("demo_overlay", "fuel", "#E0E0E0") == "#FF4040"
-    assert effects.flashTarget("demo_overlay", "fuel") == "value"
+    assert effects.colorTarget("demo_overlay", "fuel") == "border"
+    assert effects.flashTarget("demo_overlay", "fuel") == "border"
     assert effects.flashVisible("demo_overlay", "fuel") is True
 
     effects.tick()

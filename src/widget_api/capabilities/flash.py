@@ -40,7 +40,7 @@ class FlashState:
         """Activate flashing and return whether observable state changed."""
 
         safe_interval = max(1, int(interval_ticks))
-        safe_target = target if target in ("value", "text", "widget") else "value"
+        safe_target = target if target in ("value", "text", "widget", "border") else "value"
         changed = (
             not self.active
             or self.interval_ticks != safe_interval

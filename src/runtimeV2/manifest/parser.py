@@ -207,6 +207,7 @@ def _parse_overlay_manifest(data: dict, plugin: dict, manifest_dir: Path) -> Ove
                 widget=entry["widget"],
                 label=entry.get("label", ""),
                 bindings=dict(entry.get("bindings", {})),
+                values=dict(entry.get("values", {})),
             )
             for entry in data.get("widget", [])
         ]
@@ -230,12 +231,22 @@ def _load_widgets_from_dir(widgets_dir: Path) -> list[OverlayWidgetDecl]:
         widget = data.get("widget", {})
         bindings = data.get("bindings", {})
         defaults_data = data.get("defaults", {})
+        values = dict(data.get("values", {}))
+        if "format" in widget:
+            values.setdefault("format", widget["format"])
+        if "title" in widget:
+            values.setdefault("title", widget["title"])
+        if "description" in widget:
+            values.setdefault("description", widget["description"])
+        if "thresholds" in data:
+            values.setdefault("thresholds", data["thresholds"])
         raw_pos = defaults_data.get("position", [0, 0])
         declarations.append(OverlayWidgetDecl(
             id=widget["id"],
             widget=widget["widget"],
             label=widget.get("label", ""),
             bindings=dict(bindings),
+            values=values,
             defaults=WidgetDefaults(
                 enabled=defaults_data.get("enabled", True),
                 visible=defaults_data.get("visible", True),

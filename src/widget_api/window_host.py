@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 from PySide6.QtCore import QUrl
 from PySide6.QtQml import QQmlComponent
@@ -49,6 +49,7 @@ class _HostedWidgetWindow:
 
     record: WidgetRecord
     window: QQuickWindow
+    widget_data: dict[str, Any]
 
 
 class WidgetWindowHost:
@@ -104,14 +105,20 @@ class WidgetWindowHost:
                 )
                 assert obj is not None, self._component.errorString()
                 assert isinstance(obj, QQuickWindow), self._component.errorString()
-                self._windows[record_key] = _HostedWidgetWindow(record=record, window=obj)
+                self._windows[record_key] = _HostedWidgetWindow(
+                    record=record,
+                    window=obj,
+                    widget_data=widget_data,
+                )
                 # Only show if the widget should be visible (respects global visibility toggle)
                 if record.status != WidgetStatus.HIDDEN:
                     obj.show()
                 continue
 
             hosted.record = record
-            hosted.window.setProperty("widgetData", widget_data)
+            if _refresh_payload(hosted.widget_data) != _refresh_payload(widget_data):
+                hosted.window.setProperty("widgetData", widget_data)
+            hosted.widget_data = widget_data
             hosted.window.setVisible(record.status != WidgetStatus.HIDDEN)
 
     def windows(self) -> tuple[QQuickWindow, ...]:
@@ -130,3 +137,9 @@ class WidgetWindowHost:
 
 def _record_key(record: WidgetRecord) -> str:
     return f"{record.overlay_id}:{record.widget_id}"
+
+
+def _refresh_payload(widget_data: dict[str, Any]) -> dict[str, Any]:
+    """Return the widget data fields that should trigger a QML content refresh."""
+
+    return {key: value for key, value in widget_data.items() if key not in {"x", "y"}}

@@ -13,6 +13,7 @@ from shared_runtime_host.capabilities.ui_api import (
     ConnectorWriteQmlCapability,
     ManifestQmlCapability,
     SettingsQmlCapability,
+    WidgetPreviewActions,
 )
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
 from runtimeV2.capabilities.runtime_globals import RuntimeGlobals
@@ -217,7 +218,7 @@ class _FakeUiRuntime:
         self._widget_visibility_read = WidgetVisibilityRead(WidgetConfigRead(widget_store))
         self._widget_manual_override = WidgetManualOverride()
         widget_config_write = WidgetConfigWrite(widget_store)
-        widget_config_write.set_global_widgets_visible(True)
+        widget_config_write.set_global_widgets_visible(False)
         self._widget_visibility_write = WidgetVisibilityWrite(
             widget_config_write, self._widget_manual_override
         )
@@ -714,8 +715,9 @@ def test_runtime_host_widget_visibility_toggle_uses_runtime_capability(monkeypat
 
     assert startup_result.ok
     assert result is not None
-    assert runtime._widget_visibility_read.global_visible() is True
+    assert runtime._widget_visibility_read.global_visible() is False
     assert runtime._widget_manual_override.is_manually_enabled() is False
+    assert runtime._connector_source_requests == []
 
     result.actions.trigger("widgetVisibility.toggle")
 
@@ -730,6 +732,51 @@ def test_runtime_host_widget_visibility_toggle_uses_runtime_capability(monkeypat
 
     assert runtime._widget_visibility_read.global_visible() is False
     assert runtime._widget_manual_override.is_manually_enabled() is False
+    assert runtime._connector_source_releases == [
+        ("LMU_RF2_Connector", "tinyui.statusbar.widgets"),
+    ]
+
+
+def test_runtime_host_exposes_widget_preview_actions_to_qml(monkeypatch) -> None:
+    """The ui_api host should expose shared widget preview actions to tab surfaces."""
+
+    app = _FakeApp()
+    runtime = _FakeUiRuntime()
+
+    class _FakeWindow:
+        def __init__(self) -> None:
+            self.destroyed = _FakeSignal()
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(
+        "ui_api.runtime_host.open_window",
+        lambda *_args, **_kwargs: SimpleNamespace(qml_window=_FakeWindow(), keepalive=()),
+    )
+
+    result, startup_result = start_runtime_host(
+        app=app,
+        engine=object(),
+        runtime=cast(Any, runtime),
+        host_registry=_ui_host_registry(runtime),
+    )
+
+    assert startup_result.ok
+    assert result is not None
+    preview_actions = result.qml_properties["widgetPreviewActions"]
+    assert isinstance(preview_actions, WidgetPreviewActions)
+
+    preview_actions.setPreviewVisible(True)
+
+    assert runtime._widget_visibility_read.global_visible() is True
+    assert runtime._connector_source_requests == [
+        ("LMU_RF2_Connector", "tinyui.statusbar.widgets", "mock"),
+    ]
+
+    preview_actions.setPreviewVisible(False)
+
+    assert runtime._widget_visibility_read.global_visible() is False
     assert runtime._connector_source_releases == [
         ("LMU_RF2_Connector", "tinyui.statusbar.widgets"),
     ]

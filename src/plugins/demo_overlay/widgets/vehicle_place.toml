@@ -1,0 +1,14 @@
+[widget]
+id = "vehicle_place"
+widget = "textWidget"
+title = "Position"
+description = "Current race position from the active connector source."
+label = "Position"
+format = "P{}"
+
+[bindings]
+source = "vehicle.place"
+
+[defaults]
+enabled = true
+position = [260, 260]

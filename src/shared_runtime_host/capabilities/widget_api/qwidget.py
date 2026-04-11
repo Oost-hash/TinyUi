@@ -79,6 +79,7 @@ class WidgetEffectsQmlCapability(QObject):
         self._flash = FlashCapability()
         self._threshold = ThresholdCapability()
         self._colors: dict[str, str] = {}
+        self._color_targets: dict[str, str] = {}
         self._keys: dict[str, tuple[str, str]] = {}
         scheduler_write.register_job(
             job_id="widget_api.effects.flash",
@@ -107,10 +108,13 @@ class WidgetEffectsQmlCapability(QObject):
         )
 
         old_color = self._colors.get(widget_key)
+        old_color_target = self._color_targets.get(widget_key)
         if threshold_state.color:
             self._colors[widget_key] = threshold_state.color
+            self._color_targets[widget_key] = threshold_state.color_target
         else:
             self._colors.pop(widget_key, None)
+            self._color_targets.pop(widget_key, None)
 
         flash_changed = self._flash.set_flash(
             widget_key,
@@ -118,7 +122,11 @@ class WidgetEffectsQmlCapability(QObject):
             interval_ticks=threshold_state.flash_speed,
             target=threshold_state.flash_target,
         )
-        if flash_changed or old_color != self._colors.get(widget_key):
+        if (
+            flash_changed
+            or old_color != self._colors.get(widget_key)
+            or old_color_target != self._color_targets.get(widget_key)
+        ):
             self.effectsChanged.emit(overlay_id, widget_id)
 
     @Slot("QVariantMap")
@@ -133,6 +141,7 @@ class WidgetEffectsQmlCapability(QObject):
         widget_key = _widget_key(overlay_id, widget_id)
         removed = self._flash.remove(widget_key)
         removed = self._colors.pop(widget_key, None) is not None or removed
+        removed = self._color_targets.pop(widget_key, None) is not None or removed
         self._keys.pop(widget_key, None)
         if removed:
             self.effectsChanged.emit(overlay_id, widget_id)
@@ -160,6 +169,12 @@ class WidgetEffectsQmlCapability(QObject):
         """Return threshold color or fallback widget text color."""
 
         return self._colors.get(_widget_key(overlay_id, widget_id), fallback)
+
+    @Slot(str, str, result=str)
+    def colorTarget(self, overlay_id: str, widget_id: str) -> str:
+        """Return the active threshold color target."""
+
+        return self._color_targets.get(_widget_key(overlay_id, widget_id), "value")
 
     def tick(self) -> None:
         """Advance effect clocks through the runtime scheduler."""

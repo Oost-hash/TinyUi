@@ -1,6 +1,8 @@
 [widget]
 id = "track_name"
 widget = "textWidget"
+title = "Track"
+description = "Current circuit name from the active connector source."
 label = "Track"
 
 [bindings]

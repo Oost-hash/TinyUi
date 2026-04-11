@@ -1,0 +1,13 @@
+[widget]
+id = "vehicle_speed"
+widget = "textWidget"
+title = "Speed"
+description = "Current vehicle speed from the active connector source."
+label = "Speed"
+
+[bindings]
+source = "vehicle.speed"
+
+[defaults]
+enabled = true
+position = [260, 180]

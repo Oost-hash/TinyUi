@@ -1,0 +1,28 @@
+[widget]
+id = "vehicle_fuel"
+widget = "textWidget"
+title = "Fuel"
+description = "Fuel remaining in liters, including warning color and flash thresholds."
+label = "Fuel"
+format = "{:.1f} L"
+
+[bindings]
+source = "vehicle.fuel"
+
+[defaults]
+enabled = true
+position = [100, 260]
+
+[[thresholds]]
+value = 2.0
+color = "#FF4444"
+flash = true
+flash_speed = 3
+flash_target = "value"
+
+[[thresholds]]
+value = 10.0
+color = "#FF8C00"
+flash = false
+flash_speed = 5
+flash_target = "value"
