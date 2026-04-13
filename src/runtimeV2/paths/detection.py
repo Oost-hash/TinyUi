@@ -77,7 +77,8 @@ def _core_image_sources(source_root: Path | None) -> dict[str, ImageSource]:
     def _register(name: str, rel_path: str) -> None:
         qrc_path = f"/assets/images/{rel_path}"
         if source_root is not None:
-            filesystem_path = source_root / "assets" / "images" / Path(rel_path)
+            # In dev mode assets are served from the host plugin directory
+            filesystem_path = source_root / "plugins" / "tinyui" / "assets" / "images" / Path(rel_path)
             sources[name] = ImageSource.dual(filesystem_path, qrc_path)
         else:
             sources[name] = ImageSource.qrc(qrc_path)
