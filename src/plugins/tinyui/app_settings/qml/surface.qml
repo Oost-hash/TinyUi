@@ -611,15 +611,20 @@ Item {
             elide: Text.ElideRight
         }
 
-        Text {
+        Image {
             id: arrow
             anchors.right: parent.right
             anchors.rightMargin: 8
             anchors.verticalCenter: parent.verticalCenter
-            text: choiceRoot.open ? "^" : "v"
-            color: root.c("textSecondary", "#a9afbc")
-            font.pixelSize: root.f("fontSizeSmall", 11)
-            font.family: root.f("fontFamily", "sans-serif")
+            width: 10
+            height: 6
+            source: "../../assets/images/ui/caret-down.svg"
+            sourceSize.width: 10
+            sourceSize.height: 6
+            fillMode: Image.PreserveAspectFit
+            rotation: choiceRoot.open ? 180 : 0
+            opacity: enabled ? 1.0 : 0.6
+            Behavior on rotation { NumberAnimation { duration: 80 } }
         }
 
         MouseArea {
