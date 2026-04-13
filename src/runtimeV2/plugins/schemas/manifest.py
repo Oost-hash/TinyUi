@@ -42,6 +42,8 @@ class PluginManifest:
     description: str
     icon: str
     requires: list[str]
+    url: str = ""
+    sponsor: str = ""
     settings: list[SettingDecl] = field(default_factory=list)
     ui: UiManifest | None = None
     connector: ConnectorManifest | None = None

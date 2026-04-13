@@ -1,12 +1,14 @@
 [plugin]
-id = "demo_overlay"
-type = "overlay"
-version = "1.0.0"
-author = "TinyUi"
+id          = "demo_overlay"
+type        = "overlay"
+version     = "1.0.0"
+author      = "TinyUi"
+url         = "https://github.com/Oost-hash/TinyUi"
+sponsor     = "https://github.com/sponsors/oost-hash"
 description = "A demo overlay plugin used to prove the widget_api and overlay flow."
-icon = "assets/logo.png"
-requires = ["LMU_RF2_Connector"]
+icon        = "assets/logo.png"
+requires    = ["LMU_RF2_Connector"]
 
 [overlay]
-connectors = ["LMU_RF2_Connector"]
+connectors  = ["LMU_RF2_Connector"]
 widgets_dir = "widgets"

@@ -3,6 +3,8 @@ id          = "tinyui"
 type        = "host"
 version     = "0.5.0"
 author      = "Oost-hash"
+url         = "https://github.com/Oost-hash/TinyUi"
+sponsor     = "https://github.com/sponsors/oost-hash"
 description = "TinyUI host plugin — the application framework"
 icon        = "assets/images/logo/logo.png"
 

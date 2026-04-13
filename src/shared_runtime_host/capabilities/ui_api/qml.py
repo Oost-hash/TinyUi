@@ -81,6 +81,8 @@ class ManifestQmlCapability(QObject):
                 "version": manifest.version,
                 "author": manifest.author,
                 "description": manifest.description,
+                "url": manifest.url,
+                "sponsor": manifest.sponsor,
                 "iconUrl": self._plugin_icon.get_icon_url(manifest.plugin_id),
                 "requires": manifest.requires,
                 "windows": [window.id for window in manifest.ui.windows] if manifest.ui is not None else [],
