@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from runtimeV2.paths.image_source import ImageSource
 from runtimeV2.paths.qml_source import QmlSource
 
 
@@ -40,10 +41,12 @@ class RuntimePaths:
     frozen_root: Path | None = None
     # QML sources that support both dev (filesystem) and build (QRC) modes
     qml_sources: dict[str, QmlSource] = field(default_factory=dict)
+    # Image sources that support both dev and build modes
+    image_sources: dict[str, ImageSource] = field(default_factory=dict)
 
     def qml_dir(self, package: str) -> Path:
         """Return the QML directory for a package.
-        
+
         Deprecated: Use qml_source() for core UI QML files.
         """
         if self.frozen_root is not None:
@@ -54,7 +57,7 @@ class RuntimePaths:
 
     def qml_source(self, name: str) -> QmlSource:
         """Return a QML source by registered name.
-        
+
         Supports both filesystem (dev) and QRC (build) modes.
         Raises KeyError if not registered.
         """

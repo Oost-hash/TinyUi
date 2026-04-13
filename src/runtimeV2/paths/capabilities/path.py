@@ -26,6 +26,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from runtimeV2.paths.contracts import RuntimePaths
+from runtimeV2.paths.image_source import ImageSource
 from runtimeV2.paths.qml_source import QmlSource
 
 
@@ -46,14 +47,21 @@ class PathCapability:
 
     def qml_dir(self, package: str) -> Path:
         """Return the QML directory for a package.
-        
+
         Deprecated: Use qml_source() for core UI QML files.
         """
         return self._runtime_paths.qml_dir(package)
 
     def qml_source(self, name: str) -> QmlSource:
         """Return a QML source by registered name.
-        
+
         Supports both filesystem (dev) and QRC (build) modes.
         """
         return self._runtime_paths.qml_source(name)
+
+    def image_source(self, name: str) -> ImageSource:
+        """Return an image source by registered name.
+
+        Supports both filesystem (dev) and QRC (build) modes.
+        """
+        return self._runtime_paths.image_source(name)

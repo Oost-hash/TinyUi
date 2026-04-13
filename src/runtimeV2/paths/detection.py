@@ -27,22 +27,23 @@ import sys
 from pathlib import Path
 
 from runtimeV2.paths.contracts import RuntimePaths
+from runtimeV2.paths.image_source import ImageSource
 from runtimeV2.paths.qml_source import QmlSource
 
 
 def _core_qml_sources(source_root: Path | None) -> dict[str, QmlSource]:
     """Register core QML sources that support both dev and QRC modes.
-    
+
     In dev mode: loads from filesystem for hot-reload.
     In frozen mode: loads from QRC (requires resources_rc import).
     """
     sources: dict[str, QmlSource] = {}
-    
+
     # Core UI QML files
     if source_root is not None:
         ui_api_qml = source_root / "ui_api" / "qml"
         widget_api_qml = source_root / "widget_api" / "qml"
-        
+
         sources["ui_api.HostedWindow"] = QmlSource.dual(
             ui_api_qml / "HostedWindow.qml",
             "/ui_api/qml/HostedWindow.qml",
@@ -65,7 +66,40 @@ def _core_qml_sources(source_root: Path | None) -> dict[str, QmlSource]:
         sources["widget_api.WidgetWindow"] = QmlSource.qrc("/widget_api/qml/WidgetWindow.qml")
         sources["widget_api.WidgetHost"] = QmlSource.qrc("/widget_api/qml/WidgetHost.qml")
         sources["widget_api.TextWidget"] = QmlSource.qrc("/widget_api/qml/TextWidget.qml")
-    
+
+    return sources
+
+
+def _core_image_sources(source_root: Path | None) -> dict[str, ImageSource]:
+    """Register core image sources that support both dev and QRC modes."""
+    sources: dict[str, ImageSource] = {}
+
+    def _register(name: str, rel_path: str) -> None:
+        qrc_path = f"/assets/images/{rel_path}"
+        if source_root is not None:
+            filesystem_path = source_root / "assets" / "images" / Path(rel_path)
+            sources[name] = ImageSource.dual(filesystem_path, qrc_path)
+        else:
+            sources[name] = ImageSource.qrc(qrc_path)
+
+    # Window chrome icons
+    _register("ui.menu", "ui/menu.svg")
+    _register("ui.menu-open", "ui/menu-open.svg")
+    _register("ui.window-minimize", "ui/window-minimize.svg")
+    _register("ui.window-maximize", "ui/window-maximize.svg")
+    _register("ui.window-restore", "ui/window-restore.svg")
+    _register("ui.window-close", "ui/window-close.svg")
+
+    # UI controls
+    _register("ui.caret-down", "ui/caret-down.svg")
+    _register("ui.cog", "ui/cog.svg")
+    _register("ui.play", "ui/play.svg")
+    _register("ui.stop", "ui/stop.svg")
+
+    # Branding / external links
+    _register("logo.github", "logo/ui/github.svg")
+    _register("logo.heart", "logo/ui/heart.svg")
+
     return sources
 
 
@@ -83,6 +117,7 @@ def detect_runtime_paths() -> RuntimePaths:
             source_root=None,
             frozen_root=frozen_root,
             qml_sources=_core_qml_sources(None),
+            image_sources=_core_image_sources(None),
         )
     else:
         source_root = Path(__file__).resolve().parents[2]
@@ -93,6 +128,7 @@ def detect_runtime_paths() -> RuntimePaths:
             source_root=source_root,
             frozen_root=None,
             qml_sources=_core_qml_sources(source_root),
+            image_sources=_core_image_sources(source_root),
         )
 
     return runtime_paths
