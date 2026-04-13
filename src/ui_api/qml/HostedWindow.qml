@@ -48,6 +48,7 @@ Window {
     property var renderStatus: null
     property var connectorRead: null
     property var connectorActions: null
+    property var imageSources: null
     property string windowId: ""
     property bool isMainWindow: false
     property string windowTitle: ""
@@ -63,12 +64,12 @@ Window {
     property string activePluginId: ""
     property var tabModel: []
     property var chromePolicy: ({
-        showMenuButton: true,
-        showTitleText: true,
-        showCaptionButtons: true,
-        showStatusLeftItems: true,
-        showStatusPluginPicker: true
-    })
+            showMenuButton: true,
+            showTitleText: true,
+            showCaptionButtons: true,
+            showStatusLeftItems: true,
+            showStatusPluginPicker: true
+        })
     property var chromeComponent: null  // Custom chrome component (null = use default)
     width: 960
     height: 640
@@ -83,13 +84,13 @@ Window {
     color: root.theme ? root.theme.surface : "#17181c"
 
     function syncRuntimeChrome() {
-        root.menuItems = root.uiChrome ? root.uiChrome.menuItems : []
-        root.pluginMenuItems = root.uiChrome ? root.uiChrome.pluginMenuItems : []
-        root.pluginMenuLabel = root.uiChrome ? root.uiChrome.pluginMenuLabel : "Plugins"
-        root.statusItems = root.uiChrome ? root.uiChrome.statusItems : []
-        root.tabModel = root.uiChrome ? root.uiChrome.tabModel : []
-        root.activePluginId = root.pluginActive ? root.pluginActive.activePlugin : ""
-        root.statusActiveLabel = root.uiChrome ? root.uiChrome.statusActiveLabel : root.activePluginId
+        root.menuItems = root.uiChrome ? root.uiChrome.menuItems : [];
+        root.pluginMenuItems = root.uiChrome ? root.uiChrome.pluginMenuItems : [];
+        root.pluginMenuLabel = root.uiChrome ? root.uiChrome.pluginMenuLabel : "Plugins";
+        root.statusItems = root.uiChrome ? root.uiChrome.statusItems : [];
+        root.tabModel = root.uiChrome ? root.uiChrome.tabModel : [];
+        root.activePluginId = root.pluginActive ? root.pluginActive.activePlugin : "";
+        root.statusActiveLabel = root.uiChrome ? root.uiChrome.statusActiveLabel : root.activePluginId;
     }
 
     onPanelStateChanged: root.showPluginPanel = root.runtimeShowPluginPanel
@@ -103,40 +104,40 @@ Window {
         sequence: "F12"
         onActivated: {
             if (root.appActions)
-                root.appActions.trigger("open:devtools.main")
+                root.appActions.trigger("open:devtools.main");
         }
     }
-    
+
     Connections {
         target: root.uiChrome
         function onMenuItemsChanged() {
-            root.menuItems = root.uiChrome ? root.uiChrome.menuItems : []
+            root.menuItems = root.uiChrome ? root.uiChrome.menuItems : [];
         }
         function onPluginMenuItemsChanged() {
-            root.pluginMenuItems = root.uiChrome ? root.uiChrome.pluginMenuItems : []
-            root.pluginMenuLabel = root.uiChrome ? root.uiChrome.pluginMenuLabel : "Plugins"
+            root.pluginMenuItems = root.uiChrome ? root.uiChrome.pluginMenuItems : [];
+            root.pluginMenuLabel = root.uiChrome ? root.uiChrome.pluginMenuLabel : "Plugins";
         }
     }
 
     Connections {
         target: root.uiChrome
         function onStatusbarItemsChanged() {
-            root.statusItems = root.uiChrome ? root.uiChrome.statusItems : []
+            root.statusItems = root.uiChrome ? root.uiChrome.statusItems : [];
         }
     }
 
     Connections {
         target: root.pluginActive
         function onActivePluginChanged(pluginId) {
-            root.activePluginId = pluginId
-            root.statusActiveLabel = pluginId
+            root.activePluginId = pluginId;
+            root.statusActiveLabel = pluginId;
         }
     }
 
     Connections {
         target: root.uiChrome
         function onTabModelChanged() {
-            root.tabModel = root.uiChrome ? root.uiChrome.tabModel : []
+            root.tabModel = root.uiChrome ? root.uiChrome.tabModel : [];
         }
     }
 
