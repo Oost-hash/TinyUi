@@ -59,6 +59,7 @@ def register_connector_capabilities(
     scheduler_write: SchedulerWriter,
     scheduler_clock_write: SchedulerClockWriter,
     live_interval_ms: int,
+    mock_interval_ms_by_connector: dict[str, int],
     events: EventBus | None = None,
     widget_visibility_write: WidgetVisibilityWriter | None = None,
     widget_manual_override: WidgetManualOverrideState | None = None,
@@ -86,6 +87,7 @@ def register_connector_capabilities(
             widget_manual_override,
         ),
         live_interval_ms=live_interval_ms,
+        mock_interval_ms_by_connector=mock_interval_ms_by_connector,
     )
     return ConnectorCapabilities(
         read=connector_read,

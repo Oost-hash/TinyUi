@@ -38,3 +38,9 @@ key = "enabled"
 label = "Enable connector"
 default = true
 type = "bool"
+
+[[setting]]
+key = "mock_poll_interval_ms"
+label = "Mock poll interval (ms)"
+default = 200
+type = "int"

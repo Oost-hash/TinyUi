@@ -333,6 +333,8 @@ class _FakeSettingsRead:
     def get(self, namespace: str, key: str) -> int | None:
         if namespace == "tinyui" and key == "connector_poll_interval_ms":
             return 20
+        if namespace in {"iracing", "LMU_RF2_Connector"} and key == "mock_poll_interval_ms":
+            return 200
         return None
 
 
@@ -512,6 +514,7 @@ def test_connector_write_emits_source_change_events(monkeypatch) -> None:
     jobs = {job.job_id: job for job in scheduler_read.jobs()}
     assert jobs["connectors.iracing.probe_game_state"].enabled is False
     assert jobs["connectors.iracing.live_poll"].enabled is True
+    assert jobs["connectors.iracing.live_poll"].interval_ms == 200
     assert scheduler_clock_read.clock_mode() == "live"
     assert scheduler_clock_read.clock_interval_ms() == 20
     assert scheduler_clock_read.clock_locked_by() is None
@@ -568,10 +571,12 @@ def test_mock_source_keeps_live_polling_without_detected_game(monkeypatch) -> No
     assert write.request_source("iracing", "devtools", "mock") is True
     scheduler_write.tick(0)
     scheduler_write.tick(20)
+    scheduler_write.tick(200)
 
     jobs = {job.job_id: job for job in scheduler_read.jobs()}
     assert jobs["connectors.iracing.probe_game_state"].enabled is False
     assert jobs["connectors.iracing.live_poll"].enabled is True
+    assert jobs["connectors.iracing.live_poll"].interval_ms == 200
     assert scheduler_clock_read.clock_mode() == "live"
     assert scheduler_clock_read.clock_locked_by() is None
     assert service.update_calls == 2
@@ -649,6 +654,8 @@ def test_connector_manifest_parses_runtime_handoff_metadata(tmp_path: Path) -> N
             "[plugin]",
             'id = "LMU_RF2_Connector"',
             'type = "connector"',
+            'url = "https://github.com/Oost-hash/TinyUi"',
+            'sponser = "https://github.com/sponsors/oost-hash"',
             "",
             "[connector_service]",
             'module = "plugins.LMU_RF2_Connector.plugin"',
@@ -665,6 +672,8 @@ def test_connector_manifest_parses_runtime_handoff_metadata(tmp_path: Path) -> N
     manifest = load_plugin_manifest(manifest_path)
 
     assert manifest.connector is not None
+    assert manifest.url == "https://github.com/Oost-hash/TinyUi"
+    assert manifest.sponsor == "https://github.com/sponsors/oost-hash"
     assert manifest.connector.runtime == ConnectorRuntimeDecl(game_state_hook="update_game_state", mock_source="mock")
 
 

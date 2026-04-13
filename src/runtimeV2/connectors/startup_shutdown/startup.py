@@ -80,6 +80,13 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
         settings_read = runtime.capability("settings_read", SettingsReader)
         interval_value = settings_read.get("tinyui", "connector_poll_interval_ms")
         interval_ms = int(interval_value) if isinstance(interval_value, int) else 20
+        mock_interval_ms_by_connector = {
+            connector_id: _int_setting(
+                settings_read.get(connector_id, "mock_poll_interval_ms"),
+                default=200,
+            )
+            for connector_id in declarations
+        }
         widget_visibility_write_candidate = runtime.try_capability("widget_visibility_write")
         widget_manual_override_candidate = runtime.try_capability("widget_manual_override")
         widget_visibility_write = (
@@ -99,6 +106,7 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
             scheduler_write,
             scheduler_clock_write,
             interval_ms,
+            mock_interval_ms_by_connector,
             events.bus,
             widget_visibility_write,
             widget_manual_override,
@@ -122,4 +130,10 @@ def startup_connectors(runtime: RuntimeV2) -> StartupResult:
         return startup_ok()
     except Exception as exc:
         return startup_error(f"Connectors domain startup failed: {exc}")
+
+
+def _int_setting(value: object, *, default: int) -> int:
+    if isinstance(value, int):
+        return value
+    return default
 

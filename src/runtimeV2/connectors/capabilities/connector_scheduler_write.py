@@ -46,6 +46,7 @@ class ConnectorSchedulerWrite:
         plugin_handoff: ConnectorGameStateHookDispatcher | None = None,
         *,
         live_interval_ms: int,
+        mock_interval_ms_by_connector: dict[str, int],
     ) -> None:
         self._connector_read = connector_read
         self._scheduler_write = scheduler_write
@@ -54,6 +55,10 @@ class ConnectorSchedulerWrite:
         self._game_detector_write = game_detector_write
         self._plugin_handoff = plugin_handoff
         self._live_interval_ms = max(1, int(live_interval_ms))
+        self._mock_interval_ms_by_connector = {
+            connector_id: max(1, int(interval_ms))
+            for connector_id, interval_ms in mock_interval_ms_by_connector.items()
+        }
 
     def register_connector(self, connector_id: str) -> None:
         """Register probe and live jobs for one connector."""
@@ -101,6 +106,7 @@ class ConnectorSchedulerWrite:
         """Enable live polling and disable probe polling for one connector."""
 
         self._scheduler_clock_write.request_clock_mode(self.OWNER_DOMAIN, "live", lock=True)
+        self._scheduler_write.set_interval(self._live_job_id(connector_id), self._live_interval_ms)
         self._scheduler_write.set_enabled(self._probe_job_id(connector_id), False)
         self._scheduler_write.set_enabled(self._live_job_id(connector_id), True)
 
@@ -110,6 +116,10 @@ class ConnectorSchedulerWrite:
         accepted = self._scheduler_clock_write.request_clock_mode(self.OWNER_DOMAIN, "live", lock=False)
         if not accepted:
             return
+        self._scheduler_write.set_interval(
+            self._live_job_id(connector_id),
+            self._mock_interval_ms(connector_id),
+        )
         self._scheduler_write.set_enabled(self._probe_job_id(connector_id), False)
         self._scheduler_write.set_enabled(self._live_job_id(connector_id), True)
 
@@ -152,6 +162,9 @@ class ConnectorSchedulerWrite:
         if self._plugin_handoff is None:
             return
         self._plugin_handoff.apply_no_game(connector_id)
+
+    def _mock_interval_ms(self, connector_id: str) -> int:
+        return self._mock_interval_ms_by_connector.get(connector_id, 200)
 
     @staticmethod
     def _probe_job_id(connector_id: str) -> str:
