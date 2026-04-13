@@ -114,4 +114,4 @@ class WidgetRefreshPolicy:
         if not self._visibility_read.global_visible():
             self.refresh()
             return
-        self.refresh_if_live_and_visible()
+        self.refresh_if_visible()

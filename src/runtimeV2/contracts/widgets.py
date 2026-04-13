@@ -61,6 +61,10 @@ class WidgetVisibilityReader(Protocol):
         """Return whether one widget is enabled."""
         ...
 
+    def focused_widget(self) -> tuple[str, str] | None:
+        """Return the runtime-only focused widget preview target."""
+        ...
+
 
 @runtime_checkable
 class WidgetVisibilityWriter(Protocol):
@@ -76,6 +80,14 @@ class WidgetVisibilityWriter(Protocol):
 
     def set_widget_enabled(self, overlay_id: str, widget_id: str, enabled: bool) -> bool:
         """Set one widget enabled state."""
+        ...
+
+    def focus_widget(self, overlay_id: str, widget_id: str) -> bool:
+        """Focus one widget without changing persisted widget config."""
+        ...
+
+    def clear_focus(self) -> bool:
+        """Clear the runtime-only focused widget target."""
         ...
 
 

@@ -50,6 +50,7 @@ from runtimeV2.ui.startup_shutdown.startup import UIStartupResult
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
+from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 from runtimeV2.widgets.store import WidgetRecordsStore
 from ui_api.runtime_host import build_runtime_qml_properties, start_runtime_host
 
@@ -160,7 +161,8 @@ class _FakeUiRuntime:
                 ),
             )
         )
-        self._widget_records = WidgetRecordsRead(WidgetRecordsStore())
+        self._widget_records_store = WidgetRecordsStore()
+        self._widget_records = WidgetRecordsRead(self._widget_records_store)
         self._ui_chrome = UIChromeModelRead(
             UIChromeModel(
                 menu_items=[],
@@ -215,12 +217,19 @@ class _FakeUiRuntime:
             "default",
         )
         from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
-        self._widget_visibility_read = WidgetVisibilityRead(WidgetConfigRead(widget_store))
+        from runtimeV2.widgets.visibility_focus import WidgetVisibilityFocus
+        self._widget_visibility_focus = WidgetVisibilityFocus()
+        self._widget_visibility_read = WidgetVisibilityRead(
+            WidgetConfigRead(widget_store),
+            self._widget_visibility_focus,
+        )
         self._widget_manual_override = WidgetManualOverride()
         widget_config_write = WidgetConfigWrite(widget_store)
         widget_config_write.set_global_widgets_visible(False)
         self._widget_visibility_write = WidgetVisibilityWrite(
-            widget_config_write, self._widget_manual_override
+            widget_config_write,
+            self._widget_manual_override,
+            focus=self._widget_visibility_focus,
         )
         self._plugin_active_calls: list[str] = []
         self._settings_save_all_calls = 0
@@ -780,6 +789,89 @@ def test_runtime_host_exposes_widget_preview_actions_to_qml(monkeypatch) -> None
     assert runtime._connector_source_releases == [
         ("LMU_RF2_Connector", "tinyui.statusbar.widgets"),
     ]
+
+
+def test_widget_preview_actions_can_focus_one_widget_before_mock_preview(monkeypatch) -> None:
+    """Focused widget visibility should be independent from mock preview playback."""
+
+    app = _FakeApp()
+    runtime = _FakeUiRuntime()
+    runtime._widget_records_store.set_records([
+        WidgetRecord(
+            overlay_id="demo_overlay",
+            widget_id="speed",
+            widget_type="text",
+            label="Speed",
+            source="speed",
+            bindings={},
+            status=WidgetStatus.READY,
+            connector_ids=(),
+        ),
+        WidgetRecord(
+            overlay_id="demo_overlay",
+            widget_id="rpm",
+            widget_type="text",
+            label="RPM",
+            source="rpm",
+            bindings={},
+            status=WidgetStatus.READY,
+            connector_ids=(),
+        ),
+    ])
+
+    class _FakeWindow:
+        def __init__(self) -> None:
+            self.destroyed = _FakeSignal()
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(
+        "ui_api.runtime_host.open_window",
+        lambda *_args, **_kwargs: SimpleNamespace(qml_window=_FakeWindow(), keepalive=()),
+    )
+
+    result, startup_result = start_runtime_host(
+        app=app,
+        engine=object(),
+        runtime=cast(Any, runtime),
+        host_registry=_ui_host_registry(runtime),
+    )
+
+    assert startup_result.ok
+    assert result is not None
+    preview_actions = cast(WidgetPreviewActions, result.qml_properties["widgetPreviewActions"])
+
+    preview_actions.setFocusedWidgetVisible("demo_overlay", "speed", True)
+
+    assert runtime._widget_visibility_read.global_visible() is True
+    assert runtime._widget_visibility_read.is_widget_enabled("demo_overlay", "speed") is True
+    assert runtime._widget_visibility_read.is_widget_enabled("demo_overlay", "rpm") is True
+    assert runtime._widget_visibility_read.focused_widget() == ("demo_overlay", "speed")
+    assert runtime._connector_source_requests == []
+
+    preview_actions.setFocusedPreviewVisible("demo_overlay", "speed", True)
+
+    assert runtime._connector_source_requests == [
+        ("LMU_RF2_Connector", "tinyui.statusbar.widgets", "mock"),
+    ]
+
+    preview_actions.setFocusedPreviewVisible("demo_overlay", "speed", False)
+
+    assert runtime._widget_visibility_read.global_visible() is True
+    assert runtime._widget_visibility_read.is_widget_enabled("demo_overlay", "speed") is True
+    assert runtime._widget_visibility_read.is_widget_enabled("demo_overlay", "rpm") is True
+    assert runtime._widget_visibility_read.focused_widget() == ("demo_overlay", "speed")
+    assert runtime._connector_source_releases == [
+        ("LMU_RF2_Connector", "tinyui.statusbar.widgets"),
+    ]
+
+    preview_actions.setFocusedWidgetVisible("demo_overlay", "speed", False)
+
+    assert runtime._widget_visibility_read.global_visible() is False
+    assert runtime._widget_visibility_read.is_widget_enabled("demo_overlay", "speed") is True
+    assert runtime._widget_visibility_read.is_widget_enabled("demo_overlay", "rpm") is True
+    assert runtime._widget_visibility_read.focused_widget() is None
 
 
 def test_runtime_host_plugin_activate_action_uses_runtime_capability(monkeypatch) -> None:

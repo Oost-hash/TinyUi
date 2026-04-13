@@ -42,6 +42,7 @@ class WidgetRecordsRefresh:
         active_read,
         widget_config_read,
         events: EventBus,
+        visibility_read=None,
     ) -> None:
         self._store = store
         self._overlay_read = overlay_read
@@ -49,6 +50,7 @@ class WidgetRecordsRefresh:
         self._connector_read = connector_read
         self._active_read = active_read
         self._widget_config_read = widget_config_read
+        self._visibility_read = visibility_read
         self._events = events
 
     def refresh(self) -> list[WidgetRecord]:
@@ -60,6 +62,7 @@ class WidgetRecordsRefresh:
             connector_read=self._connector_read,
             active_read=self._active_read,
             widget_config_read=self._widget_config_read,
+            visibility_read=self._visibility_read,
         )
         self._store.set_records(records)
         self._events.emit_typed(

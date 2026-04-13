@@ -25,13 +25,15 @@ from __future__ import annotations
 
 from runtimeV2.contracts import WidgetConfigReader
 from runtimeV2.widgets.contracts import WidgetVisibilityState
+from runtimeV2.widgets.visibility_focus import WidgetVisibilityFocus
 
 
 class WidgetVisibilityRead:
     """Read widget visibility state owned by the widgets domain."""
 
-    def __init__(self, widget_config_read: WidgetConfigReader) -> None:
+    def __init__(self, widget_config_read: WidgetConfigReader, focus: WidgetVisibilityFocus | None = None) -> None:
         self._widget_config_read = widget_config_read
+        self._focus = focus
 
     def state(self) -> WidgetVisibilityState:
         """Return widget visibility state."""
@@ -48,3 +50,10 @@ class WidgetVisibilityRead:
 
         config = self._widget_config_read.get_widget(overlay_id, widget_id)
         return True if config is None else config.enabled
+
+    def focused_widget(self) -> tuple[str, str] | None:
+        """Return the runtime-only focused widget preview target."""
+
+        if self._focus is None:
+            return None
+        return self._focus.focused_widget()

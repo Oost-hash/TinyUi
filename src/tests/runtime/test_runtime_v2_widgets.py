@@ -32,6 +32,7 @@ from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibili
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.contracts import WidgetStatus, WidgetVisibilityChangedData
 from runtimeV2.widgets.store import WidgetRecordsStore
+from runtimeV2.widgets.visibility_focus import WidgetVisibilityFocus
 from runtimeV2.widgets.schemas.manifest import OverlayManifest, OverlayWidgetDecl, WidgetDefaults
 
 
@@ -101,6 +102,7 @@ def _widget_records_refresh(
     active_read,
     widget_config_read,
     events: EventBus,
+    visibility_read=None,
 ) -> WidgetRecordsRefresh:
     return WidgetRecordsRefresh(
         store=store,
@@ -110,6 +112,7 @@ def _widget_records_refresh(
         active_read=active_read,
         widget_config_read=widget_config_read,
         events=events,
+        visibility_read=visibility_read,
     )
 
 
@@ -556,6 +559,39 @@ def test_widget_refresh_policy_skips_connector_updates_when_hidden() -> None:
     assert calls == ["refresh", "refresh", "refresh"]
 
 
+def test_widget_refresh_policy_refreshes_visibility_changes_without_live_clock() -> None:
+    """Widget visibility changes should project immediately even before live ticks start."""
+
+    bus = EventBus()
+    calls: list[str] = []
+    scheduler_registry = SchedulerRegistry()
+    scheduler_write = SchedulerWrite(scheduler_registry, SchedulerDriver(scheduler_registry, bus), bus)
+    scheduler_clock = SchedulerClock()
+
+    class _FakeRefresh:
+        def refresh(self) -> list[object]:
+            calls.append("refresh")
+            return []
+
+    class _FakeVisibilityRead:
+        def global_visible(self) -> bool:
+            return True
+
+    policy = WidgetRefreshPolicy(
+        records_refresh=cast(Any, _FakeRefresh()),
+        visibility_read=cast(Any, _FakeVisibilityRead()),
+        scheduler_write=scheduler_write,
+        scheduler_clock_read=SchedulerClockRead(scheduler_clock),
+        events=bus,
+    )
+
+    policy.attach()
+    bus.emit_typed(EventType.WIDGET_VISIBILITY_CHANGED, data=None, source="widgets")
+    scheduler_write.tick(20)
+
+    assert calls == ["refresh"]
+
+
 def test_widget_refresh_policy_can_unsubscribe() -> None:
     """Widget refresh policy should remove its runtime event listeners on close."""
 
@@ -650,6 +686,83 @@ def test_widget_records_refresh_marks_ready_when_connector_is_live_without_overl
     assert record.resolved_value == "321 km/h"
 
 
+def test_widget_records_refresh_focus_hides_siblings_without_disabling_config(tmp_path) -> None:
+    """Focused widget visibility should not mutate persisted enabled state."""
+
+    overlay_id = "demo_overlay"
+    connector_id = "iracing"
+    store = WidgetRecordsStore()
+    bus = EventBus()
+    connector_services = ConnectorServiceRegistry()
+    connector_services.register(
+        connector_id,
+        connector_id,
+        "iRacing",
+        _FakeConnectorService([("car.speed", "321 km/h"), ("car.rpm", "7200")]),
+    )
+    base_dir = tmp_path / "TinyUi"
+    config_root = base_dir / "config"
+    widget_store = WidgetConfigStore(
+        PersistencePaths(
+            base_dir=base_dir,
+            config_root=config_root,
+            cache_dir=base_dir / "cache",
+            logs_dir=base_dir / "logs",
+            bootstrap_path=base_dir / "bootstrap.toml",
+            config_sets_path=config_root / "config_sets.json",
+        ),
+        "default",
+    )
+    WidgetConfigWrite(widget_store).set_global_widgets_visible(True)
+    widget_config_read = WidgetConfigRead(widget_store)
+    visibility_focus = WidgetVisibilityFocus()
+    visibility_read = WidgetVisibilityRead(widget_config_read, visibility_focus)
+    assert visibility_focus.focus_widget(overlay_id, "speed") is True
+    refresh = _widget_records_refresh(
+        store=store,
+        overlay_read=_FakeOverlayRead(
+            {
+                overlay_id: OverlayManifest(
+                    connectors=[connector_id],
+                    widgets=[
+                        OverlayWidgetDecl(
+                            id="speed",
+                            widget="text",
+                            label="Speed",
+                            bindings={"source": "car.speed"},
+                        ),
+                        OverlayWidgetDecl(
+                            id="rpm",
+                            widget="text",
+                            label="RPM",
+                            bindings={"source": "car.rpm"},
+                        ),
+                    ],
+                )
+            }
+        ),
+        connector_decl_read=_FakeConnectorDeclRead(
+            {
+                connector_id: ConnectorManifest(
+                    service=ConnectorServiceDecl(module="plugins.iracing", class_name="IRacingService")
+                )
+            }
+        ),
+        connector_read=ConnectorRead(connector_services),
+        active_read=_FakeActiveRead(None),
+        widget_config_read=widget_config_read,
+        events=bus,
+        visibility_read=visibility_read,
+    )
+
+    records = {record.widget_id: record for record in refresh.refresh()}
+
+    assert records["speed"].enabled is True
+    assert records["speed"].status == WidgetStatus.READY
+    assert records["rpm"].enabled is True
+    assert records["rpm"].status == WidgetStatus.HIDDEN
+
+
 def test_widget_visibility_capabilities_project_and_persist_visibility(tmp_path) -> None:
     """Widget visibility should stay widgets-owned while persisting through widget config."""
 
@@ -668,10 +781,11 @@ def test_widget_visibility_capabilities_project_and_persist_visibility(tmp_path)
     )
     from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
     config_write = WidgetConfigWrite(store)
-    visibility_read = WidgetVisibilityRead(WidgetConfigRead(store))
+    visibility_focus = WidgetVisibilityFocus()
+    visibility_read = WidgetVisibilityRead(WidgetConfigRead(store), visibility_focus)
     bus = EventBus()
     manual_override = WidgetManualOverride()
-    visibility_write = WidgetVisibilityWrite(config_write, manual_override, bus)
+    visibility_write = WidgetVisibilityWrite(config_write, manual_override, bus, visibility_focus)
 
     assert visibility_read.global_visible() is False
     visibility_write.set_global_visible(False)
@@ -692,3 +806,8 @@ def test_widget_visibility_capabilities_project_and_persist_visibility(tmp_path)
         widget_id="speed",
         enabled=False,
     )
+
+    assert visibility_write.focus_widget("demo_overlay", "speed") is True
+    assert visibility_read.focused_widget() == ("demo_overlay", "speed")
+    assert visibility_write.clear_focus() is True
+    assert visibility_read.focused_widget() is None

@@ -29,6 +29,7 @@ from runtimeV2.contracts import (
     ManifestOverlayReader,
     PluginActiveReader,
     WidgetConfigReader,
+    WidgetVisibilityReader,
 )
 from runtimeV2.widgets.contracts import WidgetRecord, WidgetStatus
 
@@ -40,12 +41,14 @@ def project_widget_records(
     connector_read: ConnectorReader,
     active_read: PluginActiveReader,
     widget_config_read: WidgetConfigReader,
+    visibility_read: WidgetVisibilityReader | None = None,
 ) -> list[WidgetRecord]:
     """Project overlay declarations into runtime V2 widget records."""
 
     active_plugin = active_read.get_active_plugin()
     connector_decls = connector_decl_read.connector_declarations()
     global_visible = widget_config_read.global_widgets_visible()
+    focused_widget = None if visibility_read is None else visibility_read.focused_widget()
     records: list[WidgetRecord] = []
     for overlay_id, overlay in overlay_read.overlay_declarations().items():
         connector_ids = tuple(connector_id for connector_id in overlay.connectors if connector_id in connector_decls)
@@ -60,10 +63,12 @@ def project_widget_records(
             status = _widget_status(
                 active_plugin=active_plugin,
                 overlay_id=overlay_id,
+                widget_id=widget.id,
                 connector_ids=connector_ids,
                 connector_read=connector_read,
                 global_visible=global_visible,
                 enabled=enabled,
+                focused_widget=focused_widget,
             )
             resolved_value = _resolve_widget_value(
                 source=source,
@@ -111,20 +116,25 @@ def _widget_status(
     *,
     active_plugin: str | None,
     overlay_id: str,
+    widget_id: str,
     connector_ids: tuple[str, ...],
     connector_read: ConnectorReader,
     global_visible: bool,
     enabled: bool,
+    focused_widget: tuple[str, str] | None = None,
 ) -> WidgetStatus:
-    if not _overlay_runtime_active(
+    focused_matches = focused_widget == (overlay_id, widget_id)
+    if focused_widget is not None and not focused_matches:
+        return WidgetStatus.HIDDEN
+    if not global_visible or not enabled:
+        return WidgetStatus.HIDDEN
+    if not focused_matches and not _overlay_runtime_active(
         active_plugin=active_plugin,
         overlay_id=overlay_id,
         connector_ids=connector_ids,
         connector_read=connector_read,
     ):
         return WidgetStatus.IDLE
-    if not global_visible or not enabled:
-        return WidgetStatus.HIDDEN
     if any(not connector_read.has(connector_id) for connector_id in connector_ids):
         return WidgetStatus.WAITING_FOR_CONNECTOR
     return WidgetStatus.READY

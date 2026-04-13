@@ -60,12 +60,36 @@ class WidgetPreviewActions(QObject):
         """Set widget preview visibility and keep connector mock sources in sync."""
 
         if visible:
+            self._widget_visibility_write.clear_focus()
             self._widget_visibility_write.set_global_visible(True)
             self._request_manifest_mock_sources()
             return
 
+        self._widget_visibility_write.clear_focus()
         self._widget_visibility_write.set_global_visible(False)
         self._release_manifest_mock_sources()
+
+    def set_focused_preview_visible(self, overlay_id: str, widget_id: str, visible: bool) -> None:
+        """Set widget preview visibility for one focused widget."""
+
+        if not visible:
+            self._release_manifest_mock_sources()
+            return
+
+        self._widget_visibility_write.focus_widget(overlay_id, widget_id)
+        self._widget_visibility_write.set_global_visible(True)
+        self._request_manifest_mock_sources()
+
+    def set_focused_widget_visible(self, overlay_id: str, widget_id: str, visible: bool) -> None:
+        """Set only one focused widget visible without changing connector mock sources."""
+
+        if not visible:
+            self._widget_visibility_write.clear_focus()
+            self._widget_visibility_write.set_global_visible(False)
+            return
+
+        self._widget_visibility_write.focus_widget(overlay_id, widget_id)
+        self._widget_visibility_write.set_global_visible(True)
 
     def toggle_preview_visible(self) -> None:
         """Toggle widget preview visibility using runtime manual override state."""
@@ -82,6 +106,18 @@ class WidgetPreviewActions(QObject):
         """Set widget preview visibility from QML."""
 
         self.set_preview_visible(visible)
+
+    @Slot(str, str, bool)
+    def setFocusedPreviewVisible(self, overlay_id: str, widget_id: str, visible: bool) -> None:
+        """Set widget preview visibility for one focused widget from QML."""
+
+        self.set_focused_preview_visible(overlay_id, widget_id, visible)
+
+    @Slot(str, str, bool)
+    def setFocusedWidgetVisible(self, overlay_id: str, widget_id: str, visible: bool) -> None:
+        """Set only one focused widget visible from QML."""
+
+        self.set_focused_widget_visible(overlay_id, widget_id, visible)
 
     @Slot()
     def togglePreviewVisible(self) -> None:

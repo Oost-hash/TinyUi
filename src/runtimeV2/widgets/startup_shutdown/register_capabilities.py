@@ -34,6 +34,7 @@ from runtimeV2.widgets.capabilities.widget_refresh_policy import WidgetRefreshPo
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.widgets.store import WidgetRecordsStore
+from runtimeV2.widgets.visibility_focus import WidgetVisibilityFocus
 
 
 @dataclass(frozen=True)
@@ -63,6 +64,8 @@ def register_widget_capabilities(
 ) -> WidgetCapabilities:
     """Create widgets domain capabilities."""
 
+    visibility_focus = WidgetVisibilityFocus()
+    visibility_read = WidgetVisibilityRead(widget_config_read, visibility_focus)
     records_refresh = WidgetRecordsRefresh(
         store=store,
         overlay_read=overlay_read,
@@ -70,9 +73,9 @@ def register_widget_capabilities(
         connector_read=connector_read,
         active_read=active_read,
         widget_config_read=widget_config_read,
+        visibility_read=visibility_read,
         events=events,
     )
-    visibility_read = WidgetVisibilityRead(widget_config_read)
     manual_override = WidgetManualOverride()
     return WidgetCapabilities(
         records_read=WidgetRecordsRead(store),
@@ -88,6 +91,7 @@ def register_widget_capabilities(
         visibility_write=WidgetVisibilityWrite(
             widget_config_write=widget_config_write,
             manual_override=manual_override,
+            focus=visibility_focus,
             events=events,
         ),
         manual_override=manual_override,

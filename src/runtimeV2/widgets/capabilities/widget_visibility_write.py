@@ -27,6 +27,7 @@ from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.contracts import WidgetConfigWriter
 from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 from runtimeV2.widgets.contracts import WidgetVisibilityChangedData
+from runtimeV2.widgets.visibility_focus import WidgetVisibilityFocus
 
 
 class WidgetVisibilityWrite:
@@ -37,9 +38,11 @@ class WidgetVisibilityWrite:
         widget_config_write: WidgetConfigWriter,
         manual_override: WidgetManualOverride,
         events: EventBus | None = None,
+        focus: WidgetVisibilityFocus | None = None,
     ) -> None:
         self._widget_config_write = widget_config_write
         self._manual_override = manual_override
+        self._focus = focus
         self._events = events
 
     def set_global_visible(self, visible: bool) -> None:
@@ -101,6 +104,42 @@ class WidgetVisibilityWrite:
                     overlay_id=overlay_id,
                     widget_id=widget_id,
                     enabled=enabled,
+                )
+            )
+        return updated
+
+    def focus_widget(self, overlay_id: str, widget_id: str) -> bool:
+        """Focus one widget without changing persisted widget config."""
+
+        if self._focus is None:
+            return False
+        updated = self._focus.focus_widget(overlay_id, widget_id)
+        if updated:
+            self._emit_changed(
+                WidgetVisibilityChangedData(
+                    scope="widget_focus",
+                    global_visible=True,
+                    overlay_id=overlay_id,
+                    widget_id=widget_id,
+                )
+            )
+        return updated
+
+    def clear_focus(self) -> bool:
+        """Clear the runtime-only focused widget target."""
+
+        if self._focus is None:
+            return False
+        focused_widget = self._focus.focused_widget()
+        updated = self._focus.clear_focus()
+        if updated:
+            overlay_id, widget_id = focused_widget if focused_widget is not None else ("", "")
+            self._emit_changed(
+                WidgetVisibilityChangedData(
+                    scope="widget_focus",
+                    global_visible=False,
+                    overlay_id=overlay_id,
+                    widget_id=widget_id,
                 )
             )
         return updated
