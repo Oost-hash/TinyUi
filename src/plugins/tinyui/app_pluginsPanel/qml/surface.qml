@@ -39,6 +39,8 @@ Rectangle {
     
     // Track plugin states locally for live updates
     property var pluginStates: ({})  // Map pluginId -> state
+    readonly property url githubIconSource: Qt.resolvedUrl("../../assets/images/logo/ui/github.svg")
+    readonly property url sponsorIconSource: Qt.resolvedUrl("../../assets/images/logo/ui/heart.svg")
 
     // Listen to state changes from runtime
     Connections {
@@ -118,6 +120,11 @@ Rectangle {
             && root.hostWindow.pluginActive
             && root.hostWindow.pluginActive.activePlugin === pluginId
             && root.pluginToActivate !== pluginId
+    }
+
+    function openExternal(url: string) : void {
+        if (url !== "")
+            Qt.openUrlExternally(url)
     }
 
     anchors.fill: parent
@@ -261,15 +268,28 @@ Rectangle {
                         }
                     }
 
-                    // Toggle and settings in header
+                    // Actions in header
                     Row {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 12
-                        visible: root.selectedPlugin && root.selectedPlugin.type !== "host"
+                        visible: root.selectedPlugin !== null
+
+                        HeaderIconButton {
+                            visible: root.selectedPlugin && root.selectedPlugin.url !== ""
+                            iconSource: root.githubIconSource
+                            onClicked: root.openExternal(root.selectedPlugin ? root.selectedPlugin.url : "")
+                        }
+
+                        HeaderIconButton {
+                            visible: root.selectedPlugin && root.selectedPlugin.sponsor !== ""
+                            iconSource: root.sponsorIconSource
+                            onClicked: root.openExternal(root.selectedPlugin ? root.selectedPlugin.sponsor : "")
+                        }
 
                         // Toggle (smaller in hero)
                         Rectangle {
+                            visible: root.selectedPlugin && root.selectedPlugin.type !== "host"
                             width: 28
                             height: 16
                             radius: 8
@@ -293,6 +313,7 @@ Rectangle {
 
                         // Settings icon (SVG) - white icon, controlled via opacity
                         Image {
+                            visible: root.selectedPlugin && root.selectedPlugin.type !== "host"
                             width: 18
                             height: 18
                             source: "../../assets/images/ui/cog.svg"
@@ -690,7 +711,35 @@ Rectangle {
 
     // ── Components ───────────────────────────────────────────────────────────
 
-            component SectionHeader: Rectangle {
+    component HeaderIconButton: Item {
+        id: headerIconButtonRoot
+        property url iconSource: ""
+        signal clicked()
+
+        width: visible ? 22 : 0
+        height: 22
+
+        Image {
+            anchors.centerIn: parent
+            width: 16
+            height: 16
+            source: headerIconButtonRoot.iconSource
+            sourceSize.width: 16
+            sourceSize.height: 16
+            fillMode: Image.PreserveAspectFit
+            opacity: headerIconMouse.containsMouse ? 1.0 : 0.7
+            Behavior on opacity { NumberAnimation { duration: 80 } }
+        }
+
+        MouseArea {
+            id: headerIconMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            onClicked: headerIconButtonRoot.clicked()
+        }
+    }
+
+    component SectionHeader: Rectangle {
         id: sectionHeaderRoot
         property string text: ""
         anchors.left: parent ? parent.left : undefined
