@@ -50,6 +50,8 @@ Item {
     property string selectedWidgetId: ""
     property string selectedOverlayId: ""
     property bool showAdvanced: false
+    property bool focusedWidgetVisibleActive: false
+    property bool focusedMockPreviewActive: false
 
     anchors.fill: parent
 
@@ -86,8 +88,13 @@ Item {
         selectedWidgetId = widget.widgetId
         selectedOverlayId = widget.overlayId
 
-        if (widgetPreviewActions && widgetVisibility && !widgetVisibility.globalVisible)
-            widgetPreviewActions.setPreviewVisible(true)
+        if (widgetPreviewActions) {
+            widgetPreviewActions.setFocusedWidgetVisible(selectedOverlayId, selectedWidgetId, true)
+            focusedWidgetVisibleActive = true
+        }
+
+        if (focusedMockPreviewActive && widgetPreviewActions)
+            widgetPreviewActions.setFocusedPreviewVisible(selectedOverlayId, selectedWidgetId, true)
     }
 
     function isWidgetSelected(widget) {
@@ -97,8 +104,33 @@ Item {
     }
 
     function clearSelection() {
+        stopFocusedMockPreview()
+        stopFocusedWidgetVisibility()
         selectedWidgetId = ""
         selectedOverlayId = ""
+    }
+
+    function stopFocusedWidgetVisibility() {
+        if (!focusedWidgetVisibleActive)
+            return
+        if (widgetPreviewActions && selectedOverlayId !== "" && selectedWidgetId !== "")
+            widgetPreviewActions.setFocusedWidgetVisible(selectedOverlayId, selectedWidgetId, false)
+        focusedWidgetVisibleActive = false
+    }
+
+    function startFocusedMockPreview() {
+        if (!widgetPreviewActions || selectedOverlayId === "" || selectedWidgetId === "")
+            return
+        widgetPreviewActions.setFocusedPreviewVisible(selectedOverlayId, selectedWidgetId, true)
+        focusedMockPreviewActive = true
+    }
+
+    function stopFocusedMockPreview() {
+        if (!focusedMockPreviewActive)
+            return
+        if (widgetPreviewActions)
+            widgetPreviewActions.setFocusedPreviewVisible(selectedOverlayId, selectedWidgetId, false)
+        focusedMockPreviewActive = false
     }
 
     function widgetTitle(widget) {
@@ -527,7 +559,7 @@ Item {
                 anchors.left: parent.left
                 anchors.leftMargin: 16
                 anchors.right: parent.right
-                anchors.rightMargin: 48
+                anchors.rightMargin: 112
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 3
 
@@ -563,13 +595,16 @@ Item {
                 border.width: 1
                 border.color: closeHover.hovered ? widgetTab.c("accent", "#4a9eff") : widgetTab.c("border", "#464b57")
 
-                Text {
+                Image {
                     anchors.centerIn: parent
-                    text: "x"
-                    color: widgetTab.c("text", "#dce0e5")
-                    font.pixelSize: widgetTab.f("fontSizeBase", 13)
-                    font.family: widgetTab.f("fontFamily", "sans-serif")
-                    font.weight: Font.DemiBold
+                    width: 16
+                    height: 16
+                    source: "../../assets/images/ui/window-close.svg"
+                    sourceSize.width: 16
+                    sourceSize.height: 16
+                    fillMode: Image.PreserveAspectFit
+                    opacity: closeHover.hovered ? 1.0 : 0.75
+                    Behavior on opacity { NumberAnimation { duration: 80 } }
                 }
 
                 MouseArea {
@@ -579,6 +614,28 @@ Item {
                 }
 
                 HoverHandler { id: closeHover }
+            }
+
+            Row {
+                anchors.right: closeButton.left
+                anchors.rightMargin: 8
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 6
+
+                IconButton {
+                    iconSource: "../../assets/images/ui/play.svg"
+                    enabled: widgetTab.widgetPreviewActions !== null
+                        && widgetTab.selectedOverlayId !== ""
+                        && widgetTab.selectedWidgetId !== ""
+                        && !widgetTab.focusedMockPreviewActive
+                    onClicked: widgetTab.startFocusedMockPreview()
+                }
+
+                IconButton {
+                    iconSource: "../../assets/images/ui/stop.svg"
+                    enabled: widgetTab.focusedMockPreviewActive
+                    onClicked: widgetTab.stopFocusedMockPreview()
+                }
             }
 
             Rectangle {
@@ -888,6 +945,42 @@ Item {
             height: 1
             color: widgetTab.c("border", "#464b57")
         }
+    }
+
+    component IconButton: Rectangle {
+        id: iconButtonRoot
+        property url iconSource: ""
+        signal clicked()
+
+        width: 28
+        height: 28
+        radius: 4
+        color: iconButtonHover.hovered ? widgetTab.c("surfaceRaised", "#3b414d") : "transparent"
+        border.width: 1
+        border.color: iconButtonHover.hovered ? widgetTab.c("accent", "#4a9eff") : widgetTab.c("border", "#464b57")
+        opacity: enabled ? 1.0 : 0.45
+        Behavior on color { ColorAnimation { duration: 80 } }
+        Behavior on border.color { ColorAnimation { duration: 80 } }
+
+        Image {
+            anchors.centerIn: parent
+            width: 16
+            height: 16
+            source: iconButtonRoot.iconSource
+            sourceSize.width: 16
+            sourceSize.height: 16
+            fillMode: Image.PreserveAspectFit
+            opacity: iconButtonHover.hovered ? 1.0 : 0.75
+            Behavior on opacity { NumberAnimation { duration: 80 } }
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            enabled: iconButtonRoot.enabled
+            onClicked: iconButtonRoot.clicked()
+        }
+
+        HoverHandler { id: iconButtonHover }
     }
 
     component ThresholdEditor: Column {
