@@ -51,7 +51,7 @@ Item {
     property var pluginStates: ({})
     property bool widgetsVisible: hostWindow && hostWindow.widgetVisibility ? hostWindow.widgetVisibility.globalVisible : true
 
-    readonly property url menuIconSource: Qt.resolvedUrl("../../assets/images/ui/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
+    readonly property url menuIconSource: Qt.resolvedUrl("../../../../assets/images/ui/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
 
     function pluginStatusColor(pluginId: string) : color {
         if (!pluginId || pluginId === "")
