@@ -23,6 +23,7 @@
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
@@ -40,7 +41,14 @@ from shared_runtime_host.capabilities.widget_api import (
 )
 from ui_api.qt import create_engine
 
-_QML_DIR = Path(__file__).resolve().parent / "qml"
+
+def _widget_window_url() -> QUrl:
+    """Get the WidgetWindow QML URL (filesystem in dev, QRC in build)."""
+    if getattr(sys, "frozen", False):
+        return QUrl("qrc:/widget_api/qml/WidgetWindow.qml")
+    # Dev mode: load directly from filesystem for hot-reload
+    qml_dir = Path(__file__).resolve().parent / "qml"
+    return QUrl.fromLocalFile(str(qml_dir / "WidgetWindow.qml"))
 
 
 @dataclass
@@ -71,7 +79,7 @@ class WidgetWindowHost:
         self._engine = create_engine()
         self._component = QQmlComponent(
             self._engine,
-            QUrl.fromLocalFile(str(_QML_DIR / "WidgetWindow.qml")),
+            _widget_window_url(),
         )
         self._windows: dict[str, _HostedWidgetWindow] = {}
 

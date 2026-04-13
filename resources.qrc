@@ -1,0 +1,39 @@
+<RCC>
+    <qresource prefix="/">
+        <!-- UI API QML -->
+        <file alias="ui_api/qml/AppChromeShell.qml">src/ui_api/qml/AppChromeShell.qml</file>
+        <file alias="ui_api/qml/HostedWindow.qml">src/ui_api/qml/HostedWindow.qml</file>
+        <!-- Widget API QML -->
+        <file alias="widget_api/qml/TextWidget.qml">src/widget_api/qml/TextWidget.qml</file>
+        <file alias="widget_api/qml/WidgetHost.qml">src/widget_api/qml/WidgetHost.qml</file>
+        <file alias="widget_api/qml/WidgetWindow.qml">src/widget_api/qml/WidgetWindow.qml</file>
+        <!-- Plugin QML -->
+        <file alias="plugins/tinyui/app_devtools/qml/SchemaList.qml">src/plugins/tinyui/app_devtools/qml/SchemaList.qml</file>
+        <file alias="plugins/tinyui/app_devtools/qml/surface.qml">src/plugins/tinyui/app_devtools/qml/surface.qml</file>
+        <file alias="plugins/tinyui/app_hostChrome/qml/HostChromeShell.qml">src/plugins/tinyui/app_hostChrome/qml/HostChromeShell.qml</file>
+        <file alias="plugins/tinyui/app_pluginsPanel/qml/surface.qml">src/plugins/tinyui/app_pluginsPanel/qml/surface.qml</file>
+        <file alias="plugins/tinyui/app_settings/qml/surface.qml">src/plugins/tinyui/app_settings/qml/surface.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/surface.qml">src/plugins/tinyui/app_widgetsTab/qml/surface.qml</file>
+        <!-- Assets - Images -->
+        <file alias="assets/images/logo/logo.ico">assets/images/logo/logo.ico</file>
+        <file alias="assets/images/logo/logo.png">assets/images/logo/logo.png</file>
+        <file alias="assets/images/logo/logo.svg">assets/images/logo/logo.svg</file>
+        <file alias="assets/images/logo/ui/github.svg">assets/images/logo/ui/github.svg</file>
+        <file alias="assets/images/logo/ui/heart.svg">assets/images/logo/ui/heart.svg</file>
+        <file alias="assets/images/ui/caret-down.svg">assets/images/ui/caret-down.svg</file>
+        <file alias="assets/images/ui/check-small.svg">assets/images/ui/check-small.svg</file>
+        <file alias="assets/images/ui/cog.svg">assets/images/ui/cog.svg</file>
+        <file alias="assets/images/ui/menu-open.svg">assets/images/ui/menu-open.svg</file>
+        <file alias="assets/images/ui/menu.svg">assets/images/ui/menu.svg</file>
+        <file alias="assets/images/ui/play.svg">assets/images/ui/play.svg</file>
+        <file alias="assets/images/ui/stop.svg">assets/images/ui/stop.svg</file>
+        <file alias="assets/images/ui/window-close.svg">assets/images/ui/window-close.svg</file>
+        <file alias="assets/images/ui/window-maximize.svg">assets/images/ui/window-maximize.svg</file>
+        <file alias="assets/images/ui/window-minimize.svg">assets/images/ui/window-minimize.svg</file>
+        <file alias="assets/images/ui/window-restore.svg">assets/images/ui/window-restore.svg</file>
+        <!-- Assets - Themes -->
+        <file alias="assets/themes/dark.toml">assets/themes/dark.toml</file>
+        <file alias="assets/themes/light.toml">assets/themes/light.toml</file>
+        <!-- Note: LICENSE.txt is copied as a standalone file, not embedded in QRC -->
+    </qresource>
+</RCC>

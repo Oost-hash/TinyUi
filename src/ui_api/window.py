@@ -23,6 +23,7 @@
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
@@ -34,11 +35,19 @@ from PySide6.QtQuick import QQuickWindow
 from ui_api.api.app_actions import AppActions
 from ui_api.startup_logging import log_startup_step
 from ui_api.theme import Theme
+from runtimeV2.paths.qml_source import QmlSource
 from runtimeV2.ui.schemas.manifest import AppManifest
 from ui_api.windowing import attach_windowing
 
 
-_HOSTED_WINDOW_QML = Path(__file__).parent / "qml" / "HostedWindow.qml"
+def _hosted_window_url() -> QUrl:
+    """Get the HostedWindow QML URL (filesystem in dev, QRC in build)."""
+    # Auto-detect: dev mode uses filesystem, frozen uses QRC
+    if getattr(sys, "frozen", False):
+        return QUrl("qrc:/ui_api/qml/HostedWindow.qml")
+    # Dev mode: load directly from filesystem for hot-reload
+    source_root = Path(__file__).resolve().parent
+    return QUrl.fromLocalFile(str(source_root / "qml" / "HostedWindow.qml"))
 
 
 @dataclass
@@ -56,7 +65,7 @@ def open_window(
     **extra_properties: object,
 ) -> WindowHandle:
     log_startup_step(f"opening hosted window: {manifest.id}")
-    url = QUrl.fromLocalFile(str(_HOSTED_WINDOW_QML))
+    url = _hosted_window_url()
     component = QQmlComponent(engine, url)
     obj = component.create()
     if obj is None:
@@ -91,15 +100,36 @@ def open_window(
 
     surface_component = None
     if manifest.surface:
-        surface_url = QUrl.fromLocalFile(str(manifest.surface))
-        log_startup_step(f"loading surface for {manifest.id}: {manifest.surface}")
+        # In frozen builds, load plugin surfaces from QRC if available
+        if getattr(sys, "frozen", False) and "plugins/" in str(manifest.surface):
+            surface_path = str(manifest.surface).replace("\\", "/")
+            if "plugins/" in surface_path:
+                qrc_path = "qrc:/plugins/" + surface_path.split("plugins/", 1)[1]
+            else:
+                qrc_path = f"qrc:{surface_path}"
+            surface_url = QUrl(qrc_path)
+        else:
+            surface_url = QUrl.fromLocalFile(str(manifest.surface))
+        log_startup_step(f"loading surface for {manifest.id}: {surface_url.toString()}")
         surface_component = QQmlComponent(engine, surface_url)
         window.setProperty("surfaceComponent", surface_component)
 
     # Load custom chrome from manifest if specified and no override provided
     if chrome_component is None and manifest.chrome.custom_chrome:
-        chrome_url = QUrl.fromLocalFile(str(manifest.chrome.custom_chrome))
-        log_startup_step(f"loading custom chrome for {manifest.id}: {manifest.chrome.custom_chrome}")
+        # In frozen builds, load from QRC; in dev, load from filesystem
+        if getattr(sys, "frozen", False):
+            # Convert filesystem path to QRC path
+            # e.g., .../plugins/tinyui/app_hostChrome/qml/HostChromeShell.qml
+            #       -> qrc:/plugins/tinyui/app_hostChrome/qml/HostChromeShell.qml
+            chrome_path = str(manifest.chrome.custom_chrome).replace("\\", "/")
+            if "plugins/" in chrome_path:
+                qrc_path = "qrc:/plugins/" + chrome_path.split("plugins/", 1)[1]
+            else:
+                qrc_path = f"qrc:{chrome_path}"
+            chrome_url = QUrl(qrc_path)
+        else:
+            chrome_url = QUrl.fromLocalFile(str(manifest.chrome.custom_chrome))
+        log_startup_step(f"loading custom chrome for {manifest.id}: {chrome_url.toString()}")
         chrome_component = QQmlComponent(engine, chrome_url)
     
     # Apply custom chrome component if specified

@@ -25,6 +25,10 @@ from __future__ import annotations
 
 import sys
 
+# In frozen builds, import compiled QRC resources for embedded assets
+if getattr(sys, "frozen", False):
+    import resources_rc  # noqa: F401
+
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult
 from runtimeV2.startup import startup_runtime_v2

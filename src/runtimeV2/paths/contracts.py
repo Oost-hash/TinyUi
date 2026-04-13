@@ -23,8 +23,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+
+from runtimeV2.paths.qml_source import QmlSource
 
 
 @dataclass(frozen=True)
@@ -36,12 +38,27 @@ class RuntimePaths:
     plugins_dir: Path
     source_root: Path | None = None
     frozen_root: Path | None = None
+    # QML sources that support both dev (filesystem) and build (QRC) modes
+    qml_sources: dict[str, QmlSource] = field(default_factory=dict)
 
     def qml_dir(self, package: str) -> Path:
-        """Return the QML directory for a package."""
-
+        """Return the QML directory for a package.
+        
+        Deprecated: Use qml_source() for core UI QML files.
+        """
         if self.frozen_root is not None:
             return self.frozen_root / package / "qml"
         if self.source_root is None:
             raise RuntimeError(f"No source root available for package '{package}'")
         return self.source_root / package / "qml"
+
+    def qml_source(self, name: str) -> QmlSource:
+        """Return a QML source by registered name.
+        
+        Supports both filesystem (dev) and QRC (build) modes.
+        Raises KeyError if not registered.
+        """
+        try:
+            return self.qml_sources[name]
+        except KeyError as exc:
+            raise KeyError(f"QML source '{name}' is not registered") from exc

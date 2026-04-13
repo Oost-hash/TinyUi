@@ -29,6 +29,29 @@ USER_DIRS = {
 }
 
 
+def _check_running_app() -> list[str]:
+    """Check if TinyUi.exe is currently running. Returns list of PIDs."""
+    if not IS_WINDOWS:
+        return []
+    try:
+        result = subprocess.run(
+            ["tasklist", "/FI", "IMAGENAME eq TinyUi.exe", "/NH"],
+            capture_output=True, text=True, check=False
+        )
+        lines = [line.strip() for line in result.stdout.strip().split("\n") if line.strip()]
+        pids = []
+        for line in lines:
+            parts = line.split()
+            if len(parts) >= 2 and parts[0].lower() == "tinyui.exe":
+                try:
+                    pids.append(parts[1])
+                except (IndexError, ValueError):
+                    pass
+        return pids
+    except Exception:
+        return []
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build the TinyUi app distribution.")
     parser.add_argument("--skip-clean", action="store_true", help="Keep existing dist/build folders before running")
@@ -52,6 +75,19 @@ def _clean_source_bytecode() -> None:
 
 def clean() -> None:
     """Remove build artifacts."""
+    # Check if app is running
+    pids = _check_running_app()
+    if pids:
+        print("\n" + "=" * 60)
+        print("ERROR: Cannot clean build directory!")
+        print("=" * 60)
+        print(f"\nTinyUi.exe is currently running (PID(s): {', '.join(pids)})")
+        print("\nPlease close the TinyUi application before building.")
+        print("\nTip: Check your system tray or Task Manager if the window")
+        print("     is not visible.")
+        print("=" * 60 + "\n")
+        raise RuntimeError("TinyUi.exe is running - cannot clean build directory")
+
     for path in (DIST, BUILD, EGG_INFO):
         if path.is_dir():
             _remove_tree(path)
@@ -74,8 +110,12 @@ def _remove_tree(path: Path, retries: int = 5, delay: float = 0.5) -> None:
         try:
             shutil.rmtree(path, onexc=_handle_remove_error)
             return
-        except OSError as exc:
+        except PermissionError as exc:
             last_error = exc
+            # Check if it's a DLL/pyd file that's locked
+            if IS_WINDOWS and "_psutil" in str(exc):
+                print(f"\n  Warning: {path} appears to be in use.")
+                print("  This usually means TinyUi.exe is still running.")
             if attempt == retries - 1:
                 break
             time.sleep(delay)

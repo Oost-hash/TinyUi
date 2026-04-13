@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import shutil
+import sys
 from pathlib import Path
 
 from PyInstaller.building.build_main import Analysis, COLLECT, EXE, PYZ
@@ -9,31 +11,44 @@ from PyInstaller.utils.hooks import collect_submodules
 
 ROOT = Path(SPECPATH)
 SRC = ROOT / "src"
+HOST_PLUGIN_DIR = SRC / "plugins" / "tinyui"
+
+# Ensure compiled QRC resources exist
+RESOURCES_RC = SRC / "resources_rc.py"
+if not RESOURCES_RC.exists():
+    print("ERROR: resources_rc.py not found!")
+    print("Please run: python scripts/compile_qrc.py")
+    sys.exit(1)
+
+# Copy LICENSE to LICENSE.txt for distribution (user-facing)
+LICENSE_TXT = ROOT / "LICENSE.txt"
+shutil.copy2(ROOT / "LICENSE", LICENSE_TXT)
 
 
-def collect_non_python_files(source: Path, target_prefix: str) -> list[tuple[str, str]]:
-    datas: list[tuple[str, str]] = []
-    for path in sorted(source.rglob("*")):
+def collect_tree(src: Path, dst: str) -> list[tuple[str, str]]:
+    items = []
+    for path in sorted(src.rglob("*")):
         if not path.is_file():
             continue
-        rel = path.relative_to(source)
-        if "__pycache__" in rel.parts:
+        if "__pycache__" in path.parts or path.suffix == ".pyc":
             continue
-        if path.suffix in {".py", ".pyc", ".pyo"}:
-            continue
-        datas.append((str(path), str(Path(target_prefix) / rel.parent)))
-    return datas
+        rel_parent = path.relative_to(src).parent
+        target = Path(dst) / rel_parent
+        items.append((str(path), str(target)))
+    return items
 
-
+# Include compiled QRC resources (QML, assets are embedded)
+# LICENSE.txt is kept as a standalone file for users to read
 datas = [
-    *collect_non_python_files(SRC / "ui_api" / "qml", "ui_api/qml"),
-    *collect_non_python_files(SRC / "widget_api" / "qml", "widget_api/qml"),
-    *collect_non_python_files(SRC / "plugins" / "tinyui", "plugins/tinyui"),
+    (str(RESOURCES_RC), "."),
+    (str(LICENSE_TXT), "."),
 ]
+datas += collect_tree(HOST_PLUGIN_DIR, "plugins/tinyui")
 
 hiddenimports = [
     "mmap",
     "plugins.tinyui.plugin",
+    "resources_rc",  # Qt compiled resources
 ]
 
 a = Analysis(
