@@ -35,34 +35,34 @@ Item {
     readonly property var uiChrome: hostWindow && hostWindow.uiChrome ? hostWindow.uiChrome : null
 
     property string windowTitle: hostWindow && typeof hostWindow.windowTitle === "string" ? hostWindow.windowTitle : ""
-    
+
     // UI state from hostWindow capability models
     property var menuItems: uiChrome ? uiChrome.menuItems : []
     property var pluginMenuItems: uiChrome ? uiChrome.pluginMenuItems : []
     property var pluginMenuLabel: uiChrome ? uiChrome.pluginMenuLabel : ""
     property var tabModel: uiChrome ? uiChrome.tabModel : []
     property var activePlugin: hostWindow && hostWindow.pluginActive ? hostWindow.pluginActive.activePlugin : ""
-    
+
     property int currentTab: hostWindow && typeof hostWindow.currentTab === "number" ? hostWindow.currentTab : 0
     property bool showTabBar: hostWindow && typeof hostWindow.showTabBar === "boolean" ? hostWindow.showTabBar : false
     property bool showStatusBar: hostWindow && typeof hostWindow.showStatusBar === "boolean" ? hostWindow.showStatusBar : false
     property var statusItems: uiChrome ? uiChrome.statusItems : []
     property var chromePolicy: hostWindow && hostWindow.chromePolicy ? hostWindow.chromePolicy : ({
-        showMenuButton: true,
-        showTitleText: true,
-        showCaptionButtons: true,
-        showStatusLeftItems: true
-    })
+            showMenuButton: true,
+            showTitleText: true,
+            showCaptionButtons: true,
+            showStatusLeftItems: true
+        })
     property bool menuOpen: false
     // When true, the menu button and dropdown are suppressed so an external chrome can own them
     property bool externalMenuButton: false
 
-    readonly property url menuIconSource: Qt.resolvedUrl("../../assets/images/ui/" + (root.menuOpen ? "menu-open.svg" : "menu.svg"))
-    readonly property url minimizeIconSource: Qt.resolvedUrl("../../assets/images/ui/window-minimize.svg")
-    readonly property url maximizeIconSource: Qt.resolvedUrl("../../assets/images/ui/window-maximize.svg")
-    readonly property url restoreIconSource: Qt.resolvedUrl("../../assets/images/ui/window-restore.svg")
-    readonly property url closeIconSource: Qt.resolvedUrl("../../assets/images/ui/window-close.svg")
-    
+    readonly property url menuIconSource: root.menuOpen ? imageSources.imageUrl("ui.menu-open") : imageSources.imageUrl("ui.menu")
+    readonly property url minimizeIconSource: imageSources.imageUrl("ui.window-minimize")
+    readonly property url maximizeIconSource: imageSources.imageUrl("ui.window-maximize")
+    readonly property url restoreIconSource: imageSources.imageUrl("ui.window-restore")
+    readonly property url closeIconSource: imageSources.imageUrl("ui.window-close")
+
     // Export menu button width for external chrome to position adjacent buttons (0 when suppressed)
     readonly property real menuButtonWidth: root.externalMenuButton ? 0 : menuButton.width
 
@@ -97,9 +97,7 @@ Item {
             anchors.top: parent.top
             anchors.bottom: parent.bottom
             width: menuRow.width + 28
-            color: menuArea.containsMouse || root.menuOpen
-                ? (root.theme ? root.theme.surfaceAlt : "#2f343e")
-                : "transparent"
+            color: menuArea.containsMouse || root.menuOpen ? (root.theme ? root.theme.surfaceAlt : "#2f343e") : "transparent"
 
             MouseArea {
                 id: menuArea
@@ -132,9 +130,7 @@ Item {
                 visible: !!root.chromePolicy.showTitleText
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.windowTitle
-                color: menuArea.containsMouse || root.menuOpen
-                    ? "#FFFFFF"
-                    : (root.theme ? root.theme.textMuted : "#878a98")
+                color: menuArea.containsMouse || root.menuOpen ? "#FFFFFF" : (root.theme ? root.theme.textMuted : "#878a98")
                 font.pixelSize: 12
             }
         }
@@ -147,7 +143,7 @@ Item {
             acceptedButtons: Qt.LeftButton
             onPressed: {
                 if (root.windowController)
-                    root.windowController.startMove()
+                    root.windowController.startMove();
             }
         }
 
@@ -160,16 +156,34 @@ Item {
             height: menuColumn.implicitHeight
             visible: !!root.chromePolicy.showMenuButton && root.menuOpen && !root.externalMenuButton
 
-            Rectangle { anchors.fill: parent; color: root.theme ? root.theme.surfaceAlt : "#2f343e" }
-            Rectangle { anchors.left: parent.left; width: 1; height: parent.height; color: root.theme ? root.theme.border : "#464b57" }
-            Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.theme ? root.theme.border : "#464b57" }
-            Rectangle { anchors.right: parent.right; width: 1; height: parent.height; color: root.theme ? root.theme.border : "#464b57" }
+            Rectangle {
+                anchors.fill: parent
+                color: root.theme ? root.theme.surfaceAlt : "#2f343e"
+            }
+            Rectangle {
+                anchors.left: parent.left
+                width: 1
+                height: parent.height
+                color: root.theme ? root.theme.border : "#464b57"
+            }
+            Rectangle {
+                anchors.bottom: parent.bottom
+                width: parent.width
+                height: 1
+                color: root.theme ? root.theme.border : "#464b57"
+            }
+            Rectangle {
+                anchors.right: parent.right
+                width: 1
+                height: parent.height
+                color: root.theme ? root.theme.border : "#464b57"
+            }
 
             // Prevent clicks from closing the menu immediately
             MouseArea {
                 anchors.fill: parent
-                onClicked: function(mouse) {
-                    mouse.accepted = true
+                onClicked: function (mouse) {
+                    mouse.accepted = true;
                 }
             }
 
@@ -204,33 +218,31 @@ Item {
                         Rectangle {
                             visible: !menuDelegate.modelData.separator
                             anchors.fill: parent
-                            color: menuItemMouse.containsMouse
-                                ? (root.theme ? root.theme.surfaceRaised : "#3b414d")
-                                : "transparent"
+                            color: menuItemMouse.containsMouse ? (root.theme ? root.theme.surfaceRaised : "#3b414d") : "transparent"
 
-                        Text {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: menuDelegate.modelData.label
-                            color: root.theme ? root.theme.text : "#dce0e5"
-                            font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
-                        }
+                            Text {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 12
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: menuDelegate.modelData.label
+                                color: root.theme ? root.theme.text : "#dce0e5"
+                                font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
+                            }
 
                             MouseArea {
                                 id: menuItemMouse
                                 anchors.fill: parent
                                 hoverEnabled: true
-                            onClicked: {
-                                root.menuOpen = false
-                                if (menuDelegate.modelData.action === "close" && root.hostWindow && root.hostWindow.isMainWindow && root.appActions)
-                                    root.appActions.trigger(menuDelegate.modelData.action)
-                                else if (menuDelegate.modelData.action === "close" && root.hostWindow)
-                                    root.hostWindow.close()
-                                else if (root.appActions)
-                                    root.appActions.trigger(menuDelegate.modelData.action)
+                                onClicked: {
+                                    root.menuOpen = false;
+                                    if (menuDelegate.modelData.action === "close" && root.hostWindow && root.hostWindow.isMainWindow && root.appActions)
+                                        root.appActions.trigger(menuDelegate.modelData.action);
+                                    else if (menuDelegate.modelData.action === "close" && root.hostWindow)
+                                        root.hostWindow.close();
+                                    else if (root.appActions)
+                                        root.appActions.trigger(menuDelegate.modelData.action);
+                                }
                             }
-                        }
                         }
                     }
                 }
@@ -247,15 +259,21 @@ Item {
 
             Repeater {
                 model: [
-                    { "icon": root.minimizeIconSource, "close": false, "action": "minimize" },
                     {
-                        "icon": root.hostWindow && root.hostWindow.visibility === Window.Maximized
-                            ? root.restoreIconSource
-                            : root.maximizeIconSource,
+                        "icon": root.minimizeIconSource,
+                        "close": false,
+                        "action": "minimize"
+                    },
+                    {
+                        "icon": root.hostWindow && root.hostWindow.visibility === Window.Maximized ? root.restoreIconSource : root.maximizeIconSource,
                         "close": false,
                         "action": "maximize"
                     },
-                    { "icon": root.closeIconSource, "close": true, "action": "close" }
+                    {
+                        "icon": root.closeIconSource,
+                        "close": true,
+                        "action": "close"
+                    }
                 ]
 
                 delegate: Rectangle {
@@ -263,11 +281,7 @@ Item {
                     required property var modelData
                     width: 46
                     height: titleBar.height
-                    color: titleButtonArea.containsMouse
-                        ? (titleButtonDelegate.modelData.close
-                            ? (root.theme ? root.theme.danger : "#d15b5b")
-                            : (root.theme ? root.theme.surfaceFloating : "#20242b"))
-                        : "transparent"
+                    color: titleButtonArea.containsMouse ? (titleButtonDelegate.modelData.close ? (root.theme ? root.theme.danger : "#d15b5b") : (root.theme ? root.theme.surfaceFloating : "#20242b")) : "transparent"
 
                     Image {
                         anchors.centerIn: parent
@@ -286,13 +300,13 @@ Item {
                         hoverEnabled: true
                         onClicked: {
                             if (titleButtonDelegate.modelData.action === "minimize" && root.windowController) {
-                                root.windowController.minimize()
+                                root.windowController.minimize();
                             } else if (titleButtonDelegate.modelData.action === "maximize" && root.windowController) {
-                                root.windowController.toggleMaximize()
+                                root.windowController.toggleMaximize();
                             } else if (titleButtonDelegate.modelData.action === "close" && root.hostWindow && root.hostWindow.isMainWindow && root.appActions) {
-                                root.appActions.trigger("close")
+                                root.appActions.trigger("close");
                             } else if (titleButtonDelegate.modelData.action === "close" && root.hostWindow) {
-                                root.hostWindow.close()
+                                root.hostWindow.close();
                             }
                         }
                     }
@@ -308,14 +322,9 @@ Item {
         y: titleBar.height
         width: root.width
         height: 42
-        visible: root.showTabBar
-            && root.hostWindow
-            && root.tabModel
-            && root.tabModel.length > 0
-            && !root.hostWindow.showPluginPanel
+        visible: root.showTabBar && root.hostWindow && root.tabModel && root.tabModel.length > 0 && !root.hostWindow.showPluginPanel
         color: root.theme ? root.theme.surfaceAlt : "#2f343e"
         z: 5
-        
 
         Rectangle {
             anchors.bottom: parent.bottom
@@ -338,9 +347,7 @@ Item {
 
                     width: Math.max(tabLabel.implicitWidth + 40, 88)
                     height: tabBar.height
-                    color: root.hostWindow.currentTab === index
-                        ? (root.theme ? root.theme.surface : "#282c33")
-                        : (root.theme ? root.theme.surfaceAlt : "#2f343e")
+                    color: root.hostWindow.currentTab === index ? (root.theme ? root.theme.surface : "#282c33") : (root.theme ? root.theme.surfaceAlt : "#2f343e")
 
                     // Left border
                     Rectangle {
@@ -374,9 +381,7 @@ Item {
                         id: tabLabel
                         anchors.centerIn: parent
                         text: tabDelegate.modelData.label
-                        color: root.hostWindow.currentTab === tabDelegate.index
-                            ? (root.theme ? root.theme.text : "#dce0e5")
-                            : (root.theme ? root.theme.textSecondary : "#a9afbc")
+                        color: root.hostWindow.currentTab === tabDelegate.index ? (root.theme ? root.theme.text : "#dce0e5") : (root.theme ? root.theme.textSecondary : "#a9afbc")
                         font.pixelSize: root.theme ? root.theme.fontSizeBase : 13
                     }
 
@@ -385,7 +390,7 @@ Item {
                         hoverEnabled: true
                         onClicked: {
                             if (root.hostWindow)
-                                root.hostWindow.currentTab = tabDelegate.index
+                                root.hostWindow.currentTab = tabDelegate.index;
                         }
                     }
                 }
@@ -407,9 +412,9 @@ Item {
             anchors.fill: parent
             sourceComponent: {
                 if (root.showTabBar && root.tabModel && root.tabModel.length > 0) {
-                    return tabContentComponent
+                    return tabContentComponent;
                 }
-                return root.hostWindow ? root.hostWindow.surfaceComponent : null
+                return root.hostWindow ? root.hostWindow.surfaceComponent : null;
             }
         }
 
@@ -424,7 +429,7 @@ Item {
                     delegate: Item {
                         id: tabContentDelegate
                         required property var modelData
-                        
+
                         Loader {
                             id: tabSurfaceLoader
                             anchors.fill: parent
@@ -432,7 +437,7 @@ Item {
 
                             onStatusChanged: {
                                 if (status === Loader.Error)
-                                    console.warn("[AppChromeShell] tab surface failed: " + source)
+                                    console.warn("[AppChromeShell] tab surface failed: " + source);
                             }
                         }
 
@@ -489,9 +494,7 @@ Item {
                     width: Math.max(statusItemLabel.implicitWidth + 12, 24)
                     height: 20
                     radius: 3
-                    color: itemMouse.containsMouse
-                        ? (root.theme ? root.theme.surfaceFloating : "#20242b")
-                        : "transparent"
+                    color: itemMouse.containsMouse ? (root.theme ? root.theme.surfaceFloating : "#20242b") : "transparent"
 
                     Text {
                         id: statusItemLabel

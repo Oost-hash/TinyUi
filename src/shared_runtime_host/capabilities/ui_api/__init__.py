@@ -21,6 +21,7 @@
 
 """ui_api-facing runtime host capabilities."""
 
+from shared_runtime_host.capabilities.ui_api.image_source import ImageSourceQmlCapability
 from shared_runtime_host.capabilities.ui_api.qml import (
     ConnectorReadQmlCapability,
     ConnectorWriteQmlCapability,
@@ -42,6 +43,7 @@ from shared_runtime_host.capabilities.ui_api.actions import UIActionsCapability
 from shared_runtime_host.capabilities.ui_api.widget_preview_actions import WidgetPreviewActions
 
 __all__ = [
+    "ImageSourceQmlCapability",
     "UIActionsCapability",
     "WidgetPreviewActions",
     "ConnectorReadQmlCapability",

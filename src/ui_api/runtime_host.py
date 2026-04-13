@@ -66,9 +66,11 @@ from runtimeV2.contracts import (
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.ui.startup_shutdown.startup import UIStartupResult
+from runtimeV2.paths.capabilities.path import PathCapability
 from shared_runtime_host.capabilities.ui_api import (
     ConnectorReadQmlCapability,
     ConnectorWriteQmlCapability,
+    ImageSourceQmlCapability,
     ManifestQmlCapability,
     PanelStateQmlCapability,
     PluginActiveQmlCapability,
@@ -190,6 +192,11 @@ def _normalize_qml_properties(
 
     if "widgetPreviewActions" not in properties and host_registry.has_capability("widget_preview_actions"):
         properties["widgetPreviewActions"] = host_registry.capability("widget_preview_actions", WidgetPreviewActions)
+
+    if "imageSources" not in properties and runtime.try_capability("paths") is not None:
+        properties["imageSources"] = ImageSourceQmlCapability(
+            runtime.capability("paths", PathCapability),
+        )
 
     return properties
 

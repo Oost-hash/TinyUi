@@ -31,100 +31,114 @@ Rectangle {
     property var manifestRead: hostWindow && hostWindow.manifestRead ? hostWindow.manifestRead : null
     property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     property var pluginGroups: []
-    
+
     property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
     property var selectedPlugin: null
     property string pluginToActivate: ""  // Plugin waiting to be activated on close
     readonly property bool selectedPluginHasIcon: root.selectedPlugin && root.selectedPlugin.iconUrl !== ""
-    
+
     // Track plugin states locally for live updates
     property var pluginStates: ({})  // Map pluginId -> state
-    readonly property url githubIconSource: Qt.resolvedUrl("../../assets/images/logo/ui/github.svg")
-    readonly property url sponsorIconSource: Qt.resolvedUrl("../../assets/images/logo/ui/heart.svg")
+    readonly property url githubIconSource: imageSources.imageUrl("logo.github")
+    readonly property url sponsorIconSource: imageSources.imageUrl("logo.heart")
 
     // Listen to state changes from runtime
     Connections {
         target: root.hostWindow ? root.hostWindow.pluginState : null
         function onStateDataChanged() {
             if (!root.hostWindow || !root.hostWindow.pluginState)
-                return
-            root.pluginStates = root.hostWindow.pluginState.states
+                return;
+            root.pluginStates = root.hostWindow.pluginState.states;
         }
     }
 
     Connections {
         target: root.manifestRead
         function onPluginsChanged() {
-            root.pluginGroups = root.buildPluginGroups()
+            root.pluginGroups = root.buildPluginGroups();
         }
     }
 
-    function buildPluginGroups() : var {
+    function buildPluginGroups(): var {
         var groups = [
-            { "type": "host", "label": "Host", "plugins": [] },
-            { "type": "plugin", "label": "Plugins", "plugins": [] },
-            { "type": "overlay", "label": "Overlays", "plugins": [] },
-            { "type": "connector", "label": "Connectors", "plugins": [] }
-        ]
-        var plugins = manifestRead ? manifestRead.plugins : []
+            {
+                "type": "host",
+                "label": "Host",
+                "plugins": []
+            },
+            {
+                "type": "plugin",
+                "label": "Plugins",
+                "plugins": []
+            },
+            {
+                "type": "overlay",
+                "label": "Overlays",
+                "plugins": []
+            },
+            {
+                "type": "connector",
+                "label": "Connectors",
+                "plugins": []
+            }
+        ];
+        var plugins = manifestRead ? manifestRead.plugins : [];
         for (var i = 0; i < plugins.length; i++) {
-            var plugin = plugins[i]
+            var plugin = plugins[i];
             for (var j = 0; j < groups.length; j++) {
                 if (groups[j].type === plugin.type) {
-                    groups[j].plugins.push(plugin)
-                    break
+                    groups[j].plugins.push(plugin);
+                    break;
                 }
             }
         }
-        return groups
+        return groups;
     }
 
     // Check if a connector is used by the active plugin
-    function isConnectorUsed(connectorId: string) : bool {
-        if (!hostWindow || !hostWindow.pluginActive || !manifestRead) return false
-        
+    function isConnectorUsed(connectorId: string): bool {
+        if (!hostWindow || !hostWindow.pluginActive || !manifestRead)
+            return false;
+
         // Find the active plugin
         for (var i = 0; i < pluginGroups.length; i++) {
-            var group = pluginGroups[i]
+            var group = pluginGroups[i];
             for (var j = 0; j < group.plugins.length; j++) {
-                var plugin = group.plugins[j]
+                var plugin = group.plugins[j];
                 if (plugin.id === hostWindow.pluginActive.activePlugin) {
                     // Check if this plugin requires the connector
                     if (plugin.requires && plugin.requires.indexOf(connectorId) >= 0) {
-                        return true
+                        return true;
                     }
                 }
             }
         }
-        return false
+        return false;
     }
 
-    function isConnectorPending(connectorId: string) : bool {
-        if (!root.pluginToActivate || !manifestRead) return false
+    function isConnectorPending(connectorId: string): bool {
+        if (!root.pluginToActivate || !manifestRead)
+            return false;
 
         for (var i = 0; i < pluginGroups.length; i++) {
-            var group = pluginGroups[i]
+            var group = pluginGroups[i];
             for (var j = 0; j < group.plugins.length; j++) {
-                var plugin = group.plugins[j]
+                var plugin = group.plugins[j];
                 if (plugin.id === root.pluginToActivate) {
-                    return plugin.requires && plugin.requires.indexOf(connectorId) >= 0
+                    return plugin.requires && plugin.requires.indexOf(connectorId) >= 0;
                 }
             }
         }
-        return false
+        return false;
     }
 
-    function isOutgoingPlugin(pluginId: string) : bool {
-        return root.pluginToActivate !== ""
-            && root.hostWindow
-            && root.hostWindow.pluginActive
-            && root.hostWindow.pluginActive.activePlugin === pluginId
-            && root.pluginToActivate !== pluginId
+    function isOutgoingPlugin(pluginId: string): bool {
+        return root.pluginToActivate !== "" && root.hostWindow && root.hostWindow.pluginActive && root.hostWindow.pluginActive.activePlugin === pluginId && root.pluginToActivate !== pluginId;
     }
 
-    function openExternal(url: string) : void {
+    function openExternal(url: string): void {
         if (url !== "")
-            Qt.openUrlExternally(url)
+            Qt.openUrlExternally(url);
     }
 
     anchors.fill: parent
@@ -133,18 +147,18 @@ Rectangle {
     // Select active plugin when panel opens
     Component.onCompleted: {
         if (hostWindow && hostWindow.pluginState) {
-            root.pluginStates = hostWindow.pluginState.states
+            root.pluginStates = hostWindow.pluginState.states;
         }
-        root.pluginGroups = root.buildPluginGroups()
+        root.pluginGroups = root.buildPluginGroups();
         if (hostWindow && hostWindow.pluginActive && hostWindow.pluginActive.activePlugin && manifestRead) {
             // Find the active plugin in the list
             for (var i = 0; i < pluginGroups.length; i++) {
-                var group = pluginGroups[i]
+                var group = pluginGroups[i];
                 for (var j = 0; j < group.plugins.length; j++) {
                     if (group.plugins[j].id === hostWindow.pluginActive.activePlugin) {
-                        selectedPlugin = group.plugins[j]
-                        pluginToActivate = ""
-                        return
+                        selectedPlugin = group.plugins[j];
+                        pluginToActivate = "";
+                        return;
                     }
                 }
             }
@@ -244,13 +258,7 @@ Rectangle {
                                     font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
                                     font.family: root.theme ? root.theme.fontFamily : "sans-serif"
                                     elide: Text.ElideRight
-                                    width: Math.max(
-                                        0,
-                                        heroInfoColumn.width
-                                        - (heroVersionText.visible ? heroVersionText.implicitWidth : 0)
-                                        - (heroAuthorDot.visible ? heroAuthorDot.implicitWidth : 0)
-                                        - 24
-                                    )
+                                    width: Math.max(0, heroInfoColumn.width - (heroVersionText.visible ? heroVersionText.implicitWidth : 0) - (heroAuthorDot.visible ? heroAuthorDot.implicitWidth : 0) - 24)
                                 }
                             }
 
@@ -316,7 +324,7 @@ Rectangle {
                             visible: root.selectedPlugin && root.selectedPlugin.type !== "host"
                             width: 18
                             height: 18
-                            source: "../../assets/images/ui/cog.svg"
+                            source: imageSources.imageUrl("ui.cog")
                             sourceSize.width: 18
                             sourceSize.height: 18
                             fillMode: Image.PreserveAspectFit
@@ -362,7 +370,10 @@ Rectangle {
                         visible: false
                     }
 
-                    SectionHeader { text: "Info"; visible: root.selectedPlugin }
+                    SectionHeader {
+                        text: "Info"
+                        visible: root.selectedPlugin
+                    }
 
                     DetailRow {
                         label: "Windows"
@@ -378,9 +389,7 @@ Rectangle {
 
                     DetailRow {
                         label: "Dependencies"
-                        value: root.selectedPlugin && root.selectedPlugin.requires.length > 0
-                            ? root.selectedPlugin.requires.join(", ")
-                            : "None"
+                        value: root.selectedPlugin && root.selectedPlugin.requires.length > 0 ? root.selectedPlugin.requires.join(", ") : "None"
                         visible: root.selectedPlugin
                     }
 
@@ -420,7 +429,8 @@ Rectangle {
                 color: "transparent"
 
                 Text {
-                    anchors.left: parent.left; anchors.leftMargin: 16
+                    anchors.left: parent.left
+                    anchors.leftMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Plugins"
                     color: root.theme ? root.theme.text : "#ffffff"
@@ -458,7 +468,8 @@ Rectangle {
                         color: root.theme ? root.theme.surfaceAlt : "#2f343e"
 
                         Text {
-                            anchors.left: parent.left; anchors.leftMargin: 12
+                            anchors.left: parent.left
+                            anchors.leftMargin: 12
                             anchors.verticalCenter: parent.verticalCenter
                             text: pluginGroupDelegate.modelData.label
                             color: root.theme ? root.theme.textSecondary : "#a9afbc"
@@ -484,36 +495,21 @@ Rectangle {
                             required property var modelData
                             required property int index
 
-                            readonly property bool isSelected:
-                                root.selectedPlugin !== null
-                                && root.selectedPlugin.id === pluginRowDelegate.modelData.id
-                            readonly property bool isPendingActivation:
-                                root.pluginToActivate !== ""
-                                && root.pluginToActivate === pluginRowDelegate.modelData.id
-                            readonly property bool isPendingConnector:
-                                pluginRowDelegate.modelData.type === "connector"
-                                && root.isConnectorPending(pluginRowDelegate.modelData.id)
-                            readonly property bool isOutgoingActivation:
-                                (pluginRowDelegate.modelData.type === "plugin"
-                                    || pluginRowDelegate.modelData.type === "overlay")
-                                && root.isOutgoingPlugin(pluginRowDelegate.modelData.id)
+                            readonly property bool isSelected: root.selectedPlugin !== null && root.selectedPlugin.id === pluginRowDelegate.modelData.id
+                            readonly property bool isPendingActivation: root.pluginToActivate !== "" && root.pluginToActivate === pluginRowDelegate.modelData.id
+                            readonly property bool isPendingConnector: pluginRowDelegate.modelData.type === "connector" && root.isConnectorPending(pluginRowDelegate.modelData.id)
+                            readonly property bool isOutgoingActivation: (pluginRowDelegate.modelData.type === "plugin" || pluginRowDelegate.modelData.type === "overlay") && root.isOutgoingPlugin(pluginRowDelegate.modelData.id)
 
                             width: parent.width
                             height: 40
                             // Alternating colors
-                            color: pluginRowDelegate.index % 2 === 0
-                                ? (root.theme ? root.theme.surface : "#17181c")
-                                : (root.theme ? root.theme.surfaceAlt : "#2f343e")
+                            color: pluginRowDelegate.index % 2 === 0 ? (root.theme ? root.theme.surface : "#17181c") : (root.theme ? root.theme.surfaceAlt : "#2f343e")
 
                             // Selected indicator (accent color)
                             Rectangle {
                                 width: 3
                                 height: parent.height
-                                color: pluginRowDelegate.isOutgoingActivation
-                                    ? (root.theme ? root.theme.warningAlt : "#B05CFF")
-                                    : ((pluginRowDelegate.isPendingActivation || pluginRowDelegate.isPendingConnector)
-                                        ? (root.theme ? root.theme.warning : "#ff9800")
-                                        : (root.theme ? root.theme.accent : "#4a9eff"))
+                                color: pluginRowDelegate.isOutgoingActivation ? (root.theme ? root.theme.warningAlt : "#B05CFF") : ((pluginRowDelegate.isPendingActivation || pluginRowDelegate.isPendingConnector) ? (root.theme ? root.theme.warning : "#ff9800") : (root.theme ? root.theme.accent : "#4a9eff"))
                                 visible: pluginRowDelegate.isSelected
                             }
 
@@ -521,12 +517,25 @@ Rectangle {
                             Rectangle {
                                 anchors.fill: parent
                                 opacity: rowHover.hovered && !pluginRowDelegate.isSelected ? 1 : 0
-                                Behavior on opacity { NumberAnimation { duration: 120 } }
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: 120
+                                    }
+                                }
                                 gradient: Gradient {
                                     orientation: Gradient.Horizontal
-                                    GradientStop { position: 0.0; color: "transparent" }
-                                    GradientStop { position: 0.5; color: "transparent" }
-                                    GradientStop { position: 1.0; color: "#20dec184" }
+                                    GradientStop {
+                                        position: 0.0
+                                        color: "transparent"
+                                    }
+                                    GradientStop {
+                                        position: 0.5
+                                        color: "transparent"
+                                    }
+                                    GradientStop {
+                                        position: 1.0
+                                        color: "#20dec184"
+                                    }
                                 }
                             }
 
@@ -556,29 +565,43 @@ Rectangle {
                                         radius: 4
                                         color: {
                                             // Pending activation takes precedence until the panel closes
-                                            if (pluginRowDelegate.isOutgoingActivation) return root.theme ? root.theme.warningAlt : "#B05CFF"
-                                            if (pluginRowDelegate.isPendingActivation || pluginRowDelegate.isPendingConnector) return root.theme ? root.theme.warning : "#ff9800"
+                                            if (pluginRowDelegate.isOutgoingActivation)
+                                                return root.theme ? root.theme.warningAlt : "#B05CFF";
+                                            if (pluginRowDelegate.isPendingActivation || pluginRowDelegate.isPendingConnector)
+                                                return root.theme ? root.theme.warning : "#ff9800";
 
                                             // Then check live state from pluginStates, fallback to modelData
-                                            var liveState = root.pluginStates[pluginRowDelegate.modelData.id]
-                                            var state = liveState || pluginRowDelegate.modelData.state || "disabled"
-                                            if (state === "active") return root.theme ? root.theme.success : "#4caf50"
-                                            if (state === "enabling" || state === "loading") return root.theme ? root.theme.warning : "#ff9800"
-                                            if (state === "error") return root.theme ? root.theme.danger : "#f44336"
-                                            if (state === "unloading") return root.theme ? root.theme.warningAlt : "#B05CFF"
-                                            return root.theme ? root.theme.danger : "#f44336"  // disabled
+                                            var liveState = root.pluginStates[pluginRowDelegate.modelData.id];
+                                            var state = liveState || pluginRowDelegate.modelData.state || "disabled";
+                                            if (state === "active")
+                                                return root.theme ? root.theme.success : "#4caf50";
+                                            if (state === "enabling" || state === "loading")
+                                                return root.theme ? root.theme.warning : "#ff9800";
+                                            if (state === "error")
+                                                return root.theme ? root.theme.danger : "#f44336";
+                                            if (state === "unloading")
+                                                return root.theme ? root.theme.warningAlt : "#B05CFF";
+                                            return root.theme ? root.theme.danger : "#f44336";  // disabled
                                         }
 
                                         // Pulse animation for loading states
                                         SequentialAnimation on opacity {
                                             running: {
-                                                var liveS = root.pluginStates[pluginRowDelegate.modelData.id]
-                                                var s = liveS || pluginRowDelegate.modelData.state || "disabled"
-                                                return s === "enabling" || s === "loading" || s === "unloading"
+                                                var liveS = root.pluginStates[pluginRowDelegate.modelData.id];
+                                                var s = liveS || pluginRowDelegate.modelData.state || "disabled";
+                                                return s === "enabling" || s === "loading" || s === "unloading";
                                             }
                                             loops: Animation.Infinite
-                                            NumberAnimation { from: 1.0; to: 0.3; duration: 500 }
-                                            NumberAnimation { from: 0.3; to: 1.0; duration: 500 }
+                                            NumberAnimation {
+                                                from: 1.0
+                                                to: 0.3
+                                                duration: 500
+                                            }
+                                            NumberAnimation {
+                                                from: 0.3
+                                                to: 1.0
+                                                duration: 500
+                                            }
                                         }
                                     }
 
@@ -629,7 +652,7 @@ Rectangle {
                                             anchors.fill: parent
                                             hoverEnabled: true
                                             onClicked: {
-                                                console.log("Toggle:", pluginRowDelegate.modelData.id)
+                                                console.log("Toggle:", pluginRowDelegate.modelData.id);
                                             }
                                         }
                                     }
@@ -639,19 +662,23 @@ Rectangle {
                                         anchors.verticalCenter: parent.verticalCenter
                                         width: 14
                                         height: 14
-                                        source: "../../assets/images/ui/cog.svg"
+                                        source: imageSources.imageUrl("ui.cog")
                                         sourceSize.width: 14
                                         sourceSize.height: 14
                                         fillMode: Image.PreserveAspectFit
                                         opacity: cogMouse.containsMouse ? 1.0 : 0.6
-                                        Behavior on opacity { NumberAnimation { duration: 80 } }
+                                        Behavior on opacity {
+                                            NumberAnimation {
+                                                duration: 80
+                                            }
+                                        }
 
                                         MouseArea {
                                             id: cogMouse
                                             anchors.fill: parent
                                             hoverEnabled: true
                                             onClicked: {
-                                                console.log("Settings:", pluginRowDelegate.modelData.id)
+                                                console.log("Settings:", pluginRowDelegate.modelData.id);
                                             }
                                         }
                                     }
@@ -662,18 +689,17 @@ Rectangle {
                                 anchors.fill: parent
                                 anchors.rightMargin: 80  // Don't trigger when clicking toggle/settings
                                 onClicked: {
-                                    root.selectedPlugin = pluginRowDelegate.modelData
-                                    if (pluginRowDelegate.modelData.type === "plugin"
-                                            || pluginRowDelegate.modelData.type === "overlay") {
-                                        root.pluginToActivate = pluginRowDelegate.modelData.id !== root.hostWindow.pluginActive.activePlugin
-                                            ? pluginRowDelegate.modelData.id
-                                            : ""
+                                    root.selectedPlugin = pluginRowDelegate.modelData;
+                                    if (pluginRowDelegate.modelData.type === "plugin" || pluginRowDelegate.modelData.type === "overlay") {
+                                        root.pluginToActivate = pluginRowDelegate.modelData.id !== root.hostWindow.pluginActive.activePlugin ? pluginRowDelegate.modelData.id : "";
                                     } else {
-                                        root.pluginToActivate = ""
+                                        root.pluginToActivate = "";
                                     }
                                 }
                             }
-                            HoverHandler { id: rowHover }
+                            HoverHandler {
+                                id: rowHover
+                            }
                         }
                     }
                 }
@@ -714,7 +740,7 @@ Rectangle {
     component HeaderIconButton: Item {
         id: headerIconButtonRoot
         property url iconSource: ""
-        signal clicked()
+        signal clicked
 
         width: visible ? 22 : 0
         height: 22
@@ -728,7 +754,11 @@ Rectangle {
             sourceSize.height: 16
             fillMode: Image.PreserveAspectFit
             opacity: headerIconMouse.containsMouse ? 1.0 : 0.7
-            Behavior on opacity { NumberAnimation { duration: 80 } }
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 80
+                }
+            }
         }
 
         MouseArea {
@@ -749,7 +779,8 @@ Rectangle {
         visible: text !== ""
 
         Text {
-            anchors.left: parent.left; anchors.leftMargin: 16
+            anchors.left: parent.left
+            anchors.leftMargin: 16
             anchors.verticalCenter: parent.verticalCenter
             text: parent.text
             color: root.theme ? root.theme.textSecondary : "#a9afbc"
@@ -775,21 +806,32 @@ Rectangle {
         anchors.left: parent ? parent.left : undefined
         anchors.right: parent ? parent.right : undefined
         height: visible ? (heroStyle ? 58 : (description !== "" ? 52 : 44)) : 0
-        color: heroStyle
-            ? (root.theme ? Qt.rgba(0, 0, 0, 0.2) : "#121316")
-            : "transparent"
+        color: heroStyle ? (root.theme ? Qt.rgba(0, 0, 0, 0.2) : "#121316") : "transparent"
         visible: true
 
         Rectangle {
             anchors.fill: parent
             visible: !detailRowRoot.heroStyle
             opacity: detailRowHover.hovered ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 120
+                }
+            }
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: "transparent" }
-                GradientStop { position: 0.5; color: "transparent" }
-                GradientStop { position: 1.0; color: "#20dec184" }
+                GradientStop {
+                    position: 0.0
+                    color: "transparent"
+                }
+                GradientStop {
+                    position: 0.5
+                    color: "transparent"
+                }
+                GradientStop {
+                    position: 1.0
+                    color: "#20dec184"
+                }
             }
         }
 
@@ -802,8 +844,10 @@ Rectangle {
         }
 
         Column {
-            anchors.left: parent.left; anchors.leftMargin: 16
-            anchors.right: parent.right; anchors.rightMargin: 16
+            anchors.left: parent.left
+            anchors.leftMargin: 16
+            anchors.right: parent.right
+            anchors.rightMargin: 16
             anchors.verticalCenter: parent.verticalCenter
             spacing: 3
 
@@ -817,14 +861,14 @@ Rectangle {
             Text {
                 visible: detailRowRoot.description !== ""
                 text: detailRowRoot.description
-                color: detailRowRoot.heroStyle
-                    ? (root.theme ? root.theme.textSecondary : "#a9afbc")
-                    : (detailRowHover.hovered ? "#dec184" : (root.theme ? root.theme.textMuted : "#878a98"))
-                font.pixelSize: detailRowRoot.heroStyle
-                    ? (root.theme ? root.theme.fontSizeBase : 13)
-                    : (root.theme ? root.theme.fontSizeSmall : 11)
+                color: detailRowRoot.heroStyle ? (root.theme ? root.theme.textSecondary : "#a9afbc") : (detailRowHover.hovered ? "#dec184" : (root.theme ? root.theme.textMuted : "#878a98"))
+                font.pixelSize: detailRowRoot.heroStyle ? (root.theme ? root.theme.fontSizeBase : 13) : (root.theme ? root.theme.fontSizeSmall : 11)
                 font.family: root.theme ? root.theme.fontFamily : "sans-serif"
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 120
+                    }
+                }
                 wrapMode: Text.WordWrap
             }
             Text {
@@ -836,6 +880,8 @@ Rectangle {
             }
         }
 
-        HoverHandler { id: detailRowHover }
+        HoverHandler {
+            id: detailRowHover
+        }
     }
 }

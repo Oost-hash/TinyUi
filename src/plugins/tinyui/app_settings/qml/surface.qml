@@ -37,130 +37,130 @@ Item {
     readonly property bool hasPendingChanges: {
         for (var namespace in pendingChanges) {
             if (Object.keys(pendingChanges[namespace] || {}).length > 0)
-                return true
+                return true;
         }
-        return false
+        return false;
     }
 
     anchors.fill: parent
 
     function c(token, fallback) {
-        return theme ? theme[token] : fallback
+        return theme ? theme[token] : fallback;
     }
 
     function f(token, fallback) {
-        return theme ? theme[token] : fallback
+        return theme ? theme[token] : fallback;
     }
 
     function settings() {
-        return settingsRead ? settingsRead.settings : []
+        return settingsRead ? settingsRead.settings : [];
     }
 
     function namespaceGroups() {
-        var groups = []
-        var byNamespace = ({})
-        var items = settings()
+        var groups = [];
+        var byNamespace = ({});
+        var items = settings();
 
         for (var i = 0; i < items.length; i++) {
-            var setting = items[i]
-            var namespace = setting.namespace || "tinyui"
+            var setting = items[i];
+            var namespace = setting.namespace || "tinyui";
             if (byNamespace[namespace] === undefined) {
-                byNamespace[namespace] = { "namespace": namespace, "settings": [] }
-                groups.push(byNamespace[namespace])
+                byNamespace[namespace] = {
+                    "namespace": namespace,
+                    "settings": []
+                };
+                groups.push(byNamespace[namespace]);
             }
-            byNamespace[namespace].settings.push(setting)
+            byNamespace[namespace].settings.push(setting);
         }
 
-        return groups
+        return groups;
     }
 
     function activeGroup() {
-        var groups = namespaceGroups()
+        var groups = namespaceGroups();
         if (groups.length === 0)
-            return null
+            return null;
         if (activeTab >= groups.length)
-            activeTab = 0
-        return groups[activeTab]
+            activeTab = 0;
+        return groups[activeTab];
     }
 
     function activeSettings() {
-        var group = activeGroup()
-        return group ? group.settings : []
+        var group = activeGroup();
+        return group ? group.settings : [];
     }
 
     function rawSettingValue(setting) {
         if (!setting)
-            return ""
+            return "";
 
-        var namespaceOverrides = savedOverrides[setting.namespace]
+        var namespaceOverrides = savedOverrides[setting.namespace];
         if (namespaceOverrides && namespaceOverrides[setting.key] !== undefined)
-            return namespaceOverrides[setting.key]
+            return namespaceOverrides[setting.key];
 
-        return setting.currentValue
+        return setting.currentValue;
     }
 
     function effectiveValue(setting) {
         if (!setting)
-            return ""
+            return "";
 
-        var namespaceChanges = pendingChanges[setting.namespace]
+        var namespaceChanges = pendingChanges[setting.namespace];
         if (namespaceChanges && namespaceChanges[setting.key] !== undefined)
-            return namespaceChanges[setting.key]
+            return namespaceChanges[setting.key];
 
-        return rawSettingValue(setting)
+        return rawSettingValue(setting);
     }
 
     function displayValue(setting) {
-        var value = effectiveValue(setting)
+        var value = effectiveValue(setting);
         if (setting && setting.type === "bool")
-            return boolValue(value) ? "true" : "false"
-        return String(value)
+            return boolValue(value) ? "true" : "false";
+        return String(value);
     }
 
     function boolValue(value) {
-        return value === true || value === "true" || value === "True" || value === "1"
+        return value === true || value === "true" || value === "True" || value === "1";
     }
 
     function intValue(value) {
-        var parsed = parseInt(value)
-        return isNaN(parsed) ? 0 : parsed
+        var parsed = parseInt(value);
+        return isNaN(parsed) ? 0 : parsed;
     }
 
     function setPending(namespace, key, value) {
-        var next = Object.assign({}, pendingChanges)
-        next[namespace] = Object.assign({}, next[namespace] || {})
-        next[namespace][key] = value
-        pendingChanges = next
+        var next = Object.assign({}, pendingChanges);
+        next[namespace] = Object.assign({}, next[namespace] || {});
+        next[namespace][key] = value;
+        pendingChanges = next;
     }
 
     function isPending(setting) {
-        var namespaceChanges = setting ? pendingChanges[setting.namespace] : null
-        return namespaceChanges !== null
-            && namespaceChanges !== undefined
-            && namespaceChanges[setting.key] !== undefined
+        var namespaceChanges = setting ? pendingChanges[setting.namespace] : null;
+        return namespaceChanges !== null && namespaceChanges !== undefined && namespaceChanges[setting.key] !== undefined;
     }
 
     function pendingCount(namespace) {
-        var namespaceChanges = pendingChanges[namespace]
-        return namespaceChanges ? Object.keys(namespaceChanges).length : 0
+        var namespaceChanges = pendingChanges[namespace];
+        return namespaceChanges ? Object.keys(namespaceChanges).length : 0;
     }
 
     function applyPending() {
         if (!settingsWrite)
-            return
-
-        var nextSaved = Object.assign({}, savedOverrides)
+            return;
+        var nextSaved = Object.assign({}, savedOverrides);
         for (var namespace in pendingChanges) {
-            var changes = pendingChanges[namespace]
-            nextSaved[namespace] = Object.assign({}, nextSaved[namespace] || {})
+            var changes = pendingChanges[namespace];
+            nextSaved[namespace] = Object.assign({}, nextSaved[namespace] || {});
             for (var key in changes) {
-                settingsWrite.setValue(namespace, key, changes[key])
-                nextSaved[namespace][key] = changes[key]
+                settingsWrite.setValue(namespace, key, changes[key]);
+                nextSaved[namespace][key] = changes[key];
             }
-            settingsWrite.save(namespace)
+            settingsWrite.save(namespace);
         }
-        savedOverrides = nextSaved
-        pendingChanges = ({})
+        savedOverrides = nextSaved;
+        pendingChanges = ({});
     }
 
     Rectangle {
@@ -172,7 +172,7 @@ Item {
         target: root.settingsRead
         function onSettingsChanged() {
             if (root.activeTab >= root.namespaceGroups().length)
-                root.activeTab = 0
+                root.activeTab = 0;
         }
     }
 
@@ -202,7 +202,11 @@ Item {
                     width: tabList.width
                     height: 40
                     color: active ? root.c("surface", "#17181c") : (tabHover.hovered ? root.c("surfaceRaised", "#3b414d") : "transparent")
-                    Behavior on color { ColorAnimation { duration: 80 } }
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 80
+                        }
+                    }
 
                     Rectangle {
                         width: 2
@@ -223,7 +227,11 @@ Item {
                         font.family: root.f("fontFamily", "sans-serif")
                         font.weight: tabItem.active ? Font.DemiBold : Font.Normal
                         elide: Text.ElideRight
-                        Behavior on color { ColorAnimation { duration: 80 } }
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: 80
+                            }
+                        }
                     }
 
                     Text {
@@ -243,7 +251,9 @@ Item {
                         onClicked: root.activeTab = tabItem.index
                     }
 
-                    HoverHandler { id: tabHover }
+                    HoverHandler {
+                        id: tabHover
+                    }
                 }
             }
 
@@ -292,7 +302,11 @@ Item {
                         font.pixelSize: root.f("fontSizeSmall", 11)
                         font.family: root.f("fontFamily", "sans-serif")
                         elide: Text.ElideRight
-                        Behavior on color { ColorAnimation { duration: 120 } }
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: 120
+                            }
+                        }
                     }
                 }
 
@@ -319,7 +333,9 @@ Item {
                     anchors.right: parent.right
                     spacing: 0
 
-                    SectionHeader { text: "Settings" }
+                    SectionHeader {
+                        text: "Settings"
+                    }
 
                     Repeater {
                         model: root.activeSettings()
@@ -339,11 +355,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 checked: root.boolValue(root.effectiveValue(settingRow.modelData))
                                 enabled: root.settingsWrite !== null
-                                onToggled: (v) => root.setPending(
-                                    settingRow.modelData.namespace,
-                                    settingRow.modelData.key,
-                                    v
-                                )
+                                onToggled: v => root.setPending(settingRow.modelData.namespace, settingRow.modelData.key, v)
                             }
 
                             ChoiceBox {
@@ -353,11 +365,7 @@ Item {
                                 choices: settingRow.modelData.choices || []
                                 currentValue: root.displayValue(settingRow.modelData)
                                 enabled: root.settingsWrite !== null
-                                onPicked: (v) => root.setPending(
-                                    settingRow.modelData.namespace,
-                                    settingRow.modelData.key,
-                                    v
-                                )
+                                onPicked: v => root.setPending(settingRow.modelData.namespace, settingRow.modelData.key, v)
                             }
 
                             NumberStepper {
@@ -366,11 +374,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 value: root.intValue(root.effectiveValue(settingRow.modelData))
                                 enabled: root.settingsWrite !== null
-                                onCommit: (v) => root.setPending(
-                                    settingRow.modelData.namespace,
-                                    settingRow.modelData.key,
-                                    v
-                                )
+                                onCommit: v => root.setPending(settingRow.modelData.namespace, settingRow.modelData.key, v)
                             }
 
                             TextField {
@@ -379,11 +383,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 value: root.displayValue(settingRow.modelData)
                                 enabled: root.settingsWrite !== null
-                                onCommit: (v) => root.setPending(
-                                    settingRow.modelData.namespace,
-                                    settingRow.modelData.key,
-                                    v
-                                )
+                                onCommit: v => root.setPending(settingRow.modelData.namespace, settingRow.modelData.key, v)
                             }
                         }
                     }
@@ -472,12 +472,25 @@ Item {
         Rectangle {
             anchors.fill: parent
             opacity: rowHover.hovered ? 1 : 0
-            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 120
+                }
+            }
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0.0; color: "transparent" }
-                GradientStop { position: 0.5; color: "transparent" }
-                GradientStop { position: 1.0; color: "#20dec184" }
+                GradientStop {
+                    position: 0.0
+                    color: "transparent"
+                }
+                GradientStop {
+                    position: 0.5
+                    color: "transparent"
+                }
+                GradientStop {
+                    position: 1.0
+                    color: "#20dec184"
+                }
             }
         }
 
@@ -508,7 +521,11 @@ Item {
                     font.pixelSize: root.f("fontSizeBase", 13)
                     font.family: root.f("fontFamily", "sans-serif")
                     elide: Text.ElideRight
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 120
+                        }
+                    }
                 }
 
                 Text {
@@ -530,7 +547,11 @@ Item {
                 font.pixelSize: root.f("fontSizeSmall", 11)
                 font.family: root.f("fontFamily", "sans-serif")
                 elide: Text.ElideRight
-                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 120
+                    }
+                }
             }
         }
 
@@ -543,7 +564,9 @@ Item {
             height: parent.height
         }
 
-        HoverHandler { id: rowHover }
+        HoverHandler {
+            id: rowHover
+        }
     }
 
     component TextField: Rectangle {
@@ -558,7 +581,11 @@ Item {
         border.width: 1
         border.color: input.activeFocus ? root.c("accent", "#4a9eff") : root.c("border", "#464b57")
         opacity: enabled ? 1 : 0.6
-        Behavior on border.color { ColorAnimation { duration: 80 } }
+        Behavior on border.color {
+            ColorAnimation {
+                duration: 80
+            }
+        }
 
         TextInput {
             id: input
@@ -574,8 +601,8 @@ Item {
             enabled: textFieldRoot.enabled
             onEditingFinished: textFieldRoot.commit(text)
             Keys.onEscapePressed: {
-                text = textFieldRoot.value
-                focus = false
+                text = textFieldRoot.value;
+                focus = false;
             }
         }
     }
@@ -596,7 +623,11 @@ Item {
         opacity: enabled ? 1 : 0.6
         clip: false
         z: open ? 20 : 0
-        Behavior on border.color { ColorAnimation { duration: 80 } }
+        Behavior on border.color {
+            ColorAnimation {
+                duration: 80
+            }
+        }
 
         Text {
             anchors.left: parent.left
@@ -618,13 +649,17 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: 10
             height: 6
-            source: "../../assets/images/ui/caret-down.svg"
+            source: imageSources.imageUrl("ui.caret-down")
             sourceSize.width: 10
             sourceSize.height: 6
             fillMode: Image.PreserveAspectFit
             rotation: choiceRoot.open ? 180 : 0
             opacity: enabled ? 1.0 : 0.6
-            Behavior on rotation { NumberAnimation { duration: 80 } }
+            Behavior on rotation {
+                NumberAnimation {
+                    duration: 80
+                }
+            }
         }
 
         MouseArea {
@@ -669,12 +704,14 @@ Item {
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
-                            choiceRoot.open = false
-                            choiceRoot.picked(choiceItem.modelData)
+                            choiceRoot.open = false;
+                            choiceRoot.picked(choiceItem.modelData);
                         }
                     }
 
-                    HoverHandler { id: choiceHover }
+                    HoverHandler {
+                        id: choiceHover
+                    }
                 }
             }
         }
@@ -693,7 +730,11 @@ Item {
         border.width: 1
         border.color: valueInput.activeFocus ? root.c("accent", "#4a9eff") : root.c("border", "#464b57")
         opacity: enabled ? 1 : 0.6
-        Behavior on border.color { ColorAnimation { duration: 80 } }
+        Behavior on border.color {
+            ColorAnimation {
+                duration: 80
+            }
+        }
 
         Row {
             anchors.fill: parent
@@ -702,8 +743,8 @@ Item {
                 label: "-"
                 enabled: stepperRoot.enabled
                 onPressed: {
-                    stepperRoot.value = stepperRoot.value - stepperRoot.step
-                    stepperRoot.commit(stepperRoot.value)
+                    stepperRoot.value = stepperRoot.value - stepperRoot.step;
+                    stepperRoot.commit(stepperRoot.value);
                 }
             }
 
@@ -721,12 +762,12 @@ Item {
                 validator: IntValidator {}
                 enabled: stepperRoot.enabled
                 onEditingFinished: {
-                    var parsed = parseInt(text)
+                    var parsed = parseInt(text);
                     if (!isNaN(parsed)) {
-                        stepperRoot.value = parsed
-                        stepperRoot.commit(parsed)
+                        stepperRoot.value = parsed;
+                        stepperRoot.commit(parsed);
                     } else {
-                        text = String(stepperRoot.value)
+                        text = String(stepperRoot.value);
                     }
                 }
             }
@@ -735,8 +776,8 @@ Item {
                 label: "+"
                 enabled: stepperRoot.enabled
                 onPressed: {
-                    stepperRoot.value = stepperRoot.value + stepperRoot.step
-                    stepperRoot.commit(stepperRoot.value)
+                    stepperRoot.value = stepperRoot.value + stepperRoot.step;
+                    stepperRoot.commit(stepperRoot.value);
                 }
             }
         }
@@ -745,7 +786,7 @@ Item {
     component StepperButton: Item {
         id: stepperButtonRoot
         property string label: ""
-        signal pressed()
+        signal pressed
 
         width: 24
         height: parent ? parent.height : 28
@@ -754,7 +795,11 @@ Item {
         Rectangle {
             anchors.fill: parent
             color: stepperHover.hovered ? root.c("surfaceRaised", "#3b414d") : "transparent"
-            Behavior on color { ColorAnimation { duration: 80 } }
+            Behavior on color {
+                ColorAnimation {
+                    duration: 80
+                }
+            }
         }
 
         Text {
@@ -771,7 +816,9 @@ Item {
             onClicked: stepperButtonRoot.pressed()
         }
 
-        HoverHandler { id: stepperHover }
+        HoverHandler {
+            id: stepperHover
+        }
     }
 
     component ToggleSwitch: Item {
@@ -789,8 +836,16 @@ Item {
             color: toggleRoot.checked ? root.c("accent", "#4a9eff") : root.c("surfaceFloating", "#20242b")
             border.width: 1
             border.color: toggleRoot.checked ? root.c("accentHover", "#6bb6ff") : root.c("border", "#464b57")
-            Behavior on color { ColorAnimation { duration: 100 } }
-            Behavior on border.color { ColorAnimation { duration: 100 } }
+            Behavior on color {
+                ColorAnimation {
+                    duration: 100
+                }
+            }
+            Behavior on border.color {
+                ColorAnimation {
+                    duration: 100
+                }
+            }
         }
 
         Rectangle {
@@ -800,16 +855,25 @@ Item {
             y: 2
             x: toggleRoot.checked ? toggleRoot.width - width - 2 : 2
             color: toggleRoot.checked ? root.c("accentText", "#ffffff") : root.c("textMuted", "#878a98")
-            Behavior on x { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-            Behavior on color { ColorAnimation { duration: 100 } }
+            Behavior on x {
+                NumberAnimation {
+                    duration: 120
+                    easing.type: Easing.OutCubic
+                }
+            }
+            Behavior on color {
+                ColorAnimation {
+                    duration: 100
+                }
+            }
         }
 
         MouseArea {
             anchors.fill: parent
             enabled: toggleRoot.enabled
             onClicked: {
-                toggleRoot.checked = !toggleRoot.checked
-                toggleRoot.toggled(toggleRoot.checked)
+                toggleRoot.checked = !toggleRoot.checked;
+                toggleRoot.toggled(toggleRoot.checked);
             }
         }
     }
@@ -818,20 +882,20 @@ Item {
         id: footerButtonRoot
         property string text: ""
         property bool accent: false
-        signal clicked()
+        signal clicked
 
         width: 84
         height: 28
         radius: 4
-        color: enabled
-            ? (accent ? root.c("accent", "#4a9eff") : root.c("surfaceFloating", "#20242b"))
-            : root.c("surface", "#17181c")
+        color: enabled ? (accent ? root.c("accent", "#4a9eff") : root.c("surfaceFloating", "#20242b")) : root.c("surface", "#17181c")
         border.width: 1
-        border.color: enabled
-            ? (accent ? root.c("accentHover", "#6bb6ff") : root.c("border", "#464b57"))
-            : root.c("border", "#464b57")
+        border.color: enabled ? (accent ? root.c("accentHover", "#6bb6ff") : root.c("border", "#464b57")) : root.c("border", "#464b57")
         opacity: enabled ? 1 : 0.55
-        Behavior on color { ColorAnimation { duration: 80 } }
+        Behavior on color {
+            ColorAnimation {
+                duration: 80
+            }
+        }
 
         Text {
             anchors.centerIn: parent

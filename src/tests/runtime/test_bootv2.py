@@ -341,6 +341,12 @@ class _FakeUiRuntime:
             return self._events
         raise KeyError(name)
 
+    def try_capability(self, name: str) -> Any:
+        try:
+            return self.capability(name, object)
+        except KeyError:
+            return None
+
     def capability(self, name: str, _capability_type: type[Any]) -> Any:
         if name == "main_window_read":
             return self._main_window
@@ -1040,6 +1046,9 @@ def test_ui_startup_emits_window_record_change_before_ready(monkeypatch) -> None
                 return self.events
             raise KeyError(name)
 
+        def try_capability(self, name: str) -> Any:
+            return self.capabilities.get(name)
+
         def capability(self, name: str, _capability_type: type[Any]) -> Any:
             return self.capabilities[name]
 
@@ -1076,4 +1085,3 @@ def test_ui_startup_emits_window_record_change_before_ready(monkeypatch) -> None
     assert len(window_events) == 1
     assert window_events[0].data == UIWindowRecordsChangedData(window_count=0)
     assert len(ready_events) == 1
-
