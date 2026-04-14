@@ -32,6 +32,14 @@ from runtimeV2.widgets.schemas.manifest import OverlayManifest
 
 
 @dataclass(frozen=True)
+class ImageDecl:
+    """Image asset declaration for a plugin manifest."""
+
+    id: str
+    path: str
+
+
+@dataclass(frozen=True)
 class PluginManifest:
     """Root plugin manifest container."""
 
@@ -45,6 +53,7 @@ class PluginManifest:
     url: str = ""
     sponsor: str = ""
     settings: list[SettingDecl] = field(default_factory=list)
+    images: list[ImageDecl] = field(default_factory=list)
     ui: UiManifest | None = None
     connector: ConnectorManifest | None = None
     overlay: OverlayManifest | None = None

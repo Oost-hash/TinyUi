@@ -52,6 +52,54 @@ id          = "pluginsPanel.main"
 title       = "Plugins"
 surface     = "app_pluginsPanel/qml/surface.qml"
 
+[[image]]
+id   = "ui.menu"
+path = "assets/images/ui/menu.svg"
+
+[[image]]
+id   = "ui.menu-open"
+path = "assets/images/ui/menu-open.svg"
+
+[[image]]
+id   = "ui.window-minimize"
+path = "assets/images/ui/window-minimize.svg"
+
+[[image]]
+id   = "ui.window-maximize"
+path = "assets/images/ui/window-maximize.svg"
+
+[[image]]
+id   = "ui.window-restore"
+path = "assets/images/ui/window-restore.svg"
+
+[[image]]
+id   = "ui.window-close"
+path = "assets/images/ui/window-close.svg"
+
+[[image]]
+id   = "ui.caret-down"
+path = "assets/images/ui/caret-down.svg"
+
+[[image]]
+id   = "ui.cog"
+path = "assets/images/ui/cog.svg"
+
+[[image]]
+id   = "ui.play"
+path = "assets/images/ui/play.svg"
+
+[[image]]
+id   = "ui.stop"
+path = "assets/images/ui/stop.svg"
+
+[[image]]
+id   = "logo.github"
+path = "assets/images/logo/ui/github.svg"
+
+[[image]]
+id   = "logo.heart"
+path = "assets/images/logo/ui/heart.svg"
+
 [[setting]]
 key     = "theme"
 label   = "Theme"

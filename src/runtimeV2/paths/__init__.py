@@ -25,10 +25,12 @@ from runtimeV2.paths.capabilities.path import PathCapability
 from runtimeV2.paths.contracts import RuntimePaths
 from runtimeV2.paths.detection import detect_runtime_paths
 from runtimeV2.paths.image_source import ImageSource
+from runtimeV2.paths.image_source_registry import ImageSourceRegistry
 from runtimeV2.paths.qml_source import QmlSource
 
 __all__ = [
     "ImageSource",
+    "ImageSourceRegistry",
     "PathCapability",
     "QmlSource",
     "RuntimePaths",

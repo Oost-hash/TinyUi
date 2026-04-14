@@ -67,7 +67,25 @@ def open_window(
     log_startup_step(f"opening hosted window: {manifest.id}")
     url = _hosted_window_url()
     component = QQmlComponent(engine, url)
-    obj = component.create()
+
+    # Extract chrome component override first (before iterating extra_properties)
+    chrome_component = extra_properties.pop("chromeComponent", None)
+
+    # Prepare initial properties so they are available during component creation.
+    # This avoids binding errors for properties like imageSources that child
+    # components (AppChromeShell, plugin surfaces) access immediately.
+    initial_properties: dict[str, object] = {
+        "appActions": actions,
+        "theme": theme,
+        "windowId": manifest.id,
+        "windowTitle": manifest.title,
+        "showTabBar": manifest.chrome.show_tab_bar,
+        "showStatusBar": manifest.chrome.show_status_bar,
+        "chromePolicy": manifest.chrome.to_qml_dict(),
+        **extra_properties,
+    }
+
+    obj = component.createWithInitialProperties(initial_properties)
     if obj is None:
         error_message = component.errorString()
         log_startup_step(
@@ -83,20 +101,6 @@ def open_window(
         )
         raise TypeError(error_message)
     window = cast(QQuickWindow, obj)
-
-    # Extract chrome component override first (before iterating extra_properties)
-    chrome_component = extra_properties.pop("chromeComponent", None)
-    
-    window.setProperty("appActions", actions)
-    window.setProperty("theme", theme)
-    window.setProperty("windowId", manifest.id)
-    window.setProperty("windowTitle", manifest.title)
-    window.setProperty("showTabBar", manifest.chrome.show_tab_bar)
-    window.setProperty("showStatusBar", manifest.chrome.show_status_bar)
-    window.setProperty("chromePolicy", manifest.chrome.to_qml_dict())
-
-    for key, value in extra_properties.items():
-        window.setProperty(key, value)
 
     surface_component = None
     if manifest.surface:
@@ -131,7 +135,7 @@ def open_window(
             chrome_url = QUrl.fromLocalFile(str(manifest.chrome.custom_chrome))
         log_startup_step(f"loading custom chrome for {manifest.id}: {chrome_url.toString()}")
         chrome_component = QQmlComponent(engine, chrome_url)
-    
+
     # Apply custom chrome component if specified
     if chrome_component is not None:
         window.setProperty("chromeComponent", chrome_component)
@@ -147,4 +151,3 @@ def open_window(
         keepalive.append(chrome_component)
     log_startup_step(f"hosted window ready: {manifest.id}")
     return WindowHandle(qml_window=window, keepalive=tuple(keepalive))
-

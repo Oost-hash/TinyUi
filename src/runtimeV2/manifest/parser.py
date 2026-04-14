@@ -33,7 +33,7 @@ from runtimeV2.connectors.schemas.manifest import (
     ConnectorServiceDecl,
 )
 from runtimeV2.persistence.schemas.settings import SettingDecl
-from runtimeV2.plugins.schemas.manifest import PluginManifest
+from runtimeV2.plugins.schemas.manifest import ImageDecl, PluginManifest
 from runtimeV2.ui.schemas.manifest import (
     AppManifest,
     ChromePolicy,
@@ -77,6 +77,7 @@ def load_plugin_manifest(path: Path, *, resource_root: Path | None = None) -> Pl
         plugin_menu=plugin_menu,
         menu_label=plugin.get("menu"),
     )
+    images = [_parse_image(image) for image in data.get("image", [])]
     manifest = PluginManifest(
         plugin_id=plugin_id,
         plugin_type=plugin.get("type", "plugin"),
@@ -88,6 +89,7 @@ def load_plugin_manifest(path: Path, *, resource_root: Path | None = None) -> Pl
         url=plugin.get("url", ""),
         sponsor=plugin.get("sponsor", plugin.get("sponser", "")),
         settings=settings,
+        images=images,
         ui=ui_manifest,
         connector=_parse_connector_manifest(data),
         overlay=_parse_overlay_manifest(data, plugin, manifest_dir),
@@ -256,6 +258,13 @@ def _load_widgets_from_dir(widgets_dir: Path) -> list[OverlayWidgetDecl]:
             ),
         ))
     return declarations
+
+
+def _parse_image(entry: dict) -> ImageDecl:
+    return ImageDecl(
+        id=entry["id"],
+        path=entry["path"],
+    )
 
 
 def _parse_connector_manifest(data: dict) -> ConnectorManifest | None:

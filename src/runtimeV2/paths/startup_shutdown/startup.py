@@ -29,6 +29,7 @@ from pathlib import Path
 from runtimeV2.paths.capabilities.path import PathCapability
 from runtimeV2.paths.contracts import RuntimePaths
 from runtimeV2.paths.detection import detect_runtime_paths
+from runtimeV2.paths.image_source_registry import ImageSourceRegistry
 from runtimeV2.paths.startup_shutdown.register_capabilities import register_path_capabilities
 from runtimeV2.paths.startup_shutdown.register_paths import register_app_paths
 from runtimeV2.runtime import RuntimeV2
@@ -42,6 +43,7 @@ class PathsStartupResult:
     runtime_paths: RuntimePaths
     named_paths: dict[str, Path]
     capability: PathCapability
+    image_source_registry: ImageSourceRegistry
 
 
 def startup_paths(runtime: RuntimeV2) -> StartupResult:
@@ -50,18 +52,20 @@ def startup_paths(runtime: RuntimeV2) -> StartupResult:
     try:
         runtime_paths = detect_runtime_paths()
         named_paths = register_app_paths(runtime_paths)
+        image_source_registry = ImageSourceRegistry()
         capability = register_path_capabilities(
             runtime_paths=runtime_paths,
             named_paths=named_paths,
+            image_source_registry=image_source_registry,
         )
         result = PathsStartupResult(
             runtime_paths=runtime_paths,
             named_paths=named_paths,
             capability=capability,
+            image_source_registry=image_source_registry,
         )
         runtime.register_capability("paths", capability)
         runtime.register_domain_result("paths", result)
         return startup_ok()
     except Exception as exc:
         return startup_error(f"Paths domain startup failed: {exc}")
-

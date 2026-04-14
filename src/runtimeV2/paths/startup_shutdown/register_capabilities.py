@@ -27,13 +27,19 @@ from pathlib import Path
 
 from runtimeV2.paths.capabilities.path import PathCapability
 from runtimeV2.paths.contracts import RuntimePaths
+from runtimeV2.paths.image_source_registry import ImageSourceRegistry
 
 
 def register_path_capabilities(
     *,
     runtime_paths: RuntimePaths,
     named_paths: dict[str, Path],
+    image_source_registry: ImageSourceRegistry,
 ) -> PathCapability:
     """Create the capabilities exposed by the paths domain."""
 
-    return PathCapability(runtime_paths=runtime_paths, named_paths=named_paths)
+    return PathCapability(
+        runtime_paths=runtime_paths,
+        named_paths=named_paths,
+        image_source_registry=image_source_registry,
+    )

@@ -27,15 +27,23 @@ from pathlib import Path
 
 from runtimeV2.paths.contracts import RuntimePaths
 from runtimeV2.paths.image_source import ImageSource
+from runtimeV2.paths.image_source_registry import ImageSourceRegistry
 from runtimeV2.paths.qml_source import QmlSource
 
 
 class PathCapability:
     """Read-only interface over paths-domain data."""
 
-    def __init__(self, *, runtime_paths: RuntimePaths, named_paths: dict[str, Path]) -> None:
+    def __init__(
+        self,
+        *,
+        runtime_paths: RuntimePaths,
+        named_paths: dict[str, Path],
+        image_source_registry: ImageSourceRegistry,
+    ) -> None:
         self._runtime_paths = runtime_paths
         self._named_paths = named_paths
+        self._image_source_registry = image_source_registry
 
     def get(self, name: str) -> Path:
         """Return a registered path by name."""
@@ -64,4 +72,4 @@ class PathCapability:
 
         Supports both filesystem (dev) and QRC (build) modes.
         """
-        return self._runtime_paths.image_source(name)
+        return self._image_source_registry.get(name)

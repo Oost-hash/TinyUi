@@ -29,6 +29,9 @@ from runtimeV2.connectors.startup_shutdown.startup import ConnectorsStartupResul
 from runtimeV2.contracts import ManifestLoader, ManifestReader
 from runtimeV2.events.contracts import Event, EventType
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
+import sys
+
+from runtimeV2.paths.image_source import ImageSource
 from runtimeV2.paths.startup_shutdown.startup import PathsStartupResult
 from runtimeV2.persistence.startup_shutdown.startup import PersistenceStartupResult
 from runtimeV2.plugins.activation import PluginActivationStore
@@ -70,6 +73,13 @@ def startup_plugins(runtime: RuntimeV2) -> StartupResult:
         capabilities = register_plugin_capabilities(registry, manifest_read)
         runtime.register_capability("plugin_discovery", capabilities.discovery)
         runtime.register_capability("plugin_icon", capabilities.icon)
+
+        _register_manifest_images(
+            manifest_read=manifest_read,
+            plugin_discovery=capabilities.discovery,
+            image_source_registry=paths_result.image_source_registry,
+        )
+
         runtime.register_domain_result("plugins", PluginsStartupResult(
             registry=registry,
             capabilities=capabilities,
@@ -78,6 +88,31 @@ def startup_plugins(runtime: RuntimeV2) -> StartupResult:
         return startup_ok()
     except Exception as exc:
         return startup_error(f"Plugins domain startup failed: {exc}")
+
+
+def _register_manifest_images(
+    manifest_read: ManifestReader,
+    plugin_discovery,
+    image_source_registry,
+) -> None:
+    """Register plugin-declared images into the paths-domain image registry."""
+
+    for plugin_id in plugin_discovery.plugin_ids():
+        manifest = manifest_read.plugin_manifest(plugin_id)
+        if manifest is None:
+            continue
+        resource_root = manifest_read.resource_root(plugin_id)
+        for decl in manifest.images:
+            if getattr(sys, "frozen", False):
+                qrc_path = f"/assets/images/{decl.path}"
+                image_source_registry.register(decl.id, ImageSource.qrc(qrc_path))
+            else:
+                filesystem_path = resource_root / decl.path
+                qrc_path = f"/assets/images/{decl.path}"
+                image_source_registry.register(
+                    decl.id,
+                    ImageSource.dual(filesystem_path, qrc_path),
+                )
 
 
 def startup_plugins_lifecycle(runtime: RuntimeV2) -> StartupResult:
@@ -140,4 +175,3 @@ def _initial_active_plugin_id(
             continue
         return plugin_id
     return None
-
