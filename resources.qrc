@@ -13,6 +13,16 @@
         <file alias="plugins/tinyui/app_hostChrome/qml/HostChromeShell.qml">src/plugins/tinyui/app_hostChrome/qml/HostChromeShell.qml</file>
         <file alias="plugins/tinyui/app_pluginsPanel/qml/surface.qml">src/plugins/tinyui/app_pluginsPanel/qml/surface.qml</file>
         <file alias="plugins/tinyui/app_settings/qml/surface.qml">src/plugins/tinyui/app_settings/qml/surface.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/ActionButton.qml">src/plugins/tinyui/app_widgetsTab/qml/ActionButton.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/EditRow.qml">src/plugins/tinyui/app_widgetsTab/qml/EditRow.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/IconButton.qml">src/plugins/tinyui/app_widgetsTab/qml/IconButton.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/NumberStepper.qml">src/plugins/tinyui/app_widgetsTab/qml/NumberStepper.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/SectionHeader.qml">src/plugins/tinyui/app_widgetsTab/qml/SectionHeader.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/TargetPicker.qml">src/plugins/tinyui/app_widgetsTab/qml/TargetPicker.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/TextInputBox.qml">src/plugins/tinyui/app_widgetsTab/qml/TextInputBox.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/ThresholdEditor.qml">src/plugins/tinyui/app_widgetsTab/qml/ThresholdEditor.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/ToggleSwitch.qml">src/plugins/tinyui/app_widgetsTab/qml/ToggleSwitch.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/WidgetListPane.qml">src/plugins/tinyui/app_widgetsTab/qml/WidgetListPane.qml</file>
         <file alias="plugins/tinyui/app_widgetsTab/qml/surface.qml">src/plugins/tinyui/app_widgetsTab/qml/surface.qml</file>
         <!-- Assets - Images -->
         <file alias="assets/images/logo/logo.ico">assets/images/logo/logo.ico</file>
