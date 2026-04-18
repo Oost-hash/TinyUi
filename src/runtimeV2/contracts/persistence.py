@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol, runtime_checkable
 
-from runtimeV2.persistence.contracts import ConfigSet, WidgetInstanceConfig
+from runtimeV2.persistence.contracts import WidgetInstanceConfig
 from runtimeV2.persistence.schemas.settings import SettingDecl
 
 
@@ -112,40 +112,3 @@ class WidgetConfigWriter(Protocol):
         """Set global widget visibility."""
         ...
 
-
-@runtime_checkable
-class ConfigSetReader(Protocol):
-    """Public contract for reading config set catalog state."""
-
-    def list_sets(self) -> list[ConfigSet]:
-        """Return all config sets."""
-        ...
-
-    def active_set(self) -> ConfigSet:
-        """Return the active config set."""
-        ...
-
-    def active_set_id(self) -> str:
-        """Return the active config set id."""
-        ...
-
-
-@runtime_checkable
-class ConfigSetWriter(Protocol):
-    """Public contract for writing config set catalog state."""
-
-    def create_set(self, set_id: str, name: str, description: str = "") -> ConfigSet:
-        """Create one config set."""
-        ...
-
-    def set_active(self, set_id: str) -> bool:
-        """Set the active config set."""
-        ...
-
-    def delete_set(self, set_id: str) -> bool:
-        """Delete one config set."""
-        ...
-
-    def rename_set(self, set_id: str, new_name: str) -> bool:
-        """Rename one config set."""
-        ...

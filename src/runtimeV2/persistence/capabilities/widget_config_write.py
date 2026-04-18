@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Widget config write capability for runtime V2 persistence."""
+"""Widget config write capability."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from runtimeV2.persistence.widget_config import WidgetConfigStore
 
 
 class WidgetConfigWrite:
-    """Write widget configuration values."""
+    """Write widget config values."""
 
     def __init__(self, store: WidgetConfigStore) -> None:
         self._store = store

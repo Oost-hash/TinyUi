@@ -24,49 +24,80 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 
 @dataclass(frozen=True)
 class BootstrapConfig:
-    """Bootstrap settings needed before persistence can load catalog data."""
+    """Bootstrap settings needed before the database can open."""
 
-    config_root: Path | None = None
-    active_set: str = "default"
+    backend: str = "sqlite"
 
 
 @dataclass(frozen=True)
 class PersistencePaths:
-    """Resolved persistence paths."""
+    """Resolved runtime persistence paths."""
 
     base_dir: Path
-    config_root: Path
     cache_dir: Path
     logs_dir: Path
     bootstrap_path: Path
-    config_sets_path: Path
+    app_database_path: Path
+    overlays_dir: Path
 
-    def config_set_dir(self, set_id: str) -> Path:
-        """Return the directory for one config set."""
+    @property
+    def database_path(self) -> Path:
+        """Return the app database path for older callers."""
 
-        return self.config_root / set_id
+        return self.app_database_path
 
-    def namespace_dir(self, set_id: str, namespace: str) -> Path:
-        """Return the directory for a namespace inside a config set."""
+    def overlay_database_path(self, overlay_uuid: str) -> Path:
+        """Return the SQLite database path for one overlay store."""
 
-        return self.config_set_dir(set_id) / namespace
+        normalized_uuid = str(UUID(overlay_uuid))
+        return self.overlays_dir / normalized_uuid / "overlay.db"
+
+
+class PersistenceStoreKind(StrEnum):
+    """Physical persistence store kind."""
+
+    APP = "app"
+    OVERLAY = "overlay"
 
 
 @dataclass(frozen=True)
-class ConfigSet:
-    """One config set catalog record."""
+class PersistenceStoreRef:
+    """Reference to a physical persistence store."""
 
-    id: str
-    name: str
-    description: str = ""
-    created_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    kind: PersistenceStoreKind
+    store_id: str = ""
+
+    @classmethod
+    def app(cls) -> "PersistenceStoreRef":
+        """Return the app store reference."""
+
+        return cls(PersistenceStoreKind.APP)
+
+    @classmethod
+    def overlay(cls, overlay_uuid: str) -> "PersistenceStoreRef":
+        """Return an overlay store reference."""
+
+        return cls(PersistenceStoreKind.OVERLAY, str(UUID(overlay_uuid)))
+
+
+@dataclass(frozen=True)
+class JsonPersistencePaths:
+    """File-layout paths kept only for tests and migration."""
+
+    config_root: Path
+
+    def namespace_dir(self, namespace: str) -> Path:
+        """Return a namespace directory in the legacy JSON layout."""
+
+        return self.config_root / namespace
 
 
 @dataclass

@@ -19,14 +19,14 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Settings read capability for runtime V2 persistence."""
+"""Settings read capability."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from runtimeV2.persistence.settings import SettingsStore
 from runtimeV2.persistence.schemas.settings import SettingDecl
+from runtimeV2.persistence.settings import SettingsStore
 
 
 class SettingsRead:
@@ -35,22 +35,22 @@ class SettingsRead:
     def __init__(self, store: SettingsStore) -> None:
         self._store = store
 
-    def get(self, namespace: str, key: str) -> Any:
-        """Return one setting value."""
-
-        return self._store.get(namespace, key)
-
     def by_namespace(self) -> dict[str, list[SettingDecl]]:
         """Return specs by namespace."""
 
         return self._store.specs_by_namespace()
 
+    def get(self, namespace: str, key: str) -> Any:
+        """Return one setting value."""
+
+        return self._store.get(namespace, key)
+
     def values_by_namespace(self) -> dict[str, dict[str, Any]]:
-        """Return current values by namespace."""
+        """Return values by namespace."""
 
         return self._store.values_by_namespace()
 
     def namespace_values(self, namespace: str) -> dict[str, Any]:
-        """Return current values for one namespace."""
+        """Return values for one namespace."""
 
         return self._store.namespace_values(namespace)

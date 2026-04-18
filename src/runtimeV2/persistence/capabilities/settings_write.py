@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Settings write capability for runtime V2 persistence."""
+"""Settings write capability."""
 
 from __future__ import annotations
 

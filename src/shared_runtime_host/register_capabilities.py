@@ -24,8 +24,6 @@
 from __future__ import annotations
 
 from runtimeV2.contracts import (
-    ConfigSetReader,
-    ConfigSetWriter,
     ConnectorWriter,
     EventRegistrationWriter,
     ManifestConnectorReader,
@@ -122,8 +120,6 @@ def register_ui_actions_host(registry: SharedRuntimeHostRegistry) -> None:
             widget_preview_actions=widget_preview_actions,
             plugin_discovery=runtime.capability("plugin_discovery", PluginDiscovery),
             plugin_active_write=runtime.capability("plugin_active_write", PluginActiveWriter),
-            config_set_read=runtime.capability("config_set_read", ConfigSetReader),
-            config_set_write=runtime.capability("config_set_write", ConfigSetWriter),
             settings_write=runtime.capability("settings_write", SettingsWriter),
             panel_state_write=runtime.capability("panel_state_write", PanelStateWriter),
             shutdown=runtime.capability("shutdown", RuntimeShutdownController),

@@ -34,23 +34,22 @@ def load_bootstrap(path: Path) -> BootstrapConfig:
 
     if not path.exists():
         return BootstrapConfig()
-
     with path.open("rb") as handle:
         data = tomllib.load(handle)
-
-    raw_config_root = data.get("config_root")
-    config_root = Path(raw_config_root) if isinstance(raw_config_root, str) and raw_config_root else None
-    raw_active_set = data.get("active_set")
-    active_set = raw_active_set if isinstance(raw_active_set, str) and raw_active_set else "default"
-    return BootstrapConfig(config_root=config_root, active_set=active_set)
+    raw_backend = data.get("backend")
+    return BootstrapConfig(
+        backend=raw_backend if isinstance(raw_backend, str) and raw_backend else "sqlite",
+    )
 
 
 def save_bootstrap(path: Path, config: BootstrapConfig) -> None:
     """Save persistence bootstrap data."""
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    lines = [f'active_set = "{config.active_set}"']
-    if config.config_root is not None:
-        config_root = str(config.config_root).replace("\\", "\\\\").replace('"', '\\"')
-        lines.insert(0, f'config_root = "{config_root}"')
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    path.write_text(f'backend = "{_toml_string(config.backend)}"\n', encoding="utf-8")
+
+
+def _toml_string(value: str) -> str:
+    """Escape a value for a basic TOML string."""
+
+    return value.replace("\\", "\\\\").replace('"', '\\"')

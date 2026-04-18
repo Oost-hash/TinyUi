@@ -19,19 +19,13 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Settings registration for runtime V2 persistence."""
-
-from __future__ import annotations
+"""Settings registration for persistence startup."""
 
 from runtimeV2.contracts import ManifestSettingsReader
 from runtimeV2.persistence.settings import SettingsStore
 
 
-def register_settings_specs(
-    *,
-    settings: SettingsStore,
-    settings_spec_read: ManifestSettingsReader,
-) -> None:
-    """Register plugin-provided settings specs."""
+def register_settings_specs(settings: SettingsStore, manifest_settings_read: ManifestSettingsReader) -> None:
+    """Register manifest-declared settings specs."""
 
-    settings.register_specs(settings_spec_read.settings_specs())
+    settings.register_specs(manifest_settings_read.settings_specs())

@@ -38,11 +38,14 @@ from runtimeV2.contracts import (
     WidgetConfigWriter,
 )
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
+from runtimeV2.persistence.startup_shutdown.startup import PersistenceStartupResult
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.widgets.contracts import WidgetRecord
 from runtimeV2.widgets.startup_shutdown.register_events import register_widget_events
 from runtimeV2.widgets.startup_shutdown.register_capabilities import WidgetCapabilities, register_widget_capabilities
 from runtimeV2.widgets.startup_shutdown.register_globals import register_widget_globals
+from runtimeV2.widgets.startup_shutdown.register_overlay_index import register_overlay_index
+from runtimeV2.widgets.startup_shutdown.register_persistence import register_widget_persistence_schemas
 from runtimeV2.widgets.store import WidgetRecordsStore
 
 
@@ -60,8 +63,14 @@ def startup_widgets(runtime: RuntimeV2) -> StartupResult:
 
     try:
         events = runtime.domain_result("events", EventsStartupResult)
+        persistence = runtime.domain_result("persistence", PersistenceStartupResult)
         register_widget_events(events.registry)
+        register_widget_persistence_schemas(persistence.registry)
         overlay_read = runtime.capability("manifest_overlay_read", ManifestOverlayReader)
+        register_overlay_index(
+            overlay_read=overlay_read,
+            overlay_index=persistence.overlay_index,
+        )
         connector_decl_read = runtime.capability("manifest_connector_read", ManifestConnectorReader)
         globals_capability = runtime.capability("globals", RuntimeGlobals)
         connector_read = globals_capability.read_global("connector_runtime", ConnectorReader)

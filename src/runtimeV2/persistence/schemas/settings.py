@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Persistence-owned setting manifest schemas."""
+"""Settings schema contracts."""
 
 from __future__ import annotations
 
@@ -29,10 +29,10 @@ from typing import Any
 
 @dataclass(frozen=True)
 class SettingDecl:
-    """Setting declaration from a plugin manifest."""
+    """One setting declaration from a manifest."""
 
     key: str
     label: str
-    default: Any
     type: str
-    choices: list[str] = field(default_factory=list)
+    default: Any = None
+    choices: list[Any] = field(default_factory=list)
