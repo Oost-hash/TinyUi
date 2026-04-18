@@ -36,7 +36,7 @@ categories    = "all"
 console_level = "INFO"
 
 [tool.basedpyright]
-typeCheckingMode = "standard"
+typeCheckingMode = "strict"
 pythonVersion = "3.14"
 include = ["src"]
 exclude = [

@@ -1,36 +1,21 @@
-"""Regenerate QML type info into .qml_linter and run qmllint."""
+"""Run qmllint against TinyUI QML files."""
 
 from __future__ import annotations
 
+import argparse
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 import site
+import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
-LINTER_ROOT = ROOT / ".qml_linter"
 
 
-@dataclass(frozen=True)
-class QmlModule:
-    import_name: str
-    package_dir: Path
-    qml_dir: Path
-
-
-MODULES = [
-    QmlModule("TinyQt", SRC / "tinyqt", SRC / "TinyQt"),
-    QmlModule("TinyUI", SRC / "tinyqt_main", SRC / "tinyqt_main" / "qml"),
-    QmlModule("TinyDevTools", SRC / "tinyqt_devtools", SRC / "tinyqt_devtools" / "qml"),
-    QmlModule("TinyWidgets", SRC / "tinywidgets", SRC / "tinywidgets" / "qml"),
-]
-
-
-def find_tool(name: str, *, libexec: bool = False) -> Path:
+def find_tool(name: str) -> Path:
     suffix = ".exe" if sys.platform == "win32" else ""
     candidate_roots: list[Path] = []
 
@@ -49,10 +34,7 @@ def find_tool(name: str, *, libexec: bool = False) -> Path:
 
     for site_root in candidate_roots:
         base = site_root / "PySide6"
-        if libexec:
-            tool = base / "Qt" / "libexec" / f"{name}{suffix}"
-        else:
-            tool = base / f"{name}{suffix}"
+        tool = base / f"{name}{suffix}"
         if tool.exists():
             return tool
 
@@ -78,103 +60,79 @@ def find_tool(name: str, *, libexec: bool = False) -> Path:
 
 
 QMLLINT = find_tool("qmllint")
-METAOBJECTDUMP = find_tool("metaobjectdump")
-QMLTYPEREGISTRAR = find_tool("qmltyperegistrar", libexec=True)
+QML_DIAGNOSTIC_PATTERN = re.compile(r"^(Warning|Info|Error): .*?:\d+:\d+: ", re.MULTILINE)
 
 
-def run_checked(cmd: list[str | Path]) -> None:
-    command = [str(part) for part in cmd]
-    result = subprocess.run(command, cwd=ROOT)
-    if result.returncode != 0:
-        raise subprocess.CalledProcessError(result.returncode, command)
+def resolve_input_path(path: Path) -> Path:
+    return path if path.is_absolute() else ROOT / path
 
 
-def qml_python_sources(module: QmlModule) -> list[Path]:
-    sources: list[Path] = []
-    for path in sorted(module.package_dir.rglob("*.py")):
-        text = path.read_text(encoding="utf-8")
-        if "QML_IMPORT_NAME" in text and "@QmlElement" in text:
-            sources.append(path)
-    return sources
-
-
-def regenerate_module(module: QmlModule) -> Path:
-    output_dir = LINTER_ROOT / module.import_name
-    if output_dir.exists():
-        shutil.rmtree(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    qmltypes_files: list[Path] = []
-    for source in qml_python_sources(module):
-        metatypes_json = output_dir / f"{source.stem}metatypes.json"
-        qmltypes_file = output_dir / f"{source.stem}.qmltypes"
-        registrar_cpp = output_dir / f"{source.stem}_qmltyperegistrations.cpp"
-
-        run_checked([METAOBJECTDUMP, "-o", metatypes_json, source])
-        run_checked(
-            [
-                QMLTYPEREGISTRAR,
-                "--generate-qmltypes",
-                qmltypes_file,
-                "-o",
-                registrar_cpp,
-                metatypes_json,
-                "--import-name",
-                module.import_name,
-                "--major-version",
-                "1",
-                "--minor-version",
-                "0",
-            ]
-        )
-        qmltypes_files.append(qmltypes_file)
-
-    qml_component_files: list[Path] = []
-    for source_qml in sorted(module.qml_dir.rglob("*.qml")):
-        copied_qml = output_dir / source_qml.name
-        shutil.copy2(source_qml, copied_qml)
-        qml_component_files.append(copied_qml)
-
-    qmldir = output_dir / "qmldir"
-    lines = [f"module {module.import_name}"]
-    lines.extend(f"typeinfo {path.name}" for path in qmltypes_files)
-    lines.extend(f"{path.stem} 1.0 {path.name}" for path in qml_component_files)
-    qmldir.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return qmldir
-
-
-def qml_files() -> list[Path]:
+def qml_files(paths: list[Path]) -> list[Path]:
+    roots = paths or [SRC]
     files: list[Path] = []
-    for module in MODULES:
-        files.extend(sorted(module.qml_dir.rglob("*.qml")))
-    return files
+    for raw_path in roots:
+        path = resolve_input_path(raw_path)
+        if path.is_file():
+            if path.suffix == ".qml":
+                files.append(path)
+            continue
+        if path.is_dir():
+            files.extend(sorted(path.rglob("*.qml")))
+            continue
+        print(f"warning: QML path does not exist: {raw_path}")
+    return sorted(set(files))
 
 
 def main() -> int:
-    missing = [tool for tool in (QMLLINT, METAOBJECTDUMP, QMLTYPEREGISTRAR) if not tool.exists()]
-    if missing:
-        for tool in missing:
-            print(f"error: required tool not found at {tool}")
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Write raw qmllint output to a text file.",
+    )
+    parser.add_argument(
+        "paths",
+        nargs="*",
+        type=Path,
+        help="Optional QML files or directories to lint. Defaults to src/.",
+    )
+    args = parser.parse_args()
+
+    if not QMLLINT.exists():
+        print(f"error: required tool not found at {QMLLINT}")
         print("Make sure the venv is set up: python -m pip install pyside6")
         return 1
 
-    files = qml_files()
+    files = qml_files(args.paths)
     if not files:
-        print("No QML files found.")
-        return 0
-
-    [regenerate_module(module) for module in MODULES]
+        print("error: no QML files found.")
+        return 1
+    print(f"Linting {len(files)} QML files.")
 
     cmd = [str(QMLLINT)]
-    cmd.extend(["-I", str(LINTER_ROOT)])
-    cmd.extend(["--unqualified", "disable"])
-    cmd.extend(["--unused-imports", "disable"])
-    cmd.extend(["--missing-property", "disable"])
-    cmd.extend(["--unresolved-type", "disable"])
-    cmd.extend(["--stale-property-read", "disable"])
     cmd.extend(str(path) for path in files)
 
-    result = subprocess.run(cmd, cwd=ROOT)
+    result = subprocess.run(
+        cmd,
+        cwd=ROOT,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    output = result.stdout or ""
+
+    if args.output is not None:
+        output_path = resolve_input_path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(output, encoding="utf-8")
+        print(f"Raw qmllint output written to {output_path}")
+    elif output:
+        print(output, end="")
+
+    if QML_DIAGNOSTIC_PATTERN.search(output):
+        return 1
     return result.returncode
 
 

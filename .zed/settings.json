@@ -4,20 +4,23 @@
     "Python": {
       "language_servers": ["basedpyright"],
     },
+    "QML": {
+      "language_servers": ["qmljs"],
+    },
   },
   "lsp": {
     "basedpyright": {
       "binary": {
         "path": ".venv/Scripts/basedpyright-langserver.exe",
-        "//": "Use the project's venv-based basedpyright so Zed matches our repo config in pyproject.toml.",
+        "//": "Use the project's venv-based basedpyright so Zed follows pyproject.toml strict mode.",
         "arguments": ["--stdio"],
       },
     },
     "qmljs": {
       "binary": {
-        "path": "C:/Qt/6.10.2/msvc2022_64/bin/qmlls.exe",
-        "//": "Use the local Qt qmlls directly and keep the generated module metadata used by our QML lint flow.",
-        "arguments": ["-I", ".qml_linter"],
+        "path": ".venv/Lib/site-packages/PySide6/qmlls.exe",
+        "//": "Use PySide6 from the project venv so Zed follows scripts/qmllint.py and does not rely on generated .qml_linter metadata.",
+        "arguments": ["--no-cmake-calls"],
       },
     },
   },
