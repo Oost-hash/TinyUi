@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from runtimeV2.persistence.backends import JsonTestPersistenceBackend, SQLiteDocumentBackend, create_persistence_backend
+from runtimeV2.persistence.backends import SQLiteDocumentBackend, create_persistence_backend
 from runtimeV2.persistence.bootstrap import load_bootstrap, save_bootstrap
 from runtimeV2.persistence.capabilities.settings_read import SettingsRead
 from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
@@ -55,11 +55,11 @@ def _paths(tmp_path) -> PersistencePaths:
     )
 
 
-def _repository() -> PersistenceRepository:
+def _repository(tmp_path) -> PersistenceRepository:
     registry = PersistenceRegistry()
     register_persistence_document_schemas(registry)
     register_widget_persistence_schemas(registry)
-    return PersistenceRepository(registry, JsonTestPersistenceBackend())
+    return PersistenceRepository(registry, SQLiteDocumentBackend(tmp_path / "test.db"))
 
 
 def _registry() -> PersistenceRegistry:
@@ -144,18 +144,21 @@ def test_sqlite_document_backend_is_runtime_default(tmp_path) -> None:
     assert paths.app_database_path.exists()
 
 
-def test_json_backend_remains_available_for_tests_and_migration() -> None:
-    """JSON backend should remain available outside the SQLite runtime path."""
+def test_json_backend_is_not_supported() -> None:
+    """JSON backend should not exist as a runtime or test backend."""
 
-    backend = create_persistence_backend(BootstrapConfig(backend="json"))
+    try:
+        create_persistence_backend(BootstrapConfig(backend="json"))
+    except ValueError as exc:
+        assert "Unsupported persistence backend" in str(exc)
+    else:
+        raise AssertionError("JSON backend is still supported")
 
-    assert isinstance(backend, JsonTestPersistenceBackend)
 
-
-def test_repository_rejects_unknown_schema() -> None:
+def test_repository_rejects_unknown_schema(tmp_path) -> None:
     """Repository should fail hard when a store asks for an unregistered schema."""
 
-    repository = PersistenceRepository(PersistenceRegistry(), JsonTestPersistenceBackend())
+    repository = PersistenceRepository(PersistenceRegistry(), SQLiteDocumentBackend(tmp_path / "test.db"))
 
     try:
         repository.read_one("missing_schema", {})
@@ -165,23 +168,23 @@ def test_repository_rejects_unknown_schema() -> None:
         raise AssertionError("Repository accepted an unknown schema")
 
 
-def test_repository_validates_schema_keys() -> None:
+def test_repository_validates_schema_keys(tmp_path) -> None:
     """Repository should enforce schema key fields before storage access."""
 
-    repository = _repository()
+    repository = _repository(tmp_path)
 
     try:
-        repository.write_one("settings_values", {"preset_id": "default"}, {"values": {}})
+        repository.write_one("settings_values", {"unexpected_key": "default"}, {"values": {}})
     except ValueError as exc:
         assert "namespace" in str(exc)
     else:
         raise AssertionError("Repository accepted an incomplete schema key")
 
 
-def test_settings_store_loads_only_registered_and_valid_values() -> None:
+def test_settings_store_loads_only_registered_and_valid_values(tmp_path) -> None:
     """Settings store should ignore unknown keys and invalid persisted values."""
 
-    repository = _repository()
+    repository = _repository(tmp_path)
     repository.write_one(
         "settings_values",
         {"namespace": "tinyui"},
@@ -206,10 +209,10 @@ def test_settings_store_loads_only_registered_and_valid_values() -> None:
     }
 
 
-def test_widget_config_store_can_set_and_reset_widget_values() -> None:
+def test_widget_config_store_can_set_and_reset_widget_values(tmp_path) -> None:
     """Widget config store should own widget value persistence."""
 
-    store = WidgetConfigStore(_repository())
+    store = WidgetConfigStore(_repository(tmp_path))
 
     assert store.set_widget_values("overlay.main", "speed", {"units": "kph"}) is True
     config = store.get_widget("overlay.main", "speed")
@@ -225,6 +228,19 @@ def test_widget_config_store_can_set_and_reset_widget_values() -> None:
     reset = store.get_widget("overlay.main", "speed")
     assert reset is not None
     assert reset.values == {}
+
+
+def test_widget_config_store_can_set_and_reset_widget_type_defaults(tmp_path) -> None:
+    """Widget config store should persist defaults per widget type."""
+
+    store = WidgetConfigStore(_repository(tmp_path))
+
+    assert store.set_widget_type_defaults("overlay.main", "textWidget", {"width": 220, "height": 80}) is True
+    assert store.widget_type_defaults("overlay.main", "textWidget") == {"width": 220, "height": 80}
+
+    assert store.reset_widget_type_defaults("overlay.main", "textWidget") is True
+    assert store.widget_type_defaults("overlay.main", "textWidget") == {}
+    assert store.reset_widget_type_defaults("overlay.main", "textWidget") is False
 
 
 def test_widget_config_store_can_route_overlay_data_to_overlay_database(tmp_path) -> None:
@@ -248,11 +264,16 @@ def test_widget_config_store_can_route_overlay_data_to_overlay_database(tmp_path
     )
 
     assert store.set_widget_values("tinyui.statusbar", "speed", {"units": "kph"}) is True
+    assert store.set_widget_type_defaults("tinyui.statusbar", "textWidget", {"width": 220}) is True
 
     assert paths.app_database_path.exists()
     assert paths.overlay_database_path(overlay_record.overlay_uuid).exists()
     assert provider.app_repository().list_documents("widget_instances") == []
+    assert provider.app_repository().list_documents("widget_defaults") == []
     assert provider.overlay_repository(overlay_record.overlay_uuid).list_documents("widget_instances")[0]["widget_id"] == "speed"
+    assert provider.overlay_repository(overlay_record.overlay_uuid).list_documents("widget_defaults")[0]["defaults"] == {
+        "width": 220,
+    }
 
     provider.close()
 
@@ -340,10 +361,10 @@ def test_overlay_store_uuid_is_stable() -> None:
     )
 
 
-def test_overlay_index_keeps_app_owned_relationship_metadata() -> None:
+def test_overlay_index_keeps_app_owned_relationship_metadata(tmp_path) -> None:
     """Overlay index should map app-known overlays without owning overlay content."""
 
-    store = OverlayIndexStore(_repository())
+    store = OverlayIndexStore(_repository(tmp_path))
 
     record = store.register_overlay(
         plugin_id="tinyui",
@@ -459,10 +480,10 @@ def test_factory_reset_deletes_app_and_overlay_databases(tmp_path) -> None:
     assert not overlay_path.exists()
 
 
-def test_settings_capabilities_read_and_write_values() -> None:
+def test_settings_capabilities_read_and_write_values(tmp_path) -> None:
     """Settings capabilities should expose specs and persist values through the store."""
 
-    store = SettingsStore(_repository())
+    store = SettingsStore(_repository(tmp_path))
     store.register_specs(
         {
             "tinyui": [
@@ -484,20 +505,24 @@ def test_settings_capabilities_read_and_write_values() -> None:
     assert read.namespace_values("tinyui") == {"showClock": False}
 
 
-def test_widget_config_capabilities_keep_persistence_as_owner() -> None:
+def test_widget_config_capabilities_keep_persistence_as_owner(tmp_path) -> None:
     """Widget config read/write should keep persistence as the storage owner."""
 
-    store = WidgetConfigStore(_repository())
+    store = WidgetConfigStore(_repository(tmp_path))
     read = WidgetConfigRead(store)
     write = WidgetConfigWrite(store)
 
     assert write.set_widget_enabled("overlay.main", "speed", False) is True
     assert write.set_widget_position("overlay.main", "speed", 10, 20) is True
     assert write.set_widget_values("overlay.main", "speed", {"units": "kph"}) is True
+    assert write.set_widget_type_defaults("overlay.main", "gauge", {"width": 180}) is True
 
     config = read.get_widget("overlay.main", "speed")
     assert config is not None
     assert config.enabled is False
     assert config.position == (10, 20)
     assert read.widget_values("overlay.main", "speed") == {"units": "kph"}
+    assert read.widget_type_defaults("overlay.main", "gauge") == {"width": 180}
+    assert write.reset_widget_type_defaults("overlay.main", "gauge") is True
+    assert read.widget_type_defaults("overlay.main", "gauge") == {}
     assert read.global_widgets_visible() is False

@@ -22,7 +22,7 @@ from runtimeV2.events.event_registry import EventRegistry
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.manifest.capabilities.manifest_read import ManifestRead
 from runtimeV2.manifest.registry import ManifestRegistry
-from runtimeV2.persistence.backends import JsonTestPersistenceBackend
+from runtimeV2.persistence.backends import SQLiteDocumentBackend
 from runtimeV2.persistence.registry import PersistenceRegistry
 from runtimeV2.persistence.repository import PersistenceRepository
 from runtimeV2.persistence.schemas.settings import SettingDecl
@@ -50,7 +50,7 @@ def _write_plugin_module(tmp_path: Path, plugin_id: str, body: str) -> Path:
 
 
 def _settings_store(tmp_path: Path, plugin_id: str) -> SettingsStore:
-    backend = JsonTestPersistenceBackend()
+    backend = SQLiteDocumentBackend(tmp_path / "settings.db")
     registry = PersistenceRegistry()
     register_persistence_document_schemas(registry)
     store = SettingsStore(PersistenceRepository(registry, backend))

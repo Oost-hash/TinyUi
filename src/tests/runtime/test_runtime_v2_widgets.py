@@ -16,7 +16,7 @@ from runtimeV2.manifest.parser import load_plugin_manifest
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.connectors.schemas.manifest import ConnectorServiceDecl
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
-from runtimeV2.persistence.backends import JsonTestPersistenceBackend
+from runtimeV2.persistence.backends import SQLiteDocumentBackend
 from runtimeV2.persistence.registry import PersistenceRegistry
 from runtimeV2.persistence.repository import PersistenceRepository
 from runtimeV2.persistence.startup_shutdown.register_persistence import register_persistence_document_schemas
@@ -40,15 +40,15 @@ from runtimeV2.widgets.schemas.manifest import OverlayManifest, OverlayWidgetDec
 from runtimeV2.widgets.startup_shutdown.register_persistence import register_widget_persistence_schemas
 
 
-def _json_backend(tmp_path) -> JsonTestPersistenceBackend:
-    return JsonTestPersistenceBackend()
+def _sqlite_backend(tmp_path) -> SQLiteDocumentBackend:
+    return SQLiteDocumentBackend(tmp_path / "widgets.db")
 
 
 def _repository(tmp_path) -> PersistenceRepository:
     registry = PersistenceRegistry()
     register_persistence_document_schemas(registry)
     register_widget_persistence_schemas(registry)
-    return PersistenceRepository(registry, _json_backend(tmp_path))
+    return PersistenceRepository(registry, _sqlite_backend(tmp_path))
 
 
 class _FakeOverlayRead:
@@ -290,6 +290,52 @@ def test_widget_records_refresh_includes_manifest_widget_values(tmp_path) -> Non
                 "flash_target": "value",
             }
         ],
+    }
+
+
+def test_widget_records_refresh_merges_widget_type_defaults_before_instance_values(tmp_path) -> None:
+    """Widget refresh should apply overlay-owned defaults per widget type."""
+
+    overlay_id = "demo_overlay"
+    widget_id = "speed"
+    widget_config_store = WidgetConfigStore(_repository(tmp_path))
+    widget_config_store.set_widget_type_defaults(
+        overlay_id,
+        "textWidget",
+        {"width": 220, "height": 80, "label": "Type Label"},
+    )
+    widget_config_store.set_widget_values(overlay_id, widget_id, {"height": 96})
+    refresh = _widget_records_refresh(
+        store=WidgetRecordsStore(),
+        overlay_read=_FakeOverlayRead(
+            {
+                overlay_id: OverlayManifest(
+                    widgets=[
+                        OverlayWidgetDecl(
+                            id=widget_id,
+                            widget="textWidget",
+                            label="Manifest Label",
+                            values={"format": "{} km/h"},
+                        )
+                    ],
+                )
+            }
+        ),
+        connector_decl_read=_FakeConnectorDeclRead({}),
+        connector_read=ConnectorRead(ConnectorServiceRegistry()),
+        active_read=_FakeActiveRead(None),
+        widget_config_read=WidgetConfigRead(widget_config_store),
+        events=EventBus(),
+    )
+
+    record = refresh.refresh()[0]
+
+    assert record.label == "Type Label"
+    assert record.values == {
+        "format": "{} km/h",
+        "width": 220,
+        "height": 96,
+        "label": "Type Label",
     }
 
 

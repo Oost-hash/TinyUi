@@ -122,6 +122,48 @@ class WidgetConfigStore:
         self._save_one(overlay_id, config)
         return True
 
+    def widget_type_defaults(self, overlay_id: str, widget_type: str) -> dict[str, object]:
+        """Return persisted defaults for one widget type in an overlay."""
+
+        document = self._repository_for_overlay(overlay_id).read_one(
+            "widget_defaults",
+            {"widget_type": widget_type},
+        )
+        if document is None:
+            return {}
+        return dict(document.get("defaults", {}))
+
+    def set_widget_type_defaults(
+        self,
+        overlay_id: str,
+        widget_type: str,
+        defaults: dict[str, object],
+    ) -> bool:
+        """Persist defaults for one widget type in an overlay."""
+
+        self._repository_for_overlay(overlay_id).write_one(
+            "widget_defaults",
+            {"widget_type": widget_type},
+            {"defaults": dict(defaults)},
+        )
+        return True
+
+    def reset_widget_type_defaults(self, overlay_id: str, widget_type: str) -> bool:
+        """Delete persisted defaults for one widget type in an overlay."""
+
+        repository = self._repository_for_overlay(overlay_id)
+        document = repository.read_one(
+            "widget_defaults",
+            {"widget_type": widget_type},
+        )
+        if document is None:
+            return False
+        repository.delete_one(
+            "widget_defaults",
+            {"widget_type": widget_type},
+        )
+        return True
+
     def get_global_visible(self) -> bool:
         """Return the global widget visibility flag."""
 

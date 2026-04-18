@@ -34,9 +34,10 @@ class SQLiteDocumentBackend:
 
     name = "sqlite"
 
-    def __init__(self, database_path: Path) -> None:
+    def __init__(self, database_path: Path | str) -> None:
         self.database_path = database_path
-        database_path.parent.mkdir(parents=True, exist_ok=True)
+        if database_path != ":memory:":
+            Path(database_path).parent.mkdir(parents=True, exist_ok=True)
         self._connection = sqlite3.connect(database_path)
         self._connection.row_factory = sqlite3.Row
         self._ensure_schema()

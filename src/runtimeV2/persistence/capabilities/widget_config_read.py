@@ -49,6 +49,11 @@ class WidgetConfigRead:
         widget = self._store.get_widget(overlay_id, widget_id)
         return dict(widget.values) if widget is not None else {}
 
+    def widget_type_defaults(self, overlay_id: str, widget_type: str) -> dict[str, object]:
+        """Return defaults for one widget type in an overlay."""
+
+        return self._store.widget_type_defaults(overlay_id, widget_type)
+
     def global_widgets_visible(self) -> bool:
         """Return global widget visibility."""
 

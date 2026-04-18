@@ -58,6 +58,7 @@ def project_widget_records(
             enabled = widget.defaults.enabled if config is None else config.enabled
             position = widget.defaults.position if config is None else config.position
             values = dict(widget.values)
+            values.update(widget_config_read.widget_type_defaults(overlay_id, widget.widget))
             if config is not None:
                 values.update(config.values)
             status = _widget_status(

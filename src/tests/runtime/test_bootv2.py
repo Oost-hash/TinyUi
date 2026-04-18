@@ -32,7 +32,7 @@ from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
 from runtimeV2.manifest.registry import ManifestRegistry
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
-from runtimeV2.persistence.backends import JsonTestPersistenceBackend
+from runtimeV2.persistence.backends import SQLiteDocumentBackend
 from runtimeV2.persistence.registry import PersistenceRegistry
 from runtimeV2.persistence.repository import PersistenceRepository
 from runtimeV2.persistence.startup_shutdown.register_persistence import register_persistence_document_schemas
@@ -212,10 +212,11 @@ class _FakeUiRuntime:
         register_persistence_document_schemas(persistence_registry)
         from runtimeV2.widgets.startup_shutdown.register_persistence import register_widget_persistence_schemas
         register_widget_persistence_schemas(persistence_registry)
+        self._persistence_backend = SQLiteDocumentBackend(":memory:")
         widget_store = WidgetConfigStore(
             PersistenceRepository(
                 persistence_registry,
-                JsonTestPersistenceBackend(),
+                self._persistence_backend,
             ),
         )
         from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
@@ -368,6 +369,15 @@ class _FakeUiRuntime:
         if name == "widget_manual_override":
             return self._widget_manual_override
         raise KeyError(name)
+
+    def close(self) -> None:
+        self._persistence_backend.close()
+
+    def __del__(self) -> None:
+        try:
+            self.close()
+        except Exception:
+            return None
 
 
 def _ui_host_registry(runtime: object) -> SharedRuntimeHostRegistry:

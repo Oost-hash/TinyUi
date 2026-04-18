@@ -12,7 +12,7 @@ from runtimeV2.plugins.activation import PluginActivationStore
 from runtimeV2.plugins.discovery import discover_plugins
 from runtimeV2.plugins.registry import PluginRegistry
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
-from runtimeV2.persistence.backends import JsonTestPersistenceBackend
+from runtimeV2.persistence.backends import SQLiteDocumentBackend
 from runtimeV2.persistence.registry import PersistenceRegistry
 from runtimeV2.persistence.repository import PersistenceRepository
 from runtimeV2.persistence.schemas.settings import SettingDecl
@@ -70,7 +70,7 @@ def _write_source_plugin(root: Path, plugin_id: str) -> Path:
 
 
 def _settings_store(tmp_path: Path, plugin_id: str) -> SettingsStore:
-    backend = JsonTestPersistenceBackend()
+    backend = SQLiteDocumentBackend(tmp_path / "settings.db")
     registry = PersistenceRegistry()
     register_persistence_document_schemas(registry)
     store = SettingsStore(PersistenceRepository(registry, backend))

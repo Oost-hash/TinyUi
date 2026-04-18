@@ -83,6 +83,10 @@ class WidgetConfigReader(Protocol):
         """Return config values for one widget."""
         ...
 
+    def widget_type_defaults(self, overlay_id: str, widget_type: str) -> dict[str, object]:
+        """Return defaults for one widget type in an overlay."""
+        ...
+
     def global_widgets_visible(self) -> bool:
         """Return global widget visibility."""
         ...
@@ -106,6 +110,14 @@ class WidgetConfigWriter(Protocol):
 
     def reset_widget_values(self, overlay_id: str, widget_id: str) -> bool:
         """Reset widget config values."""
+        ...
+
+    def set_widget_type_defaults(self, overlay_id: str, widget_type: str, defaults: dict[str, object]) -> bool:
+        """Set defaults for one widget type in an overlay."""
+        ...
+
+    def reset_widget_type_defaults(self, overlay_id: str, widget_type: str) -> bool:
+        """Reset defaults for one widget type in an overlay."""
         ...
 
     def set_global_widgets_visible(self, visible: bool) -> None:

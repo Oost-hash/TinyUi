@@ -88,18 +88,6 @@ class PersistenceStoreRef:
         return cls(PersistenceStoreKind.OVERLAY, str(UUID(overlay_uuid)))
 
 
-@dataclass(frozen=True)
-class JsonPersistencePaths:
-    """File-layout paths kept only for tests and migration."""
-
-    config_root: Path
-
-    def namespace_dir(self, namespace: str) -> Path:
-        """Return a namespace directory in the legacy JSON layout."""
-
-        return self.config_root / namespace
-
-
 @dataclass
 class WidgetInstanceConfig:
     """Configuration of one widget instance."""

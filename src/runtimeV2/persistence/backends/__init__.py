@@ -24,7 +24,6 @@
 from pathlib import Path
 
 from runtimeV2.persistence.backends.contracts import PersistenceBackend
-from runtimeV2.persistence.backends.json_test import JsonTestPersistenceBackend
 from runtimeV2.persistence.backends.sqlite_document import SQLiteDocumentBackend
 from runtimeV2.persistence.contracts import BootstrapConfig
 
@@ -36,13 +35,10 @@ def create_persistence_backend(config: BootstrapConfig, *, sqlite_path: Path | N
         if sqlite_path is None:
             raise RuntimeError("SQLite persistence requires a database path.")
         return SQLiteDocumentBackend(sqlite_path)
-    if config.backend == "json":
-        return JsonTestPersistenceBackend()
     raise ValueError(f"Unsupported persistence backend: {config.backend}")
 
 
 __all__ = [
-    "JsonTestPersistenceBackend",
     "PersistenceBackend",
     "SQLiteDocumentBackend",
     "create_persistence_backend",
