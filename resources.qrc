@@ -22,6 +22,7 @@
         <file alias="plugins/tinyui/app_widgetsTab/qml/TextInputBox.qml">src/plugins/tinyui/app_widgetsTab/qml/TextInputBox.qml</file>
         <file alias="plugins/tinyui/app_widgetsTab/qml/ThresholdEditor.qml">src/plugins/tinyui/app_widgetsTab/qml/ThresholdEditor.qml</file>
         <file alias="plugins/tinyui/app_widgetsTab/qml/ToggleSwitch.qml">src/plugins/tinyui/app_widgetsTab/qml/ToggleSwitch.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/WidgetDetailsPane.qml">src/plugins/tinyui/app_widgetsTab/qml/WidgetDetailsPane.qml</file>
         <file alias="plugins/tinyui/app_widgetsTab/qml/WidgetListPane.qml">src/plugins/tinyui/app_widgetsTab/qml/WidgetListPane.qml</file>
         <file alias="plugins/tinyui/app_widgetsTab/qml/surface.qml">src/plugins/tinyui/app_widgetsTab/qml/surface.qml</file>
         <!-- Assets - Images -->

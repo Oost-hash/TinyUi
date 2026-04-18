@@ -373,7 +373,7 @@ Item {
         color: widgetTab.c("border", "#464b57")
     }
 
-    Item {
+    WidgetDetailsPane {
         id: detailPane
         z: 1
         visible: widgetTab.selectedWidgetId !== ""
@@ -382,402 +382,43 @@ Item {
         anchors.leftMargin: 1
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        clip: true
         opacity: visible ? 1 : 0
+        theme: widgetTab.theme
+        widget: widgetTab.selectedWidgetRecord()
+        selectedWidgetId: widgetTab.selectedWidgetId
+        selectedOverlayId: widgetTab.selectedOverlayId
+        showAdvanced: widgetTab.showAdvanced
+        canWriteWidgetConfig: widgetTab.widgetConfigWrite !== null
+        canStartFocusedMockPreview: widgetTab.widgetPreviewActions !== null && widgetTab.selectedOverlayId !== "" && widgetTab.selectedWidgetId !== ""
+        focusedMockPreviewActive: widgetTab.focusedMockPreviewActive
+        supportsTypeDefaults: widgetTab.supportsTypeDefaults(widgetTab.selectedWidgetRecord())
+        thresholdEntries: widgetTab.thresholdEntries(widgetTab.selectedWidgetRecord())
+        typeDefaultValues: ({
+            "width": widgetTab.widgetTypeDefaultValue(widgetTab.selectedWidgetRecord(), "width", 220),
+            "height": widgetTab.widgetTypeDefaultValue(widgetTab.selectedWidgetRecord(), "height", 72),
+            "fontSize": widgetTab.widgetTypeDefaultValue(widgetTab.selectedWidgetRecord(), "fontSize", 18),
+            "textColor": widgetTab.widgetTypeDefaultValue(widgetTab.selectedWidgetRecord(), "textColor", "#E8EDF2"),
+            "backgroundColor": widgetTab.widgetTypeDefaultValue(widgetTab.selectedWidgetRecord(), "backgroundColor", "#20242b")
+        })
         Behavior on opacity {
             NumberAnimation {
                 duration: 120
             }
         }
-
-        Rectangle {
-            id: detailHeader
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 56
-            color: "transparent"
-
-            Column {
-                anchors.left: parent.left
-                anchors.leftMargin: 16
-                anchors.right: parent.right
-                anchors.rightMargin: 112
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 3
-
-                Text {
-                    width: parent.width
-                    text: widgetTab.widgetTitle(widgetTab.selectedWidgetRecord())
-                    color: widgetTab.c("text", "#dce0e5")
-                    font.pixelSize: widgetTab.f("fontSizeBase", 13)
-                    font.family: widgetTab.f("fontFamily", "sans-serif")
-                    font.weight: Font.DemiBold
-                    elide: Text.ElideRight
-                }
-
-                Text {
-                    width: parent.width
-                    text: widgetTab.widgetDescription(widgetTab.selectedWidgetRecord())
-                    color: widgetTab.c("textMuted", "#878a98")
-                    font.pixelSize: widgetTab.f("fontSizeSmall", 11)
-                    font.family: widgetTab.f("fontFamily", "sans-serif")
-                    elide: Text.ElideRight
-                }
-            }
-
-            Rectangle {
-                id: closeButton
-                anchors.right: parent.right
-                anchors.rightMargin: 12
-                anchors.verticalCenter: parent.verticalCenter
-                width: 28
-                height: 28
-                radius: 4
-                color: closeHover.hovered ? widgetTab.c("surfaceRaised", "#3b414d") : "transparent"
-                border.width: 1
-                border.color: closeHover.hovered ? widgetTab.c("accent", "#4a9eff") : widgetTab.c("border", "#464b57")
-
-                Image {
-                    anchors.centerIn: parent
-                    width: 16
-                    height: 16
-                    source: imageSources.imageUrl("ui.window-close")
-                    sourceSize.width: 16
-                    sourceSize.height: 16
-                    fillMode: Image.PreserveAspectFit
-                    opacity: closeHover.hovered ? 1.0 : 0.75
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: 80
-                        }
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    acceptedButtons: Qt.LeftButton
-                    onClicked: widgetTab.clearSelection()
-                }
-
-                HoverHandler {
-                    id: closeHover
-                }
-            }
-
-            Row {
-                anchors.right: closeButton.left
-                anchors.rightMargin: 8
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 6
-
-                IconButton {
-                    iconSource: imageSources.imageUrl("ui.play")
-                    enabled: widgetTab.widgetPreviewActions !== null && widgetTab.selectedOverlayId !== "" && widgetTab.selectedWidgetId !== "" && !widgetTab.focusedMockPreviewActive
-                    onClicked: widgetTab.startFocusedMockPreview()
-                }
-
-                IconButton {
-                    iconSource: imageSources.imageUrl("ui.stop")
-                    enabled: widgetTab.focusedMockPreviewActive
-                    onClicked: widgetTab.stopFocusedMockPreview()
-                }
-            }
-
-            Rectangle {
-                anchors.bottom: parent.bottom
-                width: parent.width
-                height: 1
-                color: widgetTab.c("border", "#464b57")
-            }
+        onClearSelection: widgetTab.clearSelection()
+        onStartFocusedMockPreview: widgetTab.startFocusedMockPreview()
+        onStopFocusedMockPreview: widgetTab.stopFocusedMockPreview()
+        onSetWidgetValue: (key, value) => widgetTab.setWidgetValue(key, value)
+        onSetWidgetPosition: (x, y) => {
+            if (widgetTab.widgetConfigWrite && widgetTab.selectedOverlayId !== "")
+                widgetTab.widgetConfigWrite.setWidgetPosition(widgetTab.selectedOverlayId, widgetTab.selectedWidgetId, x, y);
         }
-
-        Flickable {
-            anchors.top: detailHeader.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            contentHeight: editColumn.implicitHeight + 16
-            clip: true
-
-            Column {
-                id: editColumn
-                anchors.left: parent.left
-                anchors.right: parent.right
-                spacing: 0
-
-                SectionHeader {
-                    text: "Identity"
-                }
-
-                EditRow {
-                    label: "Label"
-                    description: "Short text shown on the widget"
-                    TextInputBox {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        textValue: widgetTab.widgetLabel(widgetTab.selectedWidgetRecord())
-                        enabled: widgetTab.widgetConfigWrite !== null
-                        onCommit: text => widgetTab.setWidgetValue("label", text)
-                    }
-                }
-
-                EditRow {
-                    label: "Name"
-                    description: widgetTab.widgetTitle(widgetTab.selectedWidgetRecord())
-                }
-
-                EditRow {
-                    label: "Description"
-                    description: widgetTab.widgetDescription(widgetTab.selectedWidgetRecord())
-                }
-
-                SectionHeader {
-                    text: "Position"
-                }
-
-                EditRow {
-                    label: "Position X"
-                    NumberStepper {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        value: widgetTab.widgetPositionX(widgetTab.selectedWidgetRecord())
-                        enabled: widgetTab.selectedOverlayId !== "" && widgetTab.widgetConfigWrite !== null
-                        onCommit: v => {
-                            if (widgetTab.widgetConfigWrite && widgetTab.selectedOverlayId !== "") {
-                                widgetTab.widgetConfigWrite.setWidgetPosition(widgetTab.selectedOverlayId, widgetTab.selectedWidgetId, v, widgetTab.widgetPositionY(widgetTab.selectedWidgetRecord()));
-                            }
-                        }
-                    }
-                }
-
-                EditRow {
-                    label: "Position Y"
-                    NumberStepper {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        value: widgetTab.widgetPositionY(widgetTab.selectedWidgetRecord())
-                        enabled: widgetTab.selectedOverlayId !== "" && widgetTab.widgetConfigWrite !== null
-                        onCommit: v => {
-                            if (widgetTab.widgetConfigWrite && widgetTab.selectedOverlayId !== "") {
-                                widgetTab.widgetConfigWrite.setWidgetPosition(widgetTab.selectedOverlayId, widgetTab.selectedWidgetId, widgetTab.widgetPositionX(widgetTab.selectedWidgetRecord()), v);
-                            }
-                        }
-                    }
-                }
-
-                SectionHeader {
-                    text: "Provider"
-                }
-
-                EditRow {
-                    label: "Binding"
-                    description: widgetTab.widgetProvider(widgetTab.selectedWidgetRecord())
-                }
-
-                EditRow {
-                    label: "Mode"
-                    description: widgetTab.selectedWidgetRecord() ? widgetTab.selectedWidgetRecord().status : ""
-                }
-
-                SectionHeader {
-                    text: "Style"
-                }
-
-                SectionHeader {
-                    visible: widgetTab.supportsTypeDefaults(widgetTab.selectedWidgetRecord())
-                    text: "Type defaults"
-                }
-
-                EditRow {
-                    visible: widgetTab.supportsTypeDefaults(widgetTab.selectedWidgetRecord())
-                    label: "Default size"
-                    description: "Applies to text widgets in this overlay"
-                    Row {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 6
-
-                        NumberStepper {
-                            width: 58
-                            value: widgetTab.widgetTypeDefaultValue(widgetTab.selectedWidgetRecord(), "width", 220)
-                            step: 10
-                            min: 80
-                            max: 800
-                            enabled: widgetTab.widgetConfigWrite !== null
-                            onCommit: v => widgetTab.setWidgetTypeDefault("width", Math.round(v))
-                        }
-
-                        NumberStepper {
-                            width: 58
-                            value: widgetTab.widgetTypeDefaultValue(widgetTab.selectedWidgetRecord(), "height", 72)
-                            step: 4
-                            min: 32
-                            max: 400
-                            enabled: widgetTab.widgetConfigWrite !== null
-                            onCommit: v => widgetTab.setWidgetTypeDefault("height", Math.round(v))
-                        }
-                    }
-                }
-
-                EditRow {
-                    visible: widgetTab.supportsTypeDefaults(widgetTab.selectedWidgetRecord())
-                    label: "Default font"
-                    description: "Text widget font size"
-                    NumberStepper {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        value: widgetTab.widgetTypeDefaultValue(widgetTab.selectedWidgetRecord(), "fontSize", 18)
-                        step: 1
-                        min: 8
-                        max: 96
-                        enabled: widgetTab.widgetConfigWrite !== null
-                        onCommit: v => widgetTab.setWidgetTypeDefault("fontSize", Math.round(v))
-                    }
-                }
-
-                EditRow {
-                    visible: widgetTab.supportsTypeDefaults(widgetTab.selectedWidgetRecord())
-                    label: "Text color"
-                    description: "Default text color"
-                    TextInputBox {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        textValue: widgetTab.widgetTypeDefaultValue(widgetTab.selectedWidgetRecord(), "textColor", "#E8EDF2")
-                        enabled: widgetTab.widgetConfigWrite !== null
-                        onCommit: text => widgetTab.setWidgetTypeDefault("textColor", text)
-                    }
-                }
-
-                EditRow {
-                    visible: widgetTab.supportsTypeDefaults(widgetTab.selectedWidgetRecord())
-                    label: "Background"
-                    description: "Default background color"
-                    TextInputBox {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        textValue: widgetTab.widgetTypeDefaultValue(widgetTab.selectedWidgetRecord(), "backgroundColor", "#20242b")
-                        enabled: widgetTab.widgetConfigWrite !== null
-                        onCommit: text => widgetTab.setWidgetTypeDefault("backgroundColor", text)
-                    }
-                }
-
-                EditRow {
-                    visible: widgetTab.supportsTypeDefaults(widgetTab.selectedWidgetRecord())
-                    label: "Reset type defaults"
-                    description: "Return text widgets in this overlay to manifest values"
-                    ActionButton {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        label: "Reset"
-                        enabled: widgetTab.widgetConfigWrite !== null
-                        onClicked: widgetTab.resetWidgetTypeDefaults()
-                    }
-                }
-
-                EditRow {
-                    label: "Border"
-                    description: "Draw an outline around the floating widget"
-                    ToggleSwitch {
-                        anchors.centerIn: parent
-                        checked: widgetTab.widgetValue(widgetTab.selectedWidgetRecord(), "borderEnabled", true) !== false
-                        enabled: widgetTab.widgetConfigWrite !== null
-                        onToggled: v => widgetTab.setWidgetValue("borderEnabled", v)
-                    }
-                }
-
-                EditRow {
-                    label: "Border color"
-                    description: "Base border color, before threshold overrides"
-                    TextInputBox {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        textValue: widgetTab.widgetValue(widgetTab.selectedWidgetRecord(), "borderColor", "#40FFFFFF")
-                        enabled: widgetTab.widgetConfigWrite !== null
-                        onCommit: text => widgetTab.setWidgetValue("borderColor", text)
-                    }
-                }
-
-                EditRow {
-                    label: "Border width"
-                    description: "Base border thickness"
-                    NumberStepper {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        value: widgetTab.widgetValue(widgetTab.selectedWidgetRecord(), "borderWidth", 1)
-                        step: 1
-                        min: 1
-                        max: 8
-                        enabled: widgetTab.widgetConfigWrite !== null
-                        onCommit: v => widgetTab.setWidgetValue("borderWidth", Math.round(v))
-                    }
-                }
-
-                SectionHeader {
-                    text: "Thresholds"
-                }
-
-                ThresholdEditor {
-                    entries: widgetTab.thresholdEntries(widgetTab.selectedWidgetRecord())
-                    editable: widgetTab.widgetConfigWrite !== null
-                    theme: widgetTab.theme
-                    onUpdateThreshold: (index, key, value) => widgetTab.updateThreshold(index, key, value)
-                    onRemoveThreshold: index => widgetTab.removeThreshold(index)
-                    onAddThreshold: widgetTab.addThreshold()
-                }
-
-                SectionHeader {
-                    text: widgetTab.showAdvanced ? "Advanced" : "Advanced (hidden)"
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: widgetTab.showAdvanced = !widgetTab.showAdvanced
-                    }
-                }
-
-                EditRow {
-                    visible: widgetTab.showAdvanced
-                    label: "Show source"
-                    description: "Show the connector source key inside the floating widget"
-                    ToggleSwitch {
-                        anchors.centerIn: parent
-                        checked: widgetTab.widgetValue(widgetTab.selectedWidgetRecord(), "showSource", false) === true
-                        enabled: widgetTab.widgetConfigWrite !== null
-                        onToggled: v => widgetTab.setWidgetValue("showSource", v)
-                    }
-                }
-
-                EditRow {
-                    visible: widgetTab.showAdvanced
-                    label: "Widget ID"
-                    value: widgetTab.selectedWidgetId
-                }
-
-                EditRow {
-                    visible: widgetTab.showAdvanced
-                    label: "Overlay"
-                    value: widgetTab.selectedOverlayId
-                }
-
-                EditRow {
-                    visible: widgetTab.showAdvanced
-                    label: "Type"
-                    value: widgetTab.selectedWidgetRecord() ? widgetTab.selectedWidgetRecord().widgetType : ""
-                }
-
-                EditRow {
-                    visible: widgetTab.showAdvanced
-                    label: "Source"
-                    description: widgetTab.selectedWidgetRecord() ? widgetTab.selectedWidgetRecord().source : ""
-                }
-
-                EditRow {
-                    visible: widgetTab.showAdvanced
-                    label: "Resolved"
-                    description: widgetTab.selectedWidgetRecord() ? widgetTab.selectedWidgetRecord().resolvedValue : ""
-                }
-            }
-        }
+        onSetWidgetTypeDefault: (key, value) => widgetTab.setWidgetTypeDefault(key, value)
+        onResetWidgetTypeDefaults: widgetTab.resetWidgetTypeDefaults()
+        onUpdateThreshold: (index, key, value) => widgetTab.updateThreshold(index, key, value)
+        onRemoveThreshold: index => widgetTab.removeThreshold(index)
+        onAddThreshold: widgetTab.addThreshold()
+        onSetShowAdvanced: value => widgetTab.showAdvanced = value
     }
 
 }
