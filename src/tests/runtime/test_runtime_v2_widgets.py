@@ -16,7 +16,10 @@ from runtimeV2.manifest.parser import load_plugin_manifest
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.connectors.schemas.manifest import ConnectorServiceDecl
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
-from runtimeV2.persistence.contracts import PersistencePaths
+from runtimeV2.persistence.backends import JsonTestPersistenceBackend
+from runtimeV2.persistence.registry import PersistenceRegistry
+from runtimeV2.persistence.repository import PersistenceRepository
+from runtimeV2.persistence.startup_shutdown.register_persistence import register_persistence_document_schemas
 from runtimeV2.persistence.widget_config import WidgetConfigStore
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.scheduler.capabilities.scheduler_clock_read import SchedulerClockRead
@@ -34,6 +37,18 @@ from runtimeV2.contracts import WidgetStatus, WidgetVisibilityChangedData
 from runtimeV2.widgets.store import WidgetRecordsStore
 from runtimeV2.widgets.visibility_focus import WidgetVisibilityFocus
 from runtimeV2.widgets.schemas.manifest import OverlayManifest, OverlayWidgetDecl, WidgetDefaults
+from runtimeV2.widgets.startup_shutdown.register_persistence import register_widget_persistence_schemas
+
+
+def _json_backend(tmp_path) -> JsonTestPersistenceBackend:
+    return JsonTestPersistenceBackend()
+
+
+def _repository(tmp_path) -> PersistenceRepository:
+    registry = PersistenceRegistry()
+    register_persistence_document_schemas(registry)
+    register_widget_persistence_schemas(registry)
+    return PersistenceRepository(registry, _json_backend(tmp_path))
 
 
 class _FakeOverlayRead:
@@ -76,17 +91,7 @@ class _FakeConnectorService:
 
 
 def _widget_config_read(tmp_path, overlay_id: str, widget_id: str) -> WidgetConfigRead:
-    base_dir = tmp_path / "TinyUi"
-    config_root = base_dir / "config"
-    paths = PersistencePaths(
-        base_dir=base_dir,
-        config_root=config_root,
-        cache_dir=base_dir / "cache",
-        logs_dir=base_dir / "logs",
-        bootstrap_path=base_dir / "bootstrap.toml",
-        config_sets_path=config_root / "config_sets.json",
-    )
-    store = WidgetConfigStore(paths, "default")
+    store = WidgetConfigStore(_repository(tmp_path))
     store.set_widget_enabled(overlay_id, widget_id, False)
     store.set_widget_position(overlay_id, widget_id, 12, 34)
     store.set_widget_values(overlay_id, widget_id, {"units": "kph"})
@@ -179,19 +184,7 @@ def test_widget_records_refresh_marks_ready_when_active_and_connected(tmp_path) 
         "IRacing",
         _FakeConnectorService([("car.speed", "321 km/h")]),
     )
-    base_dir = tmp_path / "TinyUi"
-    config_root = base_dir / "config"
-    widget_config_store = WidgetConfigStore(
-        PersistencePaths(
-            base_dir=base_dir,
-            config_root=config_root,
-            cache_dir=base_dir / "cache",
-            logs_dir=base_dir / "logs",
-            bootstrap_path=base_dir / "bootstrap.toml",
-            config_sets_path=config_root / "config_sets.json",
-        ),
-        "default",
-    )
+    widget_config_store = WidgetConfigStore(_repository(tmp_path))
     WidgetConfigWrite(widget_config_store).set_global_widgets_visible(True)
     widget_config = WidgetConfigRead(widget_config_store)
     store = WidgetRecordsStore()
@@ -238,19 +231,7 @@ def test_widget_records_refresh_includes_manifest_widget_values(tmp_path) -> Non
         "IRacing",
         _FakeConnectorService([("vehicle.fuel", "1.50")]),
     )
-    base_dir = tmp_path / "TinyUi"
-    config_root = base_dir / "config"
-    widget_config_store = WidgetConfigStore(
-        PersistencePaths(
-            base_dir=base_dir,
-            config_root=config_root,
-            cache_dir=base_dir / "cache",
-            logs_dir=base_dir / "logs",
-            bootstrap_path=base_dir / "bootstrap.toml",
-            config_sets_path=config_root / "config_sets.json",
-        ),
-        "default",
-    )
+    widget_config_store = WidgetConfigStore(_repository(tmp_path))
     WidgetConfigWrite(widget_config_store).set_global_widgets_visible(True)
     widget_config = WidgetConfigRead(widget_config_store)
     store = WidgetRecordsStore()
@@ -378,19 +359,7 @@ def test_widget_records_refresh_allows_persisted_label_override(tmp_path) -> Non
 
     overlay_id = "demo_overlay"
     widget_id = "fuel"
-    base_dir = tmp_path / "TinyUi"
-    config_root = base_dir / "config"
-    store = WidgetConfigStore(
-        PersistencePaths(
-            base_dir=base_dir,
-            config_root=config_root,
-            cache_dir=base_dir / "cache",
-            logs_dir=base_dir / "logs",
-            bootstrap_path=base_dir / "bootstrap.toml",
-            config_sets_path=config_root / "config_sets.json",
-        ),
-        "default",
-    )
+    store = WidgetConfigStore(_repository(tmp_path))
     store.set_widget_values(overlay_id, widget_id, {"label": "Fuel Left"})
     refresh = _widget_records_refresh(
         store=WidgetRecordsStore(),
@@ -641,19 +610,7 @@ def test_widget_records_refresh_marks_ready_when_connector_is_live_without_overl
         "IRacing",
         connector_service,
     )
-    base_dir = tmp_path / "TinyUi"
-    config_root = base_dir / "config"
-    widget_config_store = WidgetConfigStore(
-        PersistencePaths(
-            base_dir=base_dir,
-            config_root=config_root,
-            cache_dir=base_dir / "cache",
-            logs_dir=base_dir / "logs",
-            bootstrap_path=base_dir / "bootstrap.toml",
-            config_sets_path=config_root / "config_sets.json",
-        ),
-        "default",
-    )
+    widget_config_store = WidgetConfigStore(_repository(tmp_path))
     WidgetConfigWrite(widget_config_store).set_global_widgets_visible(True)
     widget_config = WidgetConfigRead(widget_config_store)
     store = WidgetRecordsStore()
@@ -700,19 +657,7 @@ def test_widget_records_refresh_focus_hides_siblings_without_disabling_config(tm
         "iRacing",
         _FakeConnectorService([("car.speed", "321 km/h"), ("car.rpm", "7200")]),
     )
-    base_dir = tmp_path / "TinyUi"
-    config_root = base_dir / "config"
-    widget_store = WidgetConfigStore(
-        PersistencePaths(
-            base_dir=base_dir,
-            config_root=config_root,
-            cache_dir=base_dir / "cache",
-            logs_dir=base_dir / "logs",
-            bootstrap_path=base_dir / "bootstrap.toml",
-            config_sets_path=config_root / "config_sets.json",
-        ),
-        "default",
-    )
+    widget_store = WidgetConfigStore(_repository(tmp_path))
     WidgetConfigWrite(widget_store).set_global_widgets_visible(True)
     widget_config_read = WidgetConfigRead(widget_store)
     visibility_focus = WidgetVisibilityFocus()
@@ -766,19 +711,7 @@ def test_widget_records_refresh_focus_hides_siblings_without_disabling_config(tm
 def test_widget_visibility_capabilities_project_and_persist_visibility(tmp_path) -> None:
     """Widget visibility should stay widgets-owned while persisting through widget config."""
 
-    base_dir = tmp_path / "TinyUi"
-    config_root = base_dir / "config"
-    store = WidgetConfigStore(
-        PersistencePaths(
-            base_dir=base_dir,
-            config_root=config_root,
-            cache_dir=base_dir / "cache",
-            logs_dir=base_dir / "logs",
-            bootstrap_path=base_dir / "bootstrap.toml",
-            config_sets_path=config_root / "config_sets.json",
-        ),
-        "default",
-    )
+    store = WidgetConfigStore(_repository(tmp_path))
     from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
     config_write = WidgetConfigWrite(store)
     visibility_focus = WidgetVisibilityFocus()

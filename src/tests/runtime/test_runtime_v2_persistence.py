@@ -23,71 +23,171 @@
 
 from __future__ import annotations
 
-import json
-
+from runtimeV2.persistence.backends import JsonTestPersistenceBackend, SQLiteDocumentBackend, create_persistence_backend
+from runtimeV2.persistence.bootstrap import load_bootstrap, save_bootstrap
 from runtimeV2.persistence.capabilities.settings_read import SettingsRead
 from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
-from runtimeV2.persistence.config_sets import ConfigSetCatalog
-from runtimeV2.persistence.contracts import PersistencePaths
+from runtimeV2.persistence.contracts import BootstrapConfig, PersistencePaths
+from runtimeV2.persistence.overlay_content import HostPluginStyleStore, OverlayLayoutStore, OverlayThemeStore
+from runtimeV2.persistence.overlay_index import OverlayIndexStore, overlay_store_uuid
+from runtimeV2.persistence.registry import PersistenceRegistry, PersistenceSchema, PersistenceScope
+from runtimeV2.persistence.repository import PersistenceRepository
+from runtimeV2.persistence.reset_service import PersistenceResetService
 from runtimeV2.persistence.schemas.settings import SettingDecl
 from runtimeV2.persistence.settings import SettingsStore
+from runtimeV2.persistence.startup_shutdown.register_persistence import register_persistence_document_schemas
+from runtimeV2.persistence.store_provider import PersistenceStoreProvider
 from runtimeV2.persistence.widget_config import WidgetConfigStore
+from runtimeV2.widgets.startup_shutdown.register_persistence import register_widget_persistence_schemas
 
 
 def _paths(tmp_path) -> PersistencePaths:
     base_dir = tmp_path / "TinyUi"
-    config_root = base_dir / "config"
     return PersistencePaths(
         base_dir=base_dir,
-        config_root=config_root,
         cache_dir=base_dir / "cache",
         logs_dir=base_dir / "logs",
         bootstrap_path=base_dir / "bootstrap.toml",
-        config_sets_path=config_root / "config_sets.json",
+        app_database_path=base_dir / "app.db",
+        overlays_dir=base_dir / "overlays",
     )
 
 
-def test_config_set_catalog_can_set_active_rename_and_delete(tmp_path) -> None:
-    """Config set catalog should own active-set and catalog mutations."""
+def _repository() -> PersistenceRepository:
+    registry = PersistenceRegistry()
+    register_persistence_document_schemas(registry)
+    register_widget_persistence_schemas(registry)
+    return PersistenceRepository(registry, JsonTestPersistenceBackend())
+
+
+def _registry() -> PersistenceRegistry:
+    registry = PersistenceRegistry()
+    register_persistence_document_schemas(registry)
+    register_widget_persistence_schemas(registry)
+    return registry
+
+
+def test_persistence_registry_registers_persistence_owned_schemas() -> None:
+    """Persistence startup should expose central schemas for owned documents."""
+
+    registry = PersistenceRegistry()
+    register_persistence_document_schemas(registry)
+
+    assert registry.schema("settings_values").key_fields == ("namespace",)
+    assert registry.schema("persistence_migrations").scope == PersistenceScope.APP
+    assert registry.schema("overlay_index").key_fields == ("overlay_uuid",)
+    assert registry.schema("overlay_theme").key_fields == ("singleton_id",)
+    assert registry.schema("overlay_layout").key_fields == ("singleton_id",)
+    assert registry.schema("host_plugin_style").key_fields == ("plugin_id",)
+
+
+def test_widgets_register_their_own_persistence_schemas() -> None:
+    """Widgets should register widget-owned persistent document schemas."""
+
+    registry = PersistenceRegistry()
+    register_widget_persistence_schemas(registry)
+
+    assert registry.schema("widget_instances").key_fields == ("widget_instance_id",)
+    assert registry.schema("widget_visibility").key_fields == ("singleton_id",)
+    assert registry.schema("widget_defaults").key_fields == ("widget_type",)
+
+
+def test_persistence_registry_rejects_wrong_owner_registration() -> None:
+    """Schema ownership should match the registering domain."""
+
+    registry = PersistenceRegistry()
+    schema = PersistenceSchema(
+        name="widget_instances",
+        owner_domain="widgets",
+        collection="widget_instances",
+        scope=PersistenceScope.WIDGET_INSTANCE,
+        version=1,
+        key_fields=("widget_instance_id",),
+    )
+
+    try:
+        registry.register_schema(schema, registering_domain="persistence")
+    except ValueError as exc:
+        assert "does not match registering domain" in str(exc)
+    else:
+        raise AssertionError("Registry accepted a schema registered by the wrong domain")
+
+
+def test_bootstrap_defaults_to_sqlite_backend(tmp_path) -> None:
+    """Bootstrap should prefer SQLite for new persistence installs."""
+
+    config = load_bootstrap(tmp_path / "bootstrap.toml")
+
+    assert config.backend == "sqlite"
+
+
+def test_bootstrap_persists_sqlite_backend_config(tmp_path) -> None:
+    """Bootstrap should keep the selected backend."""
+
+    path = tmp_path / "bootstrap.toml"
+    save_bootstrap(path, BootstrapConfig(backend="sqlite"))
+
+    config = load_bootstrap(path)
+
+    assert config.backend == "sqlite"
+
+
+def test_sqlite_document_backend_is_runtime_default(tmp_path) -> None:
+    """SQLite backend should be the embedded runtime persistence backend."""
 
     paths = _paths(tmp_path)
-    catalog = ConfigSetCatalog(paths)
+    backend = create_persistence_backend(BootstrapConfig(), sqlite_path=paths.app_database_path)
 
-    created = catalog.create_set("race", "Race")
-    assert created.id == "race"
-    assert catalog.set_active("race") is True
-    assert catalog.active_set_id() == "race"
-    assert 'active_set = "race"' in paths.bootstrap_path.read_text(encoding="utf-8")
-
-    assert catalog.rename_set("race", "Race Weekend") is True
-    renamed = next(item for item in catalog.list_sets() if item.id == "race")
-    assert renamed.name == "Race Weekend"
-
-    assert catalog.delete_set("race") is False
-    assert catalog.set_active("default") is True
-    assert catalog.delete_set("race") is True
-    assert all(item.id != "race" for item in catalog.list_sets())
+    assert isinstance(backend, SQLiteDocumentBackend)
+    assert paths.app_database_path.exists()
 
 
-def test_settings_store_loads_only_registered_and_valid_values(tmp_path) -> None:
+def test_json_backend_remains_available_for_tests_and_migration() -> None:
+    """JSON backend should remain available outside the SQLite runtime path."""
+
+    backend = create_persistence_backend(BootstrapConfig(backend="json"))
+
+    assert isinstance(backend, JsonTestPersistenceBackend)
+
+
+def test_repository_rejects_unknown_schema() -> None:
+    """Repository should fail hard when a store asks for an unregistered schema."""
+
+    repository = PersistenceRepository(PersistenceRegistry(), JsonTestPersistenceBackend())
+
+    try:
+        repository.read_one("missing_schema", {})
+    except KeyError as exc:
+        assert "Unknown persistence schema" in str(exc)
+    else:
+        raise AssertionError("Repository accepted an unknown schema")
+
+
+def test_repository_validates_schema_keys() -> None:
+    """Repository should enforce schema key fields before storage access."""
+
+    repository = _repository()
+
+    try:
+        repository.write_one("settings_values", {"preset_id": "default"}, {"values": {}})
+    except ValueError as exc:
+        assert "namespace" in str(exc)
+    else:
+        raise AssertionError("Repository accepted an incomplete schema key")
+
+
+def test_settings_store_loads_only_registered_and_valid_values() -> None:
     """Settings store should ignore unknown keys and invalid persisted values."""
 
-    paths = _paths(tmp_path)
-    settings = SettingsStore(paths, "default")
-    namespace_dir = paths.namespace_dir("default", "tinyui")
-    namespace_dir.mkdir(parents=True, exist_ok=True)
-    (namespace_dir / SettingsStore.SETTINGS_FILE).write_text(
-        json.dumps(
-            {
-                "showClock": False,
-                "refreshRate": "fast",
-                "unused": 123,
-            }
-        ),
-        encoding="utf-8",
+    repository = _repository()
+    repository.write_one(
+        "settings_values",
+        {"namespace": "tinyui"},
+        {"values": {"showClock": False, "refreshRate": "fast", "unused": 123}},
     )
+    settings = SettingsStore(repository)
 
     settings.register_specs(
         {
@@ -106,11 +206,10 @@ def test_settings_store_loads_only_registered_and_valid_values(tmp_path) -> None
     }
 
 
-def test_widget_config_store_can_set_and_reset_widget_values(tmp_path) -> None:
+def test_widget_config_store_can_set_and_reset_widget_values() -> None:
     """Widget config store should own widget value persistence."""
 
-    paths = _paths(tmp_path)
-    store = WidgetConfigStore(paths, "default")
+    store = WidgetConfigStore(_repository())
 
     assert store.set_widget_values("overlay.main", "speed", {"units": "kph"}) is True
     config = store.get_widget("overlay.main", "speed")
@@ -128,10 +227,242 @@ def test_widget_config_store_can_set_and_reset_widget_values(tmp_path) -> None:
     assert reset.values == {}
 
 
-def test_settings_capabilities_read_and_write_values(tmp_path) -> None:
+def test_widget_config_store_can_route_overlay_data_to_overlay_database(tmp_path) -> None:
+    """Widget config should be able to persist overlay-owned documents in overlay stores."""
+
+    paths = _paths(tmp_path)
+    provider = PersistenceStoreProvider(
+        config=BootstrapConfig(),
+        paths=paths,
+        registry=_registry(),
+    )
+    overlay_index = OverlayIndexStore(provider.app_repository())
+    overlay_record = overlay_index.register_overlay(
+        plugin_id="tinyui",
+        overlay_id="tinyui.statusbar",
+    )
+    store = WidgetConfigStore(
+        provider.app_repository(),
+        overlay_repository=provider.overlay_repository,
+        overlay_index=overlay_index,
+    )
+
+    assert store.set_widget_values("tinyui.statusbar", "speed", {"units": "kph"}) is True
+
+    assert paths.app_database_path.exists()
+    assert paths.overlay_database_path(overlay_record.overlay_uuid).exists()
+    assert provider.app_repository().list_documents("widget_instances") == []
+    assert provider.overlay_repository(overlay_record.overlay_uuid).list_documents("widget_instances")[0]["widget_id"] == "speed"
+
+    provider.close()
+
+
+def test_widget_config_store_fails_for_unknown_overlay_with_overlay_routing(tmp_path) -> None:
+    """Overlay-routed widget config should fail hard for unknown overlays."""
+
+    paths = _paths(tmp_path)
+    provider = PersistenceStoreProvider(
+        config=BootstrapConfig(),
+        paths=paths,
+        registry=_registry(),
+    )
+    store = WidgetConfigStore(
+        provider.app_repository(),
+        overlay_repository=provider.overlay_repository,
+        overlay_index=OverlayIndexStore(provider.app_repository()),
+    )
+
+    try:
+        store.set_widget_values("missing.overlay", "speed", {"units": "kph"})
+    except KeyError as exc:
+        assert "missing.overlay" in str(exc)
+    else:
+        raise AssertionError("Widget config accepted an unknown overlay")
+    finally:
+        provider.close()
+
+
+def test_overlay_content_stores_write_to_overlay_database(tmp_path) -> None:
+    """Overlay-owned theme, layout and style documents should live in overlay stores."""
+
+    paths = _paths(tmp_path)
+    provider = PersistenceStoreProvider(
+        config=BootstrapConfig(),
+        paths=paths,
+        registry=_registry(),
+    )
+    overlay_index = OverlayIndexStore(provider.app_repository())
+    overlay_record = overlay_index.register_overlay(
+        plugin_id="tinyui",
+        overlay_id="tinyui.statusbar",
+    )
+    theme_store = OverlayThemeStore(
+        overlay_index=overlay_index,
+        overlay_repository=provider.overlay_repository,
+    )
+    layout_store = OverlayLayoutStore(
+        overlay_index=overlay_index,
+        overlay_repository=provider.overlay_repository,
+    )
+    style_store = HostPluginStyleStore(
+        overlay_index=overlay_index,
+        overlay_repository=provider.overlay_repository,
+    )
+
+    theme_store.set_theme("tinyui.statusbar", {"font": "Inter"})
+    layout_store.set_layout("tinyui.statusbar", {"grid": "3x3"})
+    style_store.set_style("tinyui.statusbar", "tinyui", {"background": "#111111"})
+
+    assert theme_store.get_theme("tinyui.statusbar") == {"font": "Inter"}
+    assert layout_store.get_layout("tinyui.statusbar") == {"grid": "3x3"}
+    assert style_store.get_style("tinyui.statusbar", "tinyui") == {"background": "#111111"}
+    assert provider.app_repository().list_documents("overlay_theme") == []
+    assert provider.app_repository().list_documents("overlay_layout") == []
+    assert provider.app_repository().list_documents("host_plugin_style") == []
+    overlay_repository = provider.overlay_repository(overlay_record.overlay_uuid)
+    assert overlay_repository.list_documents("overlay_theme")[0]["theme"] == {"font": "Inter"}
+    assert overlay_repository.list_documents("overlay_layout")[0]["layout"] == {"grid": "3x3"}
+    assert overlay_repository.list_documents("host_plugin_style")[0]["style"] == {"background": "#111111"}
+
+    provider.close()
+
+
+def test_overlay_store_uuid_is_stable() -> None:
+    """Overlay store UUID should be stable for the plugin and overlay identity."""
+
+    assert overlay_store_uuid(plugin_id="tinyui", overlay_id="tinyui.statusbar") == overlay_store_uuid(
+        plugin_id="tinyui",
+        overlay_id="tinyui.statusbar",
+    )
+    assert overlay_store_uuid(plugin_id="tinyui", overlay_id="tinyui.statusbar") != overlay_store_uuid(
+        plugin_id="tinyui",
+        overlay_id="tinyui.dashboard",
+    )
+
+
+def test_overlay_index_keeps_app_owned_relationship_metadata() -> None:
+    """Overlay index should map app-known overlays without owning overlay content."""
+
+    store = OverlayIndexStore(_repository())
+
+    record = store.register_overlay(
+        plugin_id="tinyui",
+        overlay_id="tinyui.statusbar",
+    )
+
+    assert record.overlay_uuid == overlay_store_uuid(plugin_id="tinyui", overlay_id="tinyui.statusbar")
+    assert store.overlay(record.overlay_uuid) == record
+    assert store.overlay_by_id("tinyui.statusbar") == record
+    assert store.overlays() == [record]
+
+    store.remove_overlay(record.overlay_uuid)
+
+    assert store.overlay(record.overlay_uuid) is None
+
+
+def test_reset_overlay_deletes_overlay_database_but_keeps_index(tmp_path) -> None:
+    """Overlay reset should delete the overlay store and keep the app-owned index."""
+
+    paths = _paths(tmp_path)
+    provider = PersistenceStoreProvider(
+        config=BootstrapConfig(),
+        paths=paths,
+        registry=_registry(),
+    )
+    overlay_index = OverlayIndexStore(provider.app_repository())
+    overlay_record = overlay_index.register_overlay(plugin_id="tinyui", overlay_id="tinyui.statusbar")
+    widget_config = WidgetConfigStore(
+        provider.app_repository(),
+        overlay_repository=provider.overlay_repository,
+        overlay_index=overlay_index,
+    )
+    reset_service = PersistenceResetService(
+        overlay_index=overlay_index,
+        store_provider=provider,
+        widget_config=widget_config,
+    )
+    widget_config.set_widget_values("tinyui.statusbar", "speed", {"units": "kph"})
+    overlay_path = paths.overlay_database_path(overlay_record.overlay_uuid)
+    assert overlay_path.exists()
+
+    reset_service.reset_overlay("tinyui.statusbar")
+
+    assert not overlay_path.exists()
+    assert overlay_index.overlay_by_id("tinyui.statusbar") == overlay_record
+    assert widget_config.get_widget("tinyui.statusbar", "speed") is None
+
+    provider.close()
+
+
+def test_delete_overlay_deletes_overlay_database_and_index(tmp_path) -> None:
+    """Overlay delete should remove both the overlay store and the app-owned index."""
+
+    paths = _paths(tmp_path)
+    provider = PersistenceStoreProvider(
+        config=BootstrapConfig(),
+        paths=paths,
+        registry=_registry(),
+    )
+    overlay_index = OverlayIndexStore(provider.app_repository())
+    overlay_record = overlay_index.register_overlay(plugin_id="tinyui", overlay_id="tinyui.statusbar")
+    widget_config = WidgetConfigStore(
+        provider.app_repository(),
+        overlay_repository=provider.overlay_repository,
+        overlay_index=overlay_index,
+    )
+    reset_service = PersistenceResetService(
+        overlay_index=overlay_index,
+        store_provider=provider,
+        widget_config=widget_config,
+    )
+    widget_config.set_widget_values("tinyui.statusbar", "speed", {"units": "kph"})
+    overlay_path = paths.overlay_database_path(overlay_record.overlay_uuid)
+    assert overlay_path.exists()
+
+    reset_service.delete_overlay("tinyui.statusbar")
+
+    assert not overlay_path.exists()
+    assert overlay_index.overlay_by_id("tinyui.statusbar") is None
+
+    provider.close()
+
+
+def test_factory_reset_deletes_app_and_overlay_databases(tmp_path) -> None:
+    """Factory reset should delete app and overlay database files."""
+
+    paths = _paths(tmp_path)
+    provider = PersistenceStoreProvider(
+        config=BootstrapConfig(),
+        paths=paths,
+        registry=_registry(),
+    )
+    overlay_index = OverlayIndexStore(provider.app_repository())
+    overlay_record = overlay_index.register_overlay(plugin_id="tinyui", overlay_id="tinyui.statusbar")
+    widget_config = WidgetConfigStore(
+        provider.app_repository(),
+        overlay_repository=provider.overlay_repository,
+        overlay_index=overlay_index,
+    )
+    reset_service = PersistenceResetService(
+        overlay_index=overlay_index,
+        store_provider=provider,
+        widget_config=widget_config,
+    )
+    widget_config.set_widget_values("tinyui.statusbar", "speed", {"units": "kph"})
+    overlay_path = paths.overlay_database_path(overlay_record.overlay_uuid)
+    assert paths.app_database_path.exists()
+    assert overlay_path.exists()
+
+    reset_service.factory_reset()
+
+    assert not paths.app_database_path.exists()
+    assert not overlay_path.exists()
+
+
+def test_settings_capabilities_read_and_write_values() -> None:
     """Settings capabilities should expose specs and persist values through the store."""
 
-    store = SettingsStore(_paths(tmp_path), "default")
+    store = SettingsStore(_repository())
     store.register_specs(
         {
             "tinyui": [
@@ -153,10 +484,10 @@ def test_settings_capabilities_read_and_write_values(tmp_path) -> None:
     assert read.namespace_values("tinyui") == {"showClock": False}
 
 
-def test_widget_config_capabilities_keep_persistence_as_owner(tmp_path) -> None:
+def test_widget_config_capabilities_keep_persistence_as_owner() -> None:
     """Widget config read/write should keep persistence as the storage owner."""
 
-    store = WidgetConfigStore(_paths(tmp_path), "default")
+    store = WidgetConfigStore(_repository())
     read = WidgetConfigRead(store)
     write = WidgetConfigWrite(store)
 
