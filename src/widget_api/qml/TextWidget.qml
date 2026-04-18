@@ -35,8 +35,8 @@ Rectangle {
     readonly property real configuredBorderWidth: widgetValues.borderWidth !== undefined ? Number(widgetValues.borderWidth) : 1
     readonly property string configuredBorderColor: widgetValues.borderColor !== undefined ? String(widgetValues.borderColor) : "#40FFFFFF"
 
-    width: 120
-    height: showSource ? 72 : 56
+    width: widgetData && widgetData.width !== undefined ? Number(widgetData.width) : 120
+    height: widgetData && widgetData.height !== undefined ? Number(widgetData.height) : (showSource ? 72 : 56)
     radius: 6
     visible: widgetData && widgetData.visible !== undefined ? widgetData.visible : true
 
@@ -50,6 +50,7 @@ Rectangle {
     property string sourceText: widgetData && widgetData.source && showSource ? widgetData.source : ""
     property string displayText: widgetData && widgetData.displayText ? widgetData.displayText : ""
     property string valueColor: widgetData && widgetData.textColor ? widgetData.textColor : "#E0E0E0"
+    property int valueFontSize: widgetData && widgetData.fontSize !== undefined ? Math.max(8, Number(widgetData.fontSize)) : 22
     property string effectiveValueColor: thresholdColor !== "" && (colorTarget === "value" || colorTarget === "text") ? thresholdColor : valueColor
     property string effectiveLabelColor: thresholdColor !== "" && colorTarget === "text" ? thresholdColor : "#888888"
     property string effectiveSourceColor: thresholdColor !== "" && colorTarget === "text" ? thresholdColor : "#6E6E6E"
@@ -83,6 +84,7 @@ Rectangle {
         sourceText = widgetData && widgetData.source && showSource ? widgetData.source : ""
         displayText = widgetData && widgetData.displayText ? widgetData.displayText : ""
         valueColor = widgetData && widgetData.textColor ? widgetData.textColor : "#E0E0E0"
+        valueFontSize = widgetData && widgetData.fontSize !== undefined ? Math.max(8, Number(widgetData.fontSize)) : 22
         refreshEffects()
     }
     onWidgetEffectsChanged: refreshEffects()
@@ -108,7 +110,7 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.labelText
             color: root.effectiveLabelColor
-            font.pixelSize: 10
+            font.pixelSize: Math.max(8, Math.round(root.valueFontSize * 0.45))
             font.family: "Segoe UI"
         }
 
@@ -117,7 +119,7 @@ Rectangle {
             text: root.displayText
             color: root.effectiveValueColor
             opacity: root.flashTarget === "value" ? (root.flashVisible ? 1.0 : 0.0) : 1.0
-            font.pixelSize: 22
+            font.pixelSize: root.valueFontSize
             font.bold: true
             font.family: "Segoe UI"
         }
@@ -126,7 +128,7 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.sourceText
             color: root.effectiveSourceColor
-            font.pixelSize: 10
+            font.pixelSize: Math.max(8, Math.round(root.valueFontSize * 0.45))
             font.family: "Segoe UI"
             visible: root.sourceText.length > 0
         }

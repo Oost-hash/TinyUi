@@ -120,6 +120,7 @@ from runtimeV2.contracts.ui_types import (
 from runtimeV2.contracts.widgets import (
     WidgetManualOverrideState,
     WidgetRecordsReader,
+    WidgetRecordsRefresher,
     WidgetVisibilityReader,
     WidgetVisibilityWriter,
 )
@@ -227,6 +228,7 @@ __all__ = [
     # Widgets (capabilities)
     "WidgetManualOverrideState",
     "WidgetRecordsReader",
+    "WidgetRecordsRefresher",
     "WidgetVisibilityReader",
     "WidgetVisibilityWriter",
     # Widgets (types)

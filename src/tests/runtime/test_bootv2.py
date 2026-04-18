@@ -13,6 +13,8 @@ from shared_runtime_host.capabilities.ui_api import (
     ConnectorWriteQmlCapability,
     ManifestQmlCapability,
     SettingsQmlCapability,
+    WidgetConfigReadQmlCapability,
+    WidgetConfigWriteQmlCapability,
     WidgetPreviewActions,
 )
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
@@ -470,6 +472,39 @@ def test_runtime_host_builds_qml_properties_from_ui_schema() -> None:
         ("settings_read", "SettingsReader"),
         ("connector_write", "ConnectorWriter"),
     ]
+
+
+def test_widget_config_qml_capabilities_expose_widget_type_defaults(tmp_path) -> None:
+    """Widget config QML wrappers should expose overlay widget type defaults."""
+
+    registry = PersistenceRegistry()
+    register_persistence_document_schemas(registry)
+    from runtimeV2.widgets.startup_shutdown.register_persistence import register_widget_persistence_schemas
+    register_widget_persistence_schemas(registry)
+    store = WidgetConfigStore(
+        PersistenceRepository(
+            registry,
+            SQLiteDocumentBackend(tmp_path / "widget_config.db"),
+        ),
+    )
+
+    class _FakeWidgetRecordsRefresh:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def refresh(self) -> list[WidgetRecord]:
+            self.calls += 1
+            return []
+
+    records_refresh = _FakeWidgetRecordsRefresh()
+    read = WidgetConfigReadQmlCapability(WidgetConfigRead(store))
+    write = WidgetConfigWriteQmlCapability(WidgetConfigWrite(store), records_refresh)
+
+    assert write.setWidgetTypeDefaults("demo_overlay", "textWidget", {"width": 240}) is True
+    assert read.widgetTypeDefaults("demo_overlay", "textWidget") == {"width": 240}
+    assert write.resetWidgetTypeDefaults("demo_overlay", "textWidget") is True
+    assert read.widgetTypeDefaults("demo_overlay", "textWidget") == {}
+    assert records_refresh.calls == 2
 
 
 def test_runtime_host_close_action_requests_runtime_shutdown(monkeypatch) -> None:

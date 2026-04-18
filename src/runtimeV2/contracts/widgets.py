@@ -46,6 +46,15 @@ class WidgetRecordsReader(Protocol):
 
 
 @runtime_checkable
+class WidgetRecordsRefresher(Protocol):
+    """Public contract for refreshing projected widget records."""
+
+    def refresh(self) -> list[WidgetRecord]:
+        """Refresh projected widget records."""
+        ...
+
+
+@runtime_checkable
 class WidgetVisibilityReader(Protocol):
     """Public contract for reading widget visibility outside the widgets domain."""
 

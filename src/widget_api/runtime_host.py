@@ -24,13 +24,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 from shared_runtime_host.events import SharedRuntimeHostEvents
 from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapability
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from shared_runtime_host.registry import SharedRuntimeHostRegistry
 from shared_runtime_host.shutdown import QmlRuntimeHostShutdown
-from runtimeV2.contracts import EventSubscriptionHandle, EventType, WidgetConfigWriter
+from runtimeV2.contracts import EventSubscriptionHandle, EventType, WidgetConfigWriter, WidgetRecordsRefresher
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from widget_api.window_host import WidgetWindowHost
@@ -97,11 +98,21 @@ def create_widget_window_host(
     widget_host = host_registry.capability("widget_host", WidgetHostCapability)
     widget_effects = host_registry.capability("widget_effects", WidgetEffectsQmlCapability)
     event_registration = host_registry.capability("event_registration", SharedRuntimeHostEvents)
-    host = WidgetWindowHost(
-        widget_host,
-        runtime.capability("widget_config_write", WidgetConfigWriter),
-        widget_effects,
-    )
+    try_capability = getattr(runtime, "try_capability", None)
+    widget_records_refresh = try_capability("widget_records_refresh") if callable(try_capability) else None
+    if widget_records_refresh is None:
+        host = WidgetWindowHost(
+            widget_host,
+            runtime.capability("widget_config_write", WidgetConfigWriter),
+            widget_effects,
+        )
+    else:
+        host = WidgetWindowHost(
+            widget_host,
+            runtime.capability("widget_config_write", WidgetConfigWriter),
+            widget_effects,
+            cast(WidgetRecordsRefresher, widget_records_refresh),
+        )
     controller = WidgetWindowHostController(
         widget_host=widget_host,
         event_registration=event_registration,

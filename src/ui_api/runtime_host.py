@@ -58,6 +58,7 @@ from runtimeV2.contracts import (
     WidgetConfigReader,
     WidgetConfigWriter,
     WidgetRecordsReader,
+    WidgetRecordsRefresher,
     WidgetVisibilityReader,
     WidgetVisibilityWriter,
     WindowActionsWriter,
@@ -231,7 +232,11 @@ def _adapt_qml_property(
     if capability_name == "widget_config_read":
         return WidgetConfigReadQmlCapability(cast(WidgetConfigReader, capability))
     if capability_name == "widget_config_write":
-        return WidgetConfigWriteQmlCapability(cast(WidgetConfigWriter, capability))
+        records_refresh = runtime.try_capability("widget_records_refresh")
+        return WidgetConfigWriteQmlCapability(
+            cast(WidgetConfigWriter, capability),
+            cast(WidgetRecordsRefresher, records_refresh) if records_refresh is not None else None,
+        )
     if capability_name == "widget_records_read":
         host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
         return WidgetRecordsQmlCapability(

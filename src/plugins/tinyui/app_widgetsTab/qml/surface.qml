@@ -184,6 +184,41 @@ Item {
         return widgetConfigWrite.setWidgetValues(selectedOverlayId, selectedWidgetId, values);
     }
 
+    function widgetType(widget) {
+        return widget && widget.widgetType ? widget.widgetType : "";
+    }
+
+    function supportsTypeDefaults(widget) {
+        return widgetType(widget) === "textWidget";
+    }
+
+    function widgetTypeDefaults(widget) {
+        if (!widgetConfigRead || !widget || !widget.overlayId || !widget.widgetType)
+            return {};
+        return widgetConfigRead.widgetTypeDefaults(widget.overlayId, widget.widgetType);
+    }
+
+    function widgetTypeDefaultValue(widget, key, fallback) {
+        var defaults = widgetTypeDefaults(widget);
+        return defaults[key] !== undefined ? defaults[key] : fallback;
+    }
+
+    function setWidgetTypeDefault(key, value) {
+        var widget = selectedWidgetRecord();
+        if (!widgetConfigWrite || !widget || !widget.overlayId || !widget.widgetType)
+            return false;
+        var defaults = widgetTypeDefaults(widget);
+        defaults[key] = value;
+        return widgetConfigWrite.setWidgetTypeDefaults(widget.overlayId, widget.widgetType, defaults);
+    }
+
+    function resetWidgetTypeDefaults() {
+        var widget = selectedWidgetRecord();
+        if (!widgetConfigWrite || !widget || !widget.overlayId || !widget.widgetType)
+            return false;
+        return widgetConfigWrite.resetWidgetTypeDefaults(widget.overlayId, widget.widgetType);
+    }
+
     function thresholdEntries(widget) {
         var raw = widgetValue(widget, "thresholds", []);
         var entries = [];
@@ -753,6 +788,97 @@ Item {
                     text: "Style"
                 }
 
+                SectionHeader {
+                    visible: widgetTab.supportsTypeDefaults(widgetTab.selectedWidgetRecord())
+                    text: "Type defaults"
+                }
+
+                EditRow {
+                    visible: widgetTab.supportsTypeDefaults(widgetTab.selectedWidgetRecord())
+                    label: "Default size"
+                    description: "Applies to text widgets in this overlay"
+                    Row {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 6
+
+                        NumberStepper {
+                            width: 58
+                            value: widgetTab.widgetTypeDefaultValue(widgetTab.selectedWidgetRecord(), "width", 220)
+                            step: 10
+                            min: 80
+                            max: 800
+                            enabled: widgetTab.widgetConfigWrite !== null
+                            onCommit: v => widgetTab.setWidgetTypeDefault("width", Math.round(v))
+                        }
+
+                        NumberStepper {
+                            width: 58
+                            value: widgetTab.widgetTypeDefaultValue(widgetTab.selectedWidgetRecord(), "height", 72)
+                            step: 4
+                            min: 32
+                            max: 400
+                            enabled: widgetTab.widgetConfigWrite !== null
+                            onCommit: v => widgetTab.setWidgetTypeDefault("height", Math.round(v))
+                        }
+                    }
+                }
+
+                EditRow {
+                    visible: widgetTab.supportsTypeDefaults(widgetTab.selectedWidgetRecord())
+                    label: "Default font"
+                    description: "Text widget font size"
+                    NumberStepper {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        value: widgetTab.widgetTypeDefaultValue(widgetTab.selectedWidgetRecord(), "fontSize", 18)
+                        step: 1
+                        min: 8
+                        max: 96
+                        enabled: widgetTab.widgetConfigWrite !== null
+                        onCommit: v => widgetTab.setWidgetTypeDefault("fontSize", Math.round(v))
+                    }
+                }
+
+                EditRow {
+                    visible: widgetTab.supportsTypeDefaults(widgetTab.selectedWidgetRecord())
+                    label: "Text color"
+                    description: "Default text color"
+                    TextInputBox {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        textValue: widgetTab.widgetTypeDefaultValue(widgetTab.selectedWidgetRecord(), "textColor", "#E8EDF2")
+                        enabled: widgetTab.widgetConfigWrite !== null
+                        onCommit: text => widgetTab.setWidgetTypeDefault("textColor", text)
+                    }
+                }
+
+                EditRow {
+                    visible: widgetTab.supportsTypeDefaults(widgetTab.selectedWidgetRecord())
+                    label: "Background"
+                    description: "Default background color"
+                    TextInputBox {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        textValue: widgetTab.widgetTypeDefaultValue(widgetTab.selectedWidgetRecord(), "backgroundColor", "#20242b")
+                        enabled: widgetTab.widgetConfigWrite !== null
+                        onCommit: text => widgetTab.setWidgetTypeDefault("backgroundColor", text)
+                    }
+                }
+
+                EditRow {
+                    visible: widgetTab.supportsTypeDefaults(widgetTab.selectedWidgetRecord())
+                    label: "Reset type defaults"
+                    description: "Return text widgets in this overlay to manifest values"
+                    ActionButton {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        label: "Reset"
+                        enabled: widgetTab.widgetConfigWrite !== null
+                        onClicked: widgetTab.resetWidgetTypeDefaults()
+                    }
+                }
+
                 EditRow {
                     label: "Border"
                     description: "Draw an outline around the floating widget"
@@ -1020,6 +1146,48 @@ Item {
 
         HoverHandler {
             id: iconButtonHover
+        }
+    }
+
+    component ActionButton: Rectangle {
+        id: actionButtonRoot
+        property string label: ""
+        signal clicked
+
+        width: 82
+        height: 28
+        radius: 4
+        color: actionButtonHover.hovered ? widgetTab.c("surfaceRaised", "#3b414d") : widgetTab.c("surfaceFloating", "#20242b")
+        border.width: 1
+        border.color: actionButtonHover.hovered ? widgetTab.c("accent", "#4a9eff") : widgetTab.c("border", "#464b57")
+        opacity: enabled ? 1.0 : 0.45
+        Behavior on color {
+            ColorAnimation {
+                duration: 80
+            }
+        }
+        Behavior on border.color {
+            ColorAnimation {
+                duration: 80
+            }
+        }
+
+        Text {
+            anchors.centerIn: parent
+            text: actionButtonRoot.label
+            color: actionButtonHover.hovered ? widgetTab.c("accent", "#4a9eff") : widgetTab.c("text", "#dce0e5")
+            font.pixelSize: widgetTab.f("fontSizeSmall", 11)
+            font.family: widgetTab.f("fontFamily", "sans-serif")
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            enabled: actionButtonRoot.enabled
+            onClicked: actionButtonRoot.clicked()
+        }
+
+        HoverHandler {
+            id: actionButtonHover
         }
     }
 
