@@ -121,6 +121,7 @@ from runtimeV2.contracts.widgets import (
     WidgetManualOverrideState,
     WidgetRecordsReader,
     WidgetRecordsRefresher,
+    WidgetTypeDefaultsReader,
     WidgetVisibilityReader,
     WidgetVisibilityWriter,
 )
@@ -229,6 +230,7 @@ __all__ = [
     "WidgetManualOverrideState",
     "WidgetRecordsReader",
     "WidgetRecordsRefresher",
+    "WidgetTypeDefaultsReader",
     "WidgetVisibilityReader",
     "WidgetVisibilityWriter",
     # Widgets (types)

@@ -27,6 +27,7 @@ from numbers import Real
 from typing import Any
 
 from runtimeV2.contracts import WidgetRecord, WidgetRecordsReader, WidgetStatus
+from runtimeV2.widgets.type_defaults import TEXT_WIDGET_DEFAULTS
 
 
 class WidgetHostCapability:
@@ -76,11 +77,11 @@ class WidgetHostCapability:
             "values": {} if record.values is None else dict(record.values),
             "resolvedValue": record.resolved_value,
             "displayText": self.display_text(record),
-            "textColor": _string_value(record.values, "textColor", "#E0E0E0" if record.status != WidgetStatus.ERROR else "#FF7A7A"),
-            "backgroundColor": _string_value(record.values, "backgroundColor", "#CC000000"),
-            "width": _int_value(record.values, "width", 120),
-            "height": _int_value(record.values, "height", 72 if _bool_value(record.values, "showSource", False) else 56),
-            "fontSize": _int_value(record.values, "fontSize", 22),
+            "textColor": _string_value(record.values, "textColor", "#FF7A7A" if record.status == WidgetStatus.ERROR else _text_default_string("textColor", "#E8EDF2")),
+            "backgroundColor": _string_value(record.values, "backgroundColor", _text_default_string("backgroundColor", "#20242b")),
+            "width": _int_value(record.values, "width", _text_default_int("width", 220)),
+            "height": _int_value(record.values, "height", _text_default_int("height", 72)),
+            "fontSize": _int_value(record.values, "fontSize", _text_default_int("fontSize", 18)),
             "visible": record.status != WidgetStatus.HIDDEN,
             "enabled": record.enabled,
             "status": record.status.value,
@@ -123,6 +124,16 @@ def _string_value(values: dict[str, object] | None, key: str, fallback: str) -> 
         return fallback
     value = values.get(key)
     return str(value) if value is not None else fallback
+
+
+def _text_default_string(key: str, fallback: str) -> str:
+    value = TEXT_WIDGET_DEFAULTS.get(key)
+    return value if isinstance(value, str) else fallback
+
+
+def _text_default_int(key: str, fallback: int) -> int:
+    value = TEXT_WIDGET_DEFAULTS.get(key)
+    return value if isinstance(value, int) else fallback
 
 
 def _int_value(values: dict[str, object] | None, key: str, fallback: int) -> int:

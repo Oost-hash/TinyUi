@@ -59,6 +59,7 @@ from runtimeV2.contracts import (
     WidgetConfigWriter,
     WidgetRecordsReader,
     WidgetRecordsRefresher,
+    WidgetTypeDefaultsReader,
     WidgetVisibilityReader,
     WidgetVisibilityWriter,
     WindowActionsWriter,
@@ -230,12 +231,18 @@ def _adapt_qml_property(
     if capability_name == "connector_write":
         return ConnectorWriteQmlCapability(cast(ConnectorWriter, capability))
     if capability_name == "widget_config_read":
-        return WidgetConfigReadQmlCapability(cast(WidgetConfigReader, capability))
+        type_defaults = _try_runtime_capability(runtime, "widget_type_defaults")
+        return WidgetConfigReadQmlCapability(
+            cast(WidgetConfigReader, capability),
+            cast(WidgetTypeDefaultsReader, type_defaults) if type_defaults is not None else None,
+        )
     if capability_name == "widget_config_write":
-        records_refresh = runtime.try_capability("widget_records_refresh")
+        records_refresh = _try_runtime_capability(runtime, "widget_records_refresh")
+        type_defaults = _try_runtime_capability(runtime, "widget_type_defaults")
         return WidgetConfigWriteQmlCapability(
             cast(WidgetConfigWriter, capability),
             cast(WidgetRecordsRefresher, records_refresh) if records_refresh is not None else None,
+            cast(WidgetTypeDefaultsReader, type_defaults) if type_defaults is not None else None,
         )
     if capability_name == "widget_records_read":
         host_events = host_registry.capability("event_registration", SharedRuntimeHostEvents)
@@ -278,6 +285,15 @@ def _adapt_qml_property(
     if capability_name == "render_status_read":
         return RenderStatusQmlCapability(cast(RenderStatusReader, capability))
     return capability
+
+
+def _try_runtime_capability(runtime: RuntimeV2, name: str) -> object | None:
+    """Return an optional runtime capability when the runtime supports probing."""
+
+    try_capability = getattr(runtime, "try_capability", None)
+    if callable(try_capability):
+        return try_capability(name)
+    return None
 
 
 def start_runtime_host(

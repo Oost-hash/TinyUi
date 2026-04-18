@@ -189,7 +189,19 @@ Item {
     }
 
     function supportsTypeDefaults(widget) {
-        return widgetType(widget) === "textWidget";
+        return widgetTypeDefaultFields(widget).length > 0;
+    }
+
+    function widgetTypeDefaultFields(widget) {
+        if (!widgetConfigRead || !widget || !widget.overlayId || !widget.widgetType)
+            return [];
+        return widgetConfigRead.widgetTypeDefaultFields(widget.overlayId, widget.widgetType);
+    }
+
+    function widgetTypeDefaultFallbacks(widget) {
+        if (!widgetConfigRead || !widget || !widget.overlayId || !widget.widgetType)
+            return {};
+        return widgetConfigRead.widgetTypeDefaultFallbacks(widget.overlayId, widget.widgetType);
     }
 
     function widgetTypeDefaults(widget) {
@@ -200,7 +212,10 @@ Item {
 
     function widgetTypeDefaultValue(widget, key, fallback) {
         var defaults = widgetTypeDefaults(widget);
-        return defaults[key] !== undefined ? defaults[key] : fallback;
+        if (defaults[key] !== undefined)
+            return defaults[key];
+        var fallbacks = widgetTypeDefaultFallbacks(widget);
+        return fallbacks[key] !== undefined ? fallbacks[key] : fallback;
     }
 
     function setWidgetTypeDefault(key, value) {

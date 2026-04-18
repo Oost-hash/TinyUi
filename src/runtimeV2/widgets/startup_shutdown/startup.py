@@ -101,6 +101,7 @@ def startup_widgets(runtime: RuntimeV2) -> StartupResult:
         runtime.register_capability("widget_visibility_read", capabilities.visibility_read)
         runtime.register_capability("widget_visibility_write", capabilities.visibility_write)
         runtime.register_capability("widget_manual_override", capabilities.manual_override)
+        runtime.register_capability("widget_type_defaults", capabilities.type_defaults)
         register_widget_globals(runtime)
         runtime.register_domain_result("widgets", WidgetsStartupResult(
             store=store,

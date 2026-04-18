@@ -35,6 +35,7 @@ from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibili
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.contracts import WidgetStatus, WidgetVisibilityChangedData
 from runtimeV2.widgets.store import WidgetRecordsStore
+from runtimeV2.widgets.type_defaults import default_widget_type_defaults_registry
 from runtimeV2.widgets.visibility_focus import WidgetVisibilityFocus
 from runtimeV2.widgets.schemas.manifest import OverlayManifest, OverlayWidgetDecl, WidgetDefaults
 from runtimeV2.widgets.startup_shutdown.register_persistence import register_widget_persistence_schemas
@@ -119,6 +120,36 @@ def _widget_records_refresh(
         events=events,
         visibility_read=visibility_read,
     )
+
+
+def test_widget_type_defaults_registry_defines_text_widget_schema() -> None:
+    """Widget type defaults should be typed by the widgets domain."""
+
+    registry = default_widget_type_defaults_registry()
+
+    assert registry.default_values("textWidget") == {
+        "width": 220,
+        "height": 72,
+        "fontSize": 18,
+        "textColor": "#E8EDF2",
+        "backgroundColor": "#20242b",
+    }
+    assert [field["key"] for field in registry.qml_fields("textWidget")] == [
+        "width",
+        "height",
+        "fontSize",
+        "textColor",
+        "backgroundColor",
+    ]
+    assert registry.sanitize_defaults(
+        "textWidget",
+        {"width": "999", "height": 12, "fontSize": "18", "unknown": True},
+    ) == {
+        "width": 640,
+        "height": 32,
+        "fontSize": 18,
+    }
+    assert registry.sanitize_defaults("unknownWidget", {"width": 220}) == {}
 
 
 def test_widget_records_refresh_merges_config_and_emits_update(tmp_path) -> None:

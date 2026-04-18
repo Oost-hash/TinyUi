@@ -34,6 +34,7 @@ from runtimeV2.widgets.capabilities.widget_refresh_policy import WidgetRefreshPo
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.widgets.store import WidgetRecordsStore
+from runtimeV2.widgets.type_defaults import WidgetTypeDefaultsRegistry, default_widget_type_defaults_registry
 from runtimeV2.widgets.visibility_focus import WidgetVisibilityFocus
 
 
@@ -47,6 +48,7 @@ class WidgetCapabilities:
     visibility_read: WidgetVisibilityRead
     visibility_write: WidgetVisibilityWrite
     manual_override: WidgetManualOverride
+    type_defaults: WidgetTypeDefaultsRegistry
 
 
 def register_widget_capabilities(
@@ -66,6 +68,7 @@ def register_widget_capabilities(
 
     visibility_focus = WidgetVisibilityFocus()
     visibility_read = WidgetVisibilityRead(widget_config_read, visibility_focus)
+    type_defaults = default_widget_type_defaults_registry()
     records_refresh = WidgetRecordsRefresh(
         store=store,
         overlay_read=overlay_read,
@@ -95,4 +98,5 @@ def register_widget_capabilities(
             events=events,
         ),
         manual_override=manual_override,
+        type_defaults=type_defaults,
     )

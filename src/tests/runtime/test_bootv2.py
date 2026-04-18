@@ -500,8 +500,30 @@ def test_widget_config_qml_capabilities_expose_widget_type_defaults(tmp_path) ->
     read = WidgetConfigReadQmlCapability(WidgetConfigRead(store))
     write = WidgetConfigWriteQmlCapability(WidgetConfigWrite(store), records_refresh)
 
-    assert write.setWidgetTypeDefaults("demo_overlay", "textWidget", {"width": 240}) is True
-    assert read.widgetTypeDefaults("demo_overlay", "textWidget") == {"width": 240}
+    assert [field["key"] for field in read.widgetTypeDefaultFields("demo_overlay", "textWidget")] == [
+        "width",
+        "height",
+        "fontSize",
+        "textColor",
+        "backgroundColor",
+    ]
+    assert read.widgetTypeDefaultFallbacks("demo_overlay", "textWidget") == {
+        "width": 220,
+        "height": 72,
+        "fontSize": 18,
+        "textColor": "#E8EDF2",
+        "backgroundColor": "#20242b",
+    }
+
+    assert write.setWidgetTypeDefaults(
+        "demo_overlay",
+        "textWidget",
+        {"width": "999", "unknown": True, "textColor": 123},
+    ) is True
+    assert read.widgetTypeDefaults("demo_overlay", "textWidget") == {
+        "width": 640,
+        "textColor": "123",
+    }
     assert write.resetWidgetTypeDefaults("demo_overlay", "textWidget") is True
     assert read.widgetTypeDefaults("demo_overlay", "textWidget") == {}
     assert records_refresh.calls == 2
