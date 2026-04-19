@@ -25,7 +25,8 @@ import QtQuick.Window
 Rectangle {
     id: actionButtonRoot
 
-    property var theme: Window.window && Window.window.theme ? Window.window.theme : null
+    readonly property var hostWindow: Window.window
+    property var theme: actionButtonRoot.hostWindow && actionButtonRoot.hostWindow.theme ? actionButtonRoot.hostWindow.theme : null
     property string label: ""
     signal clicked
 

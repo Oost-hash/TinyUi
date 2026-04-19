@@ -25,7 +25,8 @@ import QtQuick.Window
 Rectangle {
     id: textInputBoxRoot
 
-    property var theme: Window.window && Window.window.theme ? Window.window.theme : null
+    readonly property var hostWindow: Window.window
+    property var theme: textInputBoxRoot.hostWindow && textInputBoxRoot.hostWindow.theme ? textInputBoxRoot.hostWindow.theme : null
     property string textValue: ""
     signal commit(string text)
 

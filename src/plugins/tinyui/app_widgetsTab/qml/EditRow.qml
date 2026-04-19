@@ -25,7 +25,8 @@ import QtQuick.Window
 Rectangle {
     id: editRowRoot
 
-    property var theme: Window.window && Window.window.theme ? Window.window.theme : null
+    readonly property var hostWindow: Window.window
+    property var theme: editRowRoot.hostWindow && editRowRoot.hostWindow.theme ? editRowRoot.hostWindow.theme : null
     property string label: ""
     property string description: ""
     property string value: ""

@@ -30,6 +30,7 @@ Rectangle {
     property var hostWindow: Window.window
     property var manifestRead: hostWindow && hostWindow.manifestRead ? hostWindow.manifestRead : null
     property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
+    property var imageSources: hostWindow && hostWindow.imageSources ? hostWindow.imageSources : null
     property var pluginGroups: []
 
     property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
@@ -39,8 +40,8 @@ Rectangle {
 
     // Track plugin states locally for live updates
     property var pluginStates: ({})  // Map pluginId -> state
-    readonly property url githubIconSource: imageSources.imageUrl("logo.github")
-    readonly property url sponsorIconSource: imageSources.imageUrl("logo.heart")
+    readonly property url githubIconSource: root.imageSources ? root.imageSources.imageUrl("logo.github") : ""
+    readonly property url sponsorIconSource: root.imageSources ? root.imageSources.imageUrl("logo.heart") : ""
 
     // Listen to state changes from runtime
     Connections {
@@ -324,7 +325,7 @@ Rectangle {
                             visible: root.selectedPlugin && root.selectedPlugin.type !== "host"
                             width: 18
                             height: 18
-                            source: imageSources.imageUrl("ui.cog")
+                            source: root.imageSources ? root.imageSources.imageUrl("ui.cog") : ""
                             sourceSize.width: 18
                             sourceSize.height: 18
                             fillMode: Image.PreserveAspectFit
@@ -662,7 +663,7 @@ Rectangle {
                                         anchors.verticalCenter: parent.verticalCenter
                                         width: 14
                                         height: 14
-                                        source: imageSources.imageUrl("ui.cog")
+                                        source: root.imageSources ? root.imageSources.imageUrl("ui.cog") : ""
                                         sourceSize.width: 14
                                         sourceSize.height: 14
                                         fillMode: Image.PreserveAspectFit

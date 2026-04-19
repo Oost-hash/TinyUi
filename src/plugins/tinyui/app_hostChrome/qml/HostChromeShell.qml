@@ -23,9 +23,9 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Window
-import QtQuick.Layouts
 
 import "../../../../ui_api/qml" as UiApi
+import "HostChromeShell.js" as HostChromeShellBridge
 
 Item {
     id: root
@@ -35,6 +35,7 @@ Item {
     readonly property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
     readonly property var windowController: hostWindow && hostWindow.windowController ? hostWindow.windowController : null
     readonly property var uiChrome: hostWindow && hostWindow.uiChrome ? hostWindow.uiChrome : null
+    readonly property var imageSources: hostWindow && hostWindow.imageSources ? hostWindow.imageSources : null
 
     property string windowTitle: hostWindow && typeof hostWindow.windowTitle === "string" ? hostWindow.windowTitle : ""
     property var menuItems: uiChrome ? uiChrome.menuItems : []
@@ -51,7 +52,7 @@ Item {
     property var pluginStates: ({})
     property bool widgetsVisible: hostWindow && hostWindow.widgetVisibility ? hostWindow.widgetVisibility.globalVisible : true
 
-    readonly property url menuIconSource: root.menuOpen ? imageSources.imageUrl("ui.menu-open") : imageSources.imageUrl("ui.menu")
+    readonly property url menuIconSource: root.imageSources ? (root.menuOpen ? root.imageSources.imageUrl("ui.menu-open") : root.imageSources.imageUrl("ui.menu")) : ""
 
     function pluginStatusColor(pluginId: string): color {
         if (!pluginId || pluginId === "")
@@ -377,10 +378,10 @@ Item {
         onLoaded: {
             if (item && root.hostWindow) {
                 // Mirror selected plugin into HostChromeShell so it survives item destruction
-                item.pluginToActivateChanged.connect(function () {
-                    root.pendingPluginActivation = item.pluginToActivate || "";
+                HostChromeShellBridge.connectPluginToActivateChanged(item, function () {
+                    root.pendingPluginActivation = HostChromeShellBridge.pluginToActivate(item);
                 });
-                root.pendingPluginActivation = item.pluginToActivate || "";
+                root.pendingPluginActivation = HostChromeShellBridge.pluginToActivate(item);
             }
         }
     }

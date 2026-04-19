@@ -25,8 +25,9 @@ import QtQuick.Window
 Item {
     id: detailsPane
 
-    property var theme: Window.window && Window.window.theme ? Window.window.theme : null
-    property var imageSources: Window.window && Window.window.imageSources ? Window.window.imageSources : null
+    readonly property var hostWindow: Window.window
+    property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
+    property var imageSources: hostWindow && hostWindow.imageSources ? hostWindow.imageSources : null
     property var widget: null
     property string selectedWidgetId: ""
     property string selectedOverlayId: ""

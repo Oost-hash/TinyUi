@@ -25,7 +25,8 @@ import QtQuick.Window
 Item {
     id: toggleRoot
 
-    property var theme: Window.window && Window.window.theme ? Window.window.theme : null
+    readonly property var hostWindow: Window.window
+    property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     property bool checked: false
     signal toggled(bool checked)
 

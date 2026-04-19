@@ -25,7 +25,8 @@ import QtQuick.Window
 Rectangle {
     id: stepperRoot
 
-    property var theme: Window.window && Window.window.theme ? Window.window.theme : null
+    readonly property var hostWindow: Window.window
+    property var theme: stepperRoot.hostWindow && stepperRoot.hostWindow.theme ? stepperRoot.hostWindow.theme : null
     property real value: 0
     property real step: 1
     property real min: -999999

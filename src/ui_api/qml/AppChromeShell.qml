@@ -33,6 +33,7 @@ Item {
     readonly property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
     readonly property var windowController: hostWindow && hostWindow.windowController ? hostWindow.windowController : null
     readonly property var uiChrome: hostWindow && hostWindow.uiChrome ? hostWindow.uiChrome : null
+    readonly property var imageSources: hostWindow && hostWindow.imageSources ? hostWindow.imageSources : null
 
     property string windowTitle: hostWindow && typeof hostWindow.windowTitle === "string" ? hostWindow.windowTitle : ""
 
@@ -57,11 +58,11 @@ Item {
     // When true, the menu button and dropdown are suppressed so an external chrome can own them
     property bool externalMenuButton: false
 
-    readonly property url menuIconSource: root.menuOpen ? imageSources.imageUrl("ui.menu-open") : imageSources.imageUrl("ui.menu")
-    readonly property url minimizeIconSource: imageSources.imageUrl("ui.window-minimize")
-    readonly property url maximizeIconSource: imageSources.imageUrl("ui.window-maximize")
-    readonly property url restoreIconSource: imageSources.imageUrl("ui.window-restore")
-    readonly property url closeIconSource: imageSources.imageUrl("ui.window-close")
+    readonly property url menuIconSource: root.imageSources ? (root.menuOpen ? root.imageSources.imageUrl("ui.menu-open") : root.imageSources.imageUrl("ui.menu")) : ""
+    readonly property url minimizeIconSource: root.imageSources ? root.imageSources.imageUrl("ui.window-minimize") : ""
+    readonly property url maximizeIconSource: root.imageSources ? root.imageSources.imageUrl("ui.window-maximize") : ""
+    readonly property url restoreIconSource: root.imageSources ? root.imageSources.imageUrl("ui.window-restore") : ""
+    readonly property url closeIconSource: root.imageSources ? root.imageSources.imageUrl("ui.window-close") : ""
 
     // Export menu button width for external chrome to position adjacent buttons (0 when suppressed)
     readonly property real menuButtonWidth: root.externalMenuButton ? 0 : menuButton.width

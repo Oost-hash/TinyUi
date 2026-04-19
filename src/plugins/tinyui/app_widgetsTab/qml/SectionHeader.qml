@@ -25,7 +25,8 @@ import QtQuick.Window
 Rectangle {
     id: sectionHeaderRoot
 
-    property var theme: Window.window && Window.window.theme ? Window.window.theme : null
+    readonly property var hostWindow: Window.window
+    property var theme: sectionHeaderRoot.hostWindow && sectionHeaderRoot.hostWindow.theme ? sectionHeaderRoot.hostWindow.theme : null
     property string text: ""
 
     function c(token, fallback) {

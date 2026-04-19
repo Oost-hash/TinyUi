@@ -25,7 +25,8 @@ import QtQuick.Window
 Rectangle {
     id: iconButtonRoot
 
-    property var theme: Window.window && Window.window.theme ? Window.window.theme : null
+    readonly property var hostWindow: Window.window
+    property var theme: iconButtonRoot.hostWindow && iconButtonRoot.hostWindow.theme ? iconButtonRoot.hostWindow.theme : null
     property url iconSource: ""
     signal clicked
 

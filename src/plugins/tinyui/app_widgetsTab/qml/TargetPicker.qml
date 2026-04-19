@@ -19,13 +19,16 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Window
 
 Row {
     id: targetPickerRoot
 
-    property var theme: Window.window && Window.window.theme ? Window.window.theme : null
+    readonly property var hostWindow: Window.window
+    property var theme: targetPickerRoot.hostWindow && targetPickerRoot.hostWindow.theme ? targetPickerRoot.hostWindow.theme : null
     property var targets: []
     property string value: ""
     signal picked(string value)
@@ -36,15 +39,17 @@ Row {
         model: targetPickerRoot.targets
 
         delegate: TargetChip {
+            id: targetDelegate
+
             required property string modelData
 
-            label: modelData
-            checked: targetPickerRoot.value === modelData
+            label: targetDelegate.modelData
+            checked: targetPickerRoot.value === targetDelegate.modelData
             enabled: targetPickerRoot.enabled
             theme: targetPickerRoot.theme
             onPicked: {
-                targetPickerRoot.value = modelData;
-                targetPickerRoot.picked(modelData);
+                targetPickerRoot.value = targetDelegate.modelData;
+                targetPickerRoot.picked(targetDelegate.modelData);
             }
         }
     }

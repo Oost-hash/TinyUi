@@ -19,13 +19,16 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Window
 
 Column {
     id: thresholdEditorRoot
 
-    property var theme: Window.window && Window.window.theme ? Window.window.theme : null
+    readonly property var hostWindow: Window.window
+    property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     property var entries: []
     property bool editable: false
 
