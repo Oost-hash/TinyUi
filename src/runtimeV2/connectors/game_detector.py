@@ -23,8 +23,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable
 import re
 
 import psutil
@@ -35,9 +34,7 @@ from runtimeV2.connectors.schemas.manifest import ConnectorManifest
 from runtimeV2.events.contracts import EventBus, EventType
 
 
-@dataclass(frozen=True)
-class _ProcessInfo:
-    name: str
+ProcessNameProvider = Callable[[], Iterable[str]]
 
 
 class ConnectorGameDetector:
@@ -49,7 +46,7 @@ class ConnectorGameDetector:
         store: ConnectorGameDetectorStore,
         events: EventBus | None = None,
         *,
-        process_provider=None,
+        process_provider: ProcessNameProvider | None = None,
     ) -> None:
         self._declarations = declarations
         self._store = store

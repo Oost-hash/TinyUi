@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import tomllib
 from pathlib import Path
+from typing import cast
 
 from runtimeV2.connectors.schemas.manifest import (
     ConnectorGameDecl,
@@ -46,13 +47,81 @@ from runtimeV2.ui.schemas.manifest import (
 from runtimeV2.widgets.schemas.manifest import OverlayManifest, OverlayWidgetDecl, WidgetDefaults
 
 
-def _parse_menu_items(entries: list[dict]) -> list[MenuItem | MenuSeparator]:
+TomlTable = dict[str, object]
+
+
+def _table(value: object) -> TomlTable:
+    return cast(TomlTable, value) if isinstance(value, dict) else {}
+
+
+def _tables(value: object) -> list[TomlTable]:
+    if not isinstance(value, list):
+        return []
+    items = cast(list[object], value)
+    return [cast(TomlTable, item) for item in items if isinstance(item, dict)]
+
+
+def _string(value: object, default: str = "") -> str:
+    return value if isinstance(value, str) else default
+
+
+def _strings(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    items = cast(list[object], value)
+    return [item for item in items if isinstance(item, str)]
+
+
+def _bool(value: object, default: bool = False) -> bool:
+    return value if isinstance(value, bool) else default
+
+
+def _int(value: object, default: int = 0) -> int:
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return default
+    return default
+
+
+def _object_map(value: object) -> dict[str, object]:
+    if not isinstance(value, dict):
+        return {}
+    items = cast(TomlTable, value)
+    return {str(key): item for key, item in items.items()}
+
+
+def _string_map(value: object) -> dict[str, str]:
+    if not isinstance(value, dict):
+        return {}
+    items = cast(TomlTable, value)
+    return {str(key): item for key, item in items.items() if isinstance(item, str)}
+
+
+def _position(value: object) -> tuple[int, int]:
+    if not isinstance(value, list):
+        return (0, 0)
+    items = cast(list[object], value)
+    if len(items) < 2:
+        return (0, 0)
+    return (_int(items[0]), _int(items[1]))
+
+
+def _resolve_path(manifest_dir: Path, value: object) -> Path | None:
+    path = _string(value)
+    return (manifest_dir / path).resolve() if path else None
+
+
+def _parse_menu_items(entries: list[TomlTable]) -> list[MenuItem | MenuSeparator]:
     result: list[MenuItem | MenuSeparator] = []
     for item in entries:
-        if item.get("separator"):
+        if _bool(item.get("separator")):
             result.append(MenuSeparator())
         else:
-            result.append(MenuItem(label=item["label"], action=item["action"]))
+            result.append(MenuItem(label=_string(item.get("label")), action=_string(item.get("action"))))
     return result
 
 
@@ -60,34 +129,34 @@ def load_plugin_manifest(path: Path, *, resource_root: Path | None = None) -> Pl
     """Load a runtime V2 plugin manifest."""
 
     with path.open("rb") as file:
-        data = tomllib.load(file)
+        data = cast(TomlTable, tomllib.load(file))
 
     manifest_dir = resource_root if resource_root is not None else path.parent
-    plugin = data.get("plugin", {})
-    plugin_id = plugin.get("id", manifest_dir.name)
-    windows = [_parse_window(window, manifest_dir) for window in data.get("window", [])]
-    settings = [_parse_setting(setting) for setting in data.get("setting", [])]
-    tabs = [_parse_tab(tab, manifest_dir, plugin_id) for tab in data.get("tab", [])]
+    plugin = _table(data.get("plugin"))
+    plugin_id = _string(plugin.get("id"), manifest_dir.name)
+    windows = [_parse_window(window, manifest_dir) for window in _tables(data.get("window"))]
+    settings = [_parse_setting(setting) for setting in _tables(data.get("setting"))]
+    tabs = [_parse_tab(tab, manifest_dir, plugin_id) for tab in _tables(data.get("tab"))]
     plugin_menu: list[MenuItem | MenuSeparator] = []
-    for menu in data.get("plugin_menu", []):
-        plugin_menu.extend(_parse_menu_items(menu.get("items", [])))
+    for menu in _tables(data.get("plugin_menu")):
+        plugin_menu.extend(_parse_menu_items(_tables(menu.get("items"))))
     ui_manifest = _parse_ui_manifest(
         windows=windows,
         tabs=tabs,
         plugin_menu=plugin_menu,
-        menu_label=plugin.get("menu"),
+        menu_label=_string(plugin.get("menu")) or None,
     )
-    images = [_parse_image(image) for image in data.get("image", [])]
+    images = [_parse_image(image) for image in _tables(data.get("image"))]
     manifest = PluginManifest(
         plugin_id=plugin_id,
-        plugin_type=plugin.get("type", "plugin"),
-        version=plugin.get("version", ""),
-        author=plugin.get("author", ""),
-        description=plugin.get("description", ""),
-        icon=plugin.get("icon", ""),
-        requires=list(plugin.get("requires", [])),
-        url=plugin.get("url", ""),
-        sponsor=plugin.get("sponsor", plugin.get("sponser", "")),
+        plugin_type=_string(plugin.get("type"), "plugin"),
+        version=_string(plugin.get("version")),
+        author=_string(plugin.get("author")),
+        description=_string(plugin.get("description")),
+        icon=_string(plugin.get("icon")),
+        requires=_strings(plugin.get("requires")),
+        url=_string(plugin.get("url")),
+        sponsor=_string(plugin.get("sponsor"), _string(plugin.get("sponser"))),
         settings=settings,
         images=images,
         ui=ui_manifest,
@@ -118,54 +187,54 @@ def _validate_plugin_manifest(manifest: PluginManifest) -> None:
                 )
 
 
-def _parse_window(entry: dict, manifest_dir: Path) -> AppManifest:
-    chrome_data = entry.get("chrome", {})
-    chrome_qml = chrome_data.get("custom_chrome")
+def _parse_window(entry: TomlTable, manifest_dir: Path) -> AppManifest:
+    chrome_data = _table(entry.get("chrome"))
     chrome = ChromePolicy(
-        show_menu_button=chrome_data.get("show_menu_button", False),
-        show_title_text=chrome_data.get("show_title_text", True),
-        show_caption_buttons=chrome_data.get("show_caption_buttons", True),
-        show_tab_bar=chrome_data.get("show_tab_bar", False),
-        show_status_bar=chrome_data.get("show_status_bar", False),
-        custom_chrome=(manifest_dir / chrome_qml).resolve() if chrome_qml else None,
+        show_menu_button=_bool(chrome_data.get("show_menu_button"), False),
+        show_title_text=_bool(chrome_data.get("show_title_text"), True),
+        show_caption_buttons=_bool(chrome_data.get("show_caption_buttons"), True),
+        show_tab_bar=_bool(chrome_data.get("show_tab_bar"), False),
+        show_status_bar=_bool(chrome_data.get("show_status_bar"), False),
+        custom_chrome=_resolve_path(manifest_dir, chrome_data.get("custom_chrome")),
     )
     return AppManifest(
-        id=entry["id"],
-        title=entry.get("title", ""),
-        surface=(manifest_dir / entry["surface"]).resolve() if "surface" in entry else None,
+        id=_string(entry.get("id")),
+        title=_string(entry.get("title")),
+        surface=_resolve_path(manifest_dir, entry.get("surface")),
         chrome=chrome,
-        requires=list(entry.get("requires", [])),
-        menu=_parse_menu_items([item for item in entry.get("menu", [])]),
-        statusbar=[_parse_statusbar_item(item) for item in entry.get("statusbar", [])],
+        requires=_strings(entry.get("requires")),
+        menu=_parse_menu_items(_tables(entry.get("menu"))),
+        statusbar=[_parse_statusbar_item(item) for item in _tables(entry.get("statusbar"))],
     )
 
 
-def _parse_setting(entry: dict) -> SettingDecl:
+def _parse_setting(entry: TomlTable) -> SettingDecl:
+    key = _string(entry.get("key"))
     return SettingDecl(
-        key=entry["key"],
-        label=entry.get("label", entry["key"]),
-        default=entry["default"],
-        type=entry["type"],
-        choices=list(entry.get("choices", [])),
+        key=key,
+        label=_string(entry.get("label"), key),
+        default=entry.get("default"),
+        type=_string(entry.get("type")),
+        choices=_strings(entry.get("choices")),
     )
 
 
-def _parse_statusbar_item(entry: dict) -> StatusbarItemDecl:
+def _parse_statusbar_item(entry: TomlTable) -> StatusbarItemDecl:
     return StatusbarItemDecl(
-        icon=entry.get("icon", ""),
-        text=entry.get("text", ""),
-        tooltip=entry.get("tooltip", ""),
-        action=entry.get("action", ""),
-        side=entry.get("side", "left"),
+        icon=_string(entry.get("icon")),
+        text=_string(entry.get("text")),
+        tooltip=_string(entry.get("tooltip")),
+        action=_string(entry.get("action")),
+        side=_string(entry.get("side"), "left"),
     )
 
 
-def _parse_tab(entry: dict, manifest_dir: Path, plugin_id: str) -> TabDecl:
+def _parse_tab(entry: TomlTable, manifest_dir: Path, plugin_id: str) -> TabDecl:
     return TabDecl(
-        id=entry["id"],
-        label=entry["label"],
-        target=entry["target"],
-        surface=(manifest_dir / entry["surface"]).resolve(),
+        id=_string(entry.get("id")),
+        label=_string(entry.get("label")),
+        target=_string(entry.get("target")),
+        surface=(manifest_dir / _string(entry.get("surface"))).resolve(),
         plugin_id=plugin_id,
     )
 
@@ -187,33 +256,33 @@ def _parse_ui_manifest(
     )
 
 
-def _parse_overlay_manifest(data: dict, plugin: dict, manifest_dir: Path) -> OverlayManifest | None:
-    overlay_section = data.get("overlay", {})
-    connectors = list(
+def _parse_overlay_manifest(data: TomlTable, plugin: TomlTable, manifest_dir: Path) -> OverlayManifest | None:
+    overlay_section = _table(data.get("overlay"))
+    connectors = _strings(
         overlay_section.get(
             "connectors",
             plugin.get("overlay_connectors", data.get("overlay_connectors", [])),
         )
     )
-    modules = list(
+    modules = _strings(
         overlay_section.get(
             "modules",
             plugin.get("overlay_modules", data.get("overlay_modules", [])),
         )
     )
-    widgets_dir_name = overlay_section.get("widgets_dir")
+    widgets_dir_name = _string(overlay_section.get("widgets_dir"))
     if widgets_dir_name:
         widgets = _load_widgets_from_dir(manifest_dir / widgets_dir_name)
     else:
         widgets = [
             OverlayWidgetDecl(
-                id=entry["id"],
-                widget=entry["widget"],
-                label=entry.get("label", ""),
-                bindings=dict(entry.get("bindings", {})),
-                values=dict(entry.get("values", {})),
+                id=_string(entry.get("id")),
+                widget=_string(entry.get("widget")),
+                label=_string(entry.get("label")),
+                bindings=_string_map(entry.get("bindings")),
+                values=_object_map(entry.get("values")),
             )
-            for entry in data.get("widget", [])
+            for entry in _tables(data.get("widget"))
         ]
 
     if not widgets and not connectors and not modules:
@@ -231,47 +300,45 @@ def _load_widgets_from_dir(widgets_dir: Path) -> list[OverlayWidgetDecl]:
     declarations: list[OverlayWidgetDecl] = []
     for toml_file in sorted(widgets_dir.glob("*.toml")):
         with toml_file.open("rb") as file:
-            data = tomllib.load(file)
-        widget = data.get("widget", {})
-        bindings = data.get("bindings", {})
-        defaults_data = data.get("defaults", {})
-        values = dict(data.get("values", {}))
+            data = cast(TomlTable, tomllib.load(file))
+        widget = _table(data.get("widget"))
+        defaults_data = _table(data.get("defaults"))
+        values = _object_map(data.get("values"))
         if "format" in widget:
-            values.setdefault("format", widget["format"])
+            values.setdefault("format", widget.get("format"))
         if "title" in widget:
-            values.setdefault("title", widget["title"])
+            values.setdefault("title", widget.get("title"))
         if "description" in widget:
-            values.setdefault("description", widget["description"])
+            values.setdefault("description", widget.get("description"))
         if "thresholds" in data:
-            values.setdefault("thresholds", data["thresholds"])
-        raw_pos = defaults_data.get("position", [0, 0])
+            values.setdefault("thresholds", data.get("thresholds"))
         declarations.append(OverlayWidgetDecl(
-            id=widget["id"],
-            widget=widget["widget"],
-            label=widget.get("label", ""),
-            bindings=dict(bindings),
+            id=_string(widget.get("id")),
+            widget=_string(widget.get("widget")),
+            label=_string(widget.get("label")),
+            bindings=_string_map(data.get("bindings")),
             values=values,
             defaults=WidgetDefaults(
-                enabled=defaults_data.get("enabled", True),
-                visible=defaults_data.get("visible", True),
-                position=(int(raw_pos[0]), int(raw_pos[1])) if len(raw_pos) >= 2 else (0, 0),
+                enabled=_bool(defaults_data.get("enabled"), True),
+                visible=_bool(defaults_data.get("visible"), True),
+                position=_position(defaults_data.get("position")),
             ),
         ))
     return declarations
 
 
-def _parse_image(entry: dict) -> ImageDecl:
+def _parse_image(entry: TomlTable) -> ImageDecl:
     return ImageDecl(
-        id=entry["id"],
-        path=entry["path"],
+        id=_string(entry.get("id")),
+        path=_string(entry.get("path")),
     )
 
 
-def _parse_connector_manifest(data: dict) -> ConnectorManifest | None:
-    connector = data.get("connector", {})
-    connector_service = data.get("connector_service", {})
-    connector_runtime = data.get("connector_runtime", {})
-    provides = list(connector.get("provides", []))
+def _parse_connector_manifest(data: TomlTable) -> ConnectorManifest | None:
+    connector = _table(data.get("connector"))
+    connector_service = _table(data.get("connector_service"))
+    connector_runtime = _table(data.get("connector_runtime"))
+    provides = _strings(connector.get("provides"))
     games = _parse_connector_games(connector)
     service = _parse_connector_service(connector_service)
     runtime = _parse_connector_runtime(connector_runtime)
@@ -285,25 +352,25 @@ def _parse_connector_manifest(data: dict) -> ConnectorManifest | None:
     )
 
 
-def _parse_connector_games(connector: dict) -> list[ConnectorGameDecl]:
+def _parse_connector_games(connector: TomlTable) -> list[ConnectorGameDecl]:
     return [
         ConnectorGameDecl(
-            id=entry["id"],
-            detect_names=list(entry.get("detect_names", [])),
+            id=_string(entry.get("id")),
+            detect_names=_strings(entry.get("detect_names")),
         )
-        for entry in connector.get("game", [])
+        for entry in _tables(connector.get("game"))
     ]
 
 
-def _parse_connector_service(connector_service: dict) -> ConnectorServiceDecl | None:
-    module = connector_service.get("module")
-    class_name = connector_service.get("class")
+def _parse_connector_service(connector_service: TomlTable) -> ConnectorServiceDecl | None:
+    module = _string(connector_service.get("module"))
+    class_name = _string(connector_service.get("class"))
     if not module or not class_name:
         return None
     return ConnectorServiceDecl(module=module, class_name=class_name)
 
 
-def _parse_connector_runtime(connector_runtime: dict) -> ConnectorRuntimeDecl | None:
+def _parse_connector_runtime(connector_runtime: TomlTable) -> ConnectorRuntimeDecl | None:
     game_state_hook = connector_runtime.get("game_state_hook")
     mock_source = connector_runtime.get("mock_source")
     if not game_state_hook and not mock_source:

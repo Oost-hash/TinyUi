@@ -49,7 +49,7 @@ class ManifestReader(Protocol):
         """Return plugin roles by plugin id."""
         ...
 
-    def resource_root(self, plugin_id: str) -> Path | None:
+    def resource_root(self, plugin_id: str) -> Path:
         """Return one manifest resource root."""
         ...
 

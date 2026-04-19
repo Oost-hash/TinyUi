@@ -80,11 +80,13 @@ class ManifestRegistry:
 
         return {plugin_id: record.manifest for plugin_id, record in self._records.items()}
 
-    def resource_root(self, plugin_id: str) -> Path | None:
+    def resource_root(self, plugin_id: str) -> Path:
         """Return one manifest resource root."""
 
         record = self._records.get(plugin_id)
-        return None if record is None else record.resource_root
+        if record is None:
+            raise KeyError(f"Plugin manifest is not registered: {plugin_id}")
+        return record.resource_root
 
     def records(self) -> list[ManifestRecord]:
         """Return all manifest records."""
