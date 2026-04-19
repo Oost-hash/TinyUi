@@ -23,8 +23,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
+
+type SchedulerJobCallback = Callable[[], object | None]
 
 
 class SchedulerClockMode(StrEnum):

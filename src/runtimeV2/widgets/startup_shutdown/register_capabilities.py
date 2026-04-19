@@ -26,7 +26,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from runtimeV2.events.contracts import EventBus
-from runtimeV2.contracts import SchedulerClockReader, SchedulerWriter, WidgetConfigReader, WidgetConfigWriter
+from runtimeV2.contracts import (
+    ConnectorReader,
+    ManifestConnectorReader,
+    ManifestOverlayReader,
+    PluginActiveReader,
+    SchedulerClockReader,
+    SchedulerWriter,
+    WidgetConfigReader,
+    WidgetConfigWriter,
+)
 from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.capabilities.widget_records_refresh import WidgetRecordsRefresh
@@ -54,10 +63,10 @@ class WidgetCapabilities:
 def register_widget_capabilities(
     *,
     store: WidgetRecordsStore,
-    overlay_read,
-    connector_decl_read,
-    connector_read,
-    active_read,
+    overlay_read: ManifestOverlayReader,
+    connector_decl_read: ManifestConnectorReader,
+    connector_read: ConnectorReader,
+    active_read: PluginActiveReader,
     widget_config_read: WidgetConfigReader,
     widget_config_write: WidgetConfigWriter,
     scheduler_write: SchedulerWriter,

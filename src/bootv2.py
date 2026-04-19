@@ -23,11 +23,12 @@
 
 from __future__ import annotations
 
+import importlib
 import sys
 
 # In frozen builds, import compiled QRC resources for embedded assets
 if getattr(sys, "frozen", False):
-    import resources_rc  # noqa: F401
+    importlib.import_module("resources_rc")
 
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult
@@ -37,7 +38,7 @@ from ui_api.qt import create_application, create_engine
 from ui_api.startup_logging import install_startup_diagnostics, log_startup_step, startup_log_path
 
 if sys.platform == "win32":
-    from ui_api.windowing import win_window  # eager import: registers QML singletons before engine
+    importlib.import_module("ui_api.windowing.win_window")
 
 
 def main() -> int:

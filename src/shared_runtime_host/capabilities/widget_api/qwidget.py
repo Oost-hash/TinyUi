@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from PySide6.QtCore import QObject, Signal, Slot
 
@@ -120,8 +120,9 @@ class WidgetEffectsQmlCapability(QObject):
         widget_key = _widget_key(overlay_id, widget_id)
         self._keys[widget_key] = (overlay_id, widget_id)
 
-        values = widget_data.get("values", {})
-        raw_thresholds = values.get("thresholds") if isinstance(values, dict) else []
+        raw_values = widget_data.get("values", {})
+        values = cast(dict[str, object], raw_values) if isinstance(raw_values, dict) else {}
+        raw_thresholds: object = values.get("thresholds", [])
         thresholds = threshold_entries(raw_thresholds)
         threshold_state = self._threshold.evaluate(
             thresholds,

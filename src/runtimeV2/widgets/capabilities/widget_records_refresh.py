@@ -23,6 +23,14 @@
 
 from __future__ import annotations
 
+from runtimeV2.contracts import (
+    ConnectorReader,
+    ManifestConnectorReader,
+    ManifestOverlayReader,
+    PluginActiveReader,
+    WidgetConfigReader,
+    WidgetVisibilityReader,
+)
 from runtimeV2.events.contracts import EventBus, EventType
 from runtimeV2.widgets.contracts import WidgetRecord, WidgetRuntimeUpdatedData
 from runtimeV2.widgets.projection import project_widget_records
@@ -36,13 +44,13 @@ class WidgetRecordsRefresh:
         self,
         *,
         store: WidgetRecordsStore,
-        overlay_read,
-        connector_decl_read,
-        connector_read,
-        active_read,
-        widget_config_read,
+        overlay_read: ManifestOverlayReader,
+        connector_decl_read: ManifestConnectorReader,
+        connector_read: ConnectorReader,
+        active_read: PluginActiveReader,
+        widget_config_read: WidgetConfigReader,
         events: EventBus,
-        visibility_read=None,
+        visibility_read: WidgetVisibilityReader | None = None,
     ) -> None:
         self._store = store
         self._overlay_read = overlay_read

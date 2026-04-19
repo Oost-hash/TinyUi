@@ -23,9 +23,29 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
 
 from runtimeV2.connectors.contracts import ConnectorInspectionSnapshot, ConnectorServiceRecord
+
+
+@runtime_checkable
+class _InspectableConnectorService(Protocol):
+    def inspect_snapshot(self) -> ConnectorInspectionSnapshot: ...
+
+
+@runtime_checkable
+class _SourceRequestConnectorService(Protocol):
+    def request_source(self, owner: str, source_name: str) -> bool: ...
+
+
+@runtime_checkable
+class _SourceReleaseConnectorService(Protocol):
+    def release_source(self, owner: str) -> bool: ...
+
+
+@runtime_checkable
+class _UpdatableConnectorService(Protocol):
+    def update(self) -> None: ...
 
 
 def _empty_snapshot() -> ConnectorInspectionSnapshot:
@@ -87,16 +107,16 @@ class ConnectorServiceRegistry:
         """Return a connector inspection snapshot."""
 
         service = self.get(connector_id)
-        if service is None or not hasattr(service, "inspect_snapshot"):
+        if not isinstance(service, _InspectableConnectorService):
             return _empty_snapshot()
         snapshot = service.inspect_snapshot()
-        return list(snapshot) if isinstance(snapshot, list) else _empty_snapshot()
+        return list(snapshot)
 
     def request_source(self, connector_id: str, owner: str, source_name: str) -> bool:
         """Request a connector source."""
 
         service = self.get(connector_id)
-        if service is None or not hasattr(service, "request_source"):
+        if not isinstance(service, _SourceRequestConnectorService):
             return False
         requested = bool(service.request_source(owner, source_name))
         if requested:
@@ -107,7 +127,7 @@ class ConnectorServiceRegistry:
         """Release a connector source claim."""
 
         service = self.get(connector_id)
-        if service is None or not hasattr(service, "release_source"):
+        if not isinstance(service, _SourceReleaseConnectorService):
             return False
         released = bool(service.release_source(owner))
         if released:
@@ -130,7 +150,7 @@ class ConnectorServiceRegistry:
         """Advance one connector service when supported."""
 
         service = self.get(connector_id)
-        if service is None or not hasattr(service, "update"):
+        if not isinstance(service, _UpdatableConnectorService):
             return False
         service.update()
         return True

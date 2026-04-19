@@ -23,6 +23,8 @@
 
 from __future__ import annotations
 
+from PySide6.QtWidgets import QApplication
+
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult
 from shared_runtime_host.registry import SharedRuntimeHostRegistry
@@ -34,7 +36,7 @@ from widget_api.runtime_host import (
 
 
 def startup_widget_api(
-    app,
+    app: QApplication,
     runtime: RuntimeV2,
     host_registry: SharedRuntimeHostRegistry,
 ) -> tuple[WidgetRuntimeHostResult | None, StartupResult]:

@@ -23,12 +23,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
 from PySide6.QtCore import QUrl
-from PySide6.QtQml import QQmlComponent
+from PySide6.QtQml import QQmlComponent, QQmlEngine
+from PySide6.QtWidgets import QApplication
 
 from shared_runtime_host.capabilities.ui_host import UIHostCapability
 from shared_runtime_host.capabilities.window_host import WindowHostCapability
@@ -298,8 +300,8 @@ def _try_runtime_capability(runtime: RuntimeV2, name: str) -> object | None:
 
 def start_runtime_host(
     *,
-    app,
-    engine,
+    app: QApplication,
+    engine: QQmlEngine,
     runtime: RuntimeV2,
     host_registry: SharedRuntimeHostRegistry,
     theme: Theme | None = None,
@@ -345,10 +347,18 @@ def start_runtime_host(
         def _drop_handle(window_id: str) -> None:
             open_handles.pop(window_id, None)
 
+        def _drop_handle_slot(window_id: str) -> Callable[[object], None]:
+            def _slot(_destroyed: object) -> None:
+                _drop_handle(window_id)
+
+            return _slot
+
+        def _drop_main_handle(*_args: object) -> None:
+            _drop_handle(main_window.id)
+
         def _close_host_windows() -> None:
             for window_id, window_handle in list(open_handles.items()):
-                if window_handle.qml_window is not None:
-                    window_handle.qml_window.close()
+                window_handle.qml_window.close()
                 open_handles.pop(window_id, None)
 
         def _open_runtime_window(window_id: str) -> None:
@@ -374,14 +384,14 @@ def start_runtime_host(
                 **qml_properties,
             )
             open_handles[window_id] = window_handle
-            window_handle.qml_window.destroyed.connect(lambda *_args, wid=window_id: _drop_handle(wid))
+            window_handle.qml_window.destroyed.connect(_drop_handle_slot(window_id))
 
         host_registry.capability("ui_actions", UIActionsCapability).register(
             actions,
             open_window=_open_runtime_window,
         )
         handle.qml_window.destroyed.connect(app.quit)
-        handle.qml_window.destroyed.connect(lambda *_args: _drop_handle(main_window.id))
+        handle.qml_window.destroyed.connect(_drop_main_handle)
         shutdown = QmlRuntimeHostShutdown(runtime, _close_host_windows)
         shutdown.attach(app)
 
@@ -411,7 +421,7 @@ def _window_manifest(ui_read: ManifestUiReader, window_id: str):
     return None
 
 
-def _resolve_plugin_panel(engine, runtime: RuntimeV2) -> tuple[str, QQmlComponent | None]:
+def _resolve_plugin_panel(engine: QQmlEngine, runtime: RuntimeV2) -> tuple[str, QQmlComponent | None]:
     """Resolve the optional inline plugin panel component for the main host window."""
 
     ui_read = runtime.capability("manifest_ui_read", ManifestUiReader)

@@ -25,6 +25,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from PySide6.QtQml import QQmlEngine
+from PySide6.QtWidgets import QApplication
+
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from shared_runtime_host.register_capabilities import register_event_registration_host, register_widget_host
@@ -55,8 +58,8 @@ def _stop_scheduler_driver(driver: QmlRuntimeSchedulerDriver | None) -> None:
 
 
 def startup_shared_runtime_host(
-    app,
-    engine,
+    app: QApplication,
+    engine: QQmlEngine,
     runtime: RuntimeV2,
 ) -> tuple[SharedRuntimeHostStartupResult | None, StartupResult]:
     """Start shared host bridge and API hosts above runtime V2."""

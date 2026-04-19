@@ -152,13 +152,6 @@ def _int_value(values: dict[str, object] | None, key: str, fallback: int) -> int
     return fallback
 
 
-def _bool_value(values: dict[str, object] | None, key: str, fallback: bool) -> bool:
-    if values is None:
-        return fallback
-    value = values.get(key)
-    return value if isinstance(value, bool) else fallback
-
-
 def _numeric_value(value: object) -> float | None:
     if isinstance(value, bool):
         return None

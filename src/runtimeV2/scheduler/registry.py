@@ -23,9 +23,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-
-from runtimeV2.scheduler.contracts import ScheduledJobRecord
+from runtimeV2.scheduler.contracts import ScheduledJobRecord, SchedulerJobCallback
 
 
 class SchedulerRegistry:
@@ -40,7 +38,7 @@ class SchedulerRegistry:
         job_id: str,
         owner_domain: str,
         interval_ms: int,
-        callback: Callable[[], object | None],
+        callback: SchedulerJobCallback,
         enabled: bool = True,
     ) -> ScheduledJobRecord:
         """Register or replace one recurring job."""
@@ -120,7 +118,7 @@ class _ScheduledJob:
         owner_domain: str,
         interval_ms: int,
         enabled: bool,
-        callback: Callable[[], object | None],
+        callback: SchedulerJobCallback,
     ) -> None:
         self.job_id = job_id
         self.owner_domain = owner_domain

@@ -102,7 +102,7 @@ class PersistenceRepository:
         if key_fields != expected_fields:
             missing = sorted(expected_fields - key_fields)
             extra = sorted(key_fields - expected_fields)
-            details = []
+            details: list[str] = []
             if missing:
                 details.append(f"missing: {', '.join(missing)}")
             if extra:

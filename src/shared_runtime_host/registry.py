@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from runtimeV2.runtime import RuntimeV2
 

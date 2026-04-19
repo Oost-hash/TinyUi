@@ -28,14 +28,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
-from PySide6.QtCore import QObject, QUrl
+from PySide6.QtCore import QUrl
 from PySide6.QtQml import QQmlComponent, QQmlEngine
 from PySide6.QtQuick import QQuickWindow
+from PySide6.QtWidgets import QApplication
 
 from ui_api.api.app_actions import AppActions
 from ui_api.startup_logging import log_startup_step
 from ui_api.theme import Theme
-from runtimeV2.paths.qml_source import QmlSource
 from runtimeV2.ui.schemas.manifest import AppManifest
 from ui_api.windowing import attach_windowing
 
@@ -59,7 +59,7 @@ def open_window(
     manifest: AppManifest,
     *,
     engine: QQmlEngine,
-    app,
+    app: QApplication,
     actions: AppActions,
     theme: Theme,
     **extra_properties: object,
@@ -85,7 +85,7 @@ def open_window(
         **extra_properties,
     }
 
-    obj = component.createWithInitialProperties(initial_properties)
+    obj = cast(object | None, component.createWithInitialProperties(initial_properties))
     if obj is None:
         error_message = component.errorString()
         log_startup_step(
@@ -100,7 +100,7 @@ def open_window(
             level=40,
         )
         raise TypeError(error_message)
-    window = cast(QQuickWindow, obj)
+    window = obj
 
     surface_component = None
     if manifest.surface:

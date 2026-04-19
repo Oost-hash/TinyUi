@@ -110,7 +110,7 @@ class WidgetRefreshPolicy:
             self._refreshing = False
         return True
 
-    def _on_visibility_event(self, _event: Event) -> None:
+    def _on_visibility_event(self, _event: Event[object]) -> None:
         if not self._visibility_read.global_visible():
             self.refresh()
             return
