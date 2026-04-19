@@ -31,7 +31,7 @@ from PySide6.QtCore import QObject, Slot
 class AppActions(QObject):
     """Dispatch named app actions from QML into Python handlers."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._handlers: dict[str, Callable[[], None]] = {}
 

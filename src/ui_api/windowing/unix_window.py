@@ -30,7 +30,8 @@ QML initiates drag via DragHandler.onActiveChanged -> startMove().
 Resize is initiated from ResizeHandles.qml via startResize(edge).
 """
 
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import QObject, Qt, Slot
+from PySide6.QtQuick import QQuickWindow
 
 from ui_api.windowing.controller_api import WindowControllerApi
 
@@ -38,7 +39,7 @@ from ui_api.windowing.controller_api import WindowControllerApi
 class WindowController(WindowControllerApi):
     """Window control for Linux/Wayland."""
 
-    def __init__(self, window, parent=None):
+    def __init__(self, window: QQuickWindow, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._window = window
 
@@ -47,22 +48,22 @@ class WindowController(WindowControllerApi):
         pass  # Not applicable - Wayland does not use hit-test zones
 
     @Slot()
-    def toggleMaximize(self):
+    def toggleMaximize(self) -> None:
         if self._window.windowState() & Qt.WindowState.WindowMaximized:
             self._window.showNormal()
         else:
             self._window.showMaximized()
 
     @Slot()
-    def minimize(self):
+    def minimize(self) -> None:
         self._window.showMinimized()
 
     @Slot()
-    def startMove(self):
+    def startMove(self) -> None:
         """Called from QML DragHandler - compositor handles the drag."""
         self._window.startSystemMove()
 
     @Slot(int)
-    def startResize(self, edge: int):
+    def startResize(self, edge: int) -> None:
         """Called from ResizeHandles.qml - compositor handles the resize."""
         self._window.startSystemResize(Qt.Edge(edge))

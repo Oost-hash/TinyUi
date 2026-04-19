@@ -26,7 +26,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from runtimeV2.domains import DomainStatus
 from runtimeV2.events.contracts import EventType
 from runtimeV2.schemas.events import RuntimeShutdownData
 
@@ -86,16 +85,10 @@ class RuntimeShutdownController:
         )
 
     def _run_stop_hooks(self) -> None:
-        owner_order = [name for name in reversed(self._runtime.domain_names()) if name in self._runtime._stop_hooks]
-        if "runtime" in self._runtime._stop_hooks:
-            owner_order.append("runtime")
-
-        for owner in owner_order:
-            hooks = list(reversed(self._runtime._stop_hooks.get(owner, [])))
+        for owner in self._runtime.stop_hook_owner_order():
+            hooks = list(reversed(self._runtime.stop_hooks(owner)))
             for hook in hooks:
                 hook()
 
-            record = self._runtime._domain_records.get(owner)
-            if record is not None and record.status in {DomainStatus.READY, DomainStatus.STARTING, DomainStatus.ERROR}:
-                self._runtime._set_domain_status(owner, DomainStatus.STOPPED)
+            self._runtime.mark_domain_stopped(owner)
 

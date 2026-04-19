@@ -33,7 +33,7 @@ from PySide6.QtQml import QQmlComponent
 from PySide6.QtQuick import QQuickWindow
 
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
-from runtimeV2.contracts import WidgetRecord, WidgetRecordsRefresher, WidgetStatus
+from runtimeV2.contracts import WidgetConfigWriter, WidgetRecord, WidgetRecordsRefresher, WidgetStatus
 from shared_runtime_host.capabilities.widget_api import (
     WidgetConfigWriteQmlCapability,
     WidgetEffectsQmlCapability,
@@ -70,7 +70,7 @@ class WidgetWindowHost:
     def __init__(
         self,
         widget_host: WidgetHostCapability,
-        widget_config_write,
+        widget_config_write: WidgetConfigWriter,
         widget_effects: WidgetEffectsQmlCapability,
         widget_records_refresh: WidgetRecordsRefresher | None = None,
     ) -> None:
