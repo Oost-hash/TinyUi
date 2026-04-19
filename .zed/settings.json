@@ -1,5 +1,18 @@
 {
-  "file_scan_exclusions": [],
+  "file_scan_exclusions": [
+    "**/.git",
+    "**/__pycache__",
+    ".claude",
+    ".pytest_cache",
+    ".qml_linter",
+    ".vault",
+    ".venv",
+    ".venv-wsl",
+    "build",
+    "data",
+    "dist",
+    "tinypedal_repo",
+  ],
   "languages": {
     "Python": {
       "language_servers": ["basedpyright"],

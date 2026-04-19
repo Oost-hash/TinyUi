@@ -39,11 +39,18 @@ console_level = "INFO"
 typeCheckingMode = "strict"
 pythonVersion = "3.14"
 include = ["src"]
+extraPaths = ["src"]
 exclude = [
     "**/.git",
     "**/__pycache__",
     ".venv",
+    ".venv-wsl",
     ".pytest_cache",
+    ".claude",
+    ".qml_linter",
+    ".vault",
+    "build",
     "data",
     "dist",
+    "tinypedal_repo",
 ]
