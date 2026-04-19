@@ -53,4 +53,5 @@ exclude = [
     "data",
     "dist",
     "tinypedal_repo",
+    "src/tests",
 ]
