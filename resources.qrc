@@ -11,6 +11,9 @@
         <file alias="plugins/tinyui/app_devtools/qml/SchemaList.qml">src/plugins/tinyui/app_devtools/qml/SchemaList.qml</file>
         <file alias="plugins/tinyui/app_devtools/qml/surface.qml">src/plugins/tinyui/app_devtools/qml/surface.qml</file>
         <file alias="plugins/tinyui/app_hostChrome/qml/HostChromeShell.qml">src/plugins/tinyui/app_hostChrome/qml/HostChromeShell.qml</file>
+        <file alias="plugins/tinyui/app_hostChrome/qml/HostMenuButton.qml">src/plugins/tinyui/app_hostChrome/qml/HostMenuButton.qml</file>
+        <file alias="plugins/tinyui/app_hostChrome/qml/HostPluginMenu.qml">src/plugins/tinyui/app_hostChrome/qml/HostPluginMenu.qml</file>
+        <file alias="plugins/tinyui/app_hostChrome/qml/HostStatusBar.qml">src/plugins/tinyui/app_hostChrome/qml/HostStatusBar.qml</file>
         <file alias="plugins/tinyui/app_pluginsPanel/qml/surface.qml">src/plugins/tinyui/app_pluginsPanel/qml/surface.qml</file>
         <file alias="plugins/tinyui/app_settings/qml/surface.qml">src/plugins/tinyui/app_settings/qml/surface.qml</file>
         <file alias="plugins/tinyui/app_widgetsTab/qml/ActionButton.qml">src/plugins/tinyui/app_widgetsTab/qml/ActionButton.qml</file>
