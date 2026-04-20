@@ -26,8 +26,9 @@ from __future__ import annotations
 import time
 
 from PySide6.QtCore import Qt, QTimer
+from PySide6.QtWidgets import QApplication
 
-from runtimeV2.contracts import EventType, RuntimeShutdownController, SchedulerClockReader, SchedulerWriter
+from runtimeV2.contracts import Event, EventType, RuntimeShutdownController, SchedulerClockReader, SchedulerWriter
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.runtime import RuntimeV2
 
@@ -41,7 +42,7 @@ class QmlRuntimeSchedulerDriver:
         self._timer.setTimerType(Qt.TimerType.PreciseTimer)
         self._timer.timeout.connect(self._on_timeout)
 
-    def attach(self, app) -> None:
+    def attach(self, app: QApplication) -> None:
         """Attach the scheduler timer to the Qt application lifecycle."""
 
         self._timer.setParent(app)
@@ -67,10 +68,10 @@ class QmlRuntimeSchedulerDriver:
         self._runtime.capability("scheduler_write", SchedulerWriter).tick(_monotonic_ms())
         self._retime()
 
-    def _on_runtime_shutdown(self, _event) -> None:
+    def _on_runtime_shutdown(self, _event: Event[object]) -> None:
         self.stop()
 
-    def _on_scheduler_jobs_changed(self, _event) -> None:
+    def _on_scheduler_jobs_changed(self, _event: Event[object]) -> None:
         self._retime()
 
     def _retime(self) -> None:
@@ -78,7 +79,7 @@ class QmlRuntimeSchedulerDriver:
         self._timer.setInterval(max(5, interval_ms))
 
 
-def start_runtime_scheduler_clock(app, runtime: RuntimeV2) -> QmlRuntimeSchedulerDriver:
+def start_runtime_scheduler_clock(app: QApplication, runtime: RuntimeV2) -> QmlRuntimeSchedulerDriver:
     """Start the shared Qt clock that drives runtime scheduler ticks."""
 
     driver = QmlRuntimeSchedulerDriver(runtime)

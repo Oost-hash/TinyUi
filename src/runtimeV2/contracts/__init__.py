@@ -65,8 +65,6 @@ from runtimeV2.contracts.manifest import (
 )
 from runtimeV2.contracts.paths_types import RuntimePaths
 from runtimeV2.contracts.persistence import (
-    ConfigSetReader,
-    ConfigSetWriter,
     SettingsReader,
     SettingsWriter,
     WidgetConfigReader,
@@ -74,8 +72,9 @@ from runtimeV2.contracts.persistence import (
 )
 from runtimeV2.contracts.persistence_types import (
     BootstrapConfig,
-    ConfigSet,
     PersistencePaths,
+    PersistenceStoreKind,
+    PersistenceStoreRef,
     WidgetInstanceConfig,
 )
 from runtimeV2.contracts.plugins import (
@@ -121,6 +120,8 @@ from runtimeV2.contracts.ui_types import (
 from runtimeV2.contracts.widgets import (
     WidgetManualOverrideState,
     WidgetRecordsReader,
+    WidgetRecordsRefresher,
+    WidgetTypeDefaultsReader,
     WidgetVisibilityReader,
     WidgetVisibilityWriter,
 )
@@ -178,12 +179,11 @@ __all__ = [
     "SettingsWriter",
     "WidgetConfigReader",
     "WidgetConfigWriter",
-    "ConfigSetReader",
-    "ConfigSetWriter",
     # Persistence (types)
     "BootstrapConfig",
-    "ConfigSet",
     "PersistencePaths",
+    "PersistenceStoreKind",
+    "PersistenceStoreRef",
     "WidgetInstanceConfig",
     # Plugins (capabilities)
     "PluginDiscovery",
@@ -229,6 +229,8 @@ __all__ = [
     # Widgets (capabilities)
     "WidgetManualOverrideState",
     "WidgetRecordsReader",
+    "WidgetRecordsRefresher",
+    "WidgetTypeDefaultsReader",
     "WidgetVisibilityReader",
     "WidgetVisibilityWriter",
     # Widgets (types)

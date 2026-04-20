@@ -23,9 +23,9 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Window
-import QtQuick.Layouts
 
 import "../../../../ui_api/qml" as UiApi
+import "HostChromeShell.js" as HostChromeShellBridge
 
 Item {
     id: root
@@ -34,7 +34,9 @@ Item {
     readonly property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     readonly property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
     readonly property var windowController: hostWindow && hostWindow.windowController ? hostWindow.windowController : null
-    readonly property var uiChrome: hostWindow && hostWindow.uiChrome ? hostWindow.uiChrome : null
+    readonly property var runtimeContext: hostWindow && hostWindow.runtimeContext ? hostWindow.runtimeContext : null
+    readonly property var uiChrome: runtimeContext && runtimeContext.uiChrome ? runtimeContext.uiChrome : null
+    readonly property var imageSources: runtimeContext && runtimeContext.imageSources ? runtimeContext.imageSources : null
 
     property string windowTitle: hostWindow && typeof hostWindow.windowTitle === "string" ? hostWindow.windowTitle : ""
     property var menuItems: uiChrome ? uiChrome.menuItems : []
@@ -49,40 +51,21 @@ Item {
     property bool menuOpen: false
     property string pendingPluginActivation: ""
     property var pluginStates: ({})
-    property bool widgetsVisible: hostWindow && hostWindow.widgetVisibility ? hostWindow.widgetVisibility.globalVisible : true
-
-    readonly property url menuIconSource: root.menuOpen ? imageSources.imageUrl("ui.menu-open") : imageSources.imageUrl("ui.menu")
-
-    function pluginStatusColor(pluginId: string): color {
-        if (!pluginId || pluginId === "")
-            return root.theme ? root.theme.textMuted : "#878a98";
-
-        if (root.pendingPluginActivation !== "" && root.pendingPluginActivation !== pluginId)
-            return root.theme ? root.theme.warningAlt : "#B05CFF";
-
-        var state = root.pluginStates[pluginId] || "active";
-        if (state === "active")
-            return root.theme ? root.theme.success : "#4caf50";
-        if (state === "enabling" || state === "loading" || state === "unloading")
-            return state === "unloading" ? (root.theme ? root.theme.warningAlt : "#B05CFF") : (root.theme ? root.theme.warning : "#ff9800");
-        if (state === "error")
-            return root.theme ? root.theme.danger : "#f44336";
-        return root.theme ? root.theme.danger : "#f44336";
-    }
+    property bool widgetsVisible: runtimeContext && runtimeContext.widgetVisibility ? runtimeContext.widgetVisibility.globalVisible : true
 
     Connections {
-        target: root.hostWindow ? root.hostWindow.pluginState : null
+        target: root.runtimeContext ? root.runtimeContext.pluginState : null
         function onStateDataChanged() {
-            if (!root.hostWindow || !root.hostWindow.pluginState)
+            if (!root.runtimeContext || !root.runtimeContext.pluginState)
                 return;
-            root.pluginStates = root.hostWindow.pluginState.states;
+            root.pluginStates = root.runtimeContext.pluginState.states;
         }
     }
 
     Connections {
-        target: root.hostWindow && root.hostWindow.widgetVisibility ? root.hostWindow.widgetVisibility : null
+        target: root.runtimeContext && root.runtimeContext.widgetVisibility ? root.runtimeContext.widgetVisibility : null
         function onGlobalVisibleChanged() {
-            root.widgetsVisible = root.hostWindow.widgetVisibility.globalVisible;
+            root.widgetsVisible = root.runtimeContext.widgetVisibility.globalVisible;
         }
     }
 
@@ -104,263 +87,36 @@ Item {
         z: 15
     }
 
-    // Hamburger menu button — owned by host plugin for full styling control
-    Rectangle {
-        id: hamburgerButton
+    HostMenuButton {
+        id: hostMenuButton
         x: 0
         y: 0
-        z: 25
-        height: 32
-        width: hamburgerRow.implicitWidth + 28
-        color: hamburgerMouse.containsMouse || root.menuOpen ? (root.theme ? root.theme.surfaceAlt : "#2f343e") : "transparent"
-
-        Row {
-            id: hamburgerRow
-            anchors.left: parent.left
-            anchors.leftMargin: 12
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 10
-
-            Image {
-                anchors.verticalCenter: parent.verticalCenter
-                source: root.menuIconSource
-                sourceSize.width: 18
-                sourceSize.height: 18
-                width: 18
-                height: 18
-                smooth: true
-            }
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.windowTitle
-                color: hamburgerMouse.containsMouse || root.menuOpen ? "#FFFFFF" : (root.theme ? root.theme.textMuted : "#878a98")
-                font.pixelSize: 12
-            }
-        }
-
-        MouseArea {
-            id: hamburgerMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            onClicked: root.menuOpen = !root.menuOpen
+        theme: root.theme
+        imageSources: root.imageSources
+        menuItems: root.menuItems
+        windowTitle: root.windowTitle
+        open: root.menuOpen
+        onOpenRequested: open => root.menuOpen = open
+        onTriggerAction: action => {
+            if (root.appActions)
+                root.appActions.trigger(action);
+            else if (action === "close" && root.hostWindow)
+                root.hostWindow.close();
         }
     }
 
-    // Hamburger dropdown — rendered at HostChromeShell level so z-index is correct above plugin panel
-    Item {
-        z: 50
-        x: 0
-        y: 32
-        width: 160
-        height: hamburgerMenuColumn.implicitHeight
-        visible: root.menuOpen
-
-        Rectangle {
-            anchors.fill: parent
-            color: root.theme ? root.theme.surfaceAlt : "#2f343e"
-        }
-        Rectangle {
-            anchors.left: parent.left
-            width: 1
-            height: parent.height
-            color: root.theme ? root.theme.border : "#464b57"
-        }
-        Rectangle {
-            anchors.bottom: parent.bottom
-            width: parent.width
-            height: 1
-            color: root.theme ? root.theme.border : "#464b57"
-        }
-        Rectangle {
-            anchors.right: parent.right
-            width: 1
-            height: parent.height
-            color: root.theme ? root.theme.border : "#464b57"
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: function (mouse) {
-                mouse.accepted = true;
-            }
-        }
-
-        Column {
-            id: hamburgerMenuColumn
-            width: parent.width
-            spacing: 0
-
-            Repeater {
-                model: root.menuItems
-
-                delegate: Item {
-                    id: hamburgerMenuDelegate
-                    required property var modelData
-                    visible: hamburgerMenuDelegate.modelData.visible === undefined ? true : !!hamburgerMenuDelegate.modelData.visible
-                    width: 160
-                    height: visible ? (hamburgerMenuDelegate.modelData.separator ? 9 : 28) : 0
-
-                    Rectangle {
-                        visible: !!hamburgerMenuDelegate.modelData.separator
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.leftMargin: 8
-                        anchors.rightMargin: 8
-                        height: 1
-                        color: root.theme ? root.theme.border : "#464b57"
-                    }
-
-                    Rectangle {
-                        visible: !hamburgerMenuDelegate.modelData.separator
-                        anchors.fill: parent
-                        color: hamburgerItemMouse.containsMouse ? (root.theme ? root.theme.surfaceRaised : "#3b414d") : "transparent"
-
-                        Text {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: hamburgerMenuDelegate.modelData.label
-                            color: root.theme ? root.theme.text : "#dce0e5"
-                            font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
-                        }
-
-                        MouseArea {
-                            id: hamburgerItemMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: {
-                                root.menuOpen = false;
-                                if (root.appActions)
-                                    root.appActions.trigger(hamburgerMenuDelegate.modelData.action);
-                                else if (hamburgerMenuDelegate.modelData.action === "close" && root.hostWindow)
-                                    root.hostWindow.close();
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Plugin menu button - positioned right after the hamburger button
-    Rectangle {
-        id: pluginMenuButton
-        visible: root.pluginMenuItems.length > 0
-        x: hamburgerButton.width
+    HostPluginMenu {
+        id: hostPluginMenu
+        x: hostMenuButton.buttonWidth
         y: 0
-        width: pluginMenuLabelText.implicitWidth + 24
-        height: 32
-        color: pluginMenuMouse.containsMouse || root.pluginMenuOpen ? (root.theme ? root.theme.surfaceAlt : "#2f343e") : "transparent"
-        z: 25
-
-        Text {
-            id: pluginMenuLabelText
-            anchors.centerIn: parent
-            text: root.pluginMenuLabel || "Plugins"
-            color: pluginMenuMouse.containsMouse || root.pluginMenuOpen ? "#FFFFFF" : (root.theme ? root.theme.textMuted : "#878a98")
-            font.pixelSize: 12
-        }
-
-        MouseArea {
-            id: pluginMenuMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            onClicked: root.pluginMenuOpen = !root.pluginMenuOpen
-        }
-    }
-
-    // Plugin menu dropdown — z:50 so it renders above the plugin panel (z:30)
-    Item {
-        z: 50
-        x: pluginMenuButton.x
-        y: 32
-        width: 160
-        height: pluginMenuColumn.implicitHeight
-        visible: root.pluginMenuOpen && root.pluginMenuItems.length > 0
-
-        Rectangle {
-            anchors.fill: parent
-            color: root.theme ? root.theme.surfaceAlt : "#2f343e"
-        }
-        Rectangle {
-            anchors.left: parent.left
-            width: 1
-            height: parent.height
-            color: root.theme ? root.theme.border : "#464b57"
-        }
-        Rectangle {
-            anchors.bottom: parent.bottom
-            width: parent.width
-            height: 1
-            color: root.theme ? root.theme.border : "#464b57"
-        }
-        Rectangle {
-            anchors.right: parent.right
-            width: 1
-            height: parent.height
-            color: root.theme ? root.theme.border : "#464b57"
-        }
-
-        Column {
-            id: pluginMenuColumn
-            width: parent.width
-            spacing: 0
-            padding: 0
-            topPadding: 0
-            bottomPadding: 0
-
-            Repeater {
-                model: root.pluginMenuItems
-
-                delegate: Item {
-                    id: pluginMenuDelegate
-                    required property var modelData
-                    visible: pluginMenuDelegate.modelData.visible === undefined ? true : !!pluginMenuDelegate.modelData.visible
-                    width: 160
-                    height: visible ? (pluginMenuDelegate.modelData.separator ? 9 : 28) : 0
-
-                    // Separator line
-                    Rectangle {
-                        visible: !!pluginMenuDelegate.modelData.separator
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.leftMargin: 8
-                        anchors.rightMargin: 8
-                        height: 1
-                        color: root.theme ? root.theme.border : "#464b57"
-                    }
-
-                    // Clickable/hoverable area for non-separator items
-                    Rectangle {
-                        visible: !pluginMenuDelegate.modelData.separator
-                        anchors.fill: parent
-                        color: pluginItemMouse.containsMouse ? (root.theme ? root.theme.surfaceRaised : "#3b414d") : "transparent"
-
-                        Text {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: pluginMenuDelegate.modelData.label
-                            color: root.theme ? root.theme.text : "#dce0e5"
-                            font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
-                        }
-
-                        MouseArea {
-                            id: pluginItemMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: {
-                                root.pluginMenuOpen = false;
-                                if (root.appActions)
-                                    root.appActions.trigger(pluginMenuDelegate.modelData.action);
-                            }
-                        }
-                    }
-                }
-            }
+        theme: root.theme
+        pluginMenuItems: root.pluginMenuItems
+        pluginMenuLabel: root.pluginMenuLabel
+        open: root.pluginMenuOpen
+        onOpenRequested: open => root.pluginMenuOpen = open
+        onTriggerAction: action => {
+            if (root.appActions)
+                root.appActions.trigger(action);
         }
     }
 
@@ -377,153 +133,39 @@ Item {
         onLoaded: {
             if (item && root.hostWindow) {
                 // Mirror selected plugin into HostChromeShell so it survives item destruction
-                item.pluginToActivateChanged.connect(function () {
-                    root.pendingPluginActivation = item.pluginToActivate || "";
+                HostChromeShellBridge.connectPluginToActivateChanged(item, function () {
+                    root.pendingPluginActivation = HostChromeShellBridge.pluginToActivate(item);
                 });
-                root.pendingPluginActivation = item.pluginToActivate || "";
+                root.pendingPluginActivation = HostChromeShellBridge.pluginToActivate(item);
             }
         }
     }
 
-    // Statusbar with plugin picker
-    Rectangle {
+    HostStatusBar {
         id: statusBar
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        height: 32
         visible: root.showStatusBar
-        color: root.theme ? root.theme.surfaceRaised : "#3b414d"
-        z: 20
-
-        Rectangle {
-            anchors.top: parent.top
-            width: parent.width
-            height: 1
-            color: root.theme ? root.theme.border : "#464b57"
+        theme: root.theme
+        statusItems: root.statusItems
+        pluginStates: root.pluginStates
+        statusActiveLabel: root.statusActiveLabel
+        pendingPluginActivation: root.pendingPluginActivation
+        widgetsVisible: root.widgetsVisible
+        showPluginPanel: root.hostWindow && root.hostWindow.showPluginPanel
+        onTriggerAction: action => {
+            if (root.appActions)
+                root.appActions.trigger(action);
         }
-
-        // Left status items
-        Row {
-            anchors.left: parent.left
-            anchors.leftMargin: 6
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 6
-
-            Repeater {
-                model: root.statusItems
-
-                delegate: Rectangle {
-                    id: statusItemDelegate
-                    required property var modelData
-                    width: Math.max(statusItemLabel.implicitWidth + 12, 24)
-                    height: 20
-                    radius: 3
-                    color: itemMouse.containsMouse ? (root.theme ? root.theme.surfaceFloating : "#20242b") : "transparent"
-
-                    Text {
-                        id: statusItemLabel
-                        anchors.centerIn: parent
-                        text: {
-                            if (typeof statusItemDelegate.modelData === "string") {
-                                return statusItemDelegate.modelData;
-                            } else if (statusItemDelegate.modelData && statusItemDelegate.modelData.text) {
-                                return statusItemDelegate.modelData.text;
-                            }
-                            return "";
-                        }
-                        color: {
-                            // Widget visibility toggle gets special coloring
-                            if (statusItemDelegate.modelData && statusItemDelegate.modelData.action === "widgetVisibility.toggle") {
-                                return root.widgetsVisible ? (root.theme ? root.theme.success : "#4caf50") : (root.theme ? root.theme.textMuted : "#878a98");
-                            }
-                            return root.theme ? root.theme.textMuted : "#c8ccd4";
-                        }
-                        font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
-                    }
-
-                    MouseArea {
-                        id: itemMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: {
-                            var action = statusItemDelegate.modelData.action;
-                            if (action && root.appActions) {
-                                root.appActions.trigger(action);
-                            }
-                        }
-                    }
-                }
-            }
+        onActivatePendingPlugin: pluginId => {
+            if (root.appActions)
+                root.appActions.trigger("plugin.activate:" + pluginId);
         }
-
-        // Plugin picker
-        Rectangle {
-            id: pluginPickerButton
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            width: pluginNameRow.implicitWidth + 20
-            visible: root.statusActiveLabel !== ""
-            z: 25
-            color: root.hostWindow && root.hostWindow.showPluginPanel ? (root.theme ? root.theme.surfaceAlt : "#2f343e") : pluginNameHover.containsMouse ? (root.theme ? root.theme.surfaceFloating : "#20242b") : "transparent"
-
-            Rectangle {
-                visible: root.hostWindow && root.hostWindow.showPluginPanel
-                anchors.left: parent.left
-                width: 1
-                height: parent.height
-                color: root.theme ? root.theme.border : "#464b57"
-            }
-            Rectangle {
-                visible: root.hostWindow && root.hostWindow.showPluginPanel
-                anchors.right: parent.right
-                width: 1
-                height: parent.height
-                color: root.theme ? root.theme.border : "#464b57"
-            }
-
-            Row {
-                id: pluginNameRow
-                anchors.centerIn: parent
-                spacing: 8
-
-                Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 8
-                    height: 8
-                    radius: 4
-                    color: root.pluginStatusColor(root.statusActiveLabel)
-                }
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: root.statusActiveLabel
-                    color: "#FFFFFF"
-                    font.pixelSize: root.theme ? root.theme.fontSizeSmall : 11
-                    font.family: root.theme ? root.theme.fontFamily : "sans-serif"
-                }
-            }
-
-            MouseArea {
-                id: pluginNameHover
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: {
-                    if (!root.hostWindow)
-                        return;
-                    // Activate pending plugin before destroying the panel item
-                    if (root.hostWindow.showPluginPanel && root.pendingPluginActivation !== "" && root.appActions) {
-                        root.appActions.trigger("plugin.activate:" + root.pendingPluginActivation);
-                        root.pendingPluginActivation = "";
-                    }
-                    if (!root.hostWindow.showPluginPanel) {
-                        root.pendingPluginActivation = "";
-                    }
-                    if (root.appActions)
-                        root.appActions.trigger("pluginPanel.toggle");
-                }
-            }
+        onClearPendingActivation: root.pendingPluginActivation = ""
+        onTogglePluginPanel: {
+            if (root.appActions)
+                root.appActions.trigger("pluginPanel.toggle");
         }
     }
 }

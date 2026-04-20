@@ -24,7 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.events.contracts import EventBus, EventType
-from runtimeV2.scheduler.contracts import SchedulerClockUpdatedData
+from runtimeV2.scheduler.contracts import SchedulerClockState, SchedulerClockUpdatedData
 from runtimeV2.scheduler.clock import SchedulerClock
 
 
@@ -60,7 +60,7 @@ class SchedulerClockWrite:
             self._emit_if_changed(previous)
         return accepted
 
-    def _emit_if_changed(self, previous) -> None:
+    def _emit_if_changed(self, previous: SchedulerClockState) -> None:
         current = self._clock.state()
         if current == previous or self._events is None:
             return

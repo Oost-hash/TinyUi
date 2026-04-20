@@ -386,6 +386,39 @@ def test_widget_data_adapter_formats_ready_values_from_widget_values() -> None:
     assert widget_data["displayText"] == "1.5 L"
 
 
+def test_widget_data_adapter_projects_text_widget_defaults() -> None:
+    """Widget host projection should expose text widget default styling to QML."""
+
+    record = WidgetRecord(
+        overlay_id="demo_overlay",
+        widget_id="speed",
+        widget_type="textWidget",
+        label="Speed",
+        source="vehicle.speed",
+        bindings={"source": "vehicle.speed"},
+        status=WidgetStatus.READY,
+        connector_ids=("LMU_RF2_Connector",),
+        values={
+            "width": 240,
+            "height": 88,
+            "fontSize": 26,
+            "textColor": "#FFFFFF",
+            "backgroundColor": "#101820",
+        },
+        resolved_value="123",
+    )
+    store = WidgetRecordsStore()
+    store.set_records([record])
+
+    widget_data = widget_window_data(WidgetHostCapability(WidgetRecordsRead(store)), record)
+
+    assert widget_data["width"] == 240
+    assert widget_data["height"] == 88
+    assert widget_data["fontSize"] == 26
+    assert widget_data["textColor"] == "#FFFFFF"
+    assert widget_data["backgroundColor"] == "#101820"
+
+
 def test_widget_window_host_updates_data_without_resetting_position() -> None:
     """Existing widget windows should not receive an empty widgetData during refresh."""
 

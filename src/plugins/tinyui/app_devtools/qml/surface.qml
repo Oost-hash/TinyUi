@@ -28,13 +28,14 @@ Rectangle {
     id: root
 
     property var hostWindow: Window.window
-    property var manifestRead: hostWindow && hostWindow.manifestRead ? hostWindow.manifestRead : null
-    property var pluginState: hostWindow && hostWindow.pluginState ? hostWindow.pluginState : null
-    property var settingsRead: hostWindow && hostWindow.settingsRead ? hostWindow.settingsRead : null
-    property var windowRecords: hostWindow && hostWindow.windowRecords ? hostWindow.windowRecords : null
-    property var widgetRecords: hostWindow && hostWindow.widgetRecords ? hostWindow.widgetRecords : null
-    property var connectorRead: hostWindow && hostWindow.connectorRead ? hostWindow.connectorRead : null
-    property var connectorActions: hostWindow && hostWindow.connectorActions ? hostWindow.connectorActions : null
+    property var runtimeContext: hostWindow && hostWindow.runtimeContext ? hostWindow.runtimeContext : null
+    property var manifestRead: runtimeContext && runtimeContext.manifestRead ? runtimeContext.manifestRead : null
+    property var pluginState: runtimeContext && runtimeContext.pluginState ? runtimeContext.pluginState : null
+    property var settingsRead: runtimeContext && runtimeContext.settingsRead ? runtimeContext.settingsRead : null
+    property var windowRecords: runtimeContext && runtimeContext.windowRecords ? runtimeContext.windowRecords : null
+    property var widgetRecords: runtimeContext && runtimeContext.widgetRecords ? runtimeContext.widgetRecords : null
+    property var connectorRead: runtimeContext && runtimeContext.connectorRead ? runtimeContext.connectorRead : null
+    property var connectorActions: runtimeContext && runtimeContext.connectorActions ? runtimeContext.connectorActions : null
     property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     property var pluginRows: []
     property var settingRows: []

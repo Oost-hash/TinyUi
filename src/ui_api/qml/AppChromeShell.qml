@@ -32,7 +32,9 @@ Item {
     readonly property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     readonly property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
     readonly property var windowController: hostWindow && hostWindow.windowController ? hostWindow.windowController : null
-    readonly property var uiChrome: hostWindow && hostWindow.uiChrome ? hostWindow.uiChrome : null
+    readonly property var runtimeContext: hostWindow && hostWindow.runtimeContext ? hostWindow.runtimeContext : null
+    readonly property var uiChrome: runtimeContext && runtimeContext.uiChrome ? runtimeContext.uiChrome : null
+    readonly property var imageSources: runtimeContext && runtimeContext.imageSources ? runtimeContext.imageSources : null
 
     property string windowTitle: hostWindow && typeof hostWindow.windowTitle === "string" ? hostWindow.windowTitle : ""
 
@@ -41,7 +43,7 @@ Item {
     property var pluginMenuItems: uiChrome ? uiChrome.pluginMenuItems : []
     property var pluginMenuLabel: uiChrome ? uiChrome.pluginMenuLabel : ""
     property var tabModel: uiChrome ? uiChrome.tabModel : []
-    property var activePlugin: hostWindow && hostWindow.pluginActive ? hostWindow.pluginActive.activePlugin : ""
+    property var activePlugin: runtimeContext && runtimeContext.pluginActive ? runtimeContext.pluginActive.activePlugin : ""
 
     property int currentTab: hostWindow && typeof hostWindow.currentTab === "number" ? hostWindow.currentTab : 0
     property bool showTabBar: hostWindow && typeof hostWindow.showTabBar === "boolean" ? hostWindow.showTabBar : false
@@ -57,11 +59,11 @@ Item {
     // When true, the menu button and dropdown are suppressed so an external chrome can own them
     property bool externalMenuButton: false
 
-    readonly property url menuIconSource: root.menuOpen ? imageSources.imageUrl("ui.menu-open") : imageSources.imageUrl("ui.menu")
-    readonly property url minimizeIconSource: imageSources.imageUrl("ui.window-minimize")
-    readonly property url maximizeIconSource: imageSources.imageUrl("ui.window-maximize")
-    readonly property url restoreIconSource: imageSources.imageUrl("ui.window-restore")
-    readonly property url closeIconSource: imageSources.imageUrl("ui.window-close")
+    readonly property url menuIconSource: root.imageSources ? (root.menuOpen ? root.imageSources.imageUrl("ui.menu-open") : root.imageSources.imageUrl("ui.menu")) : ""
+    readonly property url minimizeIconSource: root.imageSources ? root.imageSources.imageUrl("ui.window-minimize") : ""
+    readonly property url maximizeIconSource: root.imageSources ? root.imageSources.imageUrl("ui.window-maximize") : ""
+    readonly property url restoreIconSource: root.imageSources ? root.imageSources.imageUrl("ui.window-restore") : ""
+    readonly property url closeIconSource: root.imageSources ? root.imageSources.imageUrl("ui.window-close") : ""
 
     // Export menu button width for external chrome to position adjacent buttons (0 when suppressed)
     readonly property real menuButtonWidth: root.externalMenuButton ? 0 : menuButton.width

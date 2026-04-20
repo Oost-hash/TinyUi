@@ -416,6 +416,9 @@ class LMURealConnector:
     def close(self) -> None: self._source.close()
     def update(self) -> None: self._source.update()
     @property
+    def data(self) -> lmu_data.LMUObjectOut | None:
+        return cast(lmu_data.LMUObjectOut | None, self._source.info.data)
+    @property
     def state(self): return self._state
     @property
     def brake(self): return self._brake

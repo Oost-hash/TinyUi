@@ -23,12 +23,12 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from PySide6.QtCore import QObject, Signal, Slot
 
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
-from runtimeV2.contracts import SchedulerWriter, WidgetConfigWriter, WidgetRecord
+from runtimeV2.contracts import SchedulerWriter, WidgetConfigWriter, WidgetRecord, WidgetRecordsRefresher
 from widget_api.capabilities import FlashCapability, ThresholdCapability
 from widget_api.capabilities.threshold import numeric_value, threshold_entries
 
@@ -36,33 +36,54 @@ from widget_api.capabilities.threshold import numeric_value, threshold_entries
 class WidgetConfigWriteQmlCapability(QObject):
     """Expose widget config writes in the shape QML expects."""
 
-    def __init__(self, widget_config_write: WidgetConfigWriter, parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        widget_config_write: WidgetConfigWriter,
+        widget_records_refresh: WidgetRecordsRefresher | None = None,
+        parent: QObject | None = None,
+    ) -> None:
         super().__init__(parent)
         self._widget_config_write = widget_config_write
+        self._widget_records_refresh = widget_records_refresh
 
     @Slot(str, str, int, int, result=bool)
     def setWidgetPosition(self, overlay_id: str, widget_id: str, x: int, y: int) -> bool:
         """Persist widget position from QML."""
 
-        return self._widget_config_write.set_widget_position(overlay_id, widget_id, x, y)
+        return self._refresh_after_write(
+            self._widget_config_write.set_widget_position(overlay_id, widget_id, x, y)
+        )
 
     @Slot(str, str, bool, result=bool)
     def setWidgetEnabled(self, overlay_id: str, widget_id: str, enabled: bool) -> bool:
         """Persist widget enabled state from QML."""
 
-        return self._widget_config_write.set_widget_enabled(overlay_id, widget_id, enabled)
+        return self._refresh_after_write(
+            self._widget_config_write.set_widget_enabled(overlay_id, widget_id, enabled)
+        )
 
     @Slot(str, str, "QVariantMap", result=bool)
     def setWidgetValues(self, overlay_id: str, widget_id: str, values: dict[str, object]) -> bool:
         """Persist widget config values from QML."""
 
-        return self._widget_config_write.set_widget_values(overlay_id, widget_id, values)
+        return self._refresh_after_write(
+            self._widget_config_write.set_widget_values(overlay_id, widget_id, values)
+        )
 
     @Slot(str, str, result=bool)
     def resetWidgetValues(self, overlay_id: str, widget_id: str) -> bool:
         """Reset widget config values from QML."""
 
-        return self._widget_config_write.reset_widget_values(overlay_id, widget_id)
+        return self._refresh_after_write(
+            self._widget_config_write.reset_widget_values(overlay_id, widget_id)
+        )
+
+    def _refresh_after_write(self, updated: bool) -> bool:
+        """Refresh projected records after successful config writes."""
+
+        if updated and self._widget_records_refresh is not None:
+            self._widget_records_refresh.refresh()
+        return updated
 
 
 class WidgetEffectsQmlCapability(QObject):
@@ -99,8 +120,9 @@ class WidgetEffectsQmlCapability(QObject):
         widget_key = _widget_key(overlay_id, widget_id)
         self._keys[widget_key] = (overlay_id, widget_id)
 
-        values = widget_data.get("values", {})
-        raw_thresholds = values.get("thresholds") if isinstance(values, dict) else []
+        raw_values = widget_data.get("values", {})
+        values = cast(dict[str, object], raw_values) if isinstance(raw_values, dict) else {}
+        raw_thresholds: object = values.get("thresholds", [])
         thresholds = threshold_entries(raw_thresholds)
         threshold_state = self._threshold.evaluate(
             thresholds,

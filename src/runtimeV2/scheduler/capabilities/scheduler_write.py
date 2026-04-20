@@ -23,10 +23,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-
 from runtimeV2.events.contracts import EventBus, EventType
-from runtimeV2.scheduler.contracts import SchedulerJobRegisteredData, SchedulerJobUpdatedData
+from runtimeV2.scheduler.contracts import (
+    ScheduledJobRecord,
+    SchedulerJobCallback,
+    SchedulerJobRegisteredData,
+    SchedulerJobUpdatedData,
+)
 from runtimeV2.scheduler.driver import SchedulerDriver
 from runtimeV2.scheduler.registry import SchedulerRegistry
 
@@ -50,7 +53,7 @@ class SchedulerWrite:
         job_id: str,
         owner_domain: str,
         interval_ms: int,
-        callback: Callable[[], object | None],
+        callback: SchedulerJobCallback,
         enabled: bool = True,
     ) -> None:
         """Register one recurring runtime job."""
@@ -127,7 +130,7 @@ class SchedulerWrite:
 
         self._driver.stop()
 
-    def _emit_updated(self, record) -> None:
+    def _emit_updated(self, record: ScheduledJobRecord) -> None:
         if self._events is None:
             return
         self._events.emit_typed(

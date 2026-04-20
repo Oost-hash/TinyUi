@@ -36,14 +36,22 @@ categories    = "all"
 console_level = "INFO"
 
 [tool.basedpyright]
-typeCheckingMode = "standard"
+typeCheckingMode = "strict"
 pythonVersion = "3.14"
 include = ["src"]
+extraPaths = ["src"]
 exclude = [
     "**/.git",
     "**/__pycache__",
     ".venv",
+    ".venv-wsl",
     ".pytest_cache",
+    ".claude",
+    ".qml_linter",
+    ".vault",
+    "build",
     "data",
     "dist",
+    "tinypedal_repo",
+    "src/tests",
 ]

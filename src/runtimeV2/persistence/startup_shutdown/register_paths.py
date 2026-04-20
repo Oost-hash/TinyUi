@@ -19,16 +19,14 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Path registration for runtime V2 persistence."""
-
-from __future__ import annotations
+"""Persistence path registration."""
 
 from runtimeV2.persistence.contracts import PersistencePaths
 from runtimeV2.persistence.paths import ensure_persistence_dirs
 
 
 def register_persistence_paths(paths: PersistencePaths) -> PersistencePaths:
-    """Register and prepare persistence-owned storage paths."""
+    """Ensure and return resolved persistence paths."""
 
     ensure_persistence_dirs(paths)
     return paths

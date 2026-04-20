@@ -19,19 +19,14 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Capability registration for runtime V2 persistence."""
-
-from __future__ import annotations
+"""Persistence capability registration."""
 
 from dataclasses import dataclass
 
-from runtimeV2.persistence.capabilities.config_set_read import ConfigSetRead
-from runtimeV2.persistence.capabilities.config_set_write import ConfigSetWrite
 from runtimeV2.persistence.capabilities.settings_read import SettingsRead
 from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
-from runtimeV2.persistence.config_sets import ConfigSetCatalog
 from runtimeV2.persistence.settings import SettingsStore
 from runtimeV2.persistence.widget_config import WidgetConfigStore
 
@@ -40,8 +35,6 @@ from runtimeV2.persistence.widget_config import WidgetConfigStore
 class PersistenceCapabilities:
     """Capabilities exposed by the persistence domain."""
 
-    config_set_read: ConfigSetRead
-    config_set_write: ConfigSetWrite
     settings_read: SettingsRead
     settings_write: SettingsWrite
     widget_config_read: WidgetConfigRead
@@ -50,15 +43,12 @@ class PersistenceCapabilities:
 
 def register_persistence_capabilities(
     *,
-    catalog: ConfigSetCatalog,
     settings: SettingsStore,
     widget_config: WidgetConfigStore,
 ) -> PersistenceCapabilities:
-    """Create persistence domain capabilities."""
+    """Create persistence capabilities."""
 
     return PersistenceCapabilities(
-        config_set_read=ConfigSetRead(catalog),
-        config_set_write=ConfigSetWrite(catalog),
         settings_read=SettingsRead(settings),
         settings_write=SettingsWrite(settings),
         widget_config_read=WidgetConfigRead(widget_config),

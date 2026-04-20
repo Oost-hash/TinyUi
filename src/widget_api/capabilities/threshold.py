@@ -24,7 +24,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from numbers import Real
+from typing import cast
 
 
 @dataclass(frozen=True)
@@ -77,11 +78,12 @@ def threshold_entries(raw_thresholds: object) -> list[ThresholdEntry]:
 
     if not isinstance(raw_thresholds, list):
         return []
+    raw_items = cast(list[object], raw_thresholds)
     entries: list[ThresholdEntry] = []
-    for raw in raw_thresholds:
+    for raw in raw_items:
         if not isinstance(raw, dict):
             continue
-        entry = _threshold_entry(raw)
+        entry = _threshold_entry(cast(dict[str, object], raw))
         if entry is not None:
             entries.append(entry)
     return entries
@@ -102,22 +104,50 @@ def numeric_value(value: object) -> float | None:
     return None
 
 
-def _threshold_entry(raw: dict[str, Any]) -> ThresholdEntry | None:
-    try:
-        value = float(raw["value"])
-    except (KeyError, TypeError, ValueError):
+def _threshold_entry(raw: dict[str, object]) -> ThresholdEntry | None:
+    value = _float_value(raw.get("value"))
+    if value is None:
         return None
     color = str(raw.get("color", "#E0E0E0"))
     color_target = str(raw.get("colorTarget", raw.get("color_target", "value")))
     flash_target = str(raw.get("flashTarget", raw.get("flash_target", "value")))
+    flash_speed = _int_value(raw.get("flashSpeed", raw.get("flash_speed", 5)), fallback=5)
     return ThresholdEntry(
         value=value,
         color=color,
         color_target=_valid_target(color_target),
         flash=bool(raw.get("flash", False)),
-        flash_speed=max(1, int(raw.get("flashSpeed", raw.get("flash_speed", 5)))),
+        flash_speed=max(1, flash_speed),
         flash_target=_valid_target(flash_target),
     )
+
+
+def _float_value(value: object) -> float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, Real):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _int_value(value: object, *, fallback: int) -> int:
+    if isinstance(value, bool):
+        return fallback
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return fallback
+    return fallback
 
 
 def _valid_target(target: str) -> str:

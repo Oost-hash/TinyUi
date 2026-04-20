@@ -21,14 +21,16 @@
 
 """Shared Qt theme singleton used across TinyUI-hosted QML surfaces."""
 
-import os
 import platform as _platform
 import sys
 import tomllib
 from pathlib import Path
+from typing import cast
 
 from PySide6.QtCore import QObject, Property, Signal, Slot
 from PySide6.QtGui import QColor
+
+TomlTable = dict[str, object]
 
 _sys = _platform.system()
 _FONT_FAMILY = (
@@ -49,10 +51,15 @@ def _theme_path(name: str) -> Path:
     return Path(__file__).resolve().parents[2] / "assets" / "themes" / theme_file
 
 
-def _load_toml(name: str) -> dict:
+def _load_toml(name: str) -> TomlTable:
     path = _theme_path(name)
     with path.open("rb") as f:
         return tomllib.load(f)
+
+
+def _table(data: TomlTable, key: str) -> TomlTable:
+    value = data.get(key, {})
+    return cast(TomlTable, value) if isinstance(value, dict) else {}
 
 
 class Theme(QObject):
@@ -63,21 +70,24 @@ class Theme(QObject):
     def __init__(self, name: str = "dark", base_font_pt: int = 13):
         super().__init__()
         self._base = base_font_pt
-        self._colors = {}
-        self._font = {}
+        self._colors: TomlTable = {}
+        self._font: TomlTable = {}
         self.load(name)
 
-    def load(self, name: str):
+    def load(self, name: str) -> None:
         data = _load_toml(name)
-        self._colors = data.get("colors", {})
-        self._font = data.get("font", {})
+        self._colors = _table(data, "colors")
+        self._font = _table(data, "font")
         self.changed.emit()
 
     def _c(self, key: str) -> str:
-        return self._colors.get(key, "#ff00ff")  # magenta als token ontbreekt
+        value = self._colors.get(key, "#ff00ff")
+        return value if isinstance(value, str) else "#ff00ff"
 
     def _font_size(self, scale_key: str) -> int:
-        return round(self._font.get(scale_key, 1.0) * self._base)
+        value = self._font.get(scale_key, 1.0)
+        scale = value if isinstance(value, int | float) else 1.0
+        return round(scale * self._base)
 
     # ── Window chrome (static) ────────────────────────────────────────────
 

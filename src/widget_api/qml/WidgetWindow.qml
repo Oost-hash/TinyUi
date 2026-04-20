@@ -49,8 +49,8 @@ Window {
     readonly property bool showSource: widgetData
             && widgetData.values
             && widgetData.values.showSource === true
-    width: 120
-    height: showSource ? 72 : 56
+    width: widgetData && widgetData.width !== undefined ? Number(widgetData.width) : 120
+    height: widgetData && widgetData.height !== undefined ? Number(widgetData.height) : (showSource ? 72 : 56)
     visible: widgetData && widgetData.visible !== undefined ? widgetData.visible : true
     color: "transparent"
     flags: Qt.Window

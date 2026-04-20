@@ -26,7 +26,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from runtimeV2.events.contracts import EventBus
-from runtimeV2.contracts import SchedulerClockReader, SchedulerWriter, WidgetConfigReader, WidgetConfigWriter
+from runtimeV2.contracts import (
+    ConnectorReader,
+    ManifestConnectorReader,
+    ManifestOverlayReader,
+    PluginActiveReader,
+    SchedulerClockReader,
+    SchedulerWriter,
+    WidgetConfigReader,
+    WidgetConfigWriter,
+)
 from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
 from runtimeV2.widgets.capabilities.widget_records_read import WidgetRecordsRead
 from runtimeV2.widgets.capabilities.widget_records_refresh import WidgetRecordsRefresh
@@ -34,6 +43,7 @@ from runtimeV2.widgets.capabilities.widget_refresh_policy import WidgetRefreshPo
 from runtimeV2.widgets.capabilities.widget_visibility_read import WidgetVisibilityRead
 from runtimeV2.widgets.capabilities.widget_visibility_write import WidgetVisibilityWrite
 from runtimeV2.widgets.store import WidgetRecordsStore
+from runtimeV2.widgets.type_defaults import WidgetTypeDefaultsRegistry, default_widget_type_defaults_registry
 from runtimeV2.widgets.visibility_focus import WidgetVisibilityFocus
 
 
@@ -47,15 +57,16 @@ class WidgetCapabilities:
     visibility_read: WidgetVisibilityRead
     visibility_write: WidgetVisibilityWrite
     manual_override: WidgetManualOverride
+    type_defaults: WidgetTypeDefaultsRegistry
 
 
 def register_widget_capabilities(
     *,
     store: WidgetRecordsStore,
-    overlay_read,
-    connector_decl_read,
-    connector_read,
-    active_read,
+    overlay_read: ManifestOverlayReader,
+    connector_decl_read: ManifestConnectorReader,
+    connector_read: ConnectorReader,
+    active_read: PluginActiveReader,
     widget_config_read: WidgetConfigReader,
     widget_config_write: WidgetConfigWriter,
     scheduler_write: SchedulerWriter,
@@ -66,6 +77,7 @@ def register_widget_capabilities(
 
     visibility_focus = WidgetVisibilityFocus()
     visibility_read = WidgetVisibilityRead(widget_config_read, visibility_focus)
+    type_defaults = default_widget_type_defaults_registry()
     records_refresh = WidgetRecordsRefresh(
         store=store,
         overlay_read=overlay_read,
@@ -95,4 +107,5 @@ def register_widget_capabilities(
             events=events,
         ),
         manual_override=manual_override,
+        type_defaults=type_defaults,
     )

@@ -14,9 +14,9 @@ SRC = ROOT / "src"
 HOST_PLUGIN_DIR = SRC / "plugins" / "tinyui"
 
 # Ensure compiled QRC resources exist
-RESOURCES_RC = SRC / "resources_rc.py"
+RESOURCES_RC = SRC / "pkg_runtime_host" / "resources_rc.py"
 if not RESOURCES_RC.exists():
-    print("ERROR: resources_rc.py not found!")
+    print("ERROR: pkg_runtime_host/resources_rc.py not found!")
     print("Please run: python scripts/compile_qrc.py")
     sys.exit(1)
 
@@ -37,10 +37,9 @@ def collect_tree(src: Path, dst: str) -> list[tuple[str, str]]:
         items.append((str(path), str(target)))
     return items
 
-# Include compiled QRC resources (QML, assets are embedded)
+# QML and assets are embedded through pkg_runtime_host.resources_rc.
 # LICENSE.txt is kept as a standalone file for users to read
 datas = [
-    (str(RESOURCES_RC), "."),
     (str(LICENSE_TXT), "."),
 ]
 datas += collect_tree(HOST_PLUGIN_DIR, "plugins/tinyui")
@@ -48,7 +47,7 @@ datas += collect_tree(HOST_PLUGIN_DIR, "plugins/tinyui")
 hiddenimports = [
     "mmap",
     "plugins.tinyui.plugin",
-    "resources_rc",  # Qt compiled resources
+    "pkg_runtime_host.resources_rc",  # Qt compiled resources
 ]
 
 a = Analysis(

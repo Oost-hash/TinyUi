@@ -23,6 +23,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from numbers import Real
 from typing import Protocol, cast
 
@@ -99,7 +100,8 @@ def _render_percent(value: object) -> str:
 
 def _render_join(values: object) -> str:
     if isinstance(values, tuple | list):
-        return ", ".join(str(item) for item in values)
+        items = cast(Sequence[object], values)
+        return ", ".join(str(item) for item in items)
     return str(values)
 
 

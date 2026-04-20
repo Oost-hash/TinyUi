@@ -23,127 +23,200 @@
 
 from __future__ import annotations
 
-import json
+from collections.abc import Callable
+from uuid import UUID, uuid5
 
-from runtimeV2.persistence.contracts import PersistencePaths, WidgetInstanceConfig
+from runtimeV2.persistence.contracts import WidgetInstanceConfig
+from runtimeV2.persistence.overlay_index import OverlayIndexStore
+from runtimeV2.persistence.repository import PersistenceRepository
+
+WIDGET_INSTANCE_NAMESPACE = UUID("a3deceeb-d97c-4e55-b087-c7c436cc5268")
+WIDGET_VISIBILITY_SINGLETON_ID = "widget_visibility"
 
 
 class WidgetConfigStore:
-    """Store widget configuration values for one config set."""
+    """Store widget configuration values."""
 
-    WIDGETS_FILE = "widgets.json"
-    VISIBILITY_FILE = "widget_visibility.json"
-
-    def __init__(self, paths: PersistencePaths, active_set: str) -> None:
-        self._paths = paths
-        self._active_set = active_set
+    def __init__(
+        self,
+        repository: PersistenceRepository,
+        overlay_repository: Callable[[str], PersistenceRepository] | None = None,
+        overlay_index: OverlayIndexStore | None = None,
+    ) -> None:
+        self._repository = repository
+        self._overlay_repository = overlay_repository
+        self._overlay_index = overlay_index
 
     def load_for_overlay(self, overlay_id: str) -> list[WidgetInstanceConfig]:
         """Load widget configuration for an overlay."""
 
-        path = self._widgets_path(overlay_id)
-        if not path.exists():
-            return []
-        data = json.loads(path.read_text(encoding="utf-8"))
-        return [WidgetInstanceConfig.from_dict(item) for item in data.get("widgets", [])]
+        documents = self._repository_for_overlay(overlay_id).list_documents("widget_instances")
+        return [
+            WidgetInstanceConfig.from_dict(document)
+            for document in documents
+        ]
 
     def save_for_overlay(self, overlay_id: str, configs: list[WidgetInstanceConfig]) -> None:
         """Save widget configuration for an overlay."""
 
-        path = self._widgets_path(overlay_id)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            json.dumps(
-                {"version": 1, "widgets": [config.to_dict() for config in configs]},
-                indent=2,
-                ensure_ascii=False,
-            ),
-            encoding="utf-8",
-        )
+        repository = self._repository_for_overlay(overlay_id)
+        for document in repository.list_documents("widget_instances"):
+            widget_instance_id = document.get("widget_instance_id")
+            if isinstance(widget_instance_id, str):
+                repository.delete_one("widget_instances", {"widget_instance_id": widget_instance_id})
+        for config in configs:
+            widget_instance_id = self._widget_instance_uuid(overlay_id, config.widget_id)
+            repository.write_one(
+                "widget_instances",
+                {"widget_instance_id": widget_instance_id},
+                {
+                    "widget_id": config.widget_id,
+                    "enabled": config.enabled,
+                    "position": [config.position[0], config.position[1]],
+                    "values": config.values,
+                },
+            )
 
     def get_widget(self, overlay_id: str, widget_id: str) -> WidgetInstanceConfig | None:
         """Return one widget config."""
 
-        for config in self.load_for_overlay(overlay_id):
-            if config.widget_id == widget_id:
-                return config
-        return None
+        document = self._repository_for_overlay(overlay_id).read_one(
+            "widget_instances",
+            {"widget_instance_id": self._widget_instance_uuid(overlay_id, widget_id)},
+        )
+        if document is None:
+            return None
+        return WidgetInstanceConfig.from_dict(document)
 
     def set_widget_enabled(self, overlay_id: str, widget_id: str, enabled: bool) -> bool:
         """Set widget enabled state."""
 
-        configs = self.load_for_overlay(overlay_id)
-        for config in configs:
-            if config.widget_id == widget_id:
-                config.enabled = enabled
-                self.save_for_overlay(overlay_id, configs)
-                return True
-        configs.append(WidgetInstanceConfig(widget_id=widget_id, enabled=enabled))
-        self.save_for_overlay(overlay_id, configs)
+        config = self.get_widget(overlay_id, widget_id) or WidgetInstanceConfig(widget_id=widget_id)
+        config.enabled = enabled
+        self._save_one(overlay_id, config)
         return True
 
     def set_widget_position(self, overlay_id: str, widget_id: str, x: int, y: int) -> bool:
         """Set widget position."""
 
-        configs = self.load_for_overlay(overlay_id)
-        for config in configs:
-            if config.widget_id == widget_id:
-                config.position = (x, y)
-                self.save_for_overlay(overlay_id, configs)
-                return True
-        configs.append(WidgetInstanceConfig(widget_id=widget_id, position=(x, y)))
-        self.save_for_overlay(overlay_id, configs)
+        config = self.get_widget(overlay_id, widget_id) or WidgetInstanceConfig(widget_id=widget_id)
+        config.position = (x, y)
+        self._save_one(overlay_id, config)
         return True
 
     def set_widget_values(self, overlay_id: str, widget_id: str, values: dict[str, object]) -> bool:
         """Set widget config values."""
 
-        configs = self.load_for_overlay(overlay_id)
-        for config in configs:
-            if config.widget_id == widget_id:
-                config.values.update(values)
-                self.save_for_overlay(overlay_id, configs)
-                return True
-        configs.append(WidgetInstanceConfig(widget_id=widget_id, values=dict(values)))
-        self.save_for_overlay(overlay_id, configs)
+        config = self.get_widget(overlay_id, widget_id) or WidgetInstanceConfig(widget_id=widget_id)
+        config.values.update(values)
+        self._save_one(overlay_id, config)
         return True
 
     def reset_widget_values(self, overlay_id: str, widget_id: str) -> bool:
         """Reset widget config values to empty."""
 
-        configs = self.load_for_overlay(overlay_id)
-        for config in configs:
-            if config.widget_id == widget_id:
-                config.values = {}
-                self.save_for_overlay(overlay_id, configs)
-                return True
-        return False
+        config = self.get_widget(overlay_id, widget_id)
+        if config is None:
+            return False
+        config.values = {}
+        self._save_one(overlay_id, config)
+        return True
+
+    def widget_type_defaults(self, overlay_id: str, widget_type: str) -> dict[str, object]:
+        """Return persisted defaults for one widget type in an overlay."""
+
+        document = self._repository_for_overlay(overlay_id).read_one(
+            "widget_defaults",
+            {"widget_type": widget_type},
+        )
+        if document is None:
+            return {}
+        return dict(document.get("defaults", {}))
+
+    def set_widget_type_defaults(
+        self,
+        overlay_id: str,
+        widget_type: str,
+        defaults: dict[str, object],
+    ) -> bool:
+        """Persist defaults for one widget type in an overlay."""
+
+        self._repository_for_overlay(overlay_id).write_one(
+            "widget_defaults",
+            {"widget_type": widget_type},
+            {"defaults": dict(defaults)},
+        )
+        return True
+
+    def reset_widget_type_defaults(self, overlay_id: str, widget_type: str) -> bool:
+        """Delete persisted defaults for one widget type in an overlay."""
+
+        repository = self._repository_for_overlay(overlay_id)
+        document = repository.read_one(
+            "widget_defaults",
+            {"widget_type": widget_type},
+        )
+        if document is None:
+            return False
+        repository.delete_one(
+            "widget_defaults",
+            {"widget_type": widget_type},
+        )
+        return True
 
     def get_global_visible(self) -> bool:
         """Return the global widget visibility flag."""
 
-        path = self._visibility_path()
-        if not path.exists():
+        data = self._repository.read_one(
+            "widget_visibility",
+            {"singleton_id": WIDGET_VISIBILITY_SINGLETON_ID},
+        )
+        if data is None:
             return False
-        data = json.loads(path.read_text(encoding="utf-8"))
         return bool(data.get("global_visible", False))
 
     def set_global_visible(self, visible: bool) -> None:
         """Store the global widget visibility flag."""
 
-        path = self._visibility_path()
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            json.dumps(
-                {"version": 1, "global_visible": visible},
-                indent=2,
-                ensure_ascii=False,
-            ),
-            encoding="utf-8",
+        self._repository.write_one(
+            "widget_visibility",
+            {"singleton_id": WIDGET_VISIBILITY_SINGLETON_ID},
+            {"global_visible": visible},
         )
 
-    def _widgets_path(self, overlay_id: str):
-        return self._paths.namespace_dir(self._active_set, overlay_id) / self.WIDGETS_FILE
+    def _save_one(self, overlay_id: str, config: WidgetInstanceConfig) -> None:
+        widget_instance_id = self._widget_instance_uuid(overlay_id, config.widget_id)
+        self._repository_for_overlay(overlay_id).write_one(
+            "widget_instances",
+            {"widget_instance_id": widget_instance_id},
+            {
+                "widget_id": config.widget_id,
+                "enabled": config.enabled,
+                "position": [config.position[0], config.position[1]],
+                "values": config.values,
+            },
+        )
 
-    def _visibility_path(self):
-        return self._paths.config_set_dir(self._active_set) / self.VISIBILITY_FILE
+    def _repository_for_overlay(self, overlay_id: str) -> PersistenceRepository:
+        if self._overlay_repository is None:
+            return self._repository
+        return self._overlay_repository(self._overlay_store_uuid(overlay_id))
+
+    def _overlay_store_uuid(self, overlay_id: str) -> str:
+        if self._overlay_index is None:
+            if self._overlay_repository is not None:
+                raise RuntimeError("Overlay repository routing requires an overlay index.")
+            return overlay_id
+        record = self._overlay_index.overlay_by_id(overlay_id)
+        if record is None:
+            raise KeyError(f"Overlay is not registered in overlay_index: {overlay_id}")
+        return record.overlay_uuid
+
+    def _widget_instance_uuid(self, overlay_id: str, widget_id: str) -> str:
+        return widget_instance_uuid(self._overlay_store_uuid(overlay_id), widget_id)
+
+
+def widget_instance_uuid(overlay_id: str, widget_id: str) -> str:
+    """Return a stable UUID for a widget instance."""
+
+    return str(uuid5(WIDGET_INSTANCE_NAMESPACE, f"{overlay_id}:{widget_id}"))

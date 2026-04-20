@@ -52,12 +52,23 @@ def _run(command: list[str]) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _basedpyright_cmd() -> list[str]:
-    return [str(_venv_python()), "-m", "basedpyright", "--outputjson", "-p", str(ROOT)]
+def _basedpyright_cmd(*, paths: list[str] | None = None) -> list[str]:
+    command = [
+        str(_venv_python()),
+        "-m",
+        "basedpyright",
+        "--outputjson",
+        "--warnings",
+        "-p",
+        str(ROOT),
+    ]
+    if paths:
+        command.extend(paths)
+    return command
 
 
-def load_basedpyright() -> tuple[list[Diagnostic], int]:
-    result = _run(_basedpyright_cmd())
+def load_basedpyright(*, paths: list[str] | None = None) -> tuple[list[Diagnostic], int]:
+    result = _run(_basedpyright_cmd(paths=paths))
     try:
         payload = json.loads(result.stdout or "{}")
     except json.JSONDecodeError:
@@ -93,12 +104,15 @@ QML_PATTERN = re.compile(
 )
 
 
-def _qmllint_cmd() -> list[str]:
-    return [str(_venv_python()), str(ROOT / "scripts" / "qmllint.py")]
+def _qmllint_cmd(*, paths: list[str] | None = None) -> list[str]:
+    command = [str(_venv_python()), str(ROOT / "scripts" / "qmllint.py")]
+    if paths:
+        command.extend(paths)
+    return command
 
 
-def load_qmllint() -> tuple[list[Diagnostic], int]:
-    result = _run(_qmllint_cmd())
+def load_qmllint(*, paths: list[str] | None = None) -> tuple[list[Diagnostic], int]:
+    result = _run(_qmllint_cmd(paths=paths))
     diagnostics: list[Diagnostic] = []
     for line in (result.stdout + "\n" + result.stderr).splitlines():
         match = QML_PATTERN.match(line.strip())
@@ -132,18 +146,33 @@ def load_qmllint() -> tuple[list[Diagnostic], int]:
     return diagnostics, result.returncode
 
 
-def load_tools(which: str) -> tuple[list[Diagnostic], dict[str, int]]:
+def load_tools(
+    which: str,
+    *,
+    py_paths: list[str] | None = None,
+    qml_paths: list[str] | None = None,
+) -> tuple[list[Diagnostic], dict[str, int]]:
     diagnostics: list[Diagnostic] = []
     exit_codes: dict[str, int] = {}
     if which in {"all", "py"}:
-        py_diags, py_code = load_basedpyright()
+        py_diags, py_code = load_basedpyright(paths=py_paths)
         diagnostics.extend(py_diags)
         exit_codes["py"] = py_code
     if which in {"all", "qml"}:
-        qml_diags, qml_code = load_qmllint()
+        qml_diags, qml_code = load_qmllint(paths=qml_paths)
         diagnostics.extend(qml_diags)
         exit_codes["qml"] = qml_code
     return diagnostics, exit_codes
+
+
+def write_raw_output(command: list[str], output_path: Path) -> int:
+    result = _run(command)
+    text = (result.stdout or "") + (result.stderr or "")
+    path = output_path if output_path.is_absolute() else ROOT / output_path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    print(f"raw output written to {path}")
+    return result.returncode
 
 
 def print_summary(
@@ -210,24 +239,41 @@ def main() -> int:
     summary = sub.add_parser("summary")
     summary.add_argument("--tool", choices=["all", "py", "qml"], default="all")
     summary.add_argument("--oneline", action="store_true")
+    summary.add_argument("--py-path", action="append", default=[])
+    summary.add_argument("--qml-path", action="append", default=[])
 
     inspect = sub.add_parser("inspect")
     inspect.add_argument("needle")
     inspect.add_argument("--tool", choices=["all", "py", "qml"], default="all")
     inspect.add_argument("--limit", type=int, default=20)
     inspect.add_argument("--all", action="store_true")
+    inspect.add_argument("--py-path", action="append", default=[])
+    inspect.add_argument("--qml-path", action="append", default=[])
 
     raw = sub.add_parser("raw")
     raw.add_argument("--tool", choices=["py", "qml"], required=True)
+    raw.add_argument("--py-path", action="append", default=[])
+    raw.add_argument("--qml-path", action="append", default=[])
+    raw.add_argument("--output", type=Path)
 
     args = parser.parse_args()
 
     if args.cmd == "raw":
-        cmd = _basedpyright_cmd() if args.tool == "py" else _qmllint_cmd()
+        cmd = (
+            _basedpyright_cmd(paths=args.py_path)
+            if args.tool == "py"
+            else _qmllint_cmd(paths=args.qml_path)
+        )
+        if args.output is not None:
+            return write_raw_output(cmd, args.output)
         result = subprocess.run(cmd, cwd=ROOT)
         return result.returncode
 
-    diagnostics, exit_codes = load_tools(args.tool)
+    diagnostics, exit_codes = load_tools(
+        args.tool,
+        py_paths=args.py_path,
+        qml_paths=args.qml_path,
+    )
     if args.cmd == "summary":
         return print_summary(diagnostics, exit_codes, oneline=args.oneline)
     if args.cmd == "inspect":

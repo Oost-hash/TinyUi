@@ -25,7 +25,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from runtimeV2.contracts import EventType, RuntimeShutdownController
+from PySide6.QtWidgets import QApplication
+
+from runtimeV2.contracts import Event, EventType, RuntimeShutdownController
 from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 from runtimeV2.runtime import RuntimeV2
 
@@ -38,7 +40,7 @@ class QmlRuntimeHostShutdown:
         self._close_host = close_host
         self._closed = False
 
-    def attach(self, app) -> None:
+    def attach(self, app: QApplication) -> None:
         """Attach runtime and application shutdown hooks."""
 
         events = self._runtime.domain_result("events", EventsStartupResult)
@@ -53,7 +55,7 @@ class QmlRuntimeHostShutdown:
         self._closed = True
         self._close_host()
 
-    def _on_runtime_shutdown(self, _event) -> None:
+    def _on_runtime_shutdown(self, _event: Event[object]) -> None:
         self.close_host()
 
     def _on_app_about_to_quit(self) -> None:

@@ -13,6 +13,8 @@ from shared_runtime_host.capabilities.ui_api import (
     ConnectorWriteQmlCapability,
     ManifestQmlCapability,
     SettingsQmlCapability,
+    WidgetConfigReadQmlCapability,
+    WidgetConfigWriteQmlCapability,
     WidgetPreviewActions,
 )
 from runtimeV2.capabilities.runtime_shutdown import RuntimeShutdown
@@ -32,7 +34,10 @@ from runtimeV2.manifest.capabilities.ui_read import ManifestUiRead
 from runtimeV2.manifest.registry import ManifestRegistry
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
-from runtimeV2.persistence.contracts import ConfigSet, PersistencePaths
+from runtimeV2.persistence.backends import SQLiteDocumentBackend
+from runtimeV2.persistence.registry import PersistenceRegistry
+from runtimeV2.persistence.repository import PersistenceRepository
+from runtimeV2.persistence.startup_shutdown.register_persistence import register_persistence_document_schemas
 from runtimeV2.persistence.widget_config import WidgetConfigStore
 from runtimeV2.schemas.startup import StartupResult
 from runtimeV2.contracts import (
@@ -205,16 +210,16 @@ class _FakeUiRuntime:
         )
         self._window_records = WindowRecordsRead(projected_records)
         self._window_actions = WindowActionsWrite(self._window_records, "tinyui.main")
+        persistence_registry = PersistenceRegistry()
+        register_persistence_document_schemas(persistence_registry)
+        from runtimeV2.widgets.startup_shutdown.register_persistence import register_widget_persistence_schemas
+        register_widget_persistence_schemas(persistence_registry)
+        self._persistence_backend = SQLiteDocumentBackend(":memory:")
         widget_store = WidgetConfigStore(
-            PersistencePaths(
-                base_dir=Path("."),
-                config_root=Path("."),
-                cache_dir=Path("."),
-                logs_dir=Path("."),
-                bootstrap_path=Path("bootstrap.toml"),
-                config_sets_path=Path("config_sets.json"),
+            PersistenceRepository(
+                persistence_registry,
+                self._persistence_backend,
             ),
-            "default",
         )
         from runtimeV2.widgets.capabilities.widget_manual_override import WidgetManualOverride
         from runtimeV2.widgets.visibility_focus import WidgetVisibilityFocus
@@ -235,7 +240,6 @@ class _FakeUiRuntime:
         self._settings_save_all_calls = 0
         self._connector_source_requests: list[tuple[str, str, str]] = []
         self._connector_source_releases: list[tuple[str, str]] = []
-        self._active_config_set = "default"
         self._plugin_panel_visible = False
         self._plugin_active_read = SimpleNamespace(get_active_plugin=lambda: "")
 
@@ -249,24 +253,6 @@ class _FakeUiRuntime:
 
             def set_active_plugin(self, plugin_id: str) -> bool:
                 self._calls.append(plugin_id)
-                return True
-
-        class _FakeConfigSetRead:
-            def __init__(self, outer: "_FakeUiRuntime") -> None:
-                self._outer = outer
-
-            def list_sets(self) -> list[ConfigSet]:
-                return [
-                    ConfigSet(id="default", name="Default"),
-                    ConfigSet(id="streaming", name="Streaming"),
-                ]
-
-        class _FakeConfigSetWrite:
-            def __init__(self, outer: "_FakeUiRuntime") -> None:
-                self._outer = outer
-
-            def set_active(self, set_id: str) -> bool:
-                self._outer._active_config_set = set_id
                 return True
 
         class _FakeSettingsWrite:
@@ -318,8 +304,6 @@ class _FakeUiRuntime:
 
         self._plugin_discovery = _FakePluginDiscovery()
         self._plugin_active_write = _FakePluginActiveWrite(self._plugin_active_calls)
-        self._config_set_read = _FakeConfigSetRead(self)
-        self._config_set_write = _FakeConfigSetWrite(self)
         self._settings_write = _FakeSettingsWrite(self)
         self._panel_state_read = _FakePanelStateRead(self)
         self._panel_state_write = _FakePanelStateWrite(self)
@@ -374,10 +358,6 @@ class _FakeUiRuntime:
             return self._plugin_discovery
         if name == "plugin_active_write":
             return self._plugin_active_write
-        if name == "config_set_read":
-            return self._config_set_read
-        if name == "config_set_write":
-            return self._config_set_write
         if name == "settings_write":
             return self._settings_write
         if name == "panel_state_read":
@@ -391,6 +371,15 @@ class _FakeUiRuntime:
         if name == "widget_manual_override":
             return self._widget_manual_override
         raise KeyError(name)
+
+    def close(self) -> None:
+        self._persistence_backend.close()
+
+    def __del__(self) -> None:
+        try:
+            self.close()
+        except Exception:
+            return None
 
 
 def _ui_host_registry(runtime: object) -> SharedRuntimeHostRegistry:
@@ -483,6 +472,61 @@ def test_runtime_host_builds_qml_properties_from_ui_schema() -> None:
         ("settings_read", "SettingsReader"),
         ("connector_write", "ConnectorWriter"),
     ]
+
+
+def test_widget_config_qml_capabilities_expose_widget_type_defaults(tmp_path) -> None:
+    """Widget config QML wrappers should expose overlay widget type defaults."""
+
+    registry = PersistenceRegistry()
+    register_persistence_document_schemas(registry)
+    from runtimeV2.widgets.startup_shutdown.register_persistence import register_widget_persistence_schemas
+    register_widget_persistence_schemas(registry)
+    store = WidgetConfigStore(
+        PersistenceRepository(
+            registry,
+            SQLiteDocumentBackend(tmp_path / "widget_config.db"),
+        ),
+    )
+
+    class _FakeWidgetRecordsRefresh:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def refresh(self) -> list[WidgetRecord]:
+            self.calls += 1
+            return []
+
+    records_refresh = _FakeWidgetRecordsRefresh()
+    read = WidgetConfigReadQmlCapability(WidgetConfigRead(store))
+    write = WidgetConfigWriteQmlCapability(WidgetConfigWrite(store), records_refresh)
+
+    assert [field["key"] for field in read.widgetTypeDefaultFields("demo_overlay", "textWidget")] == [
+        "width",
+        "height",
+        "fontSize",
+        "textColor",
+        "backgroundColor",
+    ]
+    assert read.widgetTypeDefaultFallbacks("demo_overlay", "textWidget") == {
+        "width": 220,
+        "height": 72,
+        "fontSize": 18,
+        "textColor": "#E8EDF2",
+        "backgroundColor": "#20242b",
+    }
+
+    assert write.setWidgetTypeDefaults(
+        "demo_overlay",
+        "textWidget",
+        {"width": "999", "unknown": True, "textColor": 123},
+    ) is True
+    assert read.widgetTypeDefaults("demo_overlay", "textWidget") == {
+        "width": 640,
+        "textColor": "123",
+    }
+    assert write.resetWidgetTypeDefaults("demo_overlay", "textWidget") is True
+    assert read.widgetTypeDefaults("demo_overlay", "textWidget") == {}
+    assert records_refresh.calls == 2
 
 
 def test_runtime_host_close_action_requests_runtime_shutdown(monkeypatch) -> None:
@@ -944,39 +988,6 @@ def test_runtime_host_settings_save_all_action_uses_runtime_capability(monkeypat
     result.actions.trigger("settings.saveAll")
 
     assert runtime._settings_save_all_calls == 1
-
-
-def test_runtime_host_config_set_activate_action_uses_runtime_capability(monkeypatch) -> None:
-    """The ui_api host should activate config sets through runtime-owned actions."""
-
-    app = _FakeApp()
-    runtime = _FakeUiRuntime()
-
-    class _FakeWindow:
-        def __init__(self) -> None:
-            self.destroyed = _FakeSignal()
-
-        def close(self) -> None:
-            return None
-
-    monkeypatch.setattr(
-        "ui_api.runtime_host.open_window",
-        lambda *_args, **_kwargs: SimpleNamespace(qml_window=_FakeWindow(), keepalive=()),
-    )
-
-    result, startup_result = start_runtime_host(
-        app=app,
-        engine=object(),
-        runtime=cast(Any, runtime),
-        host_registry=_ui_host_registry(runtime),
-    )
-
-    assert startup_result.ok
-    assert result is not None
-
-    result.actions.trigger("configSet.activate:streaming")
-
-    assert runtime._active_config_set == "streaming"
 
 
 def test_runtime_host_plugin_panel_toggle_uses_runtime_capability(monkeypatch) -> None:

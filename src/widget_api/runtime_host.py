@@ -24,13 +24,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
+
+from PySide6.QtWidgets import QApplication
 
 from shared_runtime_host.events import SharedRuntimeHostEvents
 from shared_runtime_host.capabilities.widget_api import WidgetEffectsQmlCapability
 from shared_runtime_host.capabilities.widget_host import WidgetHostCapability
 from shared_runtime_host.registry import SharedRuntimeHostRegistry
 from shared_runtime_host.shutdown import QmlRuntimeHostShutdown
-from runtimeV2.contracts import EventSubscriptionHandle, EventType, WidgetConfigWriter
+from runtimeV2.contracts import Event, EventSubscriptionHandle, EventType, WidgetConfigWriter, WidgetRecordsRefresher
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 from widget_api.window_host import WidgetWindowHost
@@ -60,7 +63,7 @@ class WidgetWindowHostController:
         self._host = host
         self._subscription: EventSubscriptionHandle | None = None
 
-    def attach(self, app) -> None:
+    def attach(self, app: QApplication) -> None:
         """Subscribe to runtime V2 events that change widget runtime records."""
 
         self._subscription = self._event_registration.subscribe(
@@ -75,7 +78,7 @@ class WidgetWindowHostController:
 
         self._host.sync_records(self._widget_host.records())
 
-    def _on_widgets_updated(self, _event) -> None:
+    def _on_widgets_updated(self, _event: Event[object]) -> None:
         self.sync()
 
     def close(self) -> None:
@@ -88,7 +91,7 @@ class WidgetWindowHostController:
 
 
 def create_widget_window_host(
-    app,
+    app: QApplication,
     runtime: RuntimeV2,
     host_registry: SharedRuntimeHostRegistry,
 ) -> WidgetRuntimeHostResult:
@@ -97,11 +100,21 @@ def create_widget_window_host(
     widget_host = host_registry.capability("widget_host", WidgetHostCapability)
     widget_effects = host_registry.capability("widget_effects", WidgetEffectsQmlCapability)
     event_registration = host_registry.capability("event_registration", SharedRuntimeHostEvents)
-    host = WidgetWindowHost(
-        widget_host,
-        runtime.capability("widget_config_write", WidgetConfigWriter),
-        widget_effects,
-    )
+    try_capability = getattr(runtime, "try_capability", None)
+    widget_records_refresh = try_capability("widget_records_refresh") if callable(try_capability) else None
+    if widget_records_refresh is None:
+        host = WidgetWindowHost(
+            widget_host,
+            runtime.capability("widget_config_write", WidgetConfigWriter),
+            widget_effects,
+        )
+    else:
+        host = WidgetWindowHost(
+            widget_host,
+            runtime.capability("widget_config_write", WidgetConfigWriter),
+            widget_effects,
+            cast(WidgetRecordsRefresher, widget_records_refresh),
+        )
     controller = WidgetWindowHostController(
         widget_host=widget_host,
         event_registration=event_registration,
@@ -121,7 +134,7 @@ def create_widget_window_host(
 
 
 def start_widget_host(
-    app,
+    app: QApplication,
     runtime: RuntimeV2,
     host_registry: SharedRuntimeHostRegistry,
 ) -> tuple[WidgetRuntimeHostResult | None, StartupResult]:

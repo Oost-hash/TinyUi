@@ -184,6 +184,26 @@ class RuntimeV2:
             raise KeyError(f"Runtime V2 stop hook owner is not registered: {owner}")
         self._stop_hooks.setdefault(owner, []).append(hook)
 
+    def stop_hook_owner_order(self) -> list[str]:
+        """Return stop-hook owners in shutdown order."""
+
+        owner_order = [name for name in reversed(self.domain_names()) if name in self._stop_hooks]
+        if "runtime" in self._stop_hooks:
+            owner_order.append("runtime")
+        return owner_order
+
+    def stop_hooks(self, owner: str) -> list[Callable[[], None]]:
+        """Return a copy of registered stop hooks for one owner."""
+
+        return list(self._stop_hooks.get(owner, []))
+
+    def mark_domain_stopped(self, name: str) -> None:
+        """Mark a started domain as stopped."""
+
+        record = self._domain_records.get(name)
+        if record is not None and record.status in {DomainStatus.READY, DomainStatus.STARTING, DomainStatus.ERROR}:
+            self._set_domain_status(name, DomainStatus.STOPPED)
+
     def shutdown_requested(self) -> bool:
         """Return whether runtime shutdown was already requested."""
 

@@ -19,13 +19,17 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Manifest schema registration for persistence."""
+"""Manifest schema registration for persistence declarations."""
 
 from runtimeV2.manifest.schema_registry import ManifestSchemaRegistry
 from runtimeV2.persistence.schemas.settings import SettingDecl
 
 
 def register_persistence_schemas(registry: ManifestSchemaRegistry) -> None:
-    """Register persistence-owned manifest schemas."""
+    """Register manifest schemas consumed by persistence."""
 
-    registry.register_schema("settings", owner_domain="persistence", schema_type=SettingDecl)
+    registry.register_schema(
+        "settings",
+        owner_domain="persistence",
+        schema_type=SettingDecl,
+    )

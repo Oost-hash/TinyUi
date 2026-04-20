@@ -29,8 +29,6 @@ from ui_api.api.app_actions import AppActions
 from shared_runtime_host.capabilities.ui_api.widget_preview_actions import WidgetPreviewActions
 
 from runtimeV2.contracts import (
-    ConfigSetReader,
-    ConfigSetWriter,
     PanelStateWriter,
     PluginActiveWriter,
     PluginDiscovery,
@@ -49,8 +47,6 @@ class UIActionsCapability:
         widget_preview_actions: WidgetPreviewActions,
         plugin_discovery: PluginDiscovery,
         plugin_active_write: PluginActiveWriter,
-        config_set_read: ConfigSetReader,
-        config_set_write: ConfigSetWriter,
         settings_write: SettingsWriter,
         panel_state_write: PanelStateWriter,
         shutdown: RuntimeShutdownController,
@@ -59,8 +55,6 @@ class UIActionsCapability:
         self._widget_preview_actions = widget_preview_actions
         self._plugin_discovery = plugin_discovery
         self._plugin_active_write = plugin_active_write
-        self._config_set_read = config_set_read
-        self._config_set_write = config_set_write
         self._settings_write = settings_write
         self._panel_state_write = panel_state_write
         self._shutdown = shutdown
@@ -82,8 +76,6 @@ class UIActionsCapability:
             actions.register(f"open:{window_id}", self._make_open_handler(window_id, open_window))
         for plugin_id in self._plugin_discovery.plugin_ids():
             actions.register(f"plugin.activate:{plugin_id}", self._make_activate_plugin_handler(plugin_id))
-        for config_set in self._config_set_read.list_sets():
-            actions.register(f"configSet.activate:{config_set.id}", self._make_activate_config_set_handler(config_set.id))
 
     def _make_open_handler(self, window_id: str, open_window: Callable[[str], None]) -> Callable[[], None]:
         def handler() -> None:
@@ -104,12 +96,6 @@ class UIActionsCapability:
     def _make_activate_plugin_handler(self, plugin_id: str) -> Callable[[], None]:
         def handler() -> None:
             self._plugin_active_write.set_active_plugin(plugin_id)
-
-        return handler
-
-    def _make_activate_config_set_handler(self, set_id: str) -> Callable[[], None]:
-        def handler() -> None:
-            self._config_set_write.set_active(set_id)
 
         return handler
 

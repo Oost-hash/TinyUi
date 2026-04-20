@@ -48,9 +48,12 @@ from runtimeV2.contracts import (
     SettingsWriter,
     WidgetConfigReader,
     WidgetConfigWriter,
+    WidgetRecordsRefresher,
+    WidgetTypeDefaultsReader,
     WidgetVisibilityReader,
     WidgetVisibilityWriter,
 )
+from runtimeV2.widgets.type_defaults import default_widget_type_defaults_registry
 _QVARIANT_LIST: Any = "QVariantList"
 _QVARIANT_MAP: Any = "QVariantMap"
 
@@ -248,15 +251,39 @@ class ConnectorWriteQmlCapability(QObject):
 class WidgetConfigReadQmlCapability(QObject):
     """Expose widget config reads to QML."""
 
-    def __init__(self, widget_config_read: WidgetConfigReader, parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        widget_config_read: WidgetConfigReader,
+        widget_type_defaults: WidgetTypeDefaultsReader | None = None,
+        parent: QObject | None = None,
+    ) -> None:
         super().__init__(parent)
         self._widget_config_read = widget_config_read
+        self._widget_type_defaults = widget_type_defaults or default_widget_type_defaults_registry()
 
     @Slot(str, str, result=_QVARIANT_MAP)
     def widgetValues(self, overlay_id: str, widget_id: str) -> dict[str, object]:
         """Return one widget value map."""
 
         return self._widget_config_read.widget_values(overlay_id, widget_id)
+
+    @Slot(str, str, result=_QVARIANT_MAP)
+    def widgetTypeDefaults(self, overlay_id: str, widget_type: str) -> dict[str, object]:
+        """Return default values for one widget type."""
+
+        return self._widget_config_read.widget_type_defaults(overlay_id, widget_type)
+
+    @Slot(str, str, result=_QVARIANT_LIST)
+    def widgetTypeDefaultFields(self, _overlay_id: str, widget_type: str) -> list[dict[str, object]]:
+        """Return supported default fields for one widget type."""
+
+        return self._widget_type_defaults.qml_fields(widget_type)
+
+    @Slot(str, str, result=_QVARIANT_MAP)
+    def widgetTypeDefaultFallbacks(self, _overlay_id: str, widget_type: str) -> dict[str, object]:
+        """Return built-in fallback defaults for one widget type."""
+
+        return self._widget_type_defaults.default_values(widget_type)
 
     @Slot(str, str, result=bool)
     def isWidgetEnabled(self, overlay_id: str, widget_id: str) -> bool:
@@ -269,33 +296,73 @@ class WidgetConfigReadQmlCapability(QObject):
 class WidgetConfigWriteQmlCapability(QObject):
     """Expose widget config writes to QML."""
 
-    def __init__(self, widget_config_write: WidgetConfigWriter, parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        widget_config_write: WidgetConfigWriter,
+        widget_records_refresh: WidgetRecordsRefresher | None = None,
+        widget_type_defaults: WidgetTypeDefaultsReader | None = None,
+        parent: QObject | None = None,
+    ) -> None:
         super().__init__(parent)
         self._widget_config_write = widget_config_write
+        self._widget_records_refresh = widget_records_refresh
+        self._widget_type_defaults = widget_type_defaults or default_widget_type_defaults_registry()
 
     @Slot(str, str, bool, result=bool)
     def setWidgetEnabled(self, overlay_id: str, widget_id: str, enabled: bool) -> bool:
         """Set widget enabled state."""
 
-        return self._widget_config_write.set_widget_enabled(overlay_id, widget_id, enabled)
+        return self._refresh_after_write(
+            self._widget_config_write.set_widget_enabled(overlay_id, widget_id, enabled)
+        )
 
     @Slot(str, str, int, int, result=bool)
     def setWidgetPosition(self, overlay_id: str, widget_id: str, x: int, y: int) -> bool:
         """Set widget position."""
 
-        return self._widget_config_write.set_widget_position(overlay_id, widget_id, x, y)
+        return self._refresh_after_write(
+            self._widget_config_write.set_widget_position(overlay_id, widget_id, x, y)
+        )
 
     @Slot(str, str, _QVARIANT_MAP, result=bool)
     def setWidgetValues(self, overlay_id: str, widget_id: str, values: dict[str, object]) -> bool:
         """Set widget value map."""
 
-        return self._widget_config_write.set_widget_values(overlay_id, widget_id, values)
+        return self._refresh_after_write(
+            self._widget_config_write.set_widget_values(overlay_id, widget_id, values)
+        )
+
+    @Slot(str, str, _QVARIANT_MAP, result=bool)
+    def setWidgetTypeDefaults(self, overlay_id: str, widget_type: str, defaults: dict[str, object]) -> bool:
+        """Set defaults for one widget type."""
+
+        sanitized_defaults = self._widget_type_defaults.sanitize_defaults(widget_type, defaults)
+        return self._refresh_after_write(
+            self._widget_config_write.set_widget_type_defaults(overlay_id, widget_type, sanitized_defaults)
+        )
+
+    @Slot(str, str, result=bool)
+    def resetWidgetTypeDefaults(self, overlay_id: str, widget_type: str) -> bool:
+        """Reset defaults for one widget type."""
+
+        return self._refresh_after_write(
+            self._widget_config_write.reset_widget_type_defaults(overlay_id, widget_type)
+        )
 
     @Slot(str, str, result=bool)
     def resetWidgetValues(self, overlay_id: str, widget_id: str) -> bool:
         """Reset widget value map."""
 
-        return self._widget_config_write.reset_widget_values(overlay_id, widget_id)
+        return self._refresh_after_write(
+            self._widget_config_write.reset_widget_values(overlay_id, widget_id)
+        )
+
+    def _refresh_after_write(self, updated: bool) -> bool:
+        """Refresh projected records after successful config writes."""
+
+        if updated and self._widget_records_refresh is not None:
+            self._widget_records_refresh.refresh()
+        return updated
 
 
 class RenderStatusQmlCapability(QObject):

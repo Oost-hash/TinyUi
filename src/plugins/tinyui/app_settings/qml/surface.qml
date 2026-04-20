@@ -19,6 +19,8 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Window
 
@@ -27,8 +29,10 @@ Item {
 
     readonly property var hostWindow: Window.window
     readonly property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
-    readonly property var settingsRead: hostWindow && hostWindow.settingsRead ? hostWindow.settingsRead : null
-    readonly property var settingsWrite: hostWindow && hostWindow.settingsWrite ? hostWindow.settingsWrite : null
+    readonly property var runtimeContext: hostWindow && hostWindow.runtimeContext ? hostWindow.runtimeContext : null
+    readonly property var imageSources: runtimeContext && runtimeContext.imageSources ? runtimeContext.imageSources : null
+    readonly property var settingsRead: runtimeContext && runtimeContext.settingsRead ? runtimeContext.settingsRead : null
+    readonly property var settingsWrite: runtimeContext && runtimeContext.settingsWrite ? runtimeContext.settingsWrite : null
 
     property int activeTab: 0
     property var pendingChanges: ({})
@@ -515,7 +519,7 @@ Item {
                 spacing: 6
 
                 Text {
-                    width: parent.width - (pendingDot.visible ? pendingDot.width + 6 : 0)
+                    width: parent.width - (editPendingDot.visible ? editPendingDot.width + 6 : 0)
                     text: editRowRoot.label
                     color: editRowRoot.pending ? root.c("accent", "#4a9eff") : root.c("text", "#dce0e5")
                     font.pixelSize: root.f("fontSizeBase", 13)
@@ -529,7 +533,7 @@ Item {
                 }
 
                 Text {
-                    id: pendingDot
+                    id: editPendingDot
                     visible: editRowRoot.pending
                     text: "*"
                     color: root.c("accent", "#4a9eff")
@@ -649,7 +653,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: 10
             height: 6
-            source: imageSources.imageUrl("ui.caret-down")
+            source: root.imageSources ? root.imageSources.imageUrl("ui.caret-down") : ""
             sourceSize.width: 10
             sourceSize.height: 6
             fillMode: Image.PreserveAspectFit

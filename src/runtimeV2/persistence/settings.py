@@ -23,26 +23,22 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
-from runtimeV2.persistence.contracts import PersistencePaths
+from runtimeV2.persistence.repository import PersistenceRepository
 from runtimeV2.persistence.schemas.settings import SettingDecl
 
 
 class SettingsStore:
-    """Store settings specs and values for one config set."""
+    """Store settings specs and values."""
 
-    SETTINGS_FILE = "settings.json"
-
-    def __init__(self, paths: PersistencePaths, active_set: str) -> None:
-        self._paths = paths
-        self._active_set = active_set
+    def __init__(self, repository: PersistenceRepository) -> None:
+        self._repository = repository
         self._specs: dict[str, list[SettingDecl]] = {}
         self._values: dict[str, dict[str, Any]] = {}
 
     def register_specs(self, specs_by_namespace: dict[str, list[SettingDecl]]) -> None:
-        """Register plugin-provided setting specs."""
+        """Register manifest-provided setting specs."""
 
         for namespace, specs in specs_by_namespace.items():
             self._specs[namespace] = list(specs)
@@ -84,10 +80,10 @@ class SettingsStore:
         """Load persisted values for registered namespaces."""
 
         for namespace in self._specs:
-            path = self._settings_path(namespace)
-            if not path.exists():
+            document = self._repository.read_one("settings_values", {"namespace": namespace})
+            if document is None:
                 continue
-            values = json.loads(path.read_text(encoding="utf-8"))
+            values = dict(document.get("values", {}))
             namespace_values = self._values.setdefault(namespace, {})
             for key, value in values.items():
                 if not self._has_spec(namespace, key):
@@ -101,11 +97,10 @@ class SettingsStore:
     def save(self, namespace: str) -> None:
         """Save one namespace."""
 
-        path = self._settings_path(namespace)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            json.dumps(self._values.get(namespace, {}), indent=2, ensure_ascii=False),
-            encoding="utf-8",
+        self._repository.write_one(
+            "settings_values",
+            {"namespace": namespace},
+            {"values": self._values.get(namespace, {})},
         )
 
     def save_all(self) -> None:
@@ -113,9 +108,6 @@ class SettingsStore:
 
         for namespace in self._specs:
             self.save(namespace)
-
-    def _settings_path(self, namespace: str):
-        return self._paths.namespace_dir(self._active_set, namespace) / self.SETTINGS_FILE
 
     def _has_spec(self, namespace: str, key: str) -> bool:
         return any(item.key == key for item in self._specs.get(namespace, []))

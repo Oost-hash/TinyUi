@@ -43,7 +43,7 @@ Provides:
 """
 
 import ctypes
-import ctypes.wintypes
+from collections.abc import Callable
 
 from PySide6.QtCore import QObject, Slot
 from PySide6.QtGui import QWindow
@@ -301,11 +301,11 @@ def install_wnd_proc(
 class WindowChromeHelper(QObject):
     """Apply Win32 DWM chrome to secondary windows (dialogs)."""
 
-    def __init__(self, dpr: float, parent=None):
+    def __init__(self, dpr: float, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._dpr        = dpr
         self._applied:   set[int]  = set()
-        self._wnd_procs: list      = []
+        self._wnd_procs: list[object] = []
 
     def _apply(self, hwnd: int) -> None:
         if hwnd in self._applied:
@@ -336,7 +336,13 @@ class WindowChromeHelper(QObject):
 class WindowController(WindowControllerApi):
     """Programmatic window control via ShowWindow (native animations)."""
 
-    def __init__(self, hwnd: int, dpr: float, set_left_button_width, parent=None):
+    def __init__(
+        self,
+        hwnd: int,
+        dpr: float,
+        set_left_button_width: Callable[[int], None],
+        parent: QObject | None = None,
+    ) -> None:
         super().__init__(parent)
         self._hwnd   = hwnd
         self._user32 = ctypes.windll.user32

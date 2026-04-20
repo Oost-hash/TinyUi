@@ -46,6 +46,32 @@ class WidgetRecordsReader(Protocol):
 
 
 @runtime_checkable
+class WidgetRecordsRefresher(Protocol):
+    """Public contract for refreshing projected widget records."""
+
+    def refresh(self) -> list[WidgetRecord]:
+        """Refresh projected widget records."""
+        ...
+
+
+@runtime_checkable
+class WidgetTypeDefaultsReader(Protocol):
+    """Public contract for reading widget type default definitions."""
+
+    def qml_fields(self, widget_type: str) -> list[dict[str, object]]:
+        """Return default fields for one widget type as a QML model."""
+        ...
+
+    def default_values(self, widget_type: str) -> dict[str, object]:
+        """Return built-in fallback values for one widget type."""
+        ...
+
+    def sanitize_defaults(self, widget_type: str, values: dict[str, object]) -> dict[str, object]:
+        """Return defaults filtered to fields owned by the widget type."""
+        ...
+
+
+@runtime_checkable
 class WidgetVisibilityReader(Protocol):
     """Public contract for reading widget visibility outside the widgets domain."""
 

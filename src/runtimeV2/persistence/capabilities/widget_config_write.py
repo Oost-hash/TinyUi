@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Widget config write capability for runtime V2 persistence."""
+"""Widget config write capability."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from runtimeV2.persistence.widget_config import WidgetConfigStore
 
 
 class WidgetConfigWrite:
-    """Write widget configuration values."""
+    """Write widget config values."""
 
     def __init__(self, store: WidgetConfigStore) -> None:
         self._store = store
@@ -51,6 +51,16 @@ class WidgetConfigWrite:
         """Reset widget config values."""
 
         return self._store.reset_widget_values(overlay_id, widget_id)
+
+    def set_widget_type_defaults(self, overlay_id: str, widget_type: str, defaults: dict[str, object]) -> bool:
+        """Set defaults for one widget type in an overlay."""
+
+        return self._store.set_widget_type_defaults(overlay_id, widget_type, defaults)
+
+    def reset_widget_type_defaults(self, overlay_id: str, widget_type: str) -> bool:
+        """Reset defaults for one widget type in an overlay."""
+
+        return self._store.reset_widget_type_defaults(overlay_id, widget_type)
 
     def set_global_widgets_visible(self, visible: bool) -> None:
         """Set global widget visibility."""

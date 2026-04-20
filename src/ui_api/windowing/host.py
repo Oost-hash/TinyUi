@@ -24,14 +24,12 @@
 from __future__ import annotations
 
 import sys
-from dataclasses import dataclass, field
-from typing import Callable, Protocol, cast
+from dataclasses import dataclass
+from typing import Callable, cast
 
 from PySide6.QtCore import QObject
 from PySide6.QtQuick import QQuickWindow
-
-from ui_api.windowing.controller_api import WindowControllerApi
-
+from PySide6.QtWidgets import QApplication
 
 @dataclass(frozen=True)
 class WindowingAttachment:
@@ -41,7 +39,7 @@ class WindowingAttachment:
 
 def attach_windowing(
     *,
-    app,
+    app: QApplication,
     window: QQuickWindow,
     theme: QObject,
 ) -> WindowingAttachment:

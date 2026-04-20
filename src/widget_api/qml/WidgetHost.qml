@@ -19,6 +19,8 @@
 //  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 //  licensed under GPLv3.
 
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Window
 
@@ -49,6 +51,8 @@ Window {
             model: root.widgets
 
             delegate: TextWidget {
+                required property var modelData
+
                 widgetData: modelData
                 widgetEffects: root.widgetEffects
             }

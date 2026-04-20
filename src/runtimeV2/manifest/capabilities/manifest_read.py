@@ -21,6 +21,8 @@
 
 """Manifest read capability for runtime V2."""
 
+from pathlib import Path
+
 from runtimeV2.manifest.registry import ManifestRegistry
 from runtimeV2.plugins.schemas.manifest import PluginManifest
 
@@ -49,7 +51,7 @@ class ManifestRead:
             for plugin_id, manifest in self._registry.all_manifests().items()
         }
 
-    def resource_root(self, plugin_id: str):
+    def resource_root(self, plugin_id: str) -> Path:
         """Return one manifest resource root."""
 
         return self._registry.resource_root(plugin_id)

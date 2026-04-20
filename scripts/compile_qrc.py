@@ -22,8 +22,8 @@
 
 """Compile QRC resources for the TinyUI build.
 
-This script compiles the resources.qrc file into src/resources_rc.py
-which is then included in the PyInstaller build.
+This script collects app-owned and plugin-owned QRC declarations into one
+generated build QRC, then compiles it into pkg_runtime_host.resources_rc.
 
 Usage:
     python scripts/compile_qrc.py
@@ -33,14 +33,25 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import shutil
 import subprocess
 import sys
+import time
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-QRC_FILE = ROOT / "resources.qrc"
-OUTPUT_FILE = ROOT / "src" / "resources_rc.py"
+APP_QRC_FILE = ROOT / "resources.qrc"
+GENERATED_QRC_FILE = ROOT / "build" / "qrc" / "resources.qrc"
+OUTPUT_FILE = ROOT / "src" / "pkg_runtime_host" / "resources_rc.py"
+
+
+def _qrc_inputs() -> list[Path]:
+    """Return app and plugin QRC declarations in stable order."""
+
+    plugin_qrc_files = sorted((ROOT / "src" / "plugins").glob("*/resources.qrc"))
+    return [APP_QRC_FILE, *plugin_qrc_files]
 
 
 def _find_rcc() -> str | None:
@@ -59,19 +70,65 @@ def _find_rcc() -> str | None:
     return rcc
 
 
+def _resource_file_path(qrc_file: Path, element: ET.Element) -> str:
+    """Return an absolute resource path for a generated aggregate QRC entry."""
+
+    text = (element.text or "").strip()
+    if not text:
+        raise ValueError(f"Empty resource file entry in {qrc_file}")
+    source_path = Path(text)
+    if not source_path.is_absolute():
+        source_path = qrc_file.parent / source_path
+    return source_path.resolve().as_posix()
+
+
+def _write_aggregate_qrc(qrc_files: list[Path]) -> Path:
+    """Write one generated QRC from app and plugin declarations."""
+
+    missing = [qrc_file for qrc_file in qrc_files if not qrc_file.exists()]
+    if missing:
+        missing_text = ", ".join(str(path) for path in missing)
+        raise FileNotFoundError(f"QRC declaration not found: {missing_text}")
+
+    root = ET.Element("RCC")
+    resources_by_prefix: dict[str, ET.Element] = {}
+    for qrc_file in qrc_files:
+        qrc_tree = ET.parse(qrc_file)
+        qrc_root = qrc_tree.getroot()
+        for qresource in qrc_root.findall("qresource"):
+            prefix = qresource.attrib.get("prefix", "/")
+            aggregate_resource = resources_by_prefix.get(prefix)
+            if aggregate_resource is None:
+                aggregate_resource = ET.SubElement(root, "qresource", {"prefix": prefix})
+                resources_by_prefix[prefix] = aggregate_resource
+            for file_element in qresource.findall("file"):
+                aggregate_file = ET.SubElement(aggregate_resource, "file")
+                alias = file_element.attrib.get("alias")
+                if alias:
+                    aggregate_file.set("alias", alias)
+                aggregate_file.text = _resource_file_path(qrc_file, file_element)
+
+    GENERATED_QRC_FILE.parent.mkdir(parents=True, exist_ok=True)
+    ET.indent(root, space="    ")
+    ET.ElementTree(root).write(GENERATED_QRC_FILE, encoding="utf-8", xml_declaration=False)
+    return GENERATED_QRC_FILE
+
+
 def compile_qrc() -> int:
-    """Compile resources.qrc to src/resources_rc.py."""
+    """Compile QRC declarations to pkg_runtime_host.resources_rc."""
     rcc = _find_rcc()
     if rcc is None:
         print("Error: pyside6-rcc not found. Is PySide6 installed?")
         return 1
-    
-    if not QRC_FILE.exists():
-        print(f"Error: {QRC_FILE} not found.")
+
+    try:
+        qrc_file = _write_aggregate_qrc(_qrc_inputs())
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"Error: {exc}")
         return 1
-    
-    print(f"Compiling {QRC_FILE}...")
-    cmd = [rcc, "-o", str(OUTPUT_FILE), str(QRC_FILE)]
+
+    print(f"Compiling {qrc_file}...")
+    cmd = [rcc, "-o", str(OUTPUT_FILE), str(qrc_file)]
     result = subprocess.run(cmd, capture_output=True, text=True)
     
     if result.returncode != 0:
@@ -85,44 +142,36 @@ def compile_qrc() -> int:
 
 def watch_qrc() -> int:
     """Watch for changes and auto-recompile."""
-    try:
-        from watchdog.observers import Observer
-        from watchdog.events import FileSystemEventHandler
-    except ImportError:
-        print("Error: watchdog not installed. Run: pip install watchdog")
-        return 1
-    
-    class QrcHandler(FileSystemEventHandler):
-        def on_modified(self, event):
-            if event.src_path.endswith((".qrc", ".qml")):
-                print(f"\nDetected change in {event.src_path}")
-                compile_qrc()
-    
-    print(f"Watching {QRC_FILE.parent} for changes...")
+
+    def watched_files() -> dict[Path, float]:
+        files: dict[Path, float] = {}
+        patterns = [
+            ROOT / "resources.qrc",
+            *ROOT.glob("src/plugins/*/resources.qrc"),
+            *ROOT.glob("src/**/*.qml"),
+            *ROOT.glob("assets/**/*"),
+        ]
+        for path in patterns:
+            if path.is_file():
+                files[path] = path.stat().st_mtime
+        return files
+
+    print(f"Watching QRC declarations and resources...")
     print("Press Ctrl+C to stop\n")
-    
-    # Initial compile
+
     compile_qrc()
-    
-    observer = Observer()
-    handler = QrcHandler()
-    
-    # Watch root for qrc changes
-    observer.schedule(handler, str(ROOT), recursive=False)
-    # Watch src for qml changes
-    observer.schedule(handler, str(ROOT / "src"), recursive=True)
-    # Watch assets
-    observer.schedule(handler, str(ROOT / "assets"), recursive=True)
-    
-    observer.start()
+    previous = watched_files()
+
     try:
         while True:
-            import time
             time.sleep(1)
+            current = watched_files()
+            if current != previous:
+                print("\nDetected QRC/resource change")
+                compile_qrc()
+                previous = current
     except KeyboardInterrupt:
-        observer.stop()
         print("\nStopped watching.")
-    observer.join()
     return 0
 
 

@@ -19,10 +19,4 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Persistence-owned runtime V2 schemas."""
-
-from runtimeV2.persistence.schemas.settings import SettingDecl
-
-__all__ = [
-    "SettingDecl",
-]
+"""Persistence schemas."""

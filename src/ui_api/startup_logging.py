@@ -26,6 +26,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from types import TracebackType
 from pathlib import Path
 from typing import Any
 
@@ -139,7 +140,11 @@ def _install_excepthook() -> None:
 
     previous_hook = sys.excepthook
 
-    def _logging_excepthook(exc_type, exc_value, exc_traceback) -> None:
+    def _logging_excepthook(
+        exc_type: type[BaseException],
+        exc_value: BaseException,
+        exc_traceback: TracebackType | None,
+    ) -> None:
         _logger.critical(
             "uncaught exception during startup",
             exc_info=(exc_type, exc_value, exc_traceback),

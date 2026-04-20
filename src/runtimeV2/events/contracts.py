@@ -29,6 +29,7 @@ from enum import Enum, auto
 from typing import Callable, Generic, TypeVar
 
 T = TypeVar("T")
+T_co = TypeVar("T_co", covariant=True)
 
 
 class EventType(Enum):
@@ -65,16 +66,16 @@ class EventType(Enum):
 
 
 @dataclass(frozen=True)
-class Event(Generic[T]):
+class Event(Generic[T_co]):
     """Typed runtime V2 event with metadata."""
 
     type: EventType
-    data: T
+    data: T_co
     timestamp: datetime = field(default_factory=datetime.now)
     source: str = "runtime"
 
 
-EventCallback = Callable[[Event], None]
+EventCallback = Callable[[Event[object]], None]
 
 
 class EventBus:
@@ -82,7 +83,7 @@ class EventBus:
 
     def __init__(self) -> None:
         self._handlers: dict[EventType, list[EventCallback]] = {}
-        self._history: list[Event] = []
+        self._history: list[Event[object]] = []
         self._max_history = 1000
 
     def on(self, event_type: EventType, callback: EventCallback, replay_history: bool = False) -> None:
@@ -97,7 +98,7 @@ class EventBus:
                 if event.type == event_type:
                     callback(event)
 
-    def emit(self, event: Event) -> None:
+    def emit(self, event: Event[object]) -> None:
         """Emit an event to all registered handlers."""
 
         self._history.append(event)
@@ -115,7 +116,7 @@ class EventBus:
         self.emit(event)
         return event
 
-    def get_history(self, event_type: EventType | None = None, limit: int = 100) -> list[Event]:
+    def get_history(self, event_type: EventType | None = None, limit: int = 100) -> list[Event[object]]:
         """Return event history, optionally filtered by type."""
 
         events = self._history

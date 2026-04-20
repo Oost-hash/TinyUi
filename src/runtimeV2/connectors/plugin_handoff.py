@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import importlib
 from collections.abc import Callable
+from typing import cast
 
 from runtimeV2.contracts import ConnectorReader, WidgetManualOverrideState, WidgetVisibilityWriter
 from runtimeV2.connectors.contracts import ConnectorGameStateDecision, ConnectorGameStateUpdate
@@ -120,7 +121,8 @@ class ConnectorGameStateHookDispatcher:
         if isinstance(raw, ConnectorGameStateDecision):
             return raw
         if isinstance(raw, dict):
-            show_widgets = raw.get("show_widgets")
+            raw_map = cast(dict[str, object], raw)
+            show_widgets = raw_map.get("show_widgets")
             if show_widgets is None:
                 return None
             if isinstance(show_widgets, bool):

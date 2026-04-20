@@ -28,24 +28,20 @@ import sys
 from pathlib import Path
 
 from runtimeV2.contracts import AppIdentityReader
-from runtimeV2.persistence.bootstrap import load_bootstrap
 from runtimeV2.persistence.contracts import PersistencePaths
 
 
 def resolve_persistence_paths(identity_read: AppIdentityReader) -> PersistencePaths:
-    """Resolve persistence paths from host identity and bootstrap."""
+    """Resolve persistence paths from host identity."""
 
     base_dir = _os_config_dir(identity_read.app_id())
-    bootstrap_path = base_dir / "bootstrap.toml"
-    bootstrap = load_bootstrap(bootstrap_path)
-    config_root = bootstrap.config_root if bootstrap.config_root is not None else base_dir / "config"
     return PersistencePaths(
         base_dir=base_dir,
-        config_root=config_root,
         cache_dir=base_dir / "cache",
         logs_dir=base_dir / "logs",
-        bootstrap_path=bootstrap_path,
-        config_sets_path=config_root / "config_sets.json",
+        bootstrap_path=base_dir / "bootstrap.toml",
+        app_database_path=base_dir / "app.db",
+        overlays_dir=base_dir / "overlays",
     )
 
 
@@ -53,9 +49,9 @@ def ensure_persistence_dirs(paths: PersistencePaths) -> None:
     """Create persistence base directories."""
 
     paths.base_dir.mkdir(parents=True, exist_ok=True)
-    paths.config_root.mkdir(parents=True, exist_ok=True)
     paths.cache_dir.mkdir(parents=True, exist_ok=True)
     paths.logs_dir.mkdir(parents=True, exist_ok=True)
+    paths.overlays_dir.mkdir(parents=True, exist_ok=True)
 
 
 def _os_config_dir(app_id: str) -> Path:

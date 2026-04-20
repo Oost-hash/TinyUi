@@ -32,9 +32,11 @@ from runtimeV2.events.startup_shutdown.startup import EventsStartupResult
 import sys
 
 from runtimeV2.paths.image_source import ImageSource
+from runtimeV2.paths.image_source_registry import ImageSourceRegistry
 from runtimeV2.paths.startup_shutdown.startup import PathsStartupResult
 from runtimeV2.persistence.startup_shutdown.startup import PersistenceStartupResult
 from runtimeV2.plugins.activation import PluginActivationStore
+from runtimeV2.plugins.capabilities.discovery import PluginDiscoveryCapability
 from runtimeV2.plugins.discovery import discover_plugins
 from runtimeV2.plugins.lifecycle import PluginLifecycleStore
 from runtimeV2.plugins.startup_shutdown.register_capabilities import PluginCapabilities, register_plugin_capabilities
@@ -92,8 +94,8 @@ def startup_plugins(runtime: RuntimeV2) -> StartupResult:
 
 def _register_manifest_images(
     manifest_read: ManifestReader,
-    plugin_discovery,
-    image_source_registry,
+    plugin_discovery: PluginDiscoveryCapability,
+    image_source_registry: ImageSourceRegistry,
 ) -> None:
     """Register plugin-declared images into the paths-domain image registry."""
 

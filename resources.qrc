@@ -7,13 +7,6 @@
         <file alias="widget_api/qml/TextWidget.qml">src/widget_api/qml/TextWidget.qml</file>
         <file alias="widget_api/qml/WidgetHost.qml">src/widget_api/qml/WidgetHost.qml</file>
         <file alias="widget_api/qml/WidgetWindow.qml">src/widget_api/qml/WidgetWindow.qml</file>
-        <!-- Plugin QML -->
-        <file alias="plugins/tinyui/app_devtools/qml/SchemaList.qml">src/plugins/tinyui/app_devtools/qml/SchemaList.qml</file>
-        <file alias="plugins/tinyui/app_devtools/qml/surface.qml">src/plugins/tinyui/app_devtools/qml/surface.qml</file>
-        <file alias="plugins/tinyui/app_hostChrome/qml/HostChromeShell.qml">src/plugins/tinyui/app_hostChrome/qml/HostChromeShell.qml</file>
-        <file alias="plugins/tinyui/app_pluginsPanel/qml/surface.qml">src/plugins/tinyui/app_pluginsPanel/qml/surface.qml</file>
-        <file alias="plugins/tinyui/app_settings/qml/surface.qml">src/plugins/tinyui/app_settings/qml/surface.qml</file>
-        <file alias="plugins/tinyui/app_widgetsTab/qml/surface.qml">src/plugins/tinyui/app_widgetsTab/qml/surface.qml</file>
         <!-- Assets - Images -->
         <file alias="assets/images/logo/logo.ico">assets/images/logo/logo.ico</file>
         <file alias="assets/images/logo/logo.png">assets/images/logo/logo.png</file>

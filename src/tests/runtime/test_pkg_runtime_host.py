@@ -12,9 +12,12 @@ from runtimeV2.plugins.activation import PluginActivationStore
 from runtimeV2.plugins.discovery import discover_plugins
 from runtimeV2.plugins.registry import PluginRegistry
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
-from runtimeV2.persistence.contracts import PersistencePaths
+from runtimeV2.persistence.backends import SQLiteDocumentBackend
+from runtimeV2.persistence.registry import PersistenceRegistry
+from runtimeV2.persistence.repository import PersistenceRepository
 from runtimeV2.persistence.schemas.settings import SettingDecl
 from runtimeV2.persistence.settings import SettingsStore
+from runtimeV2.persistence.startup_shutdown.register_persistence import register_persistence_document_schemas
 from scripts.build_plugin import build_plugin
 
 
@@ -67,17 +70,10 @@ def _write_source_plugin(root: Path, plugin_id: str) -> Path:
 
 
 def _settings_store(tmp_path: Path, plugin_id: str) -> SettingsStore:
-    base_dir = tmp_path / "TinyUi"
-    config_root = base_dir / "config"
-    paths = PersistencePaths(
-        base_dir=base_dir,
-        config_root=config_root,
-        cache_dir=base_dir / "cache",
-        logs_dir=base_dir / "logs",
-        bootstrap_path=base_dir / "bootstrap.toml",
-        config_sets_path=config_root / "config_sets.json",
-    )
-    store = SettingsStore(paths, "default")
+    backend = SQLiteDocumentBackend(tmp_path / "settings.db")
+    registry = PersistenceRegistry()
+    register_persistence_document_schemas(registry)
+    store = SettingsStore(PersistenceRepository(registry, backend))
     store.register_specs(
         {
             plugin_id: [

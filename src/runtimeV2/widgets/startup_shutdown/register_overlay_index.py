@@ -19,31 +19,17 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Config set read capability for runtime V2 persistence."""
+"""Overlay index registration for widget-owned overlays."""
 
-from __future__ import annotations
-
-from runtimeV2.persistence.config_sets import ConfigSetCatalog
-from runtimeV2.persistence.contracts import ConfigSet
+from runtimeV2.contracts import ManifestOverlayReader
+from runtimeV2.persistence.overlay_index import OverlayIndexStore, OverlayIndexRecord
 
 
-class ConfigSetRead:
-    """Read config set catalog state."""
+def register_overlay_index(
+    *,
+    overlay_read: ManifestOverlayReader,
+    overlay_index: OverlayIndexStore,
+) -> list[OverlayIndexRecord]:
+    """Register manifest-declared overlays in the app-owned overlay index."""
 
-    def __init__(self, catalog: ConfigSetCatalog) -> None:
-        self._catalog = catalog
-
-    def list_sets(self) -> list[ConfigSet]:
-        """Return all config sets."""
-
-        return self._catalog.list_sets()
-
-    def active_set(self) -> ConfigSet:
-        """Return the active config set."""
-
-        return self._catalog.active_set()
-
-    def active_set_id(self) -> str:
-        """Return the active config set id."""
-
-        return self._catalog.active_set_id()
+    return overlay_index.register_manifest_overlays(overlay_read.overlay_declarations())

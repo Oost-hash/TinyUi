@@ -23,14 +23,16 @@
 
 from runtimeV2.persistence.contracts import (
     BootstrapConfig,
-    ConfigSet,
     PersistencePaths,
+    PersistenceStoreKind,
+    PersistenceStoreRef,
     WidgetInstanceConfig,
 )
 
 __all__ = [
     "BootstrapConfig",
-    "ConfigSet",
     "PersistencePaths",
+    "PersistenceStoreKind",
+    "PersistenceStoreRef",
     "WidgetInstanceConfig",
 ]

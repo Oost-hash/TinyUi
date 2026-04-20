@@ -19,7 +19,7 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Widget config read capability for runtime V2 persistence."""
+"""Widget config read capability."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ from runtimeV2.persistence.widget_config import WidgetConfigStore
 
 
 class WidgetConfigRead:
-    """Read widget configuration values."""
+    """Read widget config values."""
 
     def __init__(self, store: WidgetConfigStore) -> None:
         self._store = store
@@ -46,10 +46,13 @@ class WidgetConfigRead:
     def widget_values(self, overlay_id: str, widget_id: str) -> dict[str, object]:
         """Return config values for one widget."""
 
-        config = self._store.get_widget(overlay_id, widget_id)
-        if config is None:
-            return {}
-        return dict(config.values)
+        widget = self._store.get_widget(overlay_id, widget_id)
+        return dict(widget.values) if widget is not None else {}
+
+    def widget_type_defaults(self, overlay_id: str, widget_type: str) -> dict[str, object]:
+        """Return defaults for one widget type in an overlay."""
+
+        return self._store.widget_type_defaults(overlay_id, widget_type)
 
     def global_widgets_visible(self) -> bool:
         """Return global widget visibility."""
