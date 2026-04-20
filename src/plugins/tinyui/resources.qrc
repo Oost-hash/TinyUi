@@ -1,0 +1,24 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="plugins/tinyui/app_devtools/qml/SchemaList.qml">app_devtools/qml/SchemaList.qml</file>
+        <file alias="plugins/tinyui/app_devtools/qml/surface.qml">app_devtools/qml/surface.qml</file>
+        <file alias="plugins/tinyui/app_hostChrome/qml/HostChromeShell.qml">app_hostChrome/qml/HostChromeShell.qml</file>
+        <file alias="plugins/tinyui/app_hostChrome/qml/HostMenuButton.qml">app_hostChrome/qml/HostMenuButton.qml</file>
+        <file alias="plugins/tinyui/app_hostChrome/qml/HostPluginMenu.qml">app_hostChrome/qml/HostPluginMenu.qml</file>
+        <file alias="plugins/tinyui/app_hostChrome/qml/HostStatusBar.qml">app_hostChrome/qml/HostStatusBar.qml</file>
+        <file alias="plugins/tinyui/app_pluginsPanel/qml/surface.qml">app_pluginsPanel/qml/surface.qml</file>
+        <file alias="plugins/tinyui/app_settings/qml/surface.qml">app_settings/qml/surface.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/ActionButton.qml">app_widgetsTab/qml/ActionButton.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/EditRow.qml">app_widgetsTab/qml/EditRow.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/IconButton.qml">app_widgetsTab/qml/IconButton.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/NumberStepper.qml">app_widgetsTab/qml/NumberStepper.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/SectionHeader.qml">app_widgetsTab/qml/SectionHeader.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/TargetPicker.qml">app_widgetsTab/qml/TargetPicker.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/TextInputBox.qml">app_widgetsTab/qml/TextInputBox.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/ThresholdEditor.qml">app_widgetsTab/qml/ThresholdEditor.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/ToggleSwitch.qml">app_widgetsTab/qml/ToggleSwitch.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/WidgetDetailsPane.qml">app_widgetsTab/qml/WidgetDetailsPane.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/WidgetListPane.qml">app_widgetsTab/qml/WidgetListPane.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/surface.qml">app_widgetsTab/qml/surface.qml</file>
+    </qresource>
+</RCC>

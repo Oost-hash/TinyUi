@@ -28,7 +28,7 @@ import sys
 
 # In frozen builds, import compiled QRC resources for embedded assets
 if getattr(sys, "frozen", False):
-    importlib.import_module("resources_rc")
+    importlib.import_module("pkg_runtime_host.resources_rc")
 
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult

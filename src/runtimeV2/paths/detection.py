@@ -34,7 +34,7 @@ def _core_qml_sources(source_root: Path | None) -> dict[str, QmlSource]:
     """Register core QML sources that support both dev and QRC modes.
 
     In dev mode: loads from filesystem for hot-reload.
-    In frozen mode: loads from QRC (requires resources_rc import).
+    In frozen mode: loads from QRC (requires pkg_runtime_host.resources_rc import).
     """
     sources: dict[str, QmlSource] = {}
 
