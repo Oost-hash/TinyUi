@@ -27,11 +27,12 @@ Item {
 
     property var hostWindow: Window.window
     property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
-    property var widgetRecords: hostWindow && hostWindow.widgetRecords ? hostWindow.widgetRecords : null
-    property var widgetConfigRead: hostWindow && hostWindow.widgetConfigRead ? hostWindow.widgetConfigRead : null
-    property var widgetConfigWrite: hostWindow && hostWindow.widgetConfigWrite ? hostWindow.widgetConfigWrite : null
-    property var widgetVisibility: hostWindow && hostWindow.widgetVisibility ? hostWindow.widgetVisibility : null
-    property var widgetPreviewActions: hostWindow && hostWindow.widgetPreviewActions ? hostWindow.widgetPreviewActions : null
+    property var runtimeContext: hostWindow && hostWindow.runtimeContext ? hostWindow.runtimeContext : null
+    property var widgetRecords: runtimeContext && runtimeContext.widgetRecords ? runtimeContext.widgetRecords : null
+    property var widgetConfigRead: runtimeContext && runtimeContext.widgetConfigRead ? runtimeContext.widgetConfigRead : null
+    property var widgetConfigWrite: runtimeContext && runtimeContext.widgetConfigWrite ? runtimeContext.widgetConfigWrite : null
+    property var widgetVisibility: runtimeContext && runtimeContext.widgetVisibility ? runtimeContext.widgetVisibility : null
+    property var widgetPreviewActions: runtimeContext && runtimeContext.widgetPreviewActions ? runtimeContext.widgetPreviewActions : null
     property var widgetItems: []
     property string widgetItemsSignature: ""
     readonly property int widgetCount: widgetItems ? widgetItems.length : 0

@@ -29,9 +29,10 @@ Item {
 
     readonly property var hostWindow: Window.window
     readonly property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
-    readonly property var imageSources: hostWindow && hostWindow.imageSources ? hostWindow.imageSources : null
-    readonly property var settingsRead: hostWindow && hostWindow.settingsRead ? hostWindow.settingsRead : null
-    readonly property var settingsWrite: hostWindow && hostWindow.settingsWrite ? hostWindow.settingsWrite : null
+    readonly property var runtimeContext: hostWindow && hostWindow.runtimeContext ? hostWindow.runtimeContext : null
+    readonly property var imageSources: runtimeContext && runtimeContext.imageSources ? runtimeContext.imageSources : null
+    readonly property var settingsRead: runtimeContext && runtimeContext.settingsRead ? runtimeContext.settingsRead : null
+    readonly property var settingsWrite: runtimeContext && runtimeContext.settingsWrite ? runtimeContext.settingsWrite : null
 
     property int activeTab: 0
     property var pendingChanges: ({})

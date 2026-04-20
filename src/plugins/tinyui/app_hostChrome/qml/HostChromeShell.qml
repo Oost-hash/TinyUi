@@ -34,8 +34,9 @@ Item {
     readonly property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     readonly property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
     readonly property var windowController: hostWindow && hostWindow.windowController ? hostWindow.windowController : null
-    readonly property var uiChrome: hostWindow && hostWindow.uiChrome ? hostWindow.uiChrome : null
-    readonly property var imageSources: hostWindow && hostWindow.imageSources ? hostWindow.imageSources : null
+    readonly property var runtimeContext: hostWindow && hostWindow.runtimeContext ? hostWindow.runtimeContext : null
+    readonly property var uiChrome: runtimeContext && runtimeContext.uiChrome ? runtimeContext.uiChrome : null
+    readonly property var imageSources: runtimeContext && runtimeContext.imageSources ? runtimeContext.imageSources : null
 
     property string windowTitle: hostWindow && typeof hostWindow.windowTitle === "string" ? hostWindow.windowTitle : ""
     property var menuItems: uiChrome ? uiChrome.menuItems : []
@@ -50,7 +51,7 @@ Item {
     property bool menuOpen: false
     property string pendingPluginActivation: ""
     property var pluginStates: ({})
-    property bool widgetsVisible: hostWindow && hostWindow.widgetVisibility ? hostWindow.widgetVisibility.globalVisible : true
+    property bool widgetsVisible: runtimeContext && runtimeContext.widgetVisibility ? runtimeContext.widgetVisibility.globalVisible : true
 
     readonly property url menuIconSource: root.imageSources ? (root.menuOpen ? root.imageSources.imageUrl("ui.menu-open") : root.imageSources.imageUrl("ui.menu")) : ""
 
@@ -72,18 +73,18 @@ Item {
     }
 
     Connections {
-        target: root.hostWindow ? root.hostWindow.pluginState : null
+        target: root.runtimeContext ? root.runtimeContext.pluginState : null
         function onStateDataChanged() {
-            if (!root.hostWindow || !root.hostWindow.pluginState)
+            if (!root.runtimeContext || !root.runtimeContext.pluginState)
                 return;
-            root.pluginStates = root.hostWindow.pluginState.states;
+            root.pluginStates = root.runtimeContext.pluginState.states;
         }
     }
 
     Connections {
-        target: root.hostWindow && root.hostWindow.widgetVisibility ? root.hostWindow.widgetVisibility : null
+        target: root.runtimeContext && root.runtimeContext.widgetVisibility ? root.runtimeContext.widgetVisibility : null
         function onGlobalVisibleChanged() {
-            root.widgetsVisible = root.hostWindow.widgetVisibility.globalVisible;
+            root.widgetsVisible = root.runtimeContext.widgetVisibility.globalVisible;
         }
     }
 

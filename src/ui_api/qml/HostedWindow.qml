@@ -28,27 +28,11 @@ Window {
     property var appActions: null
     property var theme: null
     property var windowController: null
+    property var runtimeContext: null
     property var surfaceComponent: null
     property string pluginPanelUrl: ""
     property var pluginPanelComponent: null
     property bool showPluginPanel: false
-    property var panelState: null
-    property var manifestRead: null
-    property var uiChrome: null
-    property var pluginActive: null
-    property var pluginState: null
-    property var settingsRead: null
-    property var settingsWrite: null
-    property var windowRecords: null
-    property var widgetRecords: null
-    property var widgetVisibility: null
-    property var widgetPreviewActions: null
-    property var widgetConfigRead: null
-    property var widgetConfigWrite: null
-    property var renderStatus: null
-    property var connectorRead: null
-    property var connectorActions: null
-    property var imageSources: null
     property string windowId: ""
     property bool isMainWindow: false
     property string windowTitle: ""
@@ -79,24 +63,23 @@ Window {
 
     title: windowTitle
     readonly property bool nativeChrome: Qt.platform.os === "linux" || Qt.platform.os === "osx"
-    readonly property bool runtimeShowPluginPanel: panelState ? panelState.visible : false
+    readonly property bool runtimeShowPluginPanel: runtimeContext && runtimeContext.panelState ? runtimeContext.panelState.visible : false
     flags: nativeChrome ? Qt.Window : Qt.Window | Qt.FramelessWindowHint
     color: root.theme ? root.theme.surface : "#17181c"
 
     function syncRuntimeChrome() {
-        root.menuItems = root.uiChrome ? root.uiChrome.menuItems : [];
-        root.pluginMenuItems = root.uiChrome ? root.uiChrome.pluginMenuItems : [];
-        root.pluginMenuLabel = root.uiChrome ? root.uiChrome.pluginMenuLabel : "Plugins";
-        root.statusItems = root.uiChrome ? root.uiChrome.statusItems : [];
-        root.tabModel = root.uiChrome ? root.uiChrome.tabModel : [];
-        root.activePluginId = root.pluginActive ? root.pluginActive.activePlugin : "";
-        root.statusActiveLabel = root.uiChrome ? root.uiChrome.statusActiveLabel : root.activePluginId;
+        var uiChrome = root.runtimeContext ? root.runtimeContext.uiChrome : null;
+        var pluginActive = root.runtimeContext ? root.runtimeContext.pluginActive : null;
+        root.menuItems = uiChrome ? uiChrome.menuItems : [];
+        root.pluginMenuItems = uiChrome ? uiChrome.pluginMenuItems : [];
+        root.pluginMenuLabel = uiChrome ? uiChrome.pluginMenuLabel : "Plugins";
+        root.statusItems = uiChrome ? uiChrome.statusItems : [];
+        root.tabModel = uiChrome ? uiChrome.tabModel : [];
+        root.activePluginId = pluginActive ? pluginActive.activePlugin : "";
+        root.statusActiveLabel = uiChrome ? uiChrome.statusActiveLabel : root.activePluginId;
     }
 
-    onPanelStateChanged: root.showPluginPanel = root.runtimeShowPluginPanel
-
-    onUiChromeChanged: syncRuntimeChrome()
-    onPluginActiveChanged: syncRuntimeChrome()
+    onRuntimeContextChanged: syncRuntimeChrome()
     onRuntimeShowPluginPanelChanged: root.showPluginPanel = root.runtimeShowPluginPanel
 
     Shortcut {
@@ -109,25 +92,25 @@ Window {
     }
 
     Connections {
-        target: root.uiChrome
+        target: root.runtimeContext ? root.runtimeContext.uiChrome : null
         function onMenuItemsChanged() {
-            root.menuItems = root.uiChrome ? root.uiChrome.menuItems : [];
+            root.menuItems = root.runtimeContext && root.runtimeContext.uiChrome ? root.runtimeContext.uiChrome.menuItems : [];
         }
         function onPluginMenuItemsChanged() {
-            root.pluginMenuItems = root.uiChrome ? root.uiChrome.pluginMenuItems : [];
-            root.pluginMenuLabel = root.uiChrome ? root.uiChrome.pluginMenuLabel : "Plugins";
+            root.pluginMenuItems = root.runtimeContext && root.runtimeContext.uiChrome ? root.runtimeContext.uiChrome.pluginMenuItems : [];
+            root.pluginMenuLabel = root.runtimeContext && root.runtimeContext.uiChrome ? root.runtimeContext.uiChrome.pluginMenuLabel : "Plugins";
         }
     }
 
     Connections {
-        target: root.uiChrome
+        target: root.runtimeContext ? root.runtimeContext.uiChrome : null
         function onStatusbarItemsChanged() {
-            root.statusItems = root.uiChrome ? root.uiChrome.statusItems : [];
+            root.statusItems = root.runtimeContext && root.runtimeContext.uiChrome ? root.runtimeContext.uiChrome.statusItems : [];
         }
     }
 
     Connections {
-        target: root.pluginActive
+        target: root.runtimeContext ? root.runtimeContext.pluginActive : null
         function onActivePluginChanged(pluginId) {
             root.activePluginId = pluginId;
             root.statusActiveLabel = pluginId;
@@ -135,9 +118,9 @@ Window {
     }
 
     Connections {
-        target: root.uiChrome
+        target: root.runtimeContext ? root.runtimeContext.uiChrome : null
         function onTabModelChanged() {
-            root.tabModel = root.uiChrome ? root.uiChrome.tabModel : [];
+            root.tabModel = root.runtimeContext && root.runtimeContext.uiChrome ? root.runtimeContext.uiChrome.tabModel : [];
         }
     }
 

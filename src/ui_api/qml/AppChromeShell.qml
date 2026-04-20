@@ -32,8 +32,9 @@ Item {
     readonly property var theme: hostWindow && hostWindow.theme ? hostWindow.theme : null
     readonly property var appActions: hostWindow && hostWindow.appActions ? hostWindow.appActions : null
     readonly property var windowController: hostWindow && hostWindow.windowController ? hostWindow.windowController : null
-    readonly property var uiChrome: hostWindow && hostWindow.uiChrome ? hostWindow.uiChrome : null
-    readonly property var imageSources: hostWindow && hostWindow.imageSources ? hostWindow.imageSources : null
+    readonly property var runtimeContext: hostWindow && hostWindow.runtimeContext ? hostWindow.runtimeContext : null
+    readonly property var uiChrome: runtimeContext && runtimeContext.uiChrome ? runtimeContext.uiChrome : null
+    readonly property var imageSources: runtimeContext && runtimeContext.imageSources ? runtimeContext.imageSources : null
 
     property string windowTitle: hostWindow && typeof hostWindow.windowTitle === "string" ? hostWindow.windowTitle : ""
 
@@ -42,7 +43,7 @@ Item {
     property var pluginMenuItems: uiChrome ? uiChrome.pluginMenuItems : []
     property var pluginMenuLabel: uiChrome ? uiChrome.pluginMenuLabel : ""
     property var tabModel: uiChrome ? uiChrome.tabModel : []
-    property var activePlugin: hostWindow && hostWindow.pluginActive ? hostWindow.pluginActive.activePlugin : ""
+    property var activePlugin: runtimeContext && runtimeContext.pluginActive ? runtimeContext.pluginActive.activePlugin : ""
 
     property int currentTab: hostWindow && typeof hostWindow.currentTab === "number" ? hostWindow.currentTab : 0
     property bool showTabBar: hostWindow && typeof hostWindow.showTabBar === "boolean" ? hostWindow.showTabBar : false

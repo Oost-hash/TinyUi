@@ -92,6 +92,7 @@ from shared_runtime_host.capabilities.ui_api import (
     WidgetVisibilityQmlCapability,
 )
 from ui_api.api.app_actions import AppActions
+from ui_api.runtime_context import RuntimeQmlContext
 from ui_api.startup_logging import log_startup_step
 from ui_api.theme import Theme
 from ui_api.window import WindowHandle, open_window
@@ -128,6 +129,7 @@ class RuntimeHostResult:
     theme: Theme
     main_handle: WindowHandle
     window_handles: dict[str, WindowHandle]
+    runtime_context: RuntimeQmlContext
     qml_properties: dict[str, object]
     shutdown: QmlRuntimeHostShutdown
 
@@ -327,10 +329,12 @@ def start_runtime_host(
             host_registry,
             build_runtime_qml_properties(runtime, ui_result, host_registry),
         )
+        runtime_context = RuntimeQmlContext(qml_properties)
+        window_properties: dict[str, object] = {"runtimeContext": runtime_context}
         if plugin_panel_url:
-            qml_properties["pluginPanelUrl"] = plugin_panel_url
+            window_properties["pluginPanelUrl"] = plugin_panel_url
         if plugin_panel_component is not None:
-            qml_properties["pluginPanelComponent"] = plugin_panel_component
+            window_properties["pluginPanelComponent"] = plugin_panel_component
         log_startup_step(f"opening main runtime window: {main_window.id}")
         handle = open_window(
             main_window,
@@ -339,7 +343,7 @@ def start_runtime_host(
             actions=actions,
             theme=theme,
             isMainWindow=True,
-            **qml_properties,
+            **window_properties,
         )
         open_handles: dict[str, WindowHandle] = {main_window.id: handle}
         manifest_ui_read = runtime.capability("manifest_ui_read", ManifestUiReader)
@@ -381,7 +385,7 @@ def start_runtime_host(
                 actions=actions,
                 theme=theme,
                 isMainWindow=False,
-                **qml_properties,
+                runtimeContext=runtime_context,
             )
             open_handles[window_id] = window_handle
             window_handle.qml_window.destroyed.connect(_drop_handle_slot(window_id))
@@ -400,6 +404,7 @@ def start_runtime_host(
             theme=theme,
             main_handle=handle,
             window_handles=open_handles,
+            runtime_context=runtime_context,
             qml_properties=qml_properties,
             shutdown=shutdown,
         )
