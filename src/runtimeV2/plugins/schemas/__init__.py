@@ -24,7 +24,7 @@
 """Plugin-owned runtime V2 schemas."""
 
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
-from runtimeV2.persistence.schemas.settings import SettingDecl
+from runtimeV2.persistence.manifest.settings import SettingDecl
 from runtimeV2.plugins.schemas.manifest import PluginManifest
 from runtimeV2.ui.schemas.manifest import AppManifest, MenuItem, MenuSeparator, StatusbarItemDecl, TabDecl, UiManifest
 from runtimeV2.widgets.schemas.manifest import OverlayManifest

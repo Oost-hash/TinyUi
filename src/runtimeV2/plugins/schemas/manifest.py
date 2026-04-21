@@ -26,7 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from runtimeV2.connectors.schemas.manifest import ConnectorManifest
-from runtimeV2.persistence.schemas.settings import SettingDecl
+from runtimeV2.persistence.manifest.settings import SettingDecl
 from runtimeV2.ui.schemas.manifest import UiManifest
 from runtimeV2.widgets.schemas.manifest import OverlayManifest
 

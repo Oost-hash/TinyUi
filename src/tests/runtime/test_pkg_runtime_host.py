@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 
 import plugins
@@ -15,9 +16,9 @@ from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
 from runtimeV2.persistence.backends import SQLiteDocumentBackend
 from runtimeV2.persistence.registry import PersistenceRegistry
 from runtimeV2.persistence.repository import PersistenceRepository
-from runtimeV2.persistence.schemas.settings import SettingDecl
-from runtimeV2.persistence.settings import SettingsStore
-from runtimeV2.persistence.startup_shutdown.register_persistence import register_persistence_document_schemas
+from runtimeV2.persistence.manifest.settings import SettingDecl
+from runtimeV2.persistence.startup_shutdown.register_documents import register_persistence_documents
+from runtimeV2.persistence.stores.settings import SettingsStore
 from scripts.build_plugin import build_plugin
 
 
@@ -72,7 +73,7 @@ def _write_source_plugin(root: Path, plugin_id: str) -> Path:
 def _settings_store(tmp_path: Path, plugin_id: str) -> SettingsStore:
     backend = SQLiteDocumentBackend(tmp_path / "settings.db")
     registry = PersistenceRegistry()
-    register_persistence_document_schemas(registry)
+    register_persistence_documents(registry)
     store = SettingsStore(PersistenceRepository(registry, backend))
     store.register_specs(
         {
@@ -207,6 +208,7 @@ def test_discover_plugins_extends_plugins_package_path_for_packaged_plugins(tmp_
     try:
         registry = discover_plugins(runtime_paths, manifest_load)
         import_root = next(root for root in registry.import_roots() if (root / "plugins" / plugin_id).exists())
-        assert str(import_root / "plugins") in plugins.__path__
+        current_plugins = importlib.import_module("plugins")
+        assert str(import_root / "plugins") in current_plugins.__path__
     finally:
         plugins.__path__[:] = original_package_path

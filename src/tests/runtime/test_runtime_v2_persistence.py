@@ -30,16 +30,16 @@ from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
 from runtimeV2.persistence.contracts import BootstrapConfig, PersistencePaths
-from runtimeV2.persistence.overlay_content import HostPluginStyleStore, OverlayLayoutStore, OverlayThemeStore
-from runtimeV2.persistence.overlay_index import OverlayIndexStore, overlay_store_uuid
+from runtimeV2.persistence.services.reset_service import PersistenceResetService
+from runtimeV2.persistence.services.store_provider import PersistenceStoreProvider
 from runtimeV2.persistence.registry import PersistenceRegistry, PersistenceSchema, PersistenceScope
 from runtimeV2.persistence.repository import PersistenceRepository
-from runtimeV2.persistence.reset_service import PersistenceResetService
-from runtimeV2.persistence.schemas.settings import SettingDecl
-from runtimeV2.persistence.settings import SettingsStore
-from runtimeV2.persistence.startup_shutdown.register_persistence import register_persistence_document_schemas
-from runtimeV2.persistence.store_provider import PersistenceStoreProvider
-from runtimeV2.persistence.widget_config import WidgetConfigStore
+from runtimeV2.persistence.manifest.settings import SettingDecl
+from runtimeV2.persistence.startup_shutdown.register_documents import register_persistence_documents
+from runtimeV2.persistence.stores.overlay_index import OverlayIndexStore, overlay_store_uuid
+from runtimeV2.persistence.stores.overlay_stores import HostPluginStyleStore, OverlayLayoutStore, OverlayThemeStore
+from runtimeV2.persistence.stores.settings import SettingsStore
+from runtimeV2.persistence.stores.widget_config import WidgetConfigStore
 from runtimeV2.widgets.startup_shutdown.register_persistence import register_widget_persistence_schemas
 
 
@@ -57,14 +57,14 @@ def _paths(tmp_path) -> PersistencePaths:
 
 def _repository(tmp_path) -> PersistenceRepository:
     registry = PersistenceRegistry()
-    register_persistence_document_schemas(registry)
+    register_persistence_documents(registry)
     register_widget_persistence_schemas(registry)
     return PersistenceRepository(registry, SQLiteDocumentBackend(tmp_path / "test.db"))
 
 
 def _registry() -> PersistenceRegistry:
     registry = PersistenceRegistry()
-    register_persistence_document_schemas(registry)
+    register_persistence_documents(registry)
     register_widget_persistence_schemas(registry)
     return registry
 
@@ -73,7 +73,7 @@ def test_persistence_registry_registers_persistence_owned_schemas() -> None:
     """Persistence startup should expose central schemas for owned documents."""
 
     registry = PersistenceRegistry()
-    register_persistence_document_schemas(registry)
+    register_persistence_documents(registry)
 
     assert registry.schema("settings_values").key_fields == ("namespace",)
     assert registry.schema("persistence_migrations").scope == PersistenceScope.APP
@@ -303,7 +303,7 @@ def test_widget_config_store_fails_for_unknown_overlay_with_overlay_routing(tmp_
         provider.close()
 
 
-def test_overlay_content_stores_write_to_overlay_database(tmp_path) -> None:
+def test_overlay_stores_write_to_overlay_database(tmp_path) -> None:
     """Overlay-owned theme, layout and style documents should live in overlay stores."""
 
     paths = _paths(tmp_path)

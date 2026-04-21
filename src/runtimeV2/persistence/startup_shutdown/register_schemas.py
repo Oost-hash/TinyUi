@@ -22,7 +22,7 @@
 """Manifest schema registration for persistence declarations."""
 
 from runtimeV2.manifest.schema_registry import ManifestSchemaRegistry
-from runtimeV2.persistence.schemas.settings import SettingDecl
+from runtimeV2.persistence.manifest.settings import SettingDecl
 
 
 def register_persistence_schemas(registry: ManifestSchemaRegistry) -> None:

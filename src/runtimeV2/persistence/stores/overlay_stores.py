@@ -19,14 +19,14 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Overlay-owned document stores."""
+"""Overlay-owned persistence stores."""
 
 from __future__ import annotations
 
 from collections.abc import Callable
 
-from runtimeV2.persistence.overlay_index import OverlayIndexStore
 from runtimeV2.persistence.repository import PersistenceRepository
+from runtimeV2.persistence.stores.overlay_index import OverlayIndexStore
 
 OVERLAY_THEME_SINGLETON_ID = "overlay_theme"
 OVERLAY_LAYOUT_SINGLETON_ID = "overlay_layout"

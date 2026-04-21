@@ -25,8 +25,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from runtimeV2.persistence.schemas.settings import SettingDecl
-from runtimeV2.persistence.settings import SettingsStore
+from runtimeV2.persistence.manifest.settings import SettingDecl
+from runtimeV2.persistence.stores.settings import SettingsStore
 
 
 class SettingsRead:

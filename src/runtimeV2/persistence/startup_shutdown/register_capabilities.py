@@ -27,8 +27,8 @@ from runtimeV2.persistence.capabilities.settings_read import SettingsRead
 from runtimeV2.persistence.capabilities.settings_write import SettingsWrite
 from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRead
 from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigWrite
-from runtimeV2.persistence.settings import SettingsStore
-from runtimeV2.persistence.widget_config import WidgetConfigStore
+from runtimeV2.persistence.stores.settings import SettingsStore
+from runtimeV2.persistence.stores.widget_config import WidgetConfigStore
 
 
 @dataclass(frozen=True)

@@ -22,7 +22,7 @@
 """Settings manifest read capability for runtime V2."""
 
 from runtimeV2.manifest.registry import ManifestRegistry
-from runtimeV2.persistence.schemas.settings import SettingDecl
+from runtimeV2.persistence.manifest.settings import SettingDecl
 
 
 class ManifestSettingsRead:

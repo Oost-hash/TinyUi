@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from runtimeV2.persistence.settings import SettingsStore
+from runtimeV2.persistence.stores.settings import SettingsStore
 
 
 class SettingsWrite:

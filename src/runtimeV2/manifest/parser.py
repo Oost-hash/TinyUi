@@ -33,7 +33,7 @@ from runtimeV2.connectors.schemas.manifest import (
     ConnectorRuntimeDecl,
     ConnectorServiceDecl,
 )
-from runtimeV2.persistence.schemas.settings import SettingDecl
+from runtimeV2.persistence.manifest.settings import SettingDecl
 from runtimeV2.plugins.schemas.manifest import ImageDecl, PluginManifest
 from runtimeV2.ui.schemas.manifest import (
     AppManifest,

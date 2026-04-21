@@ -19,20 +19,4 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Settings schema contracts."""
-
-from __future__ import annotations
-
-from dataclasses import dataclass, field
-from typing import Any
-
-
-@dataclass(frozen=True)
-class SettingDecl:
-    """One setting declaration from a manifest."""
-
-    key: str
-    label: str
-    type: str
-    default: Any = None
-    choices: list[Any] = field(default_factory=list)
+"""Persistence manifest declarations."""

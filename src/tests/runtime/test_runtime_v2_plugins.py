@@ -25,9 +25,9 @@ from runtimeV2.manifest.registry import ManifestRegistry
 from runtimeV2.persistence.backends import SQLiteDocumentBackend
 from runtimeV2.persistence.registry import PersistenceRegistry
 from runtimeV2.persistence.repository import PersistenceRepository
-from runtimeV2.persistence.schemas.settings import SettingDecl
-from runtimeV2.persistence.settings import SettingsStore
-from runtimeV2.persistence.startup_shutdown.register_persistence import register_persistence_document_schemas
+from runtimeV2.persistence.manifest.settings import SettingDecl
+from runtimeV2.persistence.startup_shutdown.register_documents import register_persistence_documents
+from runtimeV2.persistence.stores.settings import SettingsStore
 from runtimeV2.plugins.activation import PluginActivationStore
 from runtimeV2.plugins.lifecycle import PluginLifecycleStore
 from runtimeV2.plugins.registry import PluginRegistry
@@ -52,7 +52,7 @@ def _write_plugin_module(tmp_path: Path, plugin_id: str, body: str) -> Path:
 def _settings_store(tmp_path: Path, plugin_id: str) -> SettingsStore:
     backend = SQLiteDocumentBackend(tmp_path / "settings.db")
     registry = PersistenceRegistry()
-    register_persistence_document_schemas(registry)
+    register_persistence_documents(registry)
     store = SettingsStore(PersistenceRepository(registry, backend))
     store.register_specs(
         {

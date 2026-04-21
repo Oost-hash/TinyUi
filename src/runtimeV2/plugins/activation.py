@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Protocol
 
 from runtimeV2.connectors.service_registry import ConnectorServiceRegistry
-from runtimeV2.persistence.settings import SettingsStore
+from runtimeV2.persistence.stores.settings import SettingsStore
 from runtimeV2.plugins.contracts import PluginContext
 from runtimeV2.plugins.registry import PluginRegistry
 

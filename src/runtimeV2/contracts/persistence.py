@@ -26,7 +26,7 @@ from __future__ import annotations
 from typing import Any, Protocol, runtime_checkable
 
 from runtimeV2.persistence.contracts import WidgetInstanceConfig
-from runtimeV2.persistence.schemas.settings import SettingDecl
+from runtimeV2.persistence.manifest.settings import SettingDecl
 
 
 @runtime_checkable

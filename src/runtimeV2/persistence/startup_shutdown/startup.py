@@ -29,22 +29,20 @@ from runtimeV2.contracts import AppIdentityReader, ManifestSettingsReader
 from runtimeV2.persistence.backends import PersistenceBackend
 from runtimeV2.persistence.bootstrap import load_bootstrap
 from runtimeV2.persistence.contracts import BootstrapConfig, PersistencePaths
-from runtimeV2.persistence.overlay_content import HostPluginStyleStore, OverlayLayoutStore, OverlayThemeStore
-from runtimeV2.persistence.overlay_index import OverlayIndexStore
-from runtimeV2.persistence.paths import resolve_persistence_paths
+from runtimeV2.persistence.services.reset_service import PersistenceResetService
+from runtimeV2.persistence.services.store_provider import PersistenceStoreProvider
+from runtimeV2.persistence.stores.overlay_index import OverlayIndexStore
+from runtimeV2.persistence.stores.overlay_stores import HostPluginStyleStore, OverlayLayoutStore, OverlayThemeStore
+from runtimeV2.persistence.paths import ensure_persistence_dirs, resolve_persistence_paths
 from runtimeV2.persistence.registry import PersistenceRegistry
 from runtimeV2.persistence.repository import PersistenceRepository
-from runtimeV2.persistence.reset_service import PersistenceResetService
-from runtimeV2.persistence.settings import SettingsStore
+from runtimeV2.persistence.stores.settings import SettingsStore
 from runtimeV2.persistence.startup_shutdown.register_capabilities import (
     PersistenceCapabilities,
     register_persistence_capabilities,
 )
-from runtimeV2.persistence.startup_shutdown.register_paths import register_persistence_paths
-from runtimeV2.persistence.startup_shutdown.register_persistence import register_persistence_document_schemas
-from runtimeV2.persistence.startup_shutdown.register_settings import register_settings_specs
-from runtimeV2.persistence.store_provider import PersistenceStoreProvider
-from runtimeV2.persistence.widget_config import WidgetConfigStore
+from runtimeV2.persistence.startup_shutdown.register_documents import register_persistence_documents
+from runtimeV2.persistence.stores.widget_config import WidgetConfigStore
 from runtimeV2.runtime import RuntimeV2
 from runtimeV2.schemas.startup import StartupResult, startup_error, startup_ok
 
@@ -75,10 +73,11 @@ def startup_persistence(runtime: RuntimeV2) -> StartupResult:
     try:
         identity_read = runtime.capability("app_identity_read", AppIdentityReader)
         manifest_settings_read = runtime.capability("manifest_settings_read", ManifestSettingsReader)
-        paths = register_persistence_paths(resolve_persistence_paths(identity_read))
+        paths = resolve_persistence_paths(identity_read)
+        ensure_persistence_dirs(paths)
         config = load_bootstrap(paths.bootstrap_path)
         registry = PersistenceRegistry()
-        register_persistence_document_schemas(registry)
+        register_persistence_documents(registry)
         store_provider = PersistenceStoreProvider(
             config=config,
             paths=paths,
@@ -87,7 +86,7 @@ def startup_persistence(runtime: RuntimeV2) -> StartupResult:
         repository = store_provider.app_repository()
         overlay_index = OverlayIndexStore(repository)
         settings = SettingsStore(repository)
-        register_settings_specs(settings, manifest_settings_read)
+        settings.register_specs(manifest_settings_read.settings_specs())
         widget_config = WidgetConfigStore(
             repository,
             overlay_repository=store_provider.overlay_repository,

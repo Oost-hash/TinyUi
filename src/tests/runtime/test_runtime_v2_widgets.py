@@ -19,8 +19,8 @@ from runtimeV2.persistence.capabilities.widget_config_read import WidgetConfigRe
 from runtimeV2.persistence.backends import SQLiteDocumentBackend
 from runtimeV2.persistence.registry import PersistenceRegistry
 from runtimeV2.persistence.repository import PersistenceRepository
-from runtimeV2.persistence.startup_shutdown.register_persistence import register_persistence_document_schemas
-from runtimeV2.persistence.widget_config import WidgetConfigStore
+from runtimeV2.persistence.startup_shutdown.register_documents import register_persistence_documents
+from runtimeV2.persistence.stores.widget_config import WidgetConfigStore
 from runtimeV2.plugins.capabilities.active_read import PluginActiveRead
 from runtimeV2.scheduler.capabilities.scheduler_clock_read import SchedulerClockRead
 from runtimeV2.scheduler.capabilities.scheduler_clock_write import SchedulerClockWrite
@@ -47,7 +47,7 @@ def _sqlite_backend(tmp_path) -> SQLiteDocumentBackend:
 
 def _repository(tmp_path) -> PersistenceRepository:
     registry = PersistenceRegistry()
-    register_persistence_document_schemas(registry)
+    register_persistence_documents(registry)
     register_widget_persistence_schemas(registry)
     return PersistenceRepository(registry, _sqlite_backend(tmp_path))
 

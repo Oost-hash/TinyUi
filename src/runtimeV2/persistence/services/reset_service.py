@@ -23,9 +23,9 @@
 
 from __future__ import annotations
 
-from runtimeV2.persistence.overlay_index import OverlayIndexStore
-from runtimeV2.persistence.store_provider import PersistenceStoreProvider
-from runtimeV2.persistence.widget_config import WidgetConfigStore
+from runtimeV2.persistence.services.store_provider import PersistenceStoreProvider
+from runtimeV2.persistence.stores.overlay_index import OverlayIndexStore
+from runtimeV2.persistence.stores.widget_config import WidgetConfigStore
 
 
 class PersistenceResetService:

@@ -27,8 +27,8 @@ from collections.abc import Callable
 from uuid import UUID, uuid5
 
 from runtimeV2.persistence.contracts import WidgetInstanceConfig
-from runtimeV2.persistence.overlay_index import OverlayIndexStore
 from runtimeV2.persistence.repository import PersistenceRepository
+from runtimeV2.persistence.stores.overlay_index import OverlayIndexStore
 
 WIDGET_INSTANCE_NAMESPACE = UUID("a3deceeb-d97c-4e55-b087-c7c436cc5268")
 WIDGET_VISIBILITY_SINGLETON_ID = "widget_visibility"

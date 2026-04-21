@@ -24,7 +24,7 @@
 from __future__ import annotations
 
 from runtimeV2.persistence.contracts import WidgetInstanceConfig
-from runtimeV2.persistence.widget_config import WidgetConfigStore
+from runtimeV2.persistence.stores.widget_config import WidgetConfigStore
 
 
 class WidgetConfigRead:

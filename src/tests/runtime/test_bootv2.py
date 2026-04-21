@@ -37,8 +37,8 @@ from runtimeV2.persistence.capabilities.widget_config_write import WidgetConfigW
 from runtimeV2.persistence.backends import SQLiteDocumentBackend
 from runtimeV2.persistence.registry import PersistenceRegistry
 from runtimeV2.persistence.repository import PersistenceRepository
-from runtimeV2.persistence.startup_shutdown.register_persistence import register_persistence_document_schemas
-from runtimeV2.persistence.widget_config import WidgetConfigStore
+from runtimeV2.persistence.startup_shutdown.register_documents import register_persistence_documents
+from runtimeV2.persistence.stores.widget_config import WidgetConfigStore
 from runtimeV2.schemas.startup import StartupResult
 from runtimeV2.contracts import (
     QmlPropertyPlan,
@@ -211,7 +211,7 @@ class _FakeUiRuntime:
         self._window_records = WindowRecordsRead(projected_records)
         self._window_actions = WindowActionsWrite(self._window_records, "tinyui.main")
         persistence_registry = PersistenceRegistry()
-        register_persistence_document_schemas(persistence_registry)
+        register_persistence_documents(persistence_registry)
         from runtimeV2.widgets.startup_shutdown.register_persistence import register_widget_persistence_schemas
         register_widget_persistence_schemas(persistence_registry)
         self._persistence_backend = SQLiteDocumentBackend(":memory:")
@@ -478,7 +478,7 @@ def test_widget_config_qml_capabilities_expose_widget_type_defaults(tmp_path) ->
     """Widget config QML wrappers should expose overlay widget type defaults."""
 
     registry = PersistenceRegistry()
-    register_persistence_document_schemas(registry)
+    register_persistence_documents(registry)
     from runtimeV2.widgets.startup_shutdown.register_persistence import register_widget_persistence_schemas
     register_widget_persistence_schemas(registry)
     store = WidgetConfigStore(

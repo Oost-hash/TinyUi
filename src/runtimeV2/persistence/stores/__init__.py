@@ -19,14 +19,25 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Persistence path registration."""
+"""Persistence store exports."""
 
-from runtimeV2.persistence.contracts import PersistencePaths
-from runtimeV2.persistence.paths import ensure_persistence_dirs
+from runtimeV2.persistence.stores.overlay_index import OverlayIndexRecord, OverlayIndexStore, overlay_store_uuid
+from runtimeV2.persistence.stores.overlay_stores import (
+    HostPluginStyleStore,
+    OverlayLayoutStore,
+    OverlayThemeStore,
+)
+from runtimeV2.persistence.stores.settings import SettingsStore
+from runtimeV2.persistence.stores.widget_config import WidgetConfigStore, widget_instance_uuid
 
-
-def register_persistence_paths(paths: PersistencePaths) -> PersistencePaths:
-    """Ensure and return resolved persistence paths."""
-
-    ensure_persistence_dirs(paths)
-    return paths
+__all__ = [
+    "HostPluginStyleStore",
+    "OverlayIndexRecord",
+    "OverlayIndexStore",
+    "OverlayLayoutStore",
+    "OverlayThemeStore",
+    "SettingsStore",
+    "WidgetConfigStore",
+    "overlay_store_uuid",
+    "widget_instance_uuid",
+]

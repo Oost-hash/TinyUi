@@ -24,7 +24,7 @@
 from runtimeV2.persistence.registry import PersistenceRegistry, PersistenceSchema, PersistenceScope
 
 
-def register_persistence_document_schemas(registry: PersistenceRegistry) -> None:
+def register_persistence_documents(registry: PersistenceRegistry) -> None:
     """Register persistence-owned document schemas."""
 
     registry.register_schema(

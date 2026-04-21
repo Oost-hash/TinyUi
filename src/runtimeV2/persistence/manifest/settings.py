@@ -19,13 +19,20 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Settings registration for persistence startup."""
+"""Settings manifest contracts."""
 
-from runtimeV2.contracts import ManifestSettingsReader
-from runtimeV2.persistence.settings import SettingsStore
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any
 
 
-def register_settings_specs(settings: SettingsStore, manifest_settings_read: ManifestSettingsReader) -> None:
-    """Register manifest-declared settings specs."""
+@dataclass(frozen=True)
+class SettingDecl:
+    """One setting declaration from a manifest."""
 
-    settings.register_specs(manifest_settings_read.settings_specs())
+    key: str
+    label: str
+    type: str
+    default: Any = None
+    choices: list[Any] = field(default_factory=list)

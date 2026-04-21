@@ -19,4 +19,12 @@
 #  TinyUI builds on TinyPedal by s-victor (https://github.com/s-victor/TinyPedal),
 #  licensed under GPLv3.
 
-"""Persistence schemas."""
+"""Persistence service exports."""
+
+from runtimeV2.persistence.services.reset_service import PersistenceResetService
+from runtimeV2.persistence.services.store_provider import PersistenceStoreProvider
+
+__all__ = [
+    "PersistenceResetService",
+    "PersistenceStoreProvider",
+]

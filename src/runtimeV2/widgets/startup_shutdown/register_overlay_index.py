@@ -22,7 +22,7 @@
 """Overlay index registration for widget-owned overlays."""
 
 from runtimeV2.contracts import ManifestOverlayReader
-from runtimeV2.persistence.overlay_index import OverlayIndexStore, OverlayIndexRecord
+from runtimeV2.persistence.stores.overlay_index import OverlayIndexStore, OverlayIndexRecord
 
 
 def register_overlay_index(
