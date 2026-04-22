@@ -1,18 +1,4 @@
 {
-  "file_scan_exclusions": [
-    "**/.git",
-    "**/__pycache__",
-    ".claude",
-    ".pytest_cache",
-    ".qml_linter",
-    ".vault",
-    ".venv",
-    ".venv-wsl",
-    "build",
-    "data",
-    "dist",
-    "tinypedal_repo",
-  ],
   "languages": {
     "Python": {
       "language_servers": ["basedpyright"],
@@ -25,14 +11,12 @@
     "basedpyright": {
       "binary": {
         "path": ".venv/Scripts/basedpyright-langserver.exe",
-        "//": "Use the project's venv-based basedpyright so Zed follows pyproject.toml strict mode.",
         "arguments": ["--stdio"],
       },
     },
     "qmljs": {
       "binary": {
         "path": ".venv/Lib/site-packages/PySide6/qmlls.exe",
-        "//": "Use PySide6 from the project venv so Zed follows scripts/qmllint.py and does not rely on generated .qml_linter metadata.",
         "arguments": ["--no-cmake-calls"],
       },
     },
