@@ -172,14 +172,6 @@ Item {
         color: root.c("surface", "#17181c")
     }
 
-    Connections {
-        target: root.settingsRead
-        function onSettingsChanged() {
-            if (root.activeTab >= root.namespaceGroups().length)
-                root.activeTab = 0;
-        }
-    }
-
     Row {
         anchors.fill: parent
         spacing: 0

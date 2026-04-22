@@ -284,11 +284,6 @@ Rectangle {
         }
 
         Connections {
-            target: root.settingsRead
-            function onSettingsChanged() { root.rebuildRows() }
-        }
-
-        Connections {
             target: root.windowRecords
             function onWindowsChanged() { root.windowRows = root.buildWindowRows() }
         }

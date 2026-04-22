@@ -98,15 +98,13 @@ class ManifestQmlCapability(QObject):
 
 
 class SettingsQmlCapability(QObject):
-    """Expose persistence settings to QML."""
-
-    settingsChanged = Signal()
+    """Expose persistence settings to QML as a snapshot read-model."""
 
     def __init__(self, settings_read: SettingsReader, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._settings_read = settings_read
 
-    @Property(_QVARIANT_LIST, notify=settingsChanged)
+    @Property(_QVARIANT_LIST, constant=True)
     def settings(self) -> list[dict[str, object]]:
         """Return settings as a QML model."""
 
