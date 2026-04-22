@@ -9,6 +9,7 @@
         <file alias="plugins/tinyui/app_pluginsPanel/qml/surface.qml">app_pluginsPanel/qml/surface.qml</file>
         <file alias="plugins/tinyui/app_settings/qml/surface.qml">app_settings/qml/surface.qml</file>
         <file alias="plugins/tinyui/app_widgetsTab/qml/ActionButton.qml">app_widgetsTab/qml/ActionButton.qml</file>
+        <file alias="plugins/tinyui/app_widgetsTab/qml/ColorPicker.qml">app_widgetsTab/qml/ColorPicker.qml</file>
         <file alias="plugins/tinyui/app_widgetsTab/qml/EditRow.qml">app_widgetsTab/qml/EditRow.qml</file>
         <file alias="plugins/tinyui/app_widgetsTab/qml/IconButton.qml">app_widgetsTab/qml/IconButton.qml</file>
         <file alias="plugins/tinyui/app_widgetsTab/qml/NumberStepper.qml">app_widgetsTab/qml/NumberStepper.qml</file>

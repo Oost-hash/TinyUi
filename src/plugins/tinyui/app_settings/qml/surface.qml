@@ -23,6 +23,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Window
+import "../../app_widgetsTab/qml"
 
 Item {
     id: root
@@ -336,50 +337,162 @@ Item {
                     Repeater {
                         model: root.activeSettings()
 
-                        EditRow {
-                            id: settingRow
+                        Item {
+                            id: settingDelegate
                             required property var modelData
 
-                            label: modelData.label || modelData.key
-                            description: modelData.key
-                            value: root.displayValue(modelData)
-                            pending: root.isPending(modelData)
+                            width: parent.width
+                            implicitHeight: 52
 
-                            ToggleSwitch {
-                                visible: settingRow.modelData.type === "bool"
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                checked: root.boolValue(root.effectiveValue(settingRow.modelData))
-                                enabled: root.settingsWrite !== null
-                                onToggled: v => root.setPending(settingRow.modelData.namespace, settingRow.modelData.key, v)
-                            }
+                            Rectangle {
+                                anchors.fill: parent
+                                color: "transparent"
 
-                            ChoiceBox {
-                                visible: settingRow.modelData.type === "choice"
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                choices: settingRow.modelData.choices || []
-                                currentValue: root.displayValue(settingRow.modelData)
-                                enabled: root.settingsWrite !== null
-                                onPicked: v => root.setPending(settingRow.modelData.namespace, settingRow.modelData.key, v)
-                            }
+                                Rectangle {
+                                    anchors.fill: parent
+                                    opacity: rowHover.hovered ? 1 : 0
+                                    Behavior on opacity {
+                                        NumberAnimation {
+                                            duration: 120
+                                        }
+                                    }
+                                    gradient: Gradient {
+                                        orientation: Gradient.Horizontal
+                                        GradientStop {
+                                            position: 0.0
+                                            color: "transparent"
+                                        }
+                                        GradientStop {
+                                            position: 0.5
+                                            color: "transparent"
+                                        }
+                                        GradientStop {
+                                            position: 1.0
+                                            color: "#20dec184"
+                                        }
+                                    }
+                                }
 
-                            NumberStepper {
-                                visible: settingRow.modelData.type === "int"
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                value: root.intValue(root.effectiveValue(settingRow.modelData))
-                                enabled: root.settingsWrite !== null
-                                onCommit: v => root.setPending(settingRow.modelData.namespace, settingRow.modelData.key, v)
-                            }
+                                Rectangle {
+                                    anchors.bottom: parent.bottom
+                                    width: parent.width
+                                    height: 1
+                                    color: root.c("border", "#464b57")
+                                    opacity: 0.4
+                                }
 
-                            TextField {
-                                visible: settingRow.modelData.type === "str"
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                value: root.displayValue(settingRow.modelData)
-                                enabled: root.settingsWrite !== null
-                                onCommit: v => root.setPending(settingRow.modelData.namespace, settingRow.modelData.key, v)
+                                Column {
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 16
+                                    anchors.right: rightSlot.left
+                                    anchors.rightMargin: 8
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: 3
+
+                                    Row {
+                                        width: parent.width
+                                        spacing: 6
+
+                                        Text {
+                                            width: parent.width - (editPendingDot.visible ? editPendingDot.width + 6 : 0)
+                                            text: settingDelegate.modelData.label || settingDelegate.modelData.key
+                                            color: root.isPending(settingDelegate.modelData) ? root.c("accent", "#4a9eff") : root.c("text", "#dce0e5")
+                                            font.pixelSize: root.f("fontSizeBase", 13)
+                                            font.family: root.f("fontFamily", "sans-serif")
+                                            elide: Text.ElideRight
+                                            Behavior on color {
+                                                ColorAnimation {
+                                                    duration: 120
+                                                }
+                                            }
+                                        }
+
+                                        Text {
+                                            id: editPendingDot
+                                            visible: root.isPending(settingDelegate.modelData)
+                                            text: "*"
+                                            color: root.c("accent", "#4a9eff")
+                                            font.pixelSize: 6
+                                            font.family: root.f("fontFamily", "sans-serif")
+                                            anchors.bottom: parent.bottom
+                                            anchors.bottomMargin: 3
+                                        }
+                                    }
+
+                                    Text {
+                                        width: parent.width
+                                        text: settingDelegate.modelData.key
+                                        color: rowHover.hovered ? "#dec184" : root.c("textMuted", "#878a98")
+                                        font.pixelSize: root.f("fontSizeSmall", 11)
+                                        font.family: root.f("fontFamily", "sans-serif")
+                                        elide: Text.ElideRight
+                                        Behavior on color {
+                                            ColorAnimation {
+                                                duration: 120
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Item {
+                                    id: rightSlot
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: 12
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 128
+                                    height: parent.height
+
+                                    ToggleSwitch {
+                                        visible: settingDelegate.modelData.type === "bool"
+                                        anchors.right: parent.right
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        checked: root.boolValue(root.effectiveValue(settingDelegate.modelData))
+                                        enabled: root.settingsWrite !== null
+                                        onToggled: v => root.setPending(settingDelegate.modelData.namespace, settingDelegate.modelData.key, v)
+                                    }
+
+                                    ChoiceBox {
+                                        visible: settingDelegate.modelData.type === "choice"
+                                        anchors.right: parent.right
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        choices: settingDelegate.modelData.choices || []
+                                        currentValue: root.displayValue(settingDelegate.modelData)
+                                        enabled: root.settingsWrite !== null
+                                        onPicked: v => root.setPending(settingDelegate.modelData.namespace, settingDelegate.modelData.key, v)
+                                    }
+
+                                    NumberStepper {
+                                        visible: settingDelegate.modelData.type === "int"
+                                        anchors.right: parent.right
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        value: root.intValue(root.effectiveValue(settingDelegate.modelData))
+                                        enabled: root.settingsWrite !== null
+                                        onCommit: v => root.setPending(settingDelegate.modelData.namespace, settingDelegate.modelData.key, v)
+                                    }
+
+                                    TextField {
+                                        visible: settingDelegate.modelData.type === "str"
+                                        anchors.right: parent.right
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        value: root.displayValue(settingDelegate.modelData)
+                                        enabled: root.settingsWrite !== null
+                                        onCommit: v => root.setPending(settingDelegate.modelData.namespace, settingDelegate.modelData.key, v)
+                                    }
+
+                                    ColorPicker {
+                                        visible: settingDelegate.modelData.type === "color"
+                                        anchors.right: parent.right
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        value: root.displayValue(settingDelegate.modelData)
+                                        enabled: root.settingsWrite !== null
+                                        theme: root.theme
+                                        onColorPicked: hex => root.setPending(settingDelegate.modelData.namespace, settingDelegate.modelData.key, hex)
+                                    }
+                                }
+
+                                HoverHandler {
+                                    id: rowHover
+                                }
                             }
                         }
                     }
@@ -449,119 +562,6 @@ Item {
             width: parent.width
             height: 1
             color: root.c("border", "#464b57")
-        }
-    }
-
-    component EditRow: Rectangle {
-        id: editRowRoot
-        property string label: ""
-        property string description: ""
-        property string value: ""
-        property bool pending: false
-        default property alias rightContent: rightSlot.data
-
-        anchors.left: parent ? parent.left : undefined
-        anchors.right: parent ? parent.right : undefined
-        implicitHeight: 52
-        color: "transparent"
-
-        Rectangle {
-            anchors.fill: parent
-            opacity: rowHover.hovered ? 1 : 0
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 120
-                }
-            }
-            gradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop {
-                    position: 0.0
-                    color: "transparent"
-                }
-                GradientStop {
-                    position: 0.5
-                    color: "transparent"
-                }
-                GradientStop {
-                    position: 1.0
-                    color: "#20dec184"
-                }
-            }
-        }
-
-        Rectangle {
-            anchors.bottom: parent.bottom
-            width: parent.width
-            height: 1
-            color: root.c("border", "#464b57")
-            opacity: 0.4
-        }
-
-        Column {
-            anchors.left: parent.left
-            anchors.leftMargin: 16
-            anchors.right: rightSlot.left
-            anchors.rightMargin: 8
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 3
-
-            Row {
-                width: parent.width
-                spacing: 6
-
-                Text {
-                    width: parent.width - (editPendingDot.visible ? editPendingDot.width + 6 : 0)
-                    text: editRowRoot.label
-                    color: editRowRoot.pending ? root.c("accent", "#4a9eff") : root.c("text", "#dce0e5")
-                    font.pixelSize: root.f("fontSizeBase", 13)
-                    font.family: root.f("fontFamily", "sans-serif")
-                    elide: Text.ElideRight
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 120
-                        }
-                    }
-                }
-
-                Text {
-                    id: editPendingDot
-                    visible: editRowRoot.pending
-                    text: "*"
-                    color: root.c("accent", "#4a9eff")
-                    font.pixelSize: 6
-                    font.family: root.f("fontFamily", "sans-serif")
-                    anchors.bottom: parent.bottom
-                    anchors.bottomMargin: 3
-                }
-            }
-
-            Text {
-                width: parent.width
-                text: editRowRoot.description !== "" ? editRowRoot.description : editRowRoot.value
-                color: rowHover.hovered ? "#dec184" : root.c("textMuted", "#878a98")
-                font.pixelSize: root.f("fontSizeSmall", 11)
-                font.family: root.f("fontFamily", "sans-serif")
-                elide: Text.ElideRight
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 120
-                    }
-                }
-            }
-        }
-
-        Item {
-            id: rightSlot
-            anchors.right: parent.right
-            anchors.rightMargin: 12
-            anchors.verticalCenter: parent.verticalCenter
-            width: 128
-            height: parent.height
-        }
-
-        HoverHandler {
-            id: rowHover
         }
     }
 

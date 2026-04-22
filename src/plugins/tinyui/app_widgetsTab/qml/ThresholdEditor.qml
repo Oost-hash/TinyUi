@@ -172,13 +172,12 @@ Column {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 8
 
-                    TextInputBox {
-                        width: 82
+                    ColorPicker {
                         anchors.verticalCenter: parent.verticalCenter
-                        textValue: thresholdEntry.modelData.color
+                        value: thresholdEntry.modelData.color
                         enabled: thresholdEditorRoot.editable
                         theme: thresholdEditorRoot.theme
-                        onCommit: text => thresholdEditorRoot.updateThreshold(thresholdEntry.index, "color", text)
+                        onColorPicked: hex => thresholdEditorRoot.updateThreshold(thresholdEntry.index, "color", hex)
                     }
 
                     Text {

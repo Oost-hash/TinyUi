@@ -354,12 +354,13 @@ Item {
                 visible: detailsPane.supportsTypeDefaults
                 label: "Text color"
                 description: "Default text color"
-                TextInputBox {
+                ColorPicker {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    textValue: detailsPane.typeDefaultValue("textColor", "#E8EDF2")
+                    value: detailsPane.typeDefaultValue("textColor", "#E8EDF2")
                     enabled: detailsPane.canWriteWidgetConfig
-                    onCommit: text => detailsPane.setWidgetTypeDefault("textColor", text)
+                    theme: detailsPane.theme
+                    onColorPicked: hex => detailsPane.setWidgetTypeDefault("textColor", hex)
                 }
             }
 
@@ -367,12 +368,13 @@ Item {
                 visible: detailsPane.supportsTypeDefaults
                 label: "Background"
                 description: "Default background color"
-                TextInputBox {
+                ColorPicker {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    textValue: detailsPane.typeDefaultValue("backgroundColor", "#20242b")
+                    value: detailsPane.typeDefaultValue("backgroundColor", "#20242b")
                     enabled: detailsPane.canWriteWidgetConfig
-                    onCommit: text => detailsPane.setWidgetTypeDefault("backgroundColor", text)
+                    theme: detailsPane.theme
+                    onColorPicked: hex => detailsPane.setWidgetTypeDefault("backgroundColor", hex)
                 }
             }
 
