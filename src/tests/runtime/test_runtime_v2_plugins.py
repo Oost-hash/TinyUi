@@ -293,6 +293,58 @@ def test_plugin_icon_capability_resolves_safe_file_urls(tmp_path) -> None:
     assert capability.get_icon_url("missing_plugin") == ""
 
 
+def test_plugin_icon_capability_rejects_absolute_and_parent_escape_paths(tmp_path) -> None:
+    """Plugin icon paths should stay relative to the plugin root."""
+
+    plugin_root = tmp_path / "plugins" / "demo_plugin"
+    plugin_root.mkdir(parents=True, exist_ok=True)
+    safe_icon_dir = plugin_root / "assets"
+    safe_icon_dir.mkdir()
+    (safe_icon_dir / "logo.png").write_bytes(b"png")
+
+    outside_icon = tmp_path / "outside.png"
+    outside_icon.write_bytes(b"png")
+
+    registry = PluginRegistry()
+    registry.register_plugin(plugin_id="escape_plugin", plugin_root=plugin_root, source="source")
+    registry.register_plugin(plugin_id="absolute_plugin", plugin_root=plugin_root, source="source")
+
+    manifest_registry = ManifestRegistry()
+    manifest_registry.register_manifest(
+        manifest=PluginManifest(
+            plugin_id="escape_plugin",
+            plugin_type="plugin",
+            version="1.0.0",
+            author="Test",
+            description="Parent escape icon",
+            icon="../outside.png",
+            requires=[],
+        ),
+        manifest_path=plugin_root / "manifest.toml",
+        resource_root=plugin_root,
+        source="source",
+    )
+    manifest_registry.register_manifest(
+        manifest=PluginManifest(
+            plugin_id="absolute_plugin",
+            plugin_type="plugin",
+            version="1.0.0",
+            author="Test",
+            description="Absolute icon",
+            icon=str(outside_icon),
+            requires=[],
+        ),
+        manifest_path=plugin_root / "manifest.toml",
+        resource_root=plugin_root,
+        source="source",
+    )
+
+    capability = PluginIconCapability(registry, ManifestRead(manifest_registry))
+
+    assert capability.get_icon_url("escape_plugin") == ""
+    assert capability.get_icon_url("absolute_plugin") == ""
+
+
 def test_initial_active_plugin_picks_first_enabled_plugin_or_overlay() -> None:
     """Boot policy should pick the first enabled plugin or overlay from manifest order."""
 

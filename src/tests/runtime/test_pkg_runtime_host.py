@@ -212,3 +212,50 @@ def test_discover_plugins_extends_plugins_package_path_for_packaged_plugins(tmp_
         assert str(import_root / "plugins") in current_plugins.__path__
     finally:
         plugins.__path__[:] = original_package_path
+
+
+def test_discover_plugins_keeps_host_first_then_sorted_external_plugins(tmp_path: Path) -> None:
+    host_dir = tmp_path / "host_plugins" / "tinyui"
+    plugins_dir = tmp_path / "plugins"
+    host_dir.mkdir(parents=True, exist_ok=True)
+    plugins_dir.mkdir(parents=True, exist_ok=True)
+
+    (host_dir / "manifest.toml").write_text(
+        "\n".join(
+            [
+                "[plugin]",
+                'id = "tinyui"',
+                'type = "host"',
+                'version = "1.0.0"',
+                'author = "Test"',
+                'description = "Host"',
+                "",
+                "[[window]]",
+                'id = "tinyui.main"',
+                'title = "TinyUi"',
+            ]
+        ),
+        encoding="utf-8",
+    )
+    _write_source_plugin(plugins_dir, "zeta_plugin")
+    _write_source_plugin(plugins_dir, "alpha_plugin")
+    _write_source_plugin(plugins_dir, "middle_plugin")
+
+    manifest_registry = ManifestRegistry()
+    manifest_load = ManifestLoad(manifest_registry)
+    runtime_paths = RuntimePaths(
+        app_root=tmp_path,
+        host_dir=host_dir,
+        plugins_dir=plugins_dir,
+        source_root=tmp_path,
+        frozen_root=None,
+    )
+
+    registry = discover_plugins(runtime_paths, manifest_load)
+
+    assert registry.plugin_ids() == [
+        "tinyui",
+        "alpha_plugin",
+        "middle_plugin",
+        "zeta_plugin",
+    ]
